@@ -179,6 +179,7 @@ This section supersedes the package-version rows in section 6 when they conflict
 | --- | --- | --- |
 | `expo-audio` | `1.1.1` | Expo SDK 54 bundled playback/recording candidate. Installed with `npx expo install`. |
 | `expo-asset` | `12.0.13` | Required peer for `expo-audio`; pinned to the SDK 54-compatible version. |
+| `expo-dev-client` | `6.0.21` | Required for physical-device native audio candidate QA outside Expo Go. |
 | `react-native-audio-api` | `0.11.7` | Week 1 low-latency sampler candidate. `0.12.2` is held because it asks for `react-native-worklets >= 0.6.0`, while the current Expo SDK 54 scaffold uses `react-native-worklets@0.5.1`. |
 | `react-native-worklets` | `0.5.1` | Expo SDK 54-compatible version brought by the current Expo/Reanimated setup. |
 
@@ -187,6 +188,8 @@ Audio engine comparison must use `src/audio/audioEngineEvaluation.ts` and the Da
 Day 5 final selection must be recorded through `src/audio/audioEngineDecisionRecord.ts`. If either required candidate lacks `evidenceSource: 'physical-device'` probe values, or a candidate has duplicate physical-device probes in one record, the decision record remains `INCOMPLETE_DEVICE_EVIDENCE` and no engine is considered final.
 
 Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
+
+Week 1 device QA uses `expo-dev-client` and the `eas.json` `development` profile because native audio modules and microphone permissions cannot be validated in Expo Go. `npm run start:dev-client` is the Metro entry point after the development client is installed on the device.
 
 Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/expoAudioSamplerEngine.ts` and is tested through a port-injected runtime so domain, session, gesture, and prototype controller code do not depend on the concrete audio package.
 
