@@ -6,6 +6,7 @@ Scope: Week 1 audio and touch spike for the 12-string gayageum prototype
 Related candidate smoke checks:
 
 - Candidate A `expo-audio`: `docs/qa/day-2-expo-audio-smoke.md`
+- Candidate B `react-native-audio-api`: `docs/qa/day-3-react-native-audio-api-smoke.md`
 
 Use this checklist on a physical Android or iOS device. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
 
