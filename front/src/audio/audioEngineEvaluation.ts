@@ -2,6 +2,8 @@ export type AudioEngineCandidateId = 'expo-audio' | 'react-native-audio-api';
 
 export type AudioEngineDecision = 'PASS' | 'PASS_WITH_LIMITS' | 'FAIL' | 'NO_GO';
 
+export type AudioEngineEvidenceSource = 'physical-device' | 'emulator' | 'unit-test' | 'estimate';
+
 export type AudioEngineFailedCriterion =
   | 'latency'
   | 'polyphony'
@@ -14,6 +16,7 @@ export type AudioEngineFailedCriterion =
 
 export type AudioEngineProbe = {
   candidate: AudioEngineCandidateId;
+  evidenceSource: AudioEngineEvidenceSource;
   deviceLabel: string;
   measuredAt: string;
   touchToSoundLatencyMs: number;

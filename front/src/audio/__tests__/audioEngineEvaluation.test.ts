@@ -3,6 +3,7 @@ import { evaluateAudioEngineProbe, selectAudioEngineCandidate } from '../audioEn
 
 const passingProbe = {
   candidate: 'react-native-audio-api' as const,
+  evidenceSource: 'physical-device' as const,
   deviceLabel: 'Pixel physical device',
   measuredAt: '2026-06-08T00:00:00.000Z',
   touchToSoundLatencyMs: 42,

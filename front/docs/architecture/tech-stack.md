@@ -184,6 +184,8 @@ This section supersedes the package-version rows in section 6 when they conflict
 
 Audio engine comparison must use `src/audio/audioEngineEvaluation.ts` and the Day 5 QA checklist before selecting the final `SamplerEngine` implementation.
 
+Day 5 final selection must be recorded through `src/audio/audioEngineDecisionRecord.ts`. If either required candidate lacks `evidenceSource: 'physical-device'` probe values, or a candidate has duplicate physical-device probes in one record, the decision record remains `INCOMPLETE_DEVICE_EVIDENCE` and no engine is considered final.
+
 Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
 
 Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/expoAudioSamplerEngine.ts` and is tested through a port-injected runtime so domain, session, gesture, and prototype controller code do not depend on the concrete audio package.
