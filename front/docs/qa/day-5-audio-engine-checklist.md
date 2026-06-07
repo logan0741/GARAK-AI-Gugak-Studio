@@ -1,0 +1,74 @@
+# Day 5 Audio Engine Checklist
+
+Status: required before choosing the real `SamplerEngine` implementation  
+Scope: Week 1 audio and touch spike for the 12-string gayageum prototype
+
+Use this checklist on a physical Android or iOS device. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
+
+## Device Setup
+
+| Field | Value |
+| --- | --- |
+| Date |  |
+| Tester |  |
+| Device model |  |
+| OS version |  |
+| Build type | Expo dev build / native debug / native release |
+| Audio output | Built-in speaker / wired headphones / external speaker |
+| Bluetooth disabled for primary latency test | yes / no |
+| Engine candidate | `react-native-audio-api` / `expo-audio` / other |
+| Sample manifest version |  |
+
+## Hard Pass Criteria
+
+| Check | Pass Criteria | Result | Notes |
+| --- | --- | --- | --- |
+| Touch-to-sound latency | No perceived delay on device; target <= 50 ms |  |  |
+| Polyphony | At least 8 simultaneous voices play without audible dropout |  |  |
+| Pitch bend | Hold-drag changes pitch smoothly without click noise or abrupt jumps |  |  |
+| Glissando | A swipe across all 12 strings triggers every open string in order |  |  |
+| Mute | Ji-eum or cover gesture produces a natural release curve without pop noise |  |  |
+| Preload | Normal playing does not trigger runtime file loading or visible waiting |  |  |
+| Session fallback | `PerformanceEvent[]` remains saved and replayable if audio capture fails |  |  |
+| Recording possibility | Native path can capture at least 10 seconds of live performance audio, or fallback decision is recorded |  |  |
+
+## Current Prototype Smoke Test
+
+The current branch provides tap, full-string glissando trigger, session event count, active voice count, command log, and audio failure status in the prototype inspector.
+
+1. Open the 12-string prototype screen on a physical device or Expo dev build.
+2. Tap each string once from 1 to 12 and confirm the event count increments by one per tap.
+3. Press the glissando control and confirm the event count increments by 12.
+4. Confirm the inspector shows `string_pluck` or `glissando_step` as the latest event.
+5. Confirm active voice count grows and respects the fake engine voice budget.
+6. Confirm audio status remains `ok` while the fake engine handles events.
+
+## Day 5 Full Test Script
+
+Prerequisite: before running this full script, the active `SamplerEngine` candidate must expose tap playback, hold-drag pitch bend, mute or cover gesture, and recording or explicit recording fallback behavior in the device build.
+
+1. Open the 12-string prototype screen on a physical device.
+2. Tap each string once from 1 to 12 and verify immediate sound response.
+3. Rapidly trigger at least 8 strings and listen for voice dropout or stealing artifacts.
+4. Hold one active string and drag to test pitch bend continuity.
+5. Swipe across all 12 strings in both directions and verify no missing string trigger.
+6. Trigger a mute or cover gesture and listen for pop noise or unnatural cutoff.
+7. Record or attempt to record 10 seconds of live interaction if the candidate engine supports capture.
+8. Save the event session and confirm the event log is still available even if audio capture fails.
+
+## Decision
+
+| Decision | Rule |
+| --- | --- |
+| PASS | Tap latency, 8-voice polyphony, pitch bend, glissando, mute, and session fallback all pass. |
+| PASS_WITH_LIMITS | Core loop passes, but recording is unstable. Continue with event-session fallback and document the recording limit. |
+| FAIL | Tap latency, polyphony, pitch bend, glissando, or mute fails. Do not expand into studio features. |
+| NO_GO | No candidate engine can support at least two core gestures reliably. Pause Week 2 feature work and run another audio spike. |
+
+## Failure Log
+
+Use one entry per failure.
+
+| Time | Check | Symptom | Device Condition | Suspected Cause | Follow-up |
+| --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |
