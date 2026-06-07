@@ -38,7 +38,7 @@ Prerequisite: run `npm run samples:generate-dev` from `front/` before building t
 
 The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, pitch-bend plumbing, filter/gain graph behavior, and mute/release envelopes, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
 
-Resolve every `SampleAssetManifest.fileUri` before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes.
+Resolve every `SampleAssetManifest.fileUri` before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
 
 Use a development client, not Expo Go, because this candidate depends on native audio graph APIs:
 
@@ -49,7 +49,7 @@ npm run start:dev-client
 For an EAS development build, use the `development` profile in `eas.json`.
 
 1. Build or launch an Expo dev build on a physical device.
-2. Preload the manifest through `ReactNativeAudioApiSamplerEngine.preload()`.
+2. Preload the manifest through `ReactNativeAudioApiSamplerEngine.preload()` and confirm the inspector reaches `native_candidate_ready`.
 3. Tap one string and confirm the graph plays from a decoded buffer without runtime file loading.
 4. Trigger at least 8 different strings rapidly and listen for dropout, clipping, or unwanted voice stealing.
 5. Hold one active string and send `string_bend` values across a practical range such as -120 to +120 cents.
