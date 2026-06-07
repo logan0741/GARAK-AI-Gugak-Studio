@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import { FakeSamplerEngine } from '../audio/fakeSamplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
 import { createEmptySession } from '../domain/session';
@@ -18,14 +19,24 @@ import {
   planGlissando,
   safelyDispatchEventsToEngine,
 } from './gayageumPrototypeController';
+import {
+  countPrototypeAudibleVoices,
+  createInitialPrototypeQaSnapshot,
+  formatPrototypeProbeDraftForInspector,
+  updatePrototypeQaSnapshot,
+} from './prototypeQaSnapshot';
 
 const STRING_COUNT = 12;
 const ALL_STRINGS = Array.from({ length: STRING_COUNT }, (_, index) => index + 1);
 const FALLBACK_INSTRUMENT_HEIGHT = 312;
 const PRIMARY_POINTER_ID = 'primary-touch';
+const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api';
+const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
+const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
 
 export function GayageumPrototypeScreen() {
   const engine = useMemo(() => new FakeSamplerEngine(), []);
+  const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
   const [instrumentHeight, setInstrumentHeight] = useState(FALLBACK_INSTRUMENT_HEIGHT);
   const touchModel = useMemo(
     () =>
@@ -45,6 +56,13 @@ export function GayageumPrototypeScreen() {
       sampleAssetManifestVersion: 'prototype-empty-manifest',
     }),
   );
+  const [qaSnapshot, setQaSnapshot] = useState(() =>
+    createInitialPrototypeQaSnapshot({
+      candidate: DEFAULT_PROBE_CANDIDATE,
+      deviceLabel: DEFAULT_DEVICE_LABEL,
+      measuredAt: new Date().toISOString(),
+    }),
+  );
   const [audioError, setAudioError] = useState<string | undefined>();
 
   function applyPerformanceEvents(events: PerformanceEvent[]) {
@@ -54,6 +72,25 @@ export function GayageumPrototypeScreen() {
     setSession((current) => appendEventsToSession(current, events));
     const result = safelyDispatchEventsToEngine(engine, events);
     setAudioError(result.ok ? undefined : result.errorMessage);
+    setQaSnapshot((current) =>
+      updatePrototypeQaSnapshot(current, {
+        activeVoiceCount: countPrototypeAudibleVoices(engine.activeVoices),
+        audioDispatchOk: result.ok,
+        events,
+        measuredAt: new Date().toISOString(),
+      }),
+    );
+  }
+
+  function handleProbeCandidatePress(candidate: AudioEngineCandidateId) {
+    setProbeCandidate(candidate);
+    setQaSnapshot(
+      createInitialPrototypeQaSnapshot({
+        candidate,
+        deviceLabel: DEFAULT_DEVICE_LABEL,
+        measuredAt: new Date().toISOString(),
+      }),
+    );
   }
 
   function handleGlissandoPress() {
@@ -95,7 +132,9 @@ export function GayageumPrototypeScreen() {
 
   const latestEvent: PerformanceEvent | undefined = session.events.at(-1);
   const activeVoices = engine.activeVoices;
+  const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
   const commands = engine.commands;
+  const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
 
   return (
     <View style={styles.screen}>
@@ -112,6 +151,30 @@ export function GayageumPrototypeScreen() {
         >
           <Text style={styles.glissandoButtonText}>Glissando</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.probeControls}>
+        {PROBE_CANDIDATES.map((candidate) => (
+          <Pressable
+            key={candidate}
+            accessibilityRole="button"
+            accessibilityLabel={`Set probe draft candidate to ${candidate}`}
+            onPress={() => handleProbeCandidatePress(candidate)}
+            style={[
+              styles.candidateButton,
+              probeCandidate === candidate ? styles.candidateButtonSelected : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.candidateButtonText,
+                probeCandidate === candidate ? styles.candidateButtonTextSelected : undefined,
+              ]}
+            >
+              {candidate === 'react-native-audio-api' ? 'RN Audio API' : 'Expo Audio'}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       <View
@@ -135,10 +198,14 @@ export function GayageumPrototypeScreen() {
       <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent}>
         <Text style={styles.inspectorTitle}>Prototype Inspector</Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
-        <Text style={styles.inspectorText}>Active voices: {activeVoices.length}</Text>
+        <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
         <Text style={styles.inspectorText}>Latest: {latestEvent ? JSON.stringify(latestEvent) : 'none'}</Text>
         <Text style={styles.inspectorText}>Commands: {commands.join(' | ') || 'none'}</Text>
+        <Text style={styles.inspectorTitle}>Probe draft (estimate only, fake engine counters)</Text>
+        <Text selectable style={styles.probeDraftText}>
+          {probeDraftText}
+        </Text>
       </ScrollView>
     </View>
   );
@@ -190,6 +257,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  probeControls: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  candidateButton: {
+    alignItems: 'center',
+    borderColor: '#80b8aa',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 36,
+    minWidth: 116,
+    paddingHorizontal: 12,
+  },
+  candidateButtonSelected: {
+    backgroundColor: '#80b8aa',
+  },
+  candidateButtonText: {
+    color: '#f6f1e8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  candidateButtonTextSelected: {
+    color: '#101418',
+  },
   instrument: {
     backgroundColor: '#1c2320',
     borderColor: '#3a4a42',
@@ -222,7 +314,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#eef3ef',
     borderRadius: 8,
     flexGrow: 0,
-    maxHeight: 148,
+    maxHeight: 196,
   },
   inspectorContent: {
     gap: 4,
@@ -236,5 +328,10 @@ const styles = StyleSheet.create({
   inspectorText: {
     color: '#101418',
     fontSize: 12,
+  },
+  probeDraftText: {
+    color: '#101418',
+    fontFamily: 'monospace',
+    fontSize: 10,
   },
 });
