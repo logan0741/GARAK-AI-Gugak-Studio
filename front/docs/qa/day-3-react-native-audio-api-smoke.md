@@ -22,7 +22,9 @@ Use this document when validating whether `react-native-audio-api` can support t
 Run before opening a device build:
 
 ```bash
+npm run samples:generate-dev
 npm test src/config/__tests__/developmentBuildConfig.test.ts
+npm test src/prototype/__tests__/prototypeSampleManifest.test.ts
 npm test src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts
 npm test src/audio/__tests__/reactNativeAudioApiRuntime.test.ts
 npm run typecheck
@@ -32,7 +34,11 @@ Expected result: all commands exit 0.
 
 ## Device Smoke Procedure
 
-Prerequisite: add 12 local placeholder or licensed gayageum sample files and resolve every `SampleAssetManifest.fileUri` before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes.
+Prerequisite: run `npm run samples:generate-dev` from `front/` before building the device client. This creates the Week 1 synthetic fixture files under `assets/audio/gayageum-dev/` and the matching manifest in `src/prototype/prototypeSampleManifest.ts`.
+
+The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, pitch-bend plumbing, filter/gain graph behavior, and mute/release envelopes, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
+
+Resolve every `SampleAssetManifest.fileUri` before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes.
 
 Use a development client, not Expo Go, because this candidate depends on native audio graph APIs:
 

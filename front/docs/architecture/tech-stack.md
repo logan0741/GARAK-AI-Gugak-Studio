@@ -200,3 +200,5 @@ Candidate B `react-native-audio-api` imports are isolated in `src/audio/reactNat
 Day 4 touch validation uses `src/interaction/touchModel.ts` as the raw-touch boundary. It maps `PanResponder` touch frames into `PerformanceEvent[]` through `GestureMapper`, keeping UI coordinates out of the domain, session, and audio engine layers.
 
 The prototype runtime host lives in `src/prototype/prototypeSamplerEngineHost.ts`. It may target `expo-audio` or `react-native-audio-api`, but it must keep the active runtime on `fake-prototype` until a complete 12-string `SampleAssetManifest` is available. This prevents fake-engine counters from being mistaken for native candidate evidence.
+
+Week 1 development samples are managed by `src/prototype/prototypeSampleManifest.ts`, `scripts/generate-dev-gayageum-samples.ts`, and `assets/audio/gayageum-dev/`. Run `npm run samples:generate-dev` before device QA to regenerate the synthetic 12-string WAV fixtures. Manifest version `dev-synthetic-gayageum-2026-06-08` is valid only for technical engine validation; final release audio must use owned or licensed gayageum recordings and a new manifest version.

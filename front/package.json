@@ -9,6 +9,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "qa:day5-audio": "vite-node scripts/day5-audio-engine-handoff.ts",
+    "samples:generate-dev": "vite-node scripts/generate-dev-gayageum-samples.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:watch": "vitest"

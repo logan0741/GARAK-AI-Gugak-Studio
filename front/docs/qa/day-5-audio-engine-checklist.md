@@ -18,11 +18,15 @@ Use this checklist on a physical Android or iOS device. Do not use an emulator t
 Native audio candidates require an Expo development client. Verify the config before device QA:
 
 ```bash
+npm run samples:generate-dev
 npm test src/config/__tests__/developmentBuildConfig.test.ts
+npm test src/prototype/__tests__/prototypeSampleManifest.test.ts
 npm run start:dev-client
 ```
 
 For cloud or local native builds, use the `development` profile in `eas.json`. Expo Go is not valid evidence for Day 5 native audio candidate selection.
+
+The generated `dev-synthetic-gayageum-2026-06-08` samples are Week 1 technical fixtures only. They are valid for checking whether a candidate engine can preload and play 12 local WAV files, but they are not final instrument assets and do not prove release sound quality.
 
 ## Device Setup
 
@@ -90,7 +94,7 @@ After exactly one physical-device probe per candidate is recorded, run the hando
 The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, requested candidate, active runtime, missing sample string indexes, session event count, audible fake voice count, command log, audio failure status, and a copyable `Probe draft (estimate only, fake engine counters)` JSON block in the prototype inspector.
 
 1. Open the 12-string prototype screen on a physical device or Expo dev build.
-2. Confirm the inspector separates requested candidate from active runtime. If no complete 12-string sample manifest is bundled, active runtime must remain `fake-prototype`.
+2. Confirm the inspector separates requested candidate from active runtime. If no complete 12-string sample manifest is passed into the host, active runtime must remain `fake-prototype`.
 3. Touch each string once from 1 to 12 and confirm `string_pluck` appears on touch start and `string_release` appears on touch end.
 4. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
 5. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
@@ -102,7 +106,7 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 
 ## Day 5 Full Test Script
 
-Prerequisite: before running this full script, the active `SamplerEngine` candidate must expose tap playback, hold-drag pitch bend, mute or cover gesture, and recording or explicit recording fallback behavior in the device build.
+Prerequisite: before running this full script, the active `SamplerEngine` candidate must expose tap playback, hold-drag pitch bend, mute or cover gesture, and recording or explicit recording fallback behavior in the device build. For fixture-based runs, record sample manifest version `dev-synthetic-gayageum-2026-06-08` and note that the result is engine evidence, not final sound-asset evidence.
 
 1. Open the 12-string prototype screen on a physical device.
 2. Tap each string once from 1 to 12 and verify immediate sound response.
