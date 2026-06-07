@@ -14,6 +14,7 @@ Use this document when validating whether `expo-audio` can cover basic playback 
 | --- | --- |
 | `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, pluck playback, bend approximation, mute/release mapping, and recording probe lifecycle. |
 | `src/audio/expoAudioRuntime.ts` | Only runtime bridge that imports `expo-audio`. Keeps UI and domain code independent from the concrete library and reuses the SDK source resolver and recording option normalizer. |
+| `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods and reports unsupported, failed, recording, or captured states without breaking session fallback. |
 | `src/audio/__tests__/expoAudioSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, playback controls, bend/mute/release mapping, and recording probe lifecycle. |
 | `src/audio/__tests__/expoAudioRuntime.test.ts` | Mocked package-delegation test for the installed `expo-audio` API surface. |
 
@@ -24,6 +25,7 @@ Run before opening a device build:
 ```bash
 npm run samples:generate-dev
 npm test src/config/__tests__/developmentBuildConfig.test.ts
+npm test src/prototype/__tests__/prototypeRecordingProbeController.test.ts
 npm test src/prototype/__tests__/prototypeSampleManifest.test.ts
 npm test src/audio/__tests__/expoAudioSamplerEngine.test.ts
 npm test src/audio/__tests__/expoAudioRuntime.test.ts
@@ -52,7 +54,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 2. Preload the manifest through `ExpoAudioSamplerEngine.preload()` and confirm the inspector reaches `native_candidate_ready`.
 3. Trigger one `string_pluck` event and confirm immediate audible playback.
 4. Trigger 12 sequential `glissando_step` events and confirm every string produces a sound.
-5. Call `startRecordingProbe(10)`, perform a short interaction, then call `stopRecordingProbe()`.
+5. Press `Rec 10s`, perform a short interaction, then press `Stop Rec`.
 6. Record the returned `capturedSeconds` and `recordingUri`.
 
 ## Result Table

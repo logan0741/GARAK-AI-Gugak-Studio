@@ -26,6 +26,12 @@ import {
   formatPrototypeProbeDraftForInspector,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
+import {
+  PrototypeRecordingProbeStartResult,
+  PrototypeRecordingProbeStopResult,
+  startPrototypeRecordingProbe,
+  stopPrototypeRecordingProbe,
+} from './prototypeRecordingProbeController';
 import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
 import {
   createPrototypeSamplerEngineHost,
@@ -43,11 +49,17 @@ const PRIMARY_POINTER_ID = 'primary-touch';
 const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api';
 const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
 const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
+const RECORDING_PROBE_SECONDS = 10;
 
 type NativeCandidateLoadState = {
   candidate: AudioEngineCandidateId;
   state: PrototypeNativeCandidateState;
 };
+
+type RecordingProbeUiState =
+  | { status: 'idle' }
+  | PrototypeRecordingProbeStartResult
+  | PrototypeRecordingProbeStopResult;
 
 export function GayageumPrototypeScreen() {
   const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
@@ -105,6 +117,12 @@ export function GayageumPrototypeScreen() {
   const engine = engineHost.engine;
   const engineRef = useRef(engine);
   engineRef.current = engine;
+  const [recordingProbeState, setRecordingProbeState] = useState<RecordingProbeUiState>({
+    status: 'idle',
+  });
+  useEffect(() => {
+    setRecordingProbeState({ status: 'idle' });
+  }, [engineHost.activeRuntime, engineHost.requestedCandidate, engineHost.status]);
   const [instrumentHeight, setInstrumentHeight] = useState(FALLBACK_INSTRUMENT_HEIGHT);
   const touchModel = useMemo(
     () =>
@@ -169,6 +187,16 @@ export function GayageumPrototypeScreen() {
     });
 
     applyPerformanceEvents(events);
+  }
+
+  async function handleStartRecordingProbe() {
+    const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
+    setRecordingProbeState(result);
+  }
+
+  async function handleStopRecordingProbe() {
+    const result = await stopPrototypeRecordingProbe(engineRef.current);
+    setRecordingProbeState(result);
   }
 
   function handleTouchFrame(phase: TouchFrame['phase'], event: GestureResponderEvent, gestureState: PanResponderGestureState) {
@@ -247,6 +275,25 @@ export function GayageumPrototypeScreen() {
         ))}
       </View>
 
+      <View style={styles.recordingControls}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Start 10 second recording probe"
+          onPress={handleStartRecordingProbe}
+          style={styles.recordingButton}
+        >
+          <Text style={styles.recordingButtonText}>Rec 10s</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Stop recording probe"
+          onPress={handleStopRecordingProbe}
+          style={[styles.recordingButton, styles.recordingStopButton]}
+        >
+          <Text style={styles.recordingButtonText}>Stop Rec</Text>
+        </Pressable>
+      </View>
+
       <View
         {...panResponder.panHandlers}
         onLayout={(event) => setInstrumentHeight(event.nativeEvent.layout.height)}
@@ -274,6 +321,9 @@ export function GayageumPrototypeScreen() {
           Manifest version: {engineHost.manifestVersion ?? 'none'}
         </Text>
         <Text style={styles.inspectorText}>Native preload: {formatNativePreloadStatus(engineHost)}</Text>
+        <Text style={styles.inspectorText}>
+          Recording probe: {formatRecordingProbeState(recordingProbeState)}
+        </Text>
         <Text style={styles.inspectorText}>
           Missing sample strings: {engineHost.missingStringIndexes.join(', ') || 'none'}
         </Text>
@@ -336,6 +386,27 @@ function formatNativePreloadStatus(host: {
   return 'not started';
 }
 
+function formatRecordingProbeState(state: RecordingProbeUiState): string {
+  switch (state.status) {
+    case 'idle':
+      return 'idle';
+    case 'recording':
+      return `recording ${state.requestedDurationSeconds}s`;
+    case 'captured':
+      return `captured ${state.capturedSeconds}s ${state.recordingUri ?? 'no uri'}`;
+    case 'unsupported':
+      return state.reason;
+    case 'failed':
+      return `failed: ${state.errorMessage}`;
+    default:
+      return assertNever(state);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled recording probe state: ${JSON.stringify(value)}`);
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -381,6 +452,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  recordingControls: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   candidateButton: {
     alignItems: 'center',
     borderColor: '#80b8aa',
@@ -401,6 +476,23 @@ const styles = StyleSheet.create({
   },
   candidateButtonTextSelected: {
     color: '#101418',
+  },
+  recordingButton: {
+    alignItems: 'center',
+    backgroundColor: '#80b8aa',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 36,
+    minWidth: 96,
+    paddingHorizontal: 12,
+  },
+  recordingStopButton: {
+    backgroundColor: '#b55d4c',
+  },
+  recordingButtonText: {
+    color: '#101418',
+    fontSize: 12,
+    fontWeight: '700',
   },
   instrument: {
     backgroundColor: '#1c2320',
