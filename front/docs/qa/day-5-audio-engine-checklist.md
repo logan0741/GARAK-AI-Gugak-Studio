@@ -70,7 +70,7 @@ Decision mapping:
 | `FAIL` | At least one core criterion, preload, or session fallback fails. |
 | `NO_GO` | Fewer than two core audio criteria pass. |
 
-After exactly one physical-device probe per candidate is recorded, run the handoff object through `src/audio/audioEngineProbeHandoff.ts`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
+After exactly one physical-device probe per candidate is recorded, run the handoff object through `npm run qa:day5-audio -- <probe-record.json>`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
 
 ## Current Prototype Smoke Test
 
