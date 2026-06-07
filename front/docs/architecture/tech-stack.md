@@ -185,3 +185,7 @@ This section supersedes the package-version rows in section 6 when they conflict
 Audio engine comparison must use `src/audio/audioEngineEvaluation.ts` and the Day 5 QA checklist before selecting the final `SamplerEngine` implementation.
 
 Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
+
+Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/expoAudioSamplerEngine.ts` and is tested through a port-injected runtime so domain, session, gesture, and prototype controller code do not depend on the concrete audio package.
+
+The Week 1 `expo-audio` runtime resolves/downloads sources before creating players and normalizes recording options through the same SDK helpers used by `useAudioRecorder`. This avoids reporting preload success before a playable URI exists and keeps the 10-second recording probe closer to the native path used by Expo.
