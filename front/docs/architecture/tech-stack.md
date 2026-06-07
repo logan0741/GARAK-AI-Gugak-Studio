@@ -191,3 +191,5 @@ Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`
 The Week 1 `expo-audio` runtime resolves/downloads sources before creating players and normalizes recording options through the same SDK helpers used by `useAudioRecorder`. This avoids reporting preload success before a playable URI exists and keeps the 10-second recording probe closer to the native path used by Expo.
 
 Candidate B `react-native-audio-api` imports are isolated in `src/audio/reactNativeAudioApiRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/reactNativeAudioApiSamplerEngine.ts`: it decodes `SampleAssetManifest.fileUri` values into reusable `AudioBuffer` objects, creates a fresh `AudioBufferSourceNode` per pluck/glissando step, routes each voice through `BiquadFilterNode -> GainNode -> destination`, and applies pitch bend through `detune` automation.
+
+Day 4 touch validation uses `src/interaction/touchModel.ts` as the raw-touch boundary. It maps `PanResponder` touch frames into `PerformanceEvent[]` through `GestureMapper`, keeping UI coordinates out of the domain, session, and audio engine layers.

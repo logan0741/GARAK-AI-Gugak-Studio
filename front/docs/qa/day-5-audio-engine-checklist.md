@@ -7,6 +7,7 @@ Related candidate smoke checks:
 
 - Candidate A `expo-audio`: `docs/qa/day-2-expo-audio-smoke.md`
 - Candidate B `react-native-audio-api`: `docs/qa/day-3-react-native-audio-api-smoke.md`
+- Touch model: `docs/qa/day-4-touch-model-smoke.md`
 
 Use this checklist on a physical Android or iOS device. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
 
@@ -68,14 +69,16 @@ Decision mapping:
 
 ## Current Prototype Smoke Test
 
-The current branch provides tap, full-string glissando trigger, session event count, active voice count, command log, and audio failure status in the prototype inspector.
+The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, session event count, active voice count, command log, and audio failure status in the prototype inspector.
 
 1. Open the 12-string prototype screen on a physical device or Expo dev build.
-2. Tap each string once from 1 to 12 and confirm the event count increments by one per tap.
-3. Press the glissando control and confirm the event count increments by 12.
-4. Confirm the inspector shows `string_pluck` or `glissando_step` as the latest event.
-5. Confirm active voice count grows and respects the fake engine voice budget.
-6. Confirm audio status remains `ok` while the fake engine handles events.
+2. Touch each string once from 1 to 12 and confirm `string_pluck` appears on touch start and `string_release` appears on touch end.
+3. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
+4. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
+5. Use a broad or multi-touch contact and confirm `string_mute` appears.
+6. Press the glissando control and confirm the event count increments by 12.
+7. Confirm active voice count grows and respects the fake engine voice budget.
+8. Confirm audio status remains `ok` while the fake engine handles events.
 
 ## Day 5 Full Test Script
 
