@@ -22,6 +22,7 @@ Use this document when validating whether `expo-audio` can cover basic playback 
 Run before opening a device build:
 
 ```bash
+npm test src/config/__tests__/developmentBuildConfig.test.ts
 npm test src/audio/__tests__/expoAudioSamplerEngine.test.ts
 npm test src/audio/__tests__/expoAudioRuntime.test.ts
 npm run typecheck
@@ -32,6 +33,14 @@ Expected result: all commands exit 0.
 ## Device Smoke Procedure
 
 Prerequisite: add local placeholder or licensed gayageum sample files and resolve their `SampleAssetManifest.fileUri` values before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks.
+
+Use a development client, not Expo Go, because this candidate uses native audio modules and microphone permissions:
+
+```bash
+npm run start:dev-client
+```
+
+For an EAS development build, use the `development` profile in `eas.json`.
 
 1. Build or launch an Expo dev build on a physical device.
 2. Preload the manifest through `ExpoAudioSamplerEngine.preload()`.

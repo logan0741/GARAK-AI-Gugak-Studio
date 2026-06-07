@@ -13,6 +13,17 @@ Related candidate smoke checks:
 
 Use this checklist on a physical Android or iOS device. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
 
+## Development Client Setup
+
+Native audio candidates require an Expo development client. Verify the config before device QA:
+
+```bash
+npm test src/config/__tests__/developmentBuildConfig.test.ts
+npm run start:dev-client
+```
+
+For cloud or local native builds, use the `development` profile in `eas.json`. Expo Go is not valid evidence for Day 5 native audio candidate selection.
+
 ## Device Setup
 
 | Field | Value |
