@@ -16,9 +16,11 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/audio/audioEngineProbeRecord.ts` | Validates a manual QA probe record before building the Day 5 decision record. |
 | `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing. |
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
+| `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
 | `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
 | `src/audio/__tests__/audioEngineDecisionSummary.test.ts` | Verifies selected and incomplete decision summaries do not imply the wrong engine state. |
+| `src/audio/__tests__/audioEngineProbeHandoff.test.ts` | Verifies invalid handoffs do not generate decision summaries and valid handoffs do. |
 
 ## Required Inputs
 
@@ -60,7 +62,7 @@ Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should 
 
 Use `docs/qa/day-5-audio-engine-probes.example.json` as the starting shape for a manual QA handoff. Keep `evidenceSource: 'estimate'` until the values have been measured on a physical Android or iOS device. After physical-device measurement, each required candidate should appear once with `evidenceSource: 'physical-device'`.
 
-Before publishing the Day 5 record, parse the handoff object through `src/audio/audioEngineProbeRecord.ts`, then build the decision record from the parsed result. Format the result with `src/audio/audioEngineDecisionSummary.ts` when copying the decision into a review note, handoff, or final QA log. Do not bypass this parser when moving values from QA notes into the final Day 5 decision.
+Before publishing the Day 5 record, run the handoff object through `src/audio/audioEngineProbeHandoff.ts`. It uses the parser, decision record, and summary formatter in order, so invalid probe records produce error output instead of a misleading engine decision. Do not bypass this handoff path when moving values from QA notes into the final Day 5 decision.
 
 ## Status Rules
 
@@ -78,6 +80,7 @@ Run before publishing a Day 5 record:
 npm test src/audio/__tests__/audioEngineDecisionRecord.test.ts
 npm test src/audio/__tests__/audioEngineProbeRecord.test.ts
 npm test src/audio/__tests__/audioEngineDecisionSummary.test.ts
+npm test src/audio/__tests__/audioEngineProbeHandoff.test.ts
 npm run typecheck
 ```
 
