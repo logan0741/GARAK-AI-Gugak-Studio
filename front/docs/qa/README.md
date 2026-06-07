@@ -1,18 +1,24 @@
 # QA
 
-이 디렉터리는 수동 검증 체크리스트와 실제 기기 QA 결과를 보관한다.
+This folder owns manual validation checklists and physical-device QA handoffs.
 
-MVP에서 가장 중요한 QA는 오디오 품질이다. 에뮬레이터는 터치-발음 지연과 오디오 끊김 판정에 사용하지 않는다.
+The most important MVP QA area is audio and touch validation. Unit tests can prove data shape and boundary behavior, but they cannot prove touch-to-sound latency, dropout, click noise, or pitch-bend quality.
 
-Day 5 오디오 엔진 판정값은 `day-5-audio-engine-probes.example.json`의 shape를 따라 후보별 probe record로 옮긴다. 최종 선택에 쓰는 probe는 `evidenceSource: 'physical-device'`여야 하며, `npm run qa:day5-audio -- <probe-record.json>` 경로로 검증과 decision summary 생성을 함께 수행한다.
+Day 5 audio-engine values must be moved into a candidate probe record that follows `day-5-audio-engine-probes.example.json`. Final-selection probes must use `evidenceSource: 'physical-device'`, and the record must be validated with:
+
+```bash
+npm run qa:day5-audio -- <probe-record.json>
+```
+
+`src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine.
 
 ## Required QA Areas
 
-| 영역 | 기준 |
+| Area | Standard |
 | --- | --- |
-| Touch-to-sound latency | 실제 기기 기준 목표 50ms 이하 |
-| Polyphony | 최소 8개 voice 동시 재생 |
-| Pitch bend | 클릭 노이즈 없는 연속 pitch 변화 |
-| Glissando | 12현 스와이프 시 입력 누락 없음 |
-| Mute | 지음 후 자연스러운 release 감쇠 |
-| Session fallback | 녹음 실패 시에도 이벤트 세션 보존 |
+| Touch-to-sound latency | Physical-device target <= 50 ms |
+| Polyphony | At least 8 simultaneous voices |
+| Pitch bend | Continuous pitch change without click noise |
+| Glissando | 12-string swipe has no missing input |
+| Mute | Ji-eum release decays naturally |
+| Session fallback | Event session is preserved if audio capture fails |

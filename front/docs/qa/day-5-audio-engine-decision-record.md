@@ -13,11 +13,13 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | File | Responsibility |
 | --- | --- |
 | `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria. |
+| `src/audio/audioEngineProbeDraft.ts` | Creates `estimate` probe drafts from observed QA values before a tester promotes measured values into a physical-device handoff. Draft output is not final-selection evidence. |
 | `src/audio/audioEngineProbeRecord.ts` | Validates a manual QA probe record before building the Day 5 decision record. |
 | `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing. |
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
 | `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
 | `scripts/day5-audio-engine-handoff.ts` | Node-only QA command entry point used by `npm run qa:day5-audio -- <probe-record.json>`. |
+| `src/audio/__tests__/audioEngineProbeDraft.test.ts` | Verifies draft probes stay `estimate`, count triggered glissando strings, and can be wrapped in a probe record. |
 | `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
 | `src/audio/__tests__/audioEngineDecisionSummary.test.ts` | Verifies selected and incomplete decision summaries do not imply the wrong engine state. |
@@ -64,6 +66,8 @@ Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should 
 
 Use `docs/qa/day-5-audio-engine-probes.example.json` as the starting shape for a manual QA handoff. Keep `evidenceSource: 'estimate'` until the values have been measured on a physical Android or iOS device. After physical-device measurement, each required candidate should appear once with `evidenceSource: 'physical-device'`.
 
+If a device smoke harness collects partial observations first, it may use `createAudioEngineProbeDraft()` to format those observations into the same shape. Drafts always use `evidenceSource: 'estimate'`; promote a draft to `physical-device` only after the tester has confirmed the values on the physical device and checked audible quality fields such as pitch-bend smoothness and mute release cleanliness.
+
 Before publishing the Day 5 record, run the QA command entry point:
 
 ```bash
@@ -86,6 +90,7 @@ Run before publishing a Day 5 record:
 
 ```bash
 npm test src/audio/__tests__/audioEngineDecisionRecord.test.ts
+npm test src/audio/__tests__/audioEngineProbeDraft.test.ts
 npm test src/audio/__tests__/audioEngineProbeRecord.test.ts
 npm test src/audio/__tests__/audioEngineDecisionSummary.test.ts
 npm test src/audio/__tests__/audioEngineProbeHandoff.test.ts

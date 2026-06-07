@@ -44,6 +44,8 @@ Use this checklist on a physical Android or iOS device. Do not use an emulator t
 
 After the physical-device test, transfer the measured values into the same shape used by `src/audio/audioEngineEvaluation.ts`.
 
+During rehearsal, `src/audio/audioEngineProbeDraft.ts` can create an `estimate` draft from observed values. That draft is useful for checking JSON shape and glissando counts, but it does not satisfy the Day 5 final gate. Only a tester-reviewed probe with `evidenceSource: 'physical-device'` counts.
+
 ```ts
 {
   candidate: 'react-native-audio-api' | 'expo-audio',
