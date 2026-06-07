@@ -28,18 +28,15 @@ test('points every dev sample manifest entry at a local wav fixture', () => {
   }
 });
 
-test('allows the prototype host to become native-candidate-ready with the dev sample manifest', () => {
+test('allows the prototype host to become native-candidate-ready after dev sample preload', () => {
   const nativeEngine = { handleEvent: () => undefined };
 
   const host = createPrototypeSamplerEngineHost({
     requestedCandidate: 'react-native-audio-api',
     manifest: prototypeGayageumSampleManifest,
+    nativeCandidate: { status: 'ready', engine: nativeEngine },
     createFakeEngine: () => {
       throw new Error('fake engine should not be selected when all dev samples exist');
-    },
-    createNativeEngine: ({ manifest }) => {
-      expect(manifest.version).toBe('dev-synthetic-gayageum-2026-06-08');
-      return nativeEngine;
     },
   });
 
@@ -48,4 +45,5 @@ test('allows the prototype host to become native-candidate-ready with the dev sa
     status: 'native_candidate_ready',
     missingStringIndexes: [],
   });
+  expect(host.manifestVersion).toBe('dev-synthetic-gayageum-2026-06-08');
 });

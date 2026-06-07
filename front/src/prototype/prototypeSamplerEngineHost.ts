@@ -4,6 +4,11 @@ import { SampleAssetManifest } from '../domain/sampleManifest';
 
 export type PrototypeAudioRuntime = 'fake-prototype' | AudioEngineCandidateId;
 
+export type PrototypeNativeCandidateState =
+  | { status: 'preloading' }
+  | { status: 'ready'; engine: SamplerEngine }
+  | { status: 'failed'; errorMessage: string };
+
 export type PrototypeSamplerEngineHost =
   | {
       activeRuntime: 'fake-prototype';
@@ -12,6 +17,23 @@ export type PrototypeSamplerEngineHost =
       manifestVersion?: string;
       missingStringIndexes: number[];
       status: 'missing_sample_manifest';
+    }
+  | {
+      activeRuntime: 'fake-prototype';
+      requestedCandidate: AudioEngineCandidateId;
+      engine: SamplerEngine;
+      manifestVersion: string;
+      missingStringIndexes: [];
+      status: 'native_candidate_preloading';
+    }
+  | {
+      activeRuntime: 'fake-prototype';
+      requestedCandidate: AudioEngineCandidateId;
+      engine: SamplerEngine;
+      manifestVersion: string;
+      missingStringIndexes: [];
+      preloadErrorMessage: string;
+      status: 'native_candidate_failed';
     }
   | {
       activeRuntime: AudioEngineCandidateId;
@@ -25,11 +47,8 @@ export type PrototypeSamplerEngineHost =
 export type PrototypeSamplerEngineHostInput = {
   requestedCandidate: AudioEngineCandidateId;
   manifest?: SampleAssetManifest;
+  nativeCandidate?: PrototypeNativeCandidateState;
   createFakeEngine(): SamplerEngine;
-  createNativeEngine(input: {
-    candidate: AudioEngineCandidateId;
-    manifest: SampleAssetManifest;
-  }): SamplerEngine;
 };
 
 const REQUIRED_STRING_INDEXES = Array.from({ length: 12 }, (_, index) => index + 1);
@@ -50,13 +69,33 @@ export function createPrototypeSamplerEngineHost(
     };
   }
 
+  if (!input.nativeCandidate || input.nativeCandidate.status === 'preloading') {
+    return {
+      activeRuntime: 'fake-prototype',
+      requestedCandidate: input.requestedCandidate,
+      engine: input.createFakeEngine(),
+      manifestVersion: input.manifest.version,
+      missingStringIndexes: [],
+      status: 'native_candidate_preloading',
+    };
+  }
+
+  if (input.nativeCandidate.status === 'failed') {
+    return {
+      activeRuntime: 'fake-prototype',
+      requestedCandidate: input.requestedCandidate,
+      engine: input.createFakeEngine(),
+      manifestVersion: input.manifest.version,
+      missingStringIndexes: [],
+      preloadErrorMessage: input.nativeCandidate.errorMessage,
+      status: 'native_candidate_failed',
+    };
+  }
+
   return {
     activeRuntime: input.requestedCandidate,
     requestedCandidate: input.requestedCandidate,
-    engine: input.createNativeEngine({
-      candidate: input.requestedCandidate,
-      manifest: input.manifest,
-    }),
+    engine: input.nativeCandidate.engine,
     manifestVersion: input.manifest.version,
     missingStringIndexes: [],
     status: 'native_candidate_ready',

@@ -37,10 +37,8 @@ test('keeps the fake prototype engine when a native candidate has no complete ma
       version: 'partial',
       assets: completeManifest.assets.slice(0, 11),
     },
+    nativeCandidate: { status: 'ready', engine: { handleEvent: () => undefined } },
     createFakeEngine: () => new FakeSamplerEngine(),
-    createNativeEngine: () => {
-      throw new Error('native factory should not run without all 12 samples');
-    },
   });
 
   expect(host).toMatchObject({
@@ -53,19 +51,54 @@ test('keeps the fake prototype engine when a native candidate has no complete ma
   expect(host.engine).toBeInstanceOf(FakeSamplerEngine);
 });
 
-test('creates a native candidate host when all 12 sample strings are present', () => {
+test('keeps the fake prototype engine while a complete native candidate is preloading', () => {
+  const fakeEngine = new FakeSamplerEngine();
+  const host = createPrototypeSamplerEngineHost({
+    requestedCandidate: 'react-native-audio-api',
+    manifest: completeManifest,
+    nativeCandidate: { status: 'preloading' },
+    createFakeEngine: () => fakeEngine,
+  });
+
+  expect(host).toMatchObject({
+    activeRuntime: 'fake-prototype',
+    requestedCandidate: 'react-native-audio-api',
+    manifestVersion: 'test-12-string-manifest',
+    status: 'native_candidate_preloading',
+    missingStringIndexes: [],
+  });
+  expect(host.engine).toBe(fakeEngine);
+});
+
+test('keeps the fake prototype engine when native candidate preload fails', () => {
+  const fakeEngine = new FakeSamplerEngine();
+  const host = createPrototypeSamplerEngineHost({
+    requestedCandidate: 'expo-audio',
+    manifest: completeManifest,
+    nativeCandidate: { status: 'failed', errorMessage: 'native module unavailable' },
+    createFakeEngine: () => fakeEngine,
+  });
+
+  expect(host).toMatchObject({
+    activeRuntime: 'fake-prototype',
+    requestedCandidate: 'expo-audio',
+    manifestVersion: 'test-12-string-manifest',
+    status: 'native_candidate_failed',
+    missingStringIndexes: [],
+    preloadErrorMessage: 'native module unavailable',
+  });
+  expect(host.engine).toBe(fakeEngine);
+});
+
+test('activates a native candidate host only after preload is ready', () => {
   const nativeEngine: SamplerEngine = {
     handleEvent: () => undefined,
   };
   const host = createPrototypeSamplerEngineHost({
     requestedCandidate: 'expo-audio',
     manifest: completeManifest,
+    nativeCandidate: { status: 'ready', engine: nativeEngine },
     createFakeEngine: () => new FakeSamplerEngine(),
-    createNativeEngine: ({ candidate, manifest }) => {
-      expect(candidate).toBe('expo-audio');
-      expect(manifest.version).toBe('test-12-string-manifest');
-      return nativeEngine;
-    },
   });
 
   expect(host).toEqual({

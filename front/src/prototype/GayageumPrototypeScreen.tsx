@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   GestureResponderEvent,
   PanResponder,
@@ -26,7 +26,15 @@ import {
   formatPrototypeProbeDraftForInspector,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
-import { createPrototypeSamplerEngineHost } from './prototypeSamplerEngineHost';
+import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
+import {
+  createPrototypeSamplerEngineHost,
+  PrototypeNativeCandidateState,
+} from './prototypeSamplerEngineHost';
+import {
+  PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
+  prototypeGayageumSampleManifest,
+} from './prototypeSampleManifest';
 
 const STRING_COUNT = 12;
 const ALL_STRINGS = Array.from({ length: STRING_COUNT }, (_, index) => index + 1);
@@ -36,18 +44,63 @@ const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api'
 const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
 const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
 
+type NativeCandidateLoadState = {
+  candidate: AudioEngineCandidateId;
+  state: PrototypeNativeCandidateState;
+};
+
 export function GayageumPrototypeScreen() {
   const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
+  const [nativeCandidateLoadState, setNativeCandidateLoadState] = useState<NativeCandidateLoadState>(() => ({
+    candidate: DEFAULT_PROBE_CANDIDATE,
+    state: { status: 'preloading' },
+  }));
+  useEffect(() => {
+    let cancelled = false;
+
+    setNativeCandidateLoadState({
+      candidate: probeCandidate,
+      state: { status: 'preloading' },
+    });
+
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: probeCandidate,
+      manifest: prototypeGayageumSampleManifest,
+    })
+      .then((engine) => {
+        if (!cancelled) {
+          setNativeCandidateLoadState({
+            candidate: probeCandidate,
+            state: { status: 'ready', engine },
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setNativeCandidateLoadState({
+            candidate: probeCandidate,
+            state: { status: 'failed', errorMessage: getErrorMessage(error) },
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [probeCandidate]);
+  const nativeCandidateState =
+    nativeCandidateLoadState.candidate === probeCandidate
+      ? nativeCandidateLoadState.state
+      : ({ status: 'preloading' } satisfies PrototypeNativeCandidateState);
   const engineHost = useMemo(
     () =>
       createPrototypeSamplerEngineHost({
         requestedCandidate: probeCandidate,
+        manifest: prototypeGayageumSampleManifest,
+        nativeCandidate: nativeCandidateState,
         createFakeEngine: () => new FakeSamplerEngine(),
-        createNativeEngine: () => {
-          throw new Error('Native audio candidate requires a complete SampleAssetManifest');
-        },
       }),
-    [probeCandidate],
+    [nativeCandidateState, probeCandidate],
   );
   const engine = engineHost.engine;
   const engineRef = useRef(engine);
@@ -68,7 +121,7 @@ export function GayageumPrototypeScreen() {
     createEmptySession({
       id: 'local-prototype-session',
       createdAt: new Date().toISOString(),
-      sampleAssetManifestVersion: 'prototype-empty-manifest',
+      sampleAssetManifestVersion: PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
     }),
   );
   const [qaSnapshot, setQaSnapshot] = useState(() =>
@@ -218,6 +271,10 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorText}>Active runtime: {engineHost.activeRuntime}</Text>
         <Text style={styles.inspectorText}>Runtime status: {engineHost.status}</Text>
         <Text style={styles.inspectorText}>
+          Manifest version: {engineHost.manifestVersion ?? 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>Native preload: {formatNativePreloadStatus(engineHost)}</Text>
+        <Text style={styles.inspectorText}>
           Missing sample strings: {engineHost.missingStringIndexes.join(', ') || 'none'}
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
@@ -254,6 +311,29 @@ function getFakeEngineSnapshot(engine: unknown): {
     activeVoices: [],
     commands: [],
   };
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function formatNativePreloadStatus(host: {
+  status: string;
+  preloadErrorMessage?: string;
+}): string {
+  if (host.status === 'native_candidate_failed') {
+    return `failed: ${host.preloadErrorMessage ?? 'unknown error'}`;
+  }
+
+  if (host.status === 'native_candidate_ready') {
+    return 'ready';
+  }
+
+  if (host.status === 'native_candidate_preloading') {
+    return 'preloading';
+  }
+
+  return 'not started';
 }
 
 const styles = StyleSheet.create({
