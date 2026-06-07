@@ -198,3 +198,5 @@ The Week 1 `expo-audio` runtime resolves/downloads sources before creating playe
 Candidate B `react-native-audio-api` imports are isolated in `src/audio/reactNativeAudioApiRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/reactNativeAudioApiSamplerEngine.ts`: it decodes `SampleAssetManifest.fileUri` values into reusable `AudioBuffer` objects, creates a fresh `AudioBufferSourceNode` per pluck/glissando step, routes each voice through `BiquadFilterNode -> GainNode -> destination`, and applies pitch bend through `detune` automation.
 
 Day 4 touch validation uses `src/interaction/touchModel.ts` as the raw-touch boundary. It maps `PanResponder` touch frames into `PerformanceEvent[]` through `GestureMapper`, keeping UI coordinates out of the domain, session, and audio engine layers.
+
+The prototype runtime host lives in `src/prototype/prototypeSamplerEngineHost.ts`. It may target `expo-audio` or `react-native-audio-api`, but it must keep the active runtime on `fake-prototype` until a complete 12-string `SampleAssetManifest` is available. This prevents fake-engine counters from being mistaken for native candidate evidence.

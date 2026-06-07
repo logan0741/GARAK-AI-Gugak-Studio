@@ -32,7 +32,7 @@ Expected result: all commands exit 0.
 
 ## Device Smoke Procedure
 
-Prerequisite: add local placeholder or licensed gayageum sample files and resolve their `SampleAssetManifest.fileUri` values before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks.
+Prerequisite: add 12 local placeholder or licensed gayageum sample files and resolve every `SampleAssetManifest.fileUri` before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes.
 
 Use a development client, not Expo Go, because this candidate uses native audio modules and microphone permissions:
 

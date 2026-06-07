@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   GestureResponderEvent,
   PanResponder,
@@ -11,13 +11,14 @@ import {
 } from 'react-native';
 import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import { FakeSamplerEngine } from '../audio/fakeSamplerEngine';
+import { VoiceState } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
 import { createEmptySession } from '../domain/session';
 import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
-  safelyDispatchEventsToEngine,
+  safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
 import {
   countPrototypeAudibleVoices,
@@ -25,6 +26,7 @@ import {
   formatPrototypeProbeDraftForInspector,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
+import { createPrototypeSamplerEngineHost } from './prototypeSamplerEngineHost';
 
 const STRING_COUNT = 12;
 const ALL_STRINGS = Array.from({ length: STRING_COUNT }, (_, index) => index + 1);
@@ -35,8 +37,21 @@ const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
 const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
 
 export function GayageumPrototypeScreen() {
-  const engine = useMemo(() => new FakeSamplerEngine(), []);
   const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
+  const engineHost = useMemo(
+    () =>
+      createPrototypeSamplerEngineHost({
+        requestedCandidate: probeCandidate,
+        createFakeEngine: () => new FakeSamplerEngine(),
+        createNativeEngine: () => {
+          throw new Error('Native audio candidate requires a complete SampleAssetManifest');
+        },
+      }),
+    [probeCandidate],
+  );
+  const engine = engineHost.engine;
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
   const [instrumentHeight, setInstrumentHeight] = useState(FALLBACK_INSTRUMENT_HEIGHT);
   const touchModel = useMemo(
     () =>
@@ -70,11 +85,12 @@ export function GayageumPrototypeScreen() {
       return;
     }
     setSession((current) => appendEventsToSession(current, events));
-    const result = safelyDispatchEventsToEngine(engine, events);
+    const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
+    const currentEngine = engineRef.current;
     setAudioError(result.ok ? undefined : result.errorMessage);
     setQaSnapshot((current) =>
       updatePrototypeQaSnapshot(current, {
-        activeVoiceCount: countPrototypeAudibleVoices(engine.activeVoices),
+        activeVoiceCount: countPrototypeAudibleVoices(getFakeEngineSnapshot(currentEngine).activeVoices),
         audioDispatchOk: result.ok,
         events,
         measuredAt: new Date().toISOString(),
@@ -131,9 +147,10 @@ export function GayageumPrototypeScreen() {
   );
 
   const latestEvent: PerformanceEvent | undefined = session.events.at(-1);
-  const activeVoices = engine.activeVoices;
+  const fakeEngineSnapshot = getFakeEngineSnapshot(engine);
+  const activeVoices = fakeEngineSnapshot.activeVoices;
   const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
-  const commands = engine.commands;
+  const commands = fakeEngineSnapshot.commands;
   const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
 
   return (
@@ -196,6 +213,12 @@ export function GayageumPrototypeScreen() {
 
       <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent}>
         <Text style={styles.inspectorTitle}>Prototype Inspector</Text>
+        <Text style={styles.inspectorText}>Requested candidate: {engineHost.requestedCandidate}</Text>
+        <Text style={styles.inspectorText}>Active runtime: {engineHost.activeRuntime}</Text>
+        <Text style={styles.inspectorText}>Runtime status: {engineHost.status}</Text>
+        <Text style={styles.inspectorText}>
+          Missing sample strings: {engineHost.missingStringIndexes.join(', ') || 'none'}
+        </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
@@ -213,6 +236,23 @@ export function GayageumPrototypeScreen() {
 function getTouchForce(event: GestureResponderEvent): number | undefined {
   const nativeEvent = event.nativeEvent as GestureResponderEvent['nativeEvent'] & { force?: unknown };
   return typeof nativeEvent.force === 'number' ? nativeEvent.force : undefined;
+}
+
+function getFakeEngineSnapshot(engine: unknown): {
+  activeVoices: VoiceState[];
+  commands: string[];
+} {
+  if (engine instanceof FakeSamplerEngine) {
+    return {
+      activeVoices: engine.activeVoices,
+      commands: engine.commands,
+    };
+  }
+
+  return {
+    activeVoices: [],
+    commands: [],
+  };
 }
 
 const styles = StyleSheet.create({

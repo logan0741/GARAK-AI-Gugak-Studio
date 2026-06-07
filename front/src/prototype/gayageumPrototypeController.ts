@@ -39,6 +39,13 @@ export function safelyDispatchEventsToEngine(engine: SamplerEngine, events: Perf
   }
 }
 
+export function safelyDispatchEventsToCurrentEngine(
+  engineRef: { current: SamplerEngine },
+  events: PerformanceEvent[],
+): EngineDispatchResult {
+  return safelyDispatchEventsToEngine(engineRef.current, events);
+}
+
 export function appendEventsToSession(session: Session, events: PerformanceEvent[]): Session {
   return events.reduce((current, event) => appendPerformanceEvent(current, event), session);
 }
