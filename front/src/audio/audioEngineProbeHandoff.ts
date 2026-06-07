@@ -4,16 +4,30 @@ import {
   parseAudioEngineProbeRecord,
 } from './audioEngineProbeRecord';
 
-export function formatDay5AudioEngineProbeHandoff(input: unknown): string {
+export type Day5AudioEngineProbeHandoffResult =
+  | { ok: true; output: string }
+  | { ok: false; output: string };
+
+export function buildDay5AudioEngineProbeHandoff(input: unknown): Day5AudioEngineProbeHandoffResult {
   const parseResult = parseAudioEngineProbeRecord(input);
 
   if (!parseResult.ok) {
-    return formatInvalidProbeRecord(parseResult.errors);
+    return {
+      ok: false,
+      output: formatInvalidProbeRecord(parseResult.errors),
+    };
   }
 
-  return formatDay5AudioEngineDecisionSummary(
-    buildDay5AudioEngineDecisionRecordFromProbeRecord(parseResult.record),
-  );
+  return {
+    ok: true,
+    output: formatDay5AudioEngineDecisionSummary(
+      buildDay5AudioEngineDecisionRecordFromProbeRecord(parseResult.record),
+    ),
+  };
+}
+
+export function formatDay5AudioEngineProbeHandoff(input: unknown): string {
+  return buildDay5AudioEngineProbeHandoff(input).output;
 }
 
 function formatInvalidProbeRecord(errors: string[]): string {
