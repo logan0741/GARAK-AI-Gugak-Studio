@@ -13,6 +13,7 @@ export type AudioEngineProbeDraftInput = {
   maxStableVoices?: number;
   pitchBendSmooth?: boolean;
   glissandoEvents?: PerformanceEvent[];
+  glissandoTriggeredStrings?: number;
   muteReleaseClean?: boolean;
   preloadStable?: boolean;
   sessionFallbackPreserved?: boolean;
@@ -28,7 +29,9 @@ export function createAudioEngineProbeDraft(input: AudioEngineProbeDraftInput): 
     touchToSoundLatencyMs: input.touchToSoundLatencyMs ?? 0,
     maxStableVoices: input.maxStableVoices ?? 0,
     pitchBendSmooth: input.pitchBendSmooth ?? false,
-    glissandoTriggeredStrings: countTriggeredGlissandoStrings(input.glissandoEvents ?? []),
+    glissandoTriggeredStrings:
+      input.glissandoTriggeredStrings ??
+      countTriggeredGlissandoStrings(input.glissandoEvents ?? []),
     muteReleaseClean: input.muteReleaseClean ?? false,
     preloadStable: input.preloadStable ?? false,
     sessionFallbackPreserved: input.sessionFallbackPreserved ?? false,
