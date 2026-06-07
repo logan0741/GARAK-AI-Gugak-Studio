@@ -32,6 +32,35 @@ Use this checklist on a physical Android or iOS device. Do not use an emulator t
 | Session fallback | `PerformanceEvent[]` remains saved and replayable if audio capture fails |  |  |
 | Recording possibility | Native path can capture at least 10 seconds of live performance audio, or fallback decision is recorded |  |  |
 
+## Automated Evaluation Record
+
+After the physical-device test, transfer the measured values into the same shape used by `src/audio/audioEngineEvaluation.ts`.
+
+```ts
+{
+  candidate: 'react-native-audio-api' | 'expo-audio',
+  deviceLabel: '',
+  measuredAt: '',
+  touchToSoundLatencyMs: 0,
+  maxStableVoices: 0,
+  pitchBendSmooth: false,
+  glissandoTriggeredStrings: 0,
+  muteReleaseClean: false,
+  preloadStable: false,
+  sessionFallbackPreserved: false,
+  recordingCaptureSeconds: 0,
+}
+```
+
+Decision mapping:
+
+| Decision | Code rule |
+| --- | --- |
+| `PASS` | All hard criteria pass, including at least 10 seconds of recording capture. |
+| `PASS_WITH_LIMITS` | Core loop, preload, and session fallback pass, but recording is under 10 seconds. |
+| `FAIL` | At least one core criterion, preload, or session fallback fails. |
+| `NO_GO` | Fewer than two core audio criteria pass. |
+
 ## Current Prototype Smoke Test
 
 The current branch provides tap, full-string glissando trigger, session event count, active voice count, command log, and audio failure status in the prototype inspector.
@@ -60,9 +89,9 @@ Prerequisite: before running this full script, the active `SamplerEngine` candid
 
 | Decision | Rule |
 | --- | --- |
-| PASS | Tap latency, 8-voice polyphony, pitch bend, glissando, mute, and session fallback all pass. |
-| PASS_WITH_LIMITS | Core loop passes, but recording is unstable. Continue with event-session fallback and document the recording limit. |
-| FAIL | Tap latency, polyphony, pitch bend, glissando, or mute fails. Do not expand into studio features. |
+| PASS | Tap latency, 8-voice polyphony, pitch bend, glissando, mute, preload, session fallback, and at least 10 seconds of recording all pass. |
+| PASS_WITH_LIMITS | Core loop, preload, and session fallback pass, but recording is under 10 seconds. Continue with event-session fallback and document the recording limit. |
+| FAIL | Tap latency, polyphony, pitch bend, glissando, mute, preload, or session fallback fails. Do not expand into studio features. |
 | NO_GO | No candidate engine can support at least two core gestures reliably. Pause Week 2 feature work and run another audio spike. |
 
 ## Failure Log

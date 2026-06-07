@@ -170,3 +170,18 @@ Expo 패키지는 `npx expo install <package>`로 설치해 현재 Expo SDK와 �
   - React Native Audio API: https://docs.swmansion.com/react-native-audio-api/
   - Expo Audio: https://docs.expo.dev/versions/latest/sdk/audio/
   - React Native Skia: https://shopify.github.io/react-native-skia/docs/getting-started/installation/
+
+## 9. Lockfile Correction: Week 1 Audio Candidates
+
+This section supersedes the package-version rows in section 6 when they conflict with `package-lock.json`.
+
+| Package | Locked version | Reason |
+| --- | --- | --- |
+| `expo-audio` | `1.1.1` | Expo SDK 54 bundled playback/recording candidate. Installed with `npx expo install`. |
+| `expo-asset` | `12.0.13` | Required peer for `expo-audio`; pinned to the SDK 54-compatible version. |
+| `react-native-audio-api` | `0.11.7` | Week 1 low-latency sampler candidate. `0.12.2` is held because it asks for `react-native-worklets >= 0.6.0`, while the current Expo SDK 54 scaffold uses `react-native-worklets@0.5.1`. |
+| `react-native-worklets` | `0.5.1` | Expo SDK 54-compatible version brought by the current Expo/Reanimated setup. |
+
+Audio engine comparison must use `src/audio/audioEngineEvaluation.ts` and the Day 5 QA checklist before selecting the final `SamplerEngine` implementation.
+
+Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
