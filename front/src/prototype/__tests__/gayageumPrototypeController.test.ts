@@ -4,6 +4,7 @@ import { createEmptySession } from '../../domain/session';
 import {
   appendEventsToSession,
   dispatchEventsToEngine,
+  safelyDispatchEventsToCurrentEngine,
   safelyDispatchEventsToEngine,
   planGlissando,
   planStringPlay,
@@ -51,6 +52,19 @@ test('returns an audio failure without preventing session event fallback', () =>
 
   expect(result).toEqual({ ok: false, errorMessage: 'native audio failed' });
   expect(next.events).toEqual(events);
+});
+
+test('dispatches to the current engine reference after the engine changes', () => {
+  const staleEngine = new FakeSamplerEngine();
+  const currentEngine = new FakeSamplerEngine();
+  const engineRef = { current: staleEngine };
+  const events = planStringPlay({ nowMs: 100, stringIndex: 3 });
+
+  engineRef.current = currentEngine;
+
+  expect(safelyDispatchEventsToCurrentEngine(engineRef, events)).toEqual({ ok: true });
+  expect(staleEngine.commands).toEqual([]);
+  expect(currentEngine.commands).toEqual(['pluck:string=3:velocity=1']);
 });
 
 test('appends planned events to session in order', () => {
