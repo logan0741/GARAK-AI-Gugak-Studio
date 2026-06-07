@@ -4,7 +4,30 @@
     "slug": "gukak-studio",
     "scheme": "gukakstudio",
     "orientation": "landscape",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow GUKAK STUDIO to record short prototype performances.",
+          "recordAudioAndroid": true,
+          "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "react-native-audio-api",
+        {
+          "iosMicrophonePermission": "Allow GUKAK STUDIO to record short prototype performances.",
+          "iosBackgroundMode": false,
+          "androidForegroundService": false,
+          "androidPermissions": [
+            "android.permission.RECORD_AUDIO",
+            "android.permission.MODIFY_AUDIO_SETTINGS"
+          ]
+        }
+      ]
+    ],
     "android": {
       "package": "com.gukakstudio.prototype"
     },
