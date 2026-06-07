@@ -9,6 +9,7 @@ Related candidate smoke checks:
 - Candidate B `react-native-audio-api`: `docs/qa/day-3-react-native-audio-api-smoke.md`
 - Touch model: `docs/qa/day-4-touch-model-smoke.md`
 - Decision record: `docs/qa/day-5-audio-engine-decision-record.md`
+- Probe record example: `docs/qa/day-5-audio-engine-probes.example.json`
 
 Use this checklist on a physical Android or iOS device. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
 
@@ -69,7 +70,7 @@ Decision mapping:
 | `FAIL` | At least one core criterion, preload, or session fallback fails. |
 | `NO_GO` | Fewer than two core audio criteria pass. |
 
-After exactly one physical-device probe per candidate is recorded, build the Day 5 decision record with `src/audio/audioEngineDecisionRecord.ts`. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
+After exactly one physical-device probe per candidate is recorded, validate the handoff with `src/audio/audioEngineProbeRecord.ts`, then build the Day 5 decision record with `src/audio/audioEngineDecisionRecord.ts`. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
 
 ## Current Prototype Smoke Test
 
