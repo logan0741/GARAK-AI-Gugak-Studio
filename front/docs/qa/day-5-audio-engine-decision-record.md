@@ -13,7 +13,9 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | File | Responsibility |
 | --- | --- |
 | `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria. |
+| `src/audio/audioEngineProbeRecord.ts` | Validates a manual QA probe record before building the Day 5 decision record. |
 | `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing. |
+| `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
 
 ## Required Inputs
@@ -52,6 +54,12 @@ If a required candidate has more than one physical-device probe in a single reco
 
 Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should be reflected in the glissando, pitch bend, mute, and session fallback fields.
 
+## Probe Record Handoff
+
+Use `docs/qa/day-5-audio-engine-probes.example.json` as the starting shape for a manual QA handoff. Keep `evidenceSource: 'estimate'` until the values have been measured on a physical Android or iOS device. After physical-device measurement, each required candidate should appear once with `evidenceSource: 'physical-device'`.
+
+Before publishing the Day 5 record, parse the handoff object through `src/audio/audioEngineProbeRecord.ts`, then build the decision record from the parsed result. Do not bypass this parser when moving values from QA notes into the final Day 5 decision.
+
 ## Status Rules
 
 | Status | Rule |
@@ -66,6 +74,7 @@ Run before publishing a Day 5 record:
 
 ```bash
 npm test src/audio/__tests__/audioEngineDecisionRecord.test.ts
+npm test src/audio/__tests__/audioEngineProbeRecord.test.ts
 npm run typecheck
 ```
 
