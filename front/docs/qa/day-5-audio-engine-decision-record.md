@@ -87,7 +87,7 @@ If a caller bypasses `parseAudioEngineProbeRecord()` and passes an unexpected ca
 
 When a draft is promoted to `physical-device`, `deviceLabel` must be replaced with the tested physical model, for example `Galaxy S24 / Android 15` or `iPhone 15 / iOS 18`. The parser rejects estimate placeholders such as `replace-with-physical-device-model`, `Device / OS`, or `physical device` for physical-device evidence.
 
-Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026`, slash-separated dates, or impossible calendar dates such as `2026-02-31T10:00:00.000Z` are rejected by the parser.
+Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026`, slash-separated dates, or impossible calendar dates such as `2026-02-31T10:00:00.000Z` are rejected by the parser. `generatedAt` must be at or after every probe `measuredAt` timestamp so a final handoff cannot predate the physical-device measurements it contains.
 
 `glissandoTriggeredStrings` is the count of unique strings triggered during a 12-string swipe. It must be an integer from 0 to 12; values above 12 are treated as handoff input errors, not better results.
 
@@ -145,7 +145,7 @@ Before generating the probe record, run the readiness check:
 npm run qa:prototype-handoff-check -- <merged-handoff.json>
 ```
 
-The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps including impossible calendar dates, unexpected sample manifest versions, nullable or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`. The `qa:prototype-probe-record` command reuses the same readiness report and refuses to write output if the handoff is not ready.
+The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps including impossible calendar dates or `generatedAt` values that predate handoff measurements, unexpected sample manifest versions, nullable or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`. The `qa:prototype-probe-record` command reuses the same readiness report and refuses to write output if the handoff is not ready.
 
 `qa:prototype-handoff-check` compares handoff `deviceLabel` values and inspector draft `probeTemplate.deviceLabel` values after trimming whitespace and normalizing slash spacing. For example, `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same physical device; different model names still fail the handoff check.
 

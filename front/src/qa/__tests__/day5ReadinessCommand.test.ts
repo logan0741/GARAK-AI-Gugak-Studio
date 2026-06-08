@@ -423,7 +423,7 @@ function createProbeRecord(input: {
 } = {}) {
   const candidates = input.candidates ?? ['expo-audio', 'react-native-audio-api'];
   return {
-    generatedAt: '2026-06-08T08:00:00.000Z',
+    generatedAt: '2026-06-08T08:10:00.000Z',
     probes: candidates.map((candidate, index) => ({
       candidate,
       evidenceSource: 'physical-device',
