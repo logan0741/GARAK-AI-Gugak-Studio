@@ -63,6 +63,7 @@ test('reports ready handoffs without producing a Day 5 decision', () => {
   expect(stdout.join('\n')).toContain('- Status: READY_FOR_PROBE_RECORD');
   expect(stdout.join('\n')).toContain('- Missing candidates: none');
   expect(stdout.join('\n')).toContain('- Duplicate candidates: none');
+  expect(stdout.join('\n')).toContain('- Device label issues: none');
   expect(stdout.join('\n')).toContain('- Missing measurement fields: none');
   expect(stdout.join('\n')).toContain('- Runtime issues: none');
   expect(stdout.join('\n')).toContain('- Probe record issues: none');
@@ -141,6 +142,44 @@ test('reports duplicate candidate entries before probe record generation', () =>
   expect(stdout.join('\n')).toContain('- Duplicate candidates: expo-audio');
 });
 
+test('reports placeholder inspector draft device labels before probe record generation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['placeholder-device-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio', {}, {
+                deviceLabel: 'replace-with-physical-device-model',
+              }),
+              deviceLabel: 'Pixel 8 / Android 15',
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Device label issues: expo-audio.inspectorDraft.probeTemplate.deviceLabel must name the physical device',
+  );
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
 test('reports generated probe record validation issues before declaring readiness', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -197,6 +236,7 @@ test('returns invalid json errors without exposing a stack trace', () => {
 function createInspectorDraftForCandidate(
   candidate: 'expo-audio' | 'react-native-audio-api',
   runtimeOverride: Partial<PrototypeProbeDraftInspectorModel['observedRuntime']> = {},
+  probeTemplateOverride: Partial<PrototypeProbeDraftInspectorModel['probeTemplate']> = {},
 ): PrototypeProbeDraftInspectorModel {
   return {
     note: 'Estimate draft from fake prototype engine counters. Replace with physical-device candidate measurements before Day 5 handoff.',
@@ -244,6 +284,7 @@ function createInspectorDraftForCandidate(
       recordingCaptureSeconds: null,
       sessionFallbackPreserved: null,
       touchToSoundLatencyMs: null,
+      ...probeTemplateOverride,
     },
   };
 }

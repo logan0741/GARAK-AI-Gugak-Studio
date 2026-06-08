@@ -1,6 +1,7 @@
 import { type AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import { type PhysicalDeviceAudioEngineProbeMeasurements } from '../audio/audioEngineProbeDraft';
 import { parseAudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
+import { isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
 import {
   buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts,
   isPrototypeObservedRuntimeReady,
@@ -15,6 +16,7 @@ type PrototypeHandoffReadinessReport = {
   status: PrototypeHandoffReadinessStatus;
   missingCandidates: AudioEngineCandidateId[];
   duplicateCandidates: AudioEngineCandidateId[];
+  deviceLabelIssues: string[];
   missingMeasurementFields: string[];
   runtimeIssues: string[];
   probeRecordIssues: string[];
@@ -135,18 +137,21 @@ function buildPrototypeHandoffReadinessReport(
   const duplicateCandidates = REQUIRED_CANDIDATES.filter(
     (candidate) => (candidateCounts.get(candidate) ?? 0) > 1,
   );
+  const deviceLabelIssues = collectDeviceLabelIssues(handoff.entries);
   const missingMeasurementFields = collectMissingMeasurementFields(handoff.entries);
   const runtimeIssues = collectRuntimeIssues(handoff.entries);
   const probeRecordIssues = collectProbeRecordIssues({
     handoff,
     missingCandidates,
     duplicateCandidates,
+    deviceLabelIssues,
     missingMeasurementFields,
     runtimeIssues,
   });
   const status =
     missingCandidates.length === 0 &&
     duplicateCandidates.length === 0 &&
+    deviceLabelIssues.length === 0 &&
     missingMeasurementFields.length === 0 &&
     runtimeIssues.length === 0 &&
     probeRecordIssues.length === 0
@@ -157,6 +162,7 @@ function buildPrototypeHandoffReadinessReport(
     status,
     missingCandidates,
     duplicateCandidates,
+    deviceLabelIssues,
     missingMeasurementFields,
     runtimeIssues,
     probeRecordIssues,
@@ -174,6 +180,38 @@ function countCandidates(
   }
 
   return counts;
+}
+
+function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffInput[]): string[] {
+  const issues: string[] = [];
+
+  for (const entry of entries) {
+    const candidate = entry.inspectorDraft.probeTemplate.candidate;
+    const draftDeviceLabel = entry.inspectorDraft.probeTemplate.deviceLabel;
+
+    if (!isPhysicalDeviceLabel(draftDeviceLabel)) {
+      issues.push(
+        `${candidate}.inspectorDraft.probeTemplate.deviceLabel must name the physical device`,
+      );
+      continue;
+    }
+
+    if (entry.deviceLabel !== undefined && !isPhysicalDeviceLabel(entry.deviceLabel)) {
+      issues.push(`${candidate}.deviceLabel must name the physical device`);
+      continue;
+    }
+
+    if (
+      entry.deviceLabel !== undefined &&
+      entry.deviceLabel.trim() !== draftDeviceLabel.trim()
+    ) {
+      issues.push(
+        `${candidate}.deviceLabel must match inspector draft device label ${draftDeviceLabel}`,
+      );
+    }
+  }
+
+  return issues;
 }
 
 function collectMissingMeasurementFields(
@@ -211,12 +249,14 @@ function collectProbeRecordIssues(input: {
   handoff: PrototypeHandoffFile;
   missingCandidates: AudioEngineCandidateId[];
   duplicateCandidates: AudioEngineCandidateId[];
+  deviceLabelIssues: string[];
   missingMeasurementFields: string[];
   runtimeIssues: string[];
 }): string[] {
   if (
     input.missingCandidates.length > 0 ||
     input.duplicateCandidates.length > 0 ||
+    input.deviceLabelIssues.length > 0 ||
     input.missingMeasurementFields.length > 0 ||
     input.runtimeIssues.length > 0
   ) {
@@ -246,6 +286,7 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
     `- Status: ${report.status}`,
     `- Missing candidates: ${formatList(report.missingCandidates)}`,
     `- Duplicate candidates: ${formatList(report.duplicateCandidates)}`,
+    `- Device label issues: ${formatList(report.deviceLabelIssues)}`,
     `- Missing measurement fields: ${formatList(report.missingMeasurementFields)}`,
     `- Runtime issues: ${formatList(report.runtimeIssues)}`,
     `- Probe record issues: ${formatList(report.probeRecordIssues)}`,
