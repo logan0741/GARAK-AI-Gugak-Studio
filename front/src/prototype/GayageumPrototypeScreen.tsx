@@ -21,6 +21,13 @@ import {
   safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
 import {
+  getPrototypeInstrumentMinimumHeight,
+  PROTOTYPE_INSTRUMENT_VERTICAL_PADDING,
+  PROTOTYPE_STRING_COUNT,
+  PROTOTYPE_STRING_LINE_HEIGHT,
+  PROTOTYPE_STRING_ROW_MIN_HEIGHT,
+} from './prototypeLayout';
+import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
@@ -42,9 +49,10 @@ import {
   prototypeGayageumSampleManifest,
 } from './prototypeSampleManifest';
 
-const STRING_COUNT = 12;
-const ALL_STRINGS = Array.from({ length: STRING_COUNT }, (_, index) => index + 1);
-const FALLBACK_INSTRUMENT_HEIGHT = 312;
+const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
+const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
+  stringCount: PROTOTYPE_STRING_COUNT,
+});
 const PRIMARY_POINTER_ID = 'primary-touch';
 const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api';
 const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
@@ -130,7 +138,7 @@ export function GayageumPrototypeScreen() {
         layout: {
           topY: 0,
           height: instrumentHeight,
-          stringCount: STRING_COUNT,
+          stringCount: PROTOTYPE_STRING_COUNT,
         },
       }),
     [instrumentHeight],
@@ -502,13 +510,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingVertical: PROTOTYPE_INSTRUMENT_VERTICAL_PADDING,
   },
   stringRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
-    minHeight: 26,
+    minHeight: PROTOTYPE_STRING_ROW_MIN_HEIGHT,
   },
   stringLabel: {
     color: '#f6f1e8',
@@ -520,7 +528,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#d7b65d',
     borderRadius: 3,
     flex: 1,
-    height: 6,
+    height: PROTOTYPE_STRING_LINE_HEIGHT,
   },
   inspector: {
     backgroundColor: '#eef3ef',
