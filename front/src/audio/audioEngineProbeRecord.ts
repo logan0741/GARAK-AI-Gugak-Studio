@@ -25,6 +25,9 @@ const EVIDENCE_SOURCES: AudioEngineEvidenceSource[] = [
   'unit-test',
   'estimate',
 ];
+const PHYSICAL_DEVICE_LABEL_PLACEHOLDERS = new Set([
+  'replace-with-physical-device-model',
+]);
 
 const DURATION_PROBE_FIELDS = ['touchToSoundLatencyMs', 'recordingCaptureSeconds'] as const satisfies ReadonlyArray<
   keyof AudioEngineProbe
@@ -112,6 +115,11 @@ function parseProbe(
   }
   if (!isNonEmptyString(probe.deviceLabel)) {
     errors.push(`${path}.deviceLabel must be a non-empty string`);
+  } else if (
+    probe.evidenceSource === 'physical-device' &&
+    PHYSICAL_DEVICE_LABEL_PLACEHOLDERS.has(normalizeLabel(probe.deviceLabel))
+  ) {
+    errors.push(`${path}.deviceLabel must name the physical device when evidenceSource is physical-device`);
   }
   if (!isNonEmptyString(probe.measuredAt)) {
     errors.push(`${path}.measuredAt must be a non-empty string`);
@@ -164,6 +172,10 @@ function isObject(input: unknown): input is Record<string, unknown> {
 
 function isNonEmptyString(input: unknown): input is string {
   return typeof input === 'string' && input.trim().length > 0;
+}
+
+function normalizeLabel(input: string): string {
+  return input.trim().toLowerCase();
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {
