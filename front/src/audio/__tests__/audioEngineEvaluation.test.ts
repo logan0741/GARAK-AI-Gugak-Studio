@@ -71,6 +71,36 @@ test('marks a candidate no-go when fewer than two core criteria pass', () => {
   expect(result.passedCoreCriteria).toBe(1);
 });
 
+test('treats invalid manual measurements as failed Day 5 criteria', () => {
+  expect(
+    evaluateAudioEngineProbe({
+      ...passingProbe,
+      touchToSoundLatencyMs: -1,
+      maxStableVoices: 8.5,
+      pitchBendSmooth: 'yes' as never,
+      glissandoTriggeredStrings: 13,
+      muteReleaseClean: 'yes' as never,
+      preloadStable: 'yes' as never,
+      sessionFallbackPreserved: 'yes' as never,
+      recordingCaptureSeconds: Number.POSITIVE_INFINITY,
+    }),
+  ).toEqual({
+    candidate: 'react-native-audio-api',
+    decision: 'NO_GO',
+    failedCriteria: [
+      'latency',
+      'polyphony',
+      'pitch_bend',
+      'glissando',
+      'mute',
+      'preload',
+      'session_fallback',
+      'recording',
+    ],
+    passedCoreCriteria: 0,
+  });
+});
+
 test('selects the strongest candidate by Day 5 decision rank', () => {
   const expoResult = evaluateAudioEngineProbe({
     ...passingProbe,
