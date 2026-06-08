@@ -85,11 +85,12 @@ export function isPrototypeRecordingMeasurementBackedByPlayback(input: {
   const observedRecording = input.inspectorDraft.observedPrototypeRecording as
     | PrototypeProbeDraftInspectorModel['observedPrototypeRecording']
     | undefined;
+  const observedCapturedSeconds = observedRecording?.capturedSeconds;
 
   return (
-    observedRecording?.capturedSeconds !== null &&
-    observedRecording?.capturedSeconds !== undefined &&
-    observedRecording.capturedSeconds >= recordingCaptureSeconds &&
+    observedRecording !== undefined &&
+    isNonNegativeFiniteNumber(observedCapturedSeconds) &&
+    observedCapturedSeconds >= recordingCaptureSeconds &&
     observedRecording.uriAvailable === true &&
     observedRecording.playbackConfirmed === true &&
     observedRecording.fallbackReason === null
@@ -195,4 +196,8 @@ function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspector
 
 function isPositiveRecordingCaptureSeconds(input: unknown): input is number {
   return typeof input === 'number' && Number.isFinite(input) && input > 0;
+}
+
+function isNonNegativeFiniteNumber(input: unknown): input is number {
+  return typeof input === 'number' && Number.isFinite(input) && input >= 0;
 }
