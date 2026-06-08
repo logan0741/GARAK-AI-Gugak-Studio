@@ -376,12 +376,22 @@ export function isPhysicalDeviceLabel(input: unknown): input is string {
     return false;
   }
 
-  const normalized = input.trim().toLowerCase();
+  const normalized = normalizePhysicalDeviceLabel(input);
   return ![
     'replace-with-physical-device-model',
-    'device / os',
+    'replace with physical device model',
+    'device os',
+    'device/os',
     'physical device',
   ].includes(normalized);
+}
+
+function normalizePhysicalDeviceLabel(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ');
 }
 
 function isObject(input: unknown): input is Record<string, unknown> {

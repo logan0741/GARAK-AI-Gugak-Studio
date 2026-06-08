@@ -194,6 +194,34 @@ test('rejects placeholder device labels for physical-device smoke evidence', () 
   ]);
 });
 
+test('rejects placeholder-like device labels for physical-device smoke evidence', () => {
+  for (const deviceLabel of [
+    'Device/OS',
+    'Device /OS',
+    'Device/ OS',
+    'replace with physical device model',
+  ]) {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const report = createSmokeReport();
+    report.runs[0].deviceLabel = deviceLabel;
+
+    expect(
+      runWeek1SmokeReportCommand({
+        argv: ['placeholder-like-device-smoke.json'],
+        readTextFile: () => JSON.stringify(report),
+        writeStdout: (value) => stdout.push(value),
+        writeStderr: (value) => stderr.push(value),
+      }),
+    ).toBe(1);
+
+    expect(stdout).toEqual([]);
+    expect(stderr).toEqual([
+      'Could not parse Week 1 smoke report: runs[0].deviceLabel must name the physical device',
+    ]);
+  }
+});
+
 test('reports different smoke run device labels as not complete', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
