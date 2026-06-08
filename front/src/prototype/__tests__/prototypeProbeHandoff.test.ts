@@ -223,6 +223,20 @@ test('rejects recording promotion when measurements exceed inspector captured se
   );
 });
 
+test('rejects under-ten recording promotion without inspector playback confirmation', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+      measurements: {
+        ...measurements,
+        recordingCaptureSeconds: 4,
+      },
+    }),
+  ).toThrow(
+    'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+  );
+});
+
 test.each([
   [
     'measured candidate evidence',
