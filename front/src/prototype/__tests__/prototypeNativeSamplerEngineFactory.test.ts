@@ -115,6 +115,59 @@ test('creates and preloads the expo-audio candidate through injected runtime por
   expect(createdPlayerUris).toEqual(resolvedUris);
 });
 
+test('trims local sample source URIs before asset resolution and native preload', async () => {
+  const resolverInputs: string[] = [];
+  const downloadedUris: string[] = [];
+  const manifestWithWhitespaceSource: SampleAssetManifest = {
+    ...manifest,
+    assets: [
+      {
+        ...manifest.assets[0],
+        fileUri: '  asset://gayageum/01.wav  ',
+      },
+      ...manifest.assets.slice(1),
+    ],
+  };
+  const runtime: ExpoAudioRuntimePort = {
+    setAudioModeAsync: async () => undefined,
+    downloadAudioSource: async (source) => {
+      downloadedUris.push(source.uri);
+      return source;
+    },
+    createAudioPlayer: () => ({
+      volume: 1,
+      play: () => undefined,
+      pause: () => undefined,
+      seekTo: async () => undefined,
+      setPlaybackRate: () => undefined,
+    }),
+    requestRecordingPermissionsAsync: async () => ({ granted: true }),
+    createAudioRecorder: () => {
+      throw new Error('recording is not part of preload');
+    },
+  };
+
+  await createAndPreloadPrototypeNativeSamplerEngine({
+    candidate: 'expo-audio',
+    manifest: manifestWithWhitespaceSource,
+    assetResolver: {
+      resolveFileUri: async (fileUri) => {
+        resolverInputs.push(fileUri);
+        return `file://resolved/${fileUri}`;
+      },
+    },
+    runtimePorts: {
+      createExpoAudioRuntimePort: () => runtime,
+      createReactNativeAudioApiRuntimePort: () => {
+        throw new Error('react-native-audio-api runtime should not be created');
+      },
+    },
+  });
+
+  expect(resolverInputs[0]).toBe('asset://gayageum/01.wav');
+  expect(downloadedUris[0]).toBe('file://resolved/asset://gayageum/01.wav');
+});
+
 test('creates and preloads the react-native-audio-api candidate through injected runtime ports', async () => {
   const decodedInputs: string[] = [];
   const resolvedUris: string[] = [];
