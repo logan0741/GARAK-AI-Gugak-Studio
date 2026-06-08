@@ -97,6 +97,21 @@ test('maps mute and release onto gain envelope and source stop', async () => {
   expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
 });
 
+test('does not schedule duplicate source stops for repeated release events', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+  await engine.preload();
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 4, velocity: 0.8 });
+
+  engine.handleEvent({ type: 'string_release', tsMs: 180, stringIndex: 4 });
+  engine.handleEvent({ type: 'string_release', tsMs: 181, stringIndex: 4 });
+
+  expect(runtime.context.gains[0].gain.automation).toEqual([
+    { type: 'setTargetAtTime', target: 0, startTime: 12.5, timeConstant: 0.05 },
+  ]);
+  expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
+});
+
 test('steals the oldest voice only after the configured voice budget is exceeded', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 2 });
