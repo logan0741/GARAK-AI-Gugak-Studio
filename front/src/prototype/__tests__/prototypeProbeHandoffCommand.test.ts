@@ -280,6 +280,47 @@ test('returns readable errors when prototype runtime is not ready', () => {
   ]);
 });
 
+test('returns inspector draft issues when the handoff guard fields are contaminated', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const contaminatedDraft = createInspectorDraftForCandidate('expo-audio');
+
+  expect(
+    runPrototypeProbeHandoffCommand({
+      argv: ['prototype-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T03:10:00.000Z',
+          entries: [
+            {
+              inspectorDraft: {
+                ...contaminatedDraft,
+                measuredCandidateEvidence: true,
+                runtimeUnderTest: 'candidate-sampler-engine',
+                probeTemplate: {
+                  ...contaminatedDraft.probeTemplate,
+                  evidenceSource: 'physical-device',
+                },
+              },
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not build prototype probe record: prototype handoff is not ready for probe record: inspector draft issues: expo-audio.inspectorDraft.measuredCandidateEvidence must be false, expo-audio.inspectorDraft.runtimeUnderTest must be fake-sampler-engine, expo-audio.inspectorDraft.probeTemplate.evidenceSource must be estimate',
+  ]);
+});
+
 test('returns invalid json errors without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
