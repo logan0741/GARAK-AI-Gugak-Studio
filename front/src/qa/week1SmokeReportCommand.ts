@@ -24,11 +24,11 @@ export type Week1SmokeReport = {
   runs: Week1SmokeRun[];
 };
 
-type Week1SmokeReportStatus =
+export type Week1SmokeReportStatus =
   | 'COMPLETE_FOR_DAY5_REVIEW'
   | 'NOT_COMPLETE_FOR_DAY5_REVIEW';
 
-type Week1SmokeReportSummary = {
+export type Week1SmokeReportSummary = {
   status: Week1SmokeReportStatus;
   missingAreas: Week1SmokeAreaId[];
   duplicateAreas: Week1SmokeAreaId[];
@@ -109,7 +109,7 @@ export function runWeek1SmokeReportCommand(input: Week1SmokeReportCommandInput):
   return summary.status === 'COMPLETE_FOR_DAY5_REVIEW' ? 0 : 1;
 }
 
-function parseWeek1SmokeReport(
+export function parseWeek1SmokeReport(
   input: unknown,
 ): { ok: true; report: Week1SmokeReport } | { ok: false; error: string } {
   if (!isObject(input)) {
@@ -189,7 +189,7 @@ function parseWeek1SmokeReport(
   };
 }
 
-function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeReportSummary {
+export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeReportSummary {
   const areaCounts = countAreas(report.runs);
   const missingAreas = REQUIRED_AREAS.filter((area) => (areaCounts.get(area) ?? 0) === 0);
   const duplicateAreas = REQUIRED_AREAS.filter((area) => (areaCounts.get(area) ?? 0) > 1);

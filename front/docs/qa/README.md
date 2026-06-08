@@ -16,8 +16,11 @@ The template command writes all required Day 2/3/4 check IDs with `blocked` resu
 Day 5 audio-engine values must be moved into a candidate probe record that follows `day-5-audio-engine-probes.example.json`. Final-selection probes must use `evidenceSource: 'physical-device'`, and the record must be validated with:
 
 ```bash
+npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>
 npm run qa:day5-audio -- <probe-record.json>
 ```
+
+The readiness command is the bridge between Week 1 smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files. It does not write a new record and does not select the final engine.
 
 `src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null values.
 
