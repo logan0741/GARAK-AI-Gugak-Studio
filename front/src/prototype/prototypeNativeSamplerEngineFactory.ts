@@ -12,6 +12,7 @@ import { SampleAssetManifest } from '../domain/sampleManifest';
 import {
   getDuplicateSampleStringIndexes,
   getMissingSampleStringIndexes,
+  getUnexpectedSampleStringIndexes,
 } from './prototypeSamplerEngineHost';
 
 export type PrototypeNativeSamplerEngineRuntimePorts = {
@@ -71,6 +72,13 @@ function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): v
   if (duplicateStringIndexes.length > 0) {
     throw new Error(
       `Prototype native sampler requires exactly one sample for each string; duplicate strings: ${duplicateStringIndexes.join(', ')}`,
+    );
+  }
+
+  const unexpectedStringIndexes = getUnexpectedSampleStringIndexes(manifest);
+  if (unexpectedStringIndexes.length > 0) {
+    throw new Error(
+      `Prototype native sampler requires only 12-string sample indexes; unexpected strings: ${unexpectedStringIndexes.join(', ')}`,
     );
   }
 }

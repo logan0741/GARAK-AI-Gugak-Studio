@@ -93,6 +93,7 @@ export type PrototypeRuntimeObservation = {
   runtimeStatus:
     | 'missing_sample_manifest'
     | 'duplicate_sample_manifest'
+    | 'invalid_sample_manifest'
     | 'native_candidate_preloading'
     | 'native_candidate_failed'
     | 'native_candidate_ready';
