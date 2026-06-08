@@ -504,6 +504,30 @@ test('treats whitespace captured recording uri as missing playback context', () 
   });
 });
 
+test('normalizes invalid captured recording durations before inspector handoff', () => {
+  for (const capturedSeconds of [Number.NaN, Number.NEGATIVE_INFINITY, -1]) {
+    const snapshot = recordPrototypeRecordingCapture(
+      createInitialPrototypeQaSnapshot({
+        candidate: 'expo-audio',
+        deviceLabel: 'Pixel 8 / Android 15',
+        measuredAt: '2026-06-08T04:39:00.000Z',
+      }),
+      {
+        capturedSeconds,
+        measuredAt: '2026-06-08T04:39:12.000Z',
+        recordingUri: 'file://recording.m4a',
+      },
+    );
+
+    expect(snapshot.recordingCaptureSeconds).toBe(0);
+    expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+      observedPrototypeRecording: {
+        capturedSeconds: 0,
+      },
+    });
+  }
+});
+
 test('updates the prototype QA device label used by the probe draft', () => {
   const snapshot = updatePrototypeQaDeviceLabel(
     createInitialPrototypeQaSnapshot({

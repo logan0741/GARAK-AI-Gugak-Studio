@@ -201,11 +201,12 @@ export function recordPrototypeRecordingCapture(
   },
 ): PrototypeQaSnapshot {
   const recordingUriAvailable = isNonEmptyString(input.recordingUri);
+  const capturedSeconds = normalizeCapturedSeconds(input.capturedSeconds);
 
   return {
     ...snapshot,
     measuredAt: input.measuredAt,
-    recordingCaptureSeconds: input.capturedSeconds,
+    recordingCaptureSeconds: capturedSeconds,
     recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
     recordingPlaybackConfirmed: false,
     recordingUriAvailable,
@@ -339,6 +340,14 @@ function createEmptyPhysicalMeasurementTemplate(): PrototypeProbeHandoffMeasurem
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizeCapturedSeconds(capturedSeconds: number): number {
+  if (!Number.isFinite(capturedSeconds) || capturedSeconds < 0) {
+    return 0;
+  }
+
+  return capturedSeconds;
 }
 
 function updateEventDispatchLatency(
