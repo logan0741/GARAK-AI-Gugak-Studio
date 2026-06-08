@@ -280,7 +280,7 @@ function collectDuplicateChecks(runs: Week1SmokeRun[]): string[] {
 }
 
 function collectDeviceLabelIssues(runs: Week1SmokeRun[]): string[] {
-  const deviceLabels = unique(runs.map((run) => run.deviceLabel.trim()));
+  const deviceLabels = unique(runs.map((run) => normalizeDeviceLabelForReport(run.deviceLabel)));
   if (deviceLabels.length <= 1) {
     return [];
   }
@@ -399,6 +399,13 @@ function normalizePhysicalDeviceLabel(input: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeDeviceLabelForReport(input: string): string {
+  return input
+    .trim()
+    .replace(/\s*\/\s*/g, ' / ')
     .replace(/\s+/g, ' ');
 }
 
