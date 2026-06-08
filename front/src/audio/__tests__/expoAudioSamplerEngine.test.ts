@@ -57,6 +57,20 @@ test('preloads manifest assets with Expo Audio download-first players', async ()
   });
 });
 
+test('rejects preload when a downloaded Expo Audio source URI is missing', async () => {
+  const runtime = createRuntimePort({ blankDownloadedSources: new Set(['asset://gayageum/02.wav']) });
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+  await expect(engine.preload()).rejects.toThrow(
+    'Downloaded expo-audio source URI missing for string 2',
+  );
+  expect(runtime.downloadedSources).toEqual([
+    { uri: 'asset://gayageum/01.wav' },
+    { uri: 'asset://gayageum/02.wav' },
+  ]);
+  expect(runtime.createdPlayers).toHaveLength(1);
+});
+
 test('plays a preloaded string immediately when a pluck event arrives', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -303,6 +317,7 @@ test('returns a recording fallback result when permission is denied', async () =
 });
 
 function createRuntimePort(input: {
+  blankDownloadedSources?: Set<string>;
   deferSeek?: boolean;
   permissionGranted?: boolean;
   seekFails?: boolean;
@@ -331,6 +346,10 @@ function createRuntimePort(input: {
     },
     async downloadAudioSource(source: { uri: string }) {
       this.downloadedSources.push(source);
+      if (input.blankDownloadedSources?.has(source.uri)) {
+        return { uri: '   ' };
+      }
+
       return { uri: source.uri.replace('asset://', 'file://cached/') };
     },
     async requestRecordingPermissionsAsync() {
