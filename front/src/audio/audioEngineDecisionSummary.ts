@@ -13,6 +13,7 @@ export function formatDay5AudioEngineDecisionSummary(
     `- Reason: ${record.selection.reason}`,
     `- Missing candidates: ${formatList(record.missingCandidates)}`,
     `- Duplicate candidates: ${formatList(record.duplicateCandidates)}`,
+    `- Device label issues: ${formatList(record.deviceLabelIssues)}`,
     '',
     '| Candidate | Decision | Passed core criteria | Failed criteria |',
     '| --- | --- | --- | --- |',

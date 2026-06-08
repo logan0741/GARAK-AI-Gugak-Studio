@@ -42,6 +42,7 @@ test('formats a selected Day 5 decision record for QA handoff', () => {
       '- Reason: react-native-audio-api has the strongest Day 5 result',
       '- Missing candidates: none',
       '- Duplicate candidates: none',
+      '- Device label issues: none',
       '',
       '| Candidate | Decision | Passed core criteria | Failed criteria |',
       '| --- | --- | --- | --- |',
@@ -59,4 +60,5 @@ test('formats incomplete evidence without implying an engine has been selected',
 
   expect(formatDay5AudioEngineDecisionSummary(record)).toContain('- Selected engine: none');
   expect(formatDay5AudioEngineDecisionSummary(record)).toContain('- Missing candidates: expo-audio');
+  expect(formatDay5AudioEngineDecisionSummary(record)).toContain('- Device label issues: none');
 });

@@ -99,7 +99,7 @@ Decision mapping:
 
 After exactly one physical-device probe per candidate is recorded, run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` before the final Day 5 handoff. The readiness gate must report `READY_FOR_DAY5_DECISION`, proving that the completed Week 1 smoke report and the Day 5 probe record refer to the same physical device.
 
-Then run the handoff object through `npm run qa:day5-audio -- <probe-record.json>`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
+Then run the handoff object through `npm run qa:day5-audio -- <probe-record.json>`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values, no candidate appears more than once, and all physical-device probes use one device label after trimming whitespace and normalizing slash spacing.
 
 Before relying on the Day 5 record, create the Week 1 smoke report with `npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-label>"`, fill it from device QA, then validate it with `npm run qa:week1-smoke-report -- <week1-smoke-report.json>`. The smoke report must show Day 2, Day 3, and Day 4 were all recorded on one physical device label without missing areas, duplicate areas, missing checks, duplicate checks, or blocked checks.
 
