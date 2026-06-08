@@ -201,7 +201,17 @@ function normalizeLabel(input: string): string {
 }
 
 function isUtcIsoTimestamp(input: string): boolean {
-  return UTC_ISO_TIMESTAMP_PATTERN.test(input) && Number.isFinite(Date.parse(input));
+  if (!UTC_ISO_TIMESTAMP_PATTERN.test(input)) {
+    return false;
+  }
+
+  const parsed = new Date(input);
+  if (!Number.isFinite(parsed.getTime())) {
+    return false;
+  }
+
+  const canonicalInput = input.includes('.') ? input : input.replace('Z', '.000Z');
+  return parsed.toISOString() === canonicalInput;
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {

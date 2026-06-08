@@ -204,6 +204,27 @@ test('requires UTC ISO timestamps for generated and measured probe times', () =>
   });
 });
 
+test('rejects UTC ISO timestamps with impossible calendar dates', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      generatedAt: '2026-02-31T10:00:00.000Z',
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          measuredAt: '2026-04-31T10:05:00.000Z',
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'generatedAt must be a UTC ISO timestamp',
+      'probes[0].measuredAt must be a UTC ISO timestamp',
+    ],
+  });
+});
+
 test('rejects glissando counts above the 12 string instrument range', () => {
   expect(
     parseAudioEngineProbeRecord({
