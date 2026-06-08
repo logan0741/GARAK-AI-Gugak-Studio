@@ -21,22 +21,19 @@ test('selects a captured recording uri that the prototype can play back', () => 
       },
     }),
   ).toBe('file://captured.m4a');
-  expect(
-    selectPlayableRecordingUri({
-      recordingProbeState: { status: 'captured', capturedSeconds: 10, recordingUri: null },
-      sessionRecordingUri: 'file://session.m4a',
-    }),
-  ).toBe('file://session.m4a');
   expect(selectPlayableRecordingUri({ recordingProbeState: { status: 'idle' } })).toBeNull();
 });
 
-test('does not expose a stale session recording uri while the recording probe is idle', () => {
+test('does not fall back to a session recording uri when the current capture has no uri', () => {
   expect(
     selectPlayableRecordingUri({
-      recordingProbeState: { status: 'idle' },
-      sessionRecordingUri: 'file://previous-candidate.m4a',
+      recordingProbeState: { status: 'captured', capturedSeconds: 10, recordingUri: null },
     }),
   ).toBeNull();
+});
+
+test('does not expose a playable uri while the recording probe is idle', () => {
+  expect(selectPlayableRecordingUri({ recordingProbeState: { status: 'idle' } })).toBeNull();
 });
 
 test('ignores whitespace-only recording uris when selecting captured playback', () => {
@@ -56,7 +53,6 @@ test('ignores whitespace-only recording uris when selecting captured playback', 
         capturedSeconds: 10,
         recordingUri: 'file://captured.m4a',
       },
-      sessionRecordingUri: '   ',
     }),
   ).toBe('file://captured.m4a');
 });
