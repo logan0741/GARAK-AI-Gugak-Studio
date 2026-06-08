@@ -18,6 +18,13 @@ test('clamps bend cents to the MVP safe range', () => {
   expect(clampBendCents(35)).toBe(35);
 });
 
+test('rejects non-finite bend cents before creating pitch events', () => {
+  expect(() => clampBendCents(Number.NaN)).toThrow('cents must be finite');
+  expect(() =>
+    createStringBend({ tsMs: 240, stringIndex: 7, cents: Number.POSITIVE_INFINITY }),
+  ).toThrow('cents must be finite');
+});
+
 test('creates string bend events with clamped cents', () => {
   const event = createStringBend({ tsMs: 240, stringIndex: 7, cents: 160 });
 

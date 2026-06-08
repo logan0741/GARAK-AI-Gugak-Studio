@@ -22,6 +22,10 @@ export function assertEventTimestamp(tsMs: number): void {
 }
 
 export function clampBendCents(cents: number): number {
+  if (!Number.isFinite(cents)) {
+    throw new Error('cents must be finite');
+  }
+
   return Math.max(-MAX_BEND_CENTS, Math.min(MAX_BEND_CENTS, cents));
 }
 
