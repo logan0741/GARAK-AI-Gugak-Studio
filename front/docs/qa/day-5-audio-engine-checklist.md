@@ -32,6 +32,8 @@ For cloud or local native builds, use the `development` profile in `eas.json`. E
 
 The generated `dev-synthetic-gayageum-2026-06-08` samples are Week 1 technical fixtures only. They are valid for checking whether a candidate engine can preload and play 12 local WAV files, but they are not final instrument assets and do not prove release sound quality.
 
+The prototype native sampler factory must resolve each fixture sample to a non-empty local URI before a candidate runtime is loaded. Empty resolved URIs or `http(s)` URIs are invalid for normal-play latency checks.
+
 ## Device Setup
 
 | Field | Value |
