@@ -18,7 +18,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing. |
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
 | `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
-| `src/qa/week1SmokeReportCommand.ts` | CLI command boundary that validates Day 2, Day 3, and Day 4 physical-device smoke report completeness before Day 5 review. |
+| `src/qa/week1SmokeReportCommand.ts` | CLI command boundary that validates Day 2, Day 3, and Day 4 physical-device smoke report completeness and same-device evidence before Day 5 review. |
 | `src/qa/week1SmokeTemplateCommand.ts` | CLI command boundary that generates a blocked Week 1 smoke report template with every required Day 2/3/4 check ID. |
 | `src/qa/day5ReadinessCommand.ts` | CLI command boundary that confirms the completed Week 1 smoke report and Day 5 probe record are aligned before the final decision command. |
 | `src/prototype/prototypeQaSnapshot.ts` | Prototype-only read model that tracks observable fake counters and renders estimate probe and prototype handoff templates with nullable physical-device measurement fields. |
@@ -35,7 +35,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `scripts/day5-prototype-handoff-check.ts` | Node-only QA command entry point used by `npm run qa:prototype-handoff-check -- <prototype-handoff.json>`. |
 | `scripts/day5-prototype-probe-record.ts` | Node-only QA command entry point used by `npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>`. |
 | `src/audio/__tests__/audioEngineProbeDraft.test.ts` | Verifies draft probes stay `estimate`, count triggered glissando strings, can be wrapped in a probe record, and require explicit measurements before physical-device promotion. |
-| `src/qa/__tests__/week1SmokeReportCommand.test.ts` | Verifies the Week 1 smoke report command rejects missing, duplicate, blocked, or malformed Day 2/3/4 smoke evidence while preserving final engine selection for Day 5. |
+| `src/qa/__tests__/week1SmokeReportCommand.test.ts` | Verifies the Week 1 smoke report command rejects missing, duplicate, blocked, mixed-device, or malformed Day 2/3/4 smoke evidence while preserving final engine selection for Day 5. |
 | `src/qa/__tests__/week1SmokeTemplateCommand.test.ts` | Verifies the Week 1 smoke template command writes every required check as blocked and rejects placeholder device labels before file output. |
 | `src/qa/__tests__/day5ReadinessCommand.test.ts` | Verifies Week 1 smoke evidence and Day 5 probe records are ready only when both required candidates are measured on the same physical device. |
 | `src/prototype/__tests__/prototypeQaSnapshot.test.ts` | Verifies the prototype inspector draft does not claim audible-quality or physical-device evidence automatically. |
@@ -98,7 +98,7 @@ npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-l
 npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 ```
 
-The template command starts every required check as `blocked`; fill each result from physical-device QA before validation. The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, or blocked checks must be resolved before relying on the Day 5 record.
+The template command starts every required check as `blocked`; fill each result from physical-device QA before validation. The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded on one physical device label. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, mixed device labels, or blocked checks must be resolved before relying on the Day 5 record.
 
 After a physical-device probe record exists, run the readiness gate before the final decision command:
 

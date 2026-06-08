@@ -34,6 +34,7 @@ export type Week1SmokeReportSummary = {
   duplicateAreas: Week1SmokeAreaId[];
   missingChecks: string[];
   duplicateChecks: string[];
+  deviceLabelIssues: string[];
   blockedChecks: string[];
   failedChecks: string[];
 };
@@ -195,6 +196,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
   const duplicateAreas = REQUIRED_AREAS.filter((area) => (areaCounts.get(area) ?? 0) > 1);
   const missingChecks = collectMissingChecks(report.runs);
   const duplicateChecks = collectDuplicateChecks(report.runs);
+  const deviceLabelIssues = collectDeviceLabelIssues(report.runs);
   const blockedChecks = collectChecksByResult(report.runs, 'blocked');
   const failedChecks = collectChecksByResult(report.runs, 'fail');
   const status =
@@ -202,6 +204,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
     duplicateAreas.length === 0 &&
     missingChecks.length === 0 &&
     duplicateChecks.length === 0 &&
+    deviceLabelIssues.length === 0 &&
     blockedChecks.length === 0
       ? 'COMPLETE_FOR_DAY5_REVIEW'
       : 'NOT_COMPLETE_FOR_DAY5_REVIEW';
@@ -212,6 +215,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
     duplicateAreas,
     missingChecks,
     duplicateChecks,
+    deviceLabelIssues,
     blockedChecks,
     failedChecks,
   };
@@ -267,6 +271,15 @@ function collectDuplicateChecks(runs: Week1SmokeRun[]): string[] {
   return orderCheckReferences([...duplicateChecks]);
 }
 
+function collectDeviceLabelIssues(runs: Week1SmokeRun[]): string[] {
+  const deviceLabels = unique(runs.map((run) => run.deviceLabel.trim()));
+  if (deviceLabels.length <= 1) {
+    return [];
+  }
+
+  return [`smoke report must use one device label: ${formatList(deviceLabels)}`];
+}
+
 function collectChecksByResult(
   runs: Week1SmokeRun[],
   result: Exclude<Week1SmokeCheckResult, 'pass'>,
@@ -312,6 +325,7 @@ function formatWeek1SmokeReportSummary(summary: Week1SmokeReportSummary): string
     `- Duplicate areas: ${formatList(summary.duplicateAreas)}`,
     `- Missing checks: ${formatList(summary.missingChecks)}`,
     `- Duplicate checks: ${formatList(summary.duplicateChecks)}`,
+    `- Device label issues: ${formatList(summary.deviceLabelIssues)}`,
     `- Blocked checks: ${formatList(summary.blockedChecks)}`,
     `- Failed checks: ${formatList(summary.failedChecks)}`,
   ].join('\n');
@@ -319,6 +333,10 @@ function formatWeek1SmokeReportSummary(summary: Week1SmokeReportSummary): string
 
 function formatList(values: string[]): string {
   return values.length === 0 ? 'none' : values.join(', ');
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function isWeek1SmokeArea(input: unknown): input is Week1SmokeAreaId {
