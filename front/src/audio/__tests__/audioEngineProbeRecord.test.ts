@@ -176,6 +176,25 @@ test('requires UTC ISO timestamps for generated and measured probe times', () =>
   });
 });
 
+test('rejects glissando counts above the 12 string instrument range', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          glissandoTriggeredStrings: 13,
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'probes[0].glissandoTriggeredStrings must be an integer from 0 to 12',
+    ],
+  });
+});
+
 test('parses the documented probe handoff example without satisfying the final gate', () => {
   const example = JSON.parse(
     readFileSync('docs/qa/day-5-audio-engine-probes.example.json', 'utf8'),

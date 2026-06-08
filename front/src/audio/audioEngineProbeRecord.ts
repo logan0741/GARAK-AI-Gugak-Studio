@@ -37,6 +37,7 @@ const DURATION_PROBE_FIELDS = ['touchToSoundLatencyMs', 'recordingCaptureSeconds
 const COUNT_PROBE_FIELDS = ['maxStableVoices', 'glissandoTriggeredStrings'] as const satisfies ReadonlyArray<
   keyof AudioEngineProbe
 >;
+const MAX_GAYAGEUM_STRING_COUNT = 12;
 
 const BOOLEAN_PROBE_FIELDS = [
   'pitchBendSmooth',
@@ -140,6 +141,13 @@ function parseProbe(
     if (!isNonNegativeInteger(probe[field])) {
       errors.push(`${path}.${field} must be an integer >= 0`);
     }
+  }
+
+  if (
+    isNonNegativeInteger(probe.glissandoTriggeredStrings) &&
+    probe.glissandoTriggeredStrings > MAX_GAYAGEUM_STRING_COUNT
+  ) {
+    errors.push(`${path}.glissandoTriggeredStrings must be an integer from 0 to 12`);
   }
 
   for (const field of BOOLEAN_PROBE_FIELDS) {
