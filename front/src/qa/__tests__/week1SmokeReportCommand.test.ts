@@ -245,6 +245,28 @@ test('reports different smoke run device labels as not complete', () => {
   );
 });
 
+test('treats slash spacing differences as the same smoke report device label', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport();
+  report.runs[1].deviceLabel = 'Pixel 8/Android 15';
+  report.runs[2].deviceLabel = 'Pixel 8 /Android 15';
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['slash-spacing-device-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: COMPLETE_FOR_DAY5_REVIEW');
+  expect(output).toContain('- Device label issues: none');
+});
+
 test('returns invalid json errors without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];

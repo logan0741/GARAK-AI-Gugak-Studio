@@ -142,6 +142,8 @@ The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record
 
 The `qa:prototype-probe-record` command first validates the handoff JSON shape, then enforces runtime readiness and the expected sample manifest, then produces and parser-validates the probe record JSON. It does not replace the final `qa:day5-audio` decision check.
 
+`qa:day5-readiness` compares the Week 1 smoke report and probe record device labels after trimming whitespace and normalizing slash spacing. For example, `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same physical device; different model names still fail readiness.
+
 Before publishing the Day 5 record, run the QA command entry point:
 
 ```bash

@@ -263,7 +263,10 @@ function unique(values: string[]): string[] {
 }
 
 function normalizeDeviceLabel(input: string): string {
-  return input.trim();
+  return input
+    .trim()
+    .replace(/\s*\/\s*/g, ' / ')
+    .replace(/\s+/g, ' ');
 }
 
 function formatList(values: string[]): string {
