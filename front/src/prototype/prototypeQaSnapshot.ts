@@ -222,8 +222,10 @@ export function recordPrototypeRecordingFallback(
   return {
     ...snapshot,
     measuredAt: input.measuredAt,
+    recordingCaptureSeconds: null,
     recordingFallbackReason: input.fallbackReason,
     recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
   };
 }
 
