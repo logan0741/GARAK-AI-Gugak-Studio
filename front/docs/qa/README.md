@@ -4,13 +4,14 @@ This folder owns manual validation checklists and physical-device QA handoffs.
 
 The most important MVP QA area is audio and touch validation. Unit tests can prove data shape and boundary behavior, but they cannot prove touch-to-sound latency, dropout, click noise, or pitch-bend quality.
 
-Before Day 5 review, record the Day 2, Day 3, and Day 4 physical-device smoke runs in the Week 1 smoke report format and validate it:
+Before Day 5 review, create a Week 1 smoke report template, record the Day 2, Day 3, and Day 4 physical-device smoke runs in it, then validate it:
 
 ```bash
+npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-label>"
 npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 ```
 
-This command checks whether every required smoke area and check has a completed `pass` or `fail` result, with no duplicate areas or duplicate checks. It reports failures for review, but it does not select the final engine and does not replace the Day 5 probe record. See `week-1-smoke-report.md` for the JSON shape and required check IDs.
+The template command writes all required Day 2/3/4 check IDs with `blocked` results so the tester can fill them after device QA. The report command checks whether every required smoke area and check has a completed `pass` or `fail` result, with no duplicate areas or duplicate checks. It reports failures for review, but it does not select the final engine and does not replace the Day 5 probe record. See `week-1-smoke-report.md` for the JSON shape and required check IDs.
 
 Day 5 audio-engine values must be moved into a candidate probe record that follows `day-5-audio-engine-probes.example.json`. Final-selection probes must use `evidenceSource: 'physical-device'`, and the record must be validated with:
 

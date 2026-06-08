@@ -13,6 +13,7 @@
     "qa:prototype-handoff-merge": "vite-node scripts/day5-prototype-handoff-merge.ts",
     "qa:prototype-probe-record": "vite-node scripts/day5-prototype-probe-record.ts",
     "qa:week1-smoke-report": "vite-node scripts/week1-smoke-report.ts",
+    "qa:week1-smoke-template": "vite-node scripts/week1-smoke-template.ts",
     "samples:generate-dev": "vite-node scripts/generate-dev-gayageum-samples.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

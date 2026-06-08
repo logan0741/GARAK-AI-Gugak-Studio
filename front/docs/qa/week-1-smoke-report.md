@@ -8,6 +8,14 @@ Scope: Day 2, Day 3, and Day 4 physical-device smoke evidence
 
 Use this report after running the Day 2 `expo-audio`, Day 3 `react-native-audio-api`, and Day 4 touch model smoke procedures on a physical device. It records whether each smoke step was run, failed, or was blocked. It does not select the final audio engine and does not replace the Day 5 physical-device probe record.
 
+Create a template before device QA:
+
+```bash
+npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-label>"
+```
+
+The template command writes every required Day 2/3/4 check with `result: "blocked"`. Replace each result with `pass` or `fail` after running the corresponding physical-device smoke step.
+
 Validate a filled report with:
 
 ```bash
@@ -16,7 +24,7 @@ npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 
 The command exits 0 only when all required Day 2/3/4 areas are present once, every required check appears once, every required check has a `pass` or `fail` result, and no check is `blocked`. Failed checks are reported for review but still count as executed evidence; Day 5 decides whether the failures block the final engine choice.
 
-`deviceLabel` must name the tested physical device and OS, for example `Pixel 8 / Android 15`. Placeholder labels such as `Device / OS`, `physical device`, or `replace-with-physical-device-model` are rejected.
+`deviceLabel` must name the tested physical device and OS, for example `Pixel 8 / Android 15`. Placeholder labels such as `Device / OS`, `physical device`, or `replace-with-physical-device-model` are rejected by both template generation and report validation.
 
 ## JSON Shape
 
