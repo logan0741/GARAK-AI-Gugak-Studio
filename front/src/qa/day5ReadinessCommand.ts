@@ -198,6 +198,8 @@ function collectProbeRecordIssues(probeRecord: AudioEngineProbeRecord): string[]
     );
   }
 
+  issues.push(...decisionRecord.deviceLabelIssues);
+
   return issues;
 }
 
