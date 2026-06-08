@@ -131,6 +131,29 @@ test('normalizes whitespace captured recording uri to null at the prototype stop
   });
 });
 
+test('normalizes invalid captured recording durations to zero at the prototype stop boundary', async () => {
+  for (const capturedSeconds of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const engine = {
+      handleEvent: () => undefined,
+      startRecordingProbe: async () => ({
+        ok: true as const,
+        requestedDurationSeconds: 10,
+      }),
+      stopRecordingProbe: async () => ({
+        ok: true as const,
+        capturedSeconds,
+        recordingUri: 'file://probe.m4a',
+      }),
+    };
+
+    await expect(stopPrototypeRecordingProbe(engine)).resolves.toEqual({
+      status: 'captured',
+      capturedSeconds: 0,
+      recordingUri: 'file://probe.m4a',
+    });
+  }
+});
+
 test('trims captured recording uri at the prototype stop boundary', async () => {
   const engine = {
     handleEvent: () => undefined,
