@@ -187,6 +187,13 @@ function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspector
     );
   }
 
+  const unexpectedStringIndexes = inspectorDraft.observedRuntime.unexpectedStringIndexes;
+  if (Array.isArray(unexpectedStringIndexes) && unexpectedStringIndexes.length > 0) {
+    throw new Error(
+      'prototype runtime must not report unexpected sample string indexes before physical-device promotion',
+    );
+  }
+
   if (!isPrototypeObservedRuntimeReady(inspectorDraft)) {
     throw new Error(
       `prototype runtime must be ready for ${inspectorDraft.probeTemplate.candidate} before physical-device promotion`,
