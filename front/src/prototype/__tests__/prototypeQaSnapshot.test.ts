@@ -4,6 +4,8 @@ import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
+  recordPrototypeRecordingCapture,
+  recordPrototypeRecordingPlayback,
   updatePrototypeQaSnapshot,
 } from '../prototypeQaSnapshot';
 
@@ -92,6 +94,11 @@ test('formats a copyable estimate probe draft for the inspector', () => {
       pitchBendObserved: false,
       sessionFallbackPreserved: false,
     },
+    observedPrototypeRecording: {
+      capturedSeconds: null,
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
     probeTemplate: {
       candidate: 'expo-audio',
       evidenceSource: 'estimate',
@@ -153,6 +160,44 @@ test('tracks event batch dispatch latency as debug-only evidence', () => {
     },
     probeTemplate: {
       touchToSoundLatencyMs: null,
+    },
+  });
+});
+
+test('records prototype recording capture and playback observations without claiming final evidence', () => {
+  const captured = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:30:00.000Z',
+    }),
+    {
+      capturedSeconds: 10.4,
+      measuredAt: '2026-06-08T04:30:12.000Z',
+      recordingUri: 'file://recording.m4a',
+    },
+  );
+  const played = recordPrototypeRecordingPlayback(captured, {
+    measuredAt: '2026-06-08T04:30:15.000Z',
+    playbackConfirmed: true,
+  });
+
+  expect(played).toMatchObject({
+    measuredAt: '2026-06-08T04:30:15.000Z',
+    recordingCaptureSeconds: 10.4,
+    recordingPlaybackConfirmed: true,
+    recordingUriAvailable: true,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(played))).toMatchObject({
+    measuredCandidateEvidence: false,
+    observedPrototypeRecording: {
+      capturedSeconds: 10.4,
+      playbackConfirmed: true,
+      uriAvailable: true,
+    },
+    probeTemplate: {
+      evidenceSource: 'estimate',
+      recordingCaptureSeconds: null,
     },
   });
 });

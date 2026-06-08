@@ -16,6 +16,9 @@ export type PrototypeQaSnapshot = {
   muteObserved: boolean;
   audioDispatchFailures: number;
   sessionFallbackPreserved: boolean;
+  recordingCaptureSeconds: number | null;
+  recordingPlaybackConfirmed: boolean;
+  recordingUriAvailable: boolean;
 };
 
 export type PrototypeEventDispatchLatency = {
@@ -38,6 +41,11 @@ export type PrototypeProbeDraftInspectorModel = {
     muteObserved: boolean;
     pitchBendObserved: boolean;
     sessionFallbackPreserved: boolean;
+  };
+  observedPrototypeRecording: {
+    capturedSeconds: number | null;
+    playbackConfirmed: boolean;
+    uriAvailable: boolean;
   };
   probeTemplate: {
     candidate: AudioEngineCandidateId;
@@ -81,6 +89,9 @@ export function createInitialPrototypeQaSnapshot(input: {
     muteObserved: false,
     audioDispatchFailures: 0,
     sessionFallbackPreserved: false,
+    recordingCaptureSeconds: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
   };
 }
 
@@ -125,6 +136,36 @@ export function buildPrototypeProbeDraft(snapshot: PrototypeQaSnapshot): AudioEn
   });
 }
 
+export function recordPrototypeRecordingCapture(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    capturedSeconds: number;
+    measuredAt: string;
+    recordingUri: string | null;
+  },
+): PrototypeQaSnapshot {
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingCaptureSeconds: input.capturedSeconds,
+    recordingUriAvailable: isNonEmptyString(input.recordingUri),
+  };
+}
+
+export function recordPrototypeRecordingPlayback(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    measuredAt: string;
+    playbackConfirmed: boolean;
+  },
+): PrototypeQaSnapshot {
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingPlaybackConfirmed: snapshot.recordingPlaybackConfirmed || input.playbackConfirmed,
+  };
+}
+
 export function formatPrototypeProbeDraftForInspector(snapshot: PrototypeQaSnapshot): string {
   return JSON.stringify(createPrototypeProbeDraftInspectorModel(snapshot), null, 2);
 }
@@ -150,6 +191,11 @@ function createPrototypeProbeDraftInspectorModel(
       pitchBendObserved: snapshot.pitchBendObserved,
       sessionFallbackPreserved: snapshot.sessionFallbackPreserved,
     },
+    observedPrototypeRecording: {
+      capturedSeconds: snapshot.recordingCaptureSeconds,
+      playbackConfirmed: snapshot.recordingPlaybackConfirmed,
+      uriAvailable: snapshot.recordingUriAvailable,
+    },
     probeTemplate: {
       candidate: snapshot.candidate,
       evidenceSource: 'estimate',
@@ -165,6 +211,10 @@ function createPrototypeProbeDraftInspectorModel(
       recordingCaptureSeconds: null,
     },
   };
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
 }
 
 function updateEventDispatchLatency(
