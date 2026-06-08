@@ -24,6 +24,7 @@ export type PrototypeHandoffReadinessReport = {
   deviceLabelIssues: string[];
   timestampIssues: string[];
   manifestIssues: string[];
+  inspectorDraftIssues: string[];
   missingMeasurementFields: string[];
   invalidMeasurementFields: string[];
   runtimeIssues: string[];
@@ -121,6 +122,7 @@ export function buildPrototypeHandoffReadinessReport(
   const deviceLabelIssues = collectDeviceLabelIssues(handoff.entries);
   const timestampIssues = collectTimestampIssues(handoff);
   const manifestIssues = collectManifestIssues(handoff.entries);
+  const inspectorDraftIssues = collectInspectorDraftIssues(handoff.entries);
   const missingMeasurementFields = collectMissingMeasurementFields(handoff.entries);
   const invalidMeasurementFields = collectInvalidMeasurementFields(handoff.entries);
   const runtimeIssues = collectRuntimeIssues(handoff.entries);
@@ -131,6 +133,7 @@ export function buildPrototypeHandoffReadinessReport(
     deviceLabelIssues,
     timestampIssues,
     manifestIssues,
+    inspectorDraftIssues,
     missingMeasurementFields,
     invalidMeasurementFields,
     runtimeIssues,
@@ -141,6 +144,7 @@ export function buildPrototypeHandoffReadinessReport(
     deviceLabelIssues.length === 0 &&
     timestampIssues.length === 0 &&
     manifestIssues.length === 0 &&
+    inspectorDraftIssues.length === 0 &&
     missingMeasurementFields.length === 0 &&
     invalidMeasurementFields.length === 0 &&
     runtimeIssues.length === 0 &&
@@ -155,6 +159,7 @@ export function buildPrototypeHandoffReadinessReport(
     deviceLabelIssues,
     timestampIssues,
     manifestIssues,
+    inspectorDraftIssues,
     missingMeasurementFields,
     invalidMeasurementFields,
     runtimeIssues,
@@ -259,6 +264,28 @@ function collectManifestIssues(entries: PhysicalDevicePrototypeProbeHandoffInput
   return issues;
 }
 
+function collectInspectorDraftIssues(entries: PhysicalDevicePrototypeProbeHandoffInput[]): string[] {
+  const issues: string[] = [];
+
+  for (const entry of entries) {
+    const candidate = entry.inspectorDraft.probeTemplate.candidate;
+
+    if (entry.inspectorDraft.measuredCandidateEvidence !== false) {
+      issues.push(`${candidate}.inspectorDraft.measuredCandidateEvidence must be false`);
+    }
+
+    if (entry.inspectorDraft.runtimeUnderTest !== 'fake-sampler-engine') {
+      issues.push(`${candidate}.inspectorDraft.runtimeUnderTest must be fake-sampler-engine`);
+    }
+
+    if (entry.inspectorDraft.probeTemplate.evidenceSource !== 'estimate') {
+      issues.push(`${candidate}.inspectorDraft.probeTemplate.evidenceSource must be estimate`);
+    }
+  }
+
+  return issues;
+}
+
 function collectMissingMeasurementFields(
   entries: PhysicalDevicePrototypeProbeHandoffInput[],
 ): string[] {
@@ -312,6 +339,7 @@ function collectProbeRecordIssues(input: {
   deviceLabelIssues: string[];
   timestampIssues: string[];
   manifestIssues: string[];
+  inspectorDraftIssues: string[];
   missingMeasurementFields: string[];
   invalidMeasurementFields: string[];
   runtimeIssues: string[];
@@ -322,6 +350,7 @@ function collectProbeRecordIssues(input: {
     input.deviceLabelIssues.length > 0 ||
     input.timestampIssues.length > 0 ||
     input.manifestIssues.length > 0 ||
+    input.inspectorDraftIssues.length > 0 ||
     input.missingMeasurementFields.length > 0 ||
     input.invalidMeasurementFields.length > 0 ||
     input.runtimeIssues.length > 0
@@ -355,6 +384,7 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
     `- Device label issues: ${formatList(report.deviceLabelIssues)}`,
     `- Timestamp issues: ${formatList(report.timestampIssues)}`,
     `- Manifest issues: ${formatList(report.manifestIssues)}`,
+    `- Inspector draft issues: ${formatList(report.inspectorDraftIssues)}`,
     `- Missing measurement fields: ${formatList(report.missingMeasurementFields)}`,
     `- Invalid measurement fields: ${formatList(report.invalidMeasurementFields)}`,
     `- Runtime issues: ${formatList(report.runtimeIssues)}`,
