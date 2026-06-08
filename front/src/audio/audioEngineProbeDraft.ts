@@ -133,7 +133,7 @@ function countTriggeredGlissandoStrings(events: PerformanceEvent[]): number {
 function getInvalidPhysicalDeviceMeasurementFields(
   measurements: PhysicalDeviceAudioEngineProbeMeasurements,
 ): string[] {
-  const invalidFields: string[] = [];
+  const invalidFields = getUnexpectedPhysicalDeviceMeasurementFields(measurements);
 
   for (const field of PHYSICAL_DEVICE_DURATION_FIELDS) {
     if (!isNonNegativeFiniteNumber(measurements[field])) {
@@ -163,12 +163,30 @@ function getInvalidPhysicalDeviceMeasurementFields(
   return orderMeasurementFields([...new Set(invalidFields)]);
 }
 
+function getUnexpectedPhysicalDeviceMeasurementFields(
+  measurements: PhysicalDeviceAudioEngineProbeMeasurements,
+): string[] {
+  return Object.keys(measurements)
+    .filter(
+      (field) =>
+        !PHYSICAL_DEVICE_MEASUREMENT_FIELDS.includes(
+          field as keyof PhysicalDeviceAudioEngineProbeMeasurements,
+        ),
+    )
+    .sort();
+}
+
 function orderMeasurementFields(fields: string[]): string[] {
   const order = new Map<string, number>(
     PHYSICAL_DEVICE_MEASUREMENT_FIELDS.map((field, index) => [field, index]),
   );
 
-  return [...fields].sort((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0));
+  return [...fields].sort((left, right) => {
+    const leftOrder = order.get(left) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = order.get(right) ?? Number.MAX_SAFE_INTEGER;
+
+    return leftOrder === rightOrder ? left.localeCompare(right) : leftOrder - rightOrder;
+  });
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {
