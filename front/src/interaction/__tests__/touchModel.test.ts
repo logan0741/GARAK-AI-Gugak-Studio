@@ -22,6 +22,23 @@ test('fires a pluck immediately on touch start for the string under the finger',
   ).toEqual([{ type: 'string_pluck', tsMs: 100, stringIndex: 3, velocity: 0.72 }]);
 });
 
+test('does not retain a pointer when touch start rejects a non-finite velocity', () => {
+  const model = createTouchModel({ layout });
+
+  expect(() =>
+    model.handleFrame({
+      phase: 'start',
+      pointerId: 'p1',
+      tsMs: 100,
+      x: 40,
+      y: 25,
+      force: Number.NaN,
+    }),
+  ).toThrow('velocity must be finite');
+
+  expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 120, x: 40, y: 25 })).toEqual([]);
+});
+
 test('emits glissando steps for every newly crossed string during a swipe', () => {
   const model = createTouchModel({ layout });
   model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 15 });

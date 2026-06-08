@@ -67,21 +67,21 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 
   function handleStart(frame: TouchFrame): PerformanceEvent[] {
     const stringIndex = stringIndexForY(input.layout, frame.y);
+    const isMuteStart = isMuteContact(frame.contactArea, muteAreaThreshold);
+    const event = isMuteStart
+      ? mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 })
+      : mapTap({ tsMs: frame.tsMs, stringIndex, velocity: frame.force ?? 1 });
+
     activePointers.set(frame.pointerId, {
       pointerId: frame.pointerId,
-      mode: isMuteContact(frame.contactArea, muteAreaThreshold) ? 'mute' : 'pending',
+      mode: isMuteStart ? 'mute' : 'pending',
       startedAtMs: frame.tsMs,
       startX: frame.x,
       lastStringIndex: stringIndex,
-      mutedStringIndexes: new Set(),
+      mutedStringIndexes: new Set(isMuteStart ? [stringIndex] : []),
     });
 
-    if (isMuteContact(frame.contactArea, muteAreaThreshold)) {
-      activePointers.get(frame.pointerId)?.mutedStringIndexes.add(stringIndex);
-      return [mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 })];
-    }
-
-    return [mapTap({ tsMs: frame.tsMs, stringIndex, velocity: frame.force ?? 1 })];
+    return [event];
   }
 
   function handleMove(frame: TouchFrame): PerformanceEvent[] {
