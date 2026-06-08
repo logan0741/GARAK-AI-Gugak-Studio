@@ -81,6 +81,7 @@ export function isPrototypeRecordingMeasurementBackedByPlayback(input: {
     return true;
   }
 
+  const recordingCaptureSeconds = input.recordingCaptureSeconds;
   const observedRecording = input.inspectorDraft.observedPrototypeRecording as
     | PrototypeProbeDraftInspectorModel['observedPrototypeRecording']
     | undefined;
@@ -88,7 +89,7 @@ export function isPrototypeRecordingMeasurementBackedByPlayback(input: {
   return (
     observedRecording?.capturedSeconds !== null &&
     observedRecording?.capturedSeconds !== undefined &&
-    observedRecording.capturedSeconds >= 10 &&
+    observedRecording.capturedSeconds >= recordingCaptureSeconds &&
     observedRecording.uriAvailable === true &&
     observedRecording.playbackConfirmed === true &&
     observedRecording.fallbackReason === null

@@ -199,6 +199,30 @@ test('rejects ten-second recording promotion without inspector playback confirma
   );
 });
 
+test('rejects recording promotion when measurements exceed inspector captured seconds', () => {
+  const inspectorDraft = createInspectorDraftForCandidate('expo-audio');
+
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: {
+        ...inspectorDraft,
+        observedPrototypeRecording: {
+          capturedSeconds: 10,
+          fallbackReason: null,
+          playbackConfirmed: true,
+          uriAvailable: true,
+        },
+      },
+      measurements: {
+        ...measurements,
+        recordingCaptureSeconds: 12,
+      },
+    }),
+  ).toThrow(
+    'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+  );
+});
+
 test.each([
   [
     'measured candidate evidence',
