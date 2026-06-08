@@ -155,6 +155,34 @@ test('rejects physical-device probes that still use the placeholder device label
   });
 });
 
+test('rejects physical-device probes that use placeholder-like device labels', () => {
+  for (const deviceLabel of [
+    'Replace With Physical Device Model',
+    'Device / OS',
+    'Device /OS',
+    'Device/ OS',
+    'Device/OS',
+    'physical device',
+  ]) {
+    expect(
+      parseAudioEngineProbeRecord({
+        ...physicalProbeRecord,
+        probes: [
+          {
+            ...physicalProbeRecord.probes[0],
+            deviceLabel,
+          },
+        ],
+      }),
+    ).toEqual({
+      ok: false,
+      errors: [
+        'probes[0].deviceLabel must name the physical device when evidenceSource is physical-device',
+      ],
+    });
+  }
+});
+
 test('requires UTC ISO timestamps for generated and measured probe times', () => {
   expect(
     parseAudioEngineProbeRecord({
