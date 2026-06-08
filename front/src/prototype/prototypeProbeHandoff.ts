@@ -4,7 +4,10 @@ import {
   promoteAudioEngineProbeDraftToPhysicalDevice,
 } from '../audio/audioEngineProbeDraft';
 import { AudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
-import { isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from '../qa/physicalDeviceLabel';
 import { PrototypeProbeDraftInspectorModel } from './prototypeQaSnapshot';
 import { PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION } from './prototypeSampleManifest';
 
@@ -121,20 +124,13 @@ function assertPrototypeHandoffDeviceLabel(
   }
 
   if (
-    normalizePrototypeHandoffDeviceLabel(input.deviceLabel) !==
-    normalizePrototypeHandoffDeviceLabel(draftDeviceLabel)
+    normalizePhysicalDeviceLabelForReport(input.deviceLabel) !==
+    normalizePhysicalDeviceLabelForReport(draftDeviceLabel)
   ) {
     throw new Error(
       `prototype handoff deviceLabel must match inspector draft device label ${draftDeviceLabel}`,
     );
   }
-}
-
-function normalizePrototypeHandoffDeviceLabel(input: string): string {
-  return input
-    .trim()
-    .replace(/\s*\/\s*/g, ' / ')
-    .replace(/\s+/g, ' ');
 }
 
 function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {

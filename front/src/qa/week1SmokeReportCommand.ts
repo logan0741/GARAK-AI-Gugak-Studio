@@ -1,3 +1,8 @@
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from './physicalDeviceLabel';
+
 export type Week1SmokeAreaId =
   | 'day-2-expo-audio'
   | 'day-3-react-native-audio-api'
@@ -284,7 +289,9 @@ function collectDuplicateChecks(runs: Week1SmokeRun[]): string[] {
 }
 
 function collectDeviceLabelIssues(runs: Week1SmokeRun[]): string[] {
-  const deviceLabels = unique(runs.map((run) => normalizeDeviceLabelForReport(run.deviceLabel)));
+  const deviceLabels = unique(
+    runs.map((run) => normalizePhysicalDeviceLabelForReport(run.deviceLabel)),
+  );
   if (deviceLabels.length <= 1) {
     return [];
   }
@@ -396,36 +403,6 @@ export function isIsoTimestamp(input: unknown): input is string {
 
 function isNonEmptyString(input: unknown): input is string {
   return typeof input === 'string' && input.trim().length > 0;
-}
-
-export function isPhysicalDeviceLabel(input: unknown): input is string {
-  if (!isNonEmptyString(input)) {
-    return false;
-  }
-
-  const normalized = normalizePhysicalDeviceLabel(input);
-  return ![
-    'replace-with-physical-device-model',
-    'replace with physical device model',
-    'device os',
-    'device/os',
-    'physical device',
-  ].includes(normalized);
-}
-
-function normalizePhysicalDeviceLabel(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/\s*\/\s*/g, '/')
-    .replace(/\s+/g, ' ');
-}
-
-function normalizeDeviceLabelForReport(input: string): string {
-  return input
-    .trim()
-    .replace(/\s*\/\s*/g, ' / ')
-    .replace(/\s+/g, ' ');
 }
 
 function isObject(input: unknown): input is Record<string, unknown> {

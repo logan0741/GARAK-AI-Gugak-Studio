@@ -4,7 +4,11 @@ import {
   type PrototypeHandoffFile,
 } from './prototypeHandoffFile';
 import { type PhysicalDevicePrototypeProbeHandoffInput } from './prototypeProbeHandoff';
-import { isIsoTimestamp, isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
+import { isIsoTimestamp } from '../qa/week1SmokeReportCommand';
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from '../qa/physicalDeviceLabel';
 
 export type PrototypeHandoffMergeCommandInput = {
   argv: string[];
@@ -150,11 +154,7 @@ function collectDeviceLabels(
     entry.inspectorDraft.probeTemplate.deviceLabel,
   ]);
 
-  return unique(labels.filter(isString).map(normalizeDeviceLabelForReport));
-}
-
-function normalizeDeviceLabelForReport(input: string): string {
-  return input.trim().replace(/\s*\/\s*/g, ' / ').replace(/\s+/g, ' ');
+  return unique(labels.filter(isString).map(normalizePhysicalDeviceLabelForReport));
 }
 
 function unique(values: string[]): string[] {

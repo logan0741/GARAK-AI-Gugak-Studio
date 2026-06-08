@@ -1,7 +1,10 @@
 import { type AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import { type PhysicalDeviceAudioEngineProbeMeasurements } from '../audio/audioEngineProbeDraft';
 import { parseAudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
-import { isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from '../qa/physicalDeviceLabel';
 import {
   parsePrototypeHandoffFile,
   type PrototypeHandoffFile,
@@ -202,14 +205,15 @@ function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffIn
 
     if (
       entry.deviceLabel !== undefined &&
-      normalizeDeviceLabelForReport(entry.deviceLabel) !== normalizeDeviceLabelForReport(draftDeviceLabel)
+      normalizePhysicalDeviceLabelForReport(entry.deviceLabel) !==
+        normalizePhysicalDeviceLabelForReport(draftDeviceLabel)
     ) {
       issues.push(
         `${candidate}.deviceLabel must match inspector draft device label ${draftDeviceLabel}`,
       );
     }
 
-    physicalDeviceLabels.push(normalizeDeviceLabelForReport(draftDeviceLabel));
+    physicalDeviceLabels.push(normalizePhysicalDeviceLabelForReport(draftDeviceLabel));
   }
 
   const uniquePhysicalDeviceLabels = [...new Set(physicalDeviceLabels)];
@@ -394,13 +398,6 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
 
 function formatList(values: string[]): string {
   return values.length === 0 ? 'none' : values.join(', ');
-}
-
-function normalizeDeviceLabelForReport(input: string): string {
-  return input
-    .trim()
-    .replace(/\s*\/\s*/g, ' / ')
-    .replace(/\s+/g, ' ');
 }
 
 function isUtcIsoTimestamp(input: unknown): input is string {

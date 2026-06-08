@@ -6,6 +6,10 @@ import {
   evaluateAudioEngineProbe,
   selectAudioEngineCandidate,
 } from './audioEngineEvaluation';
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from '../qa/physicalDeviceLabel';
 
 export type Day5AudioEngineDecisionStatus =
   | 'INCOMPLETE_DEVICE_EVIDENCE'
@@ -26,14 +30,6 @@ const DAY_5_REQUIRED_AUDIO_ENGINE_CANDIDATES: AudioEngineCandidateId[] = [
   'expo-audio',
   'react-native-audio-api',
 ];
-const PHYSICAL_DEVICE_LABEL_PLACEHOLDERS = new Set([
-  'replace-with-physical-device-model',
-  'replace with physical device model',
-  'device os',
-  'device / os',
-  'device/os',
-  'physical device',
-]);
 
 export function buildDay5AudioEngineDecisionRecord(input: {
   generatedAt: string;
@@ -121,7 +117,7 @@ function collectDeviceLabelIssues(probes: AudioEngineProbe[]): string[] {
       continue;
     }
 
-    labels.push(normalizeDeviceLabel(probe.deviceLabel));
+    labels.push(normalizePhysicalDeviceLabelForReport(probe.deviceLabel));
   }
 
   const uniqueLabels = unique(labels);
@@ -130,22 +126,6 @@ function collectDeviceLabelIssues(probes: AudioEngineProbe[]): string[] {
   }
 
   return issues;
-}
-
-function isPhysicalDeviceLabel(input: string): boolean {
-  return input.trim().length > 0 && !PHYSICAL_DEVICE_LABEL_PLACEHOLDERS.has(normalizeLabelKey(input));
-}
-
-function normalizeLabelKey(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/\s*\/\s*/g, '/')
-    .replace(/\s+/g, ' ');
-}
-
-function normalizeDeviceLabel(input: string): string {
-  return input.trim().replace(/\s*\/\s*/g, ' / ').replace(/\s+/g, ' ');
 }
 
 function unique(values: string[]): string[] {
