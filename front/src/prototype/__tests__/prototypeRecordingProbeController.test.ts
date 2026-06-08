@@ -42,6 +42,33 @@ test('starts a supported recording probe for the requested duration', async () =
   });
 });
 
+test('rejects invalid recording duration before calling the active engine', async () => {
+  const requestedDurations: number[] = [];
+  const engine = {
+    handleEvent: () => undefined,
+    startRecordingProbe: async (durationSeconds: number) => {
+      requestedDurations.push(durationSeconds);
+      return {
+        ok: true as const,
+        requestedDurationSeconds: durationSeconds,
+      };
+    },
+    stopRecordingProbe: async () => ({
+      ok: true as const,
+      capturedSeconds: 10,
+      recordingUri: 'file://recording.m4a',
+    }),
+  };
+
+  for (const durationSeconds of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    await expect(startPrototypeRecordingProbe(engine, durationSeconds)).resolves.toEqual({
+      status: 'failed',
+      errorMessage: 'recording_duration_invalid',
+    });
+  }
+  expect(requestedDurations).toEqual([]);
+});
+
 test('surfaces recording start failures without throwing away the session fallback', async () => {
   const engine = {
     handleEvent: () => undefined,

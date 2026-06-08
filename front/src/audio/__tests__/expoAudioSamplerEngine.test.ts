@@ -107,6 +107,22 @@ test('prepares a 10 second recording probe when permission is granted', async ()
   expect(runtime.recorders[0].recordCalls).toEqual([{ forDuration: 10 }]);
 });
 
+test('rejects invalid recording probe duration before touching native recording APIs', async () => {
+  for (const durationSeconds of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const runtime = createRuntimePort();
+    const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+    await expect(engine.startRecordingProbe(durationSeconds)).resolves.toEqual({
+      ok: false,
+      reason: 'recording_duration_invalid',
+    });
+
+    expect(runtime.permissionRequests).toBe(0);
+    expect(runtime.modeCalls).toEqual([]);
+    expect(runtime.recorders).toEqual([]);
+  }
+});
+
 test('does not overwrite an active recording probe', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
