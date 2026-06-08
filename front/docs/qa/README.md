@@ -24,7 +24,7 @@ The readiness command is the bridge between Week 1 smoke evidence and the Day 5 
 
 `src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null, correctly typed, in-range values.
 
-When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The prototype screen has a `Device / OS` input that updates the copyable probe draft before handoff. The Day 5 parser rejects that placeholder and placeholder-like labels such as `Device / OS` for final-selection evidence.
+When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The prototype screen has a `Device / OS` input that updates the copyable probe draft before handoff. Clearing that input resets the copyable draft to `replace-with-physical-device-model` so a stale physical device label is not copied by accident. The Day 5 parser rejects that placeholder and placeholder-like labels such as `Device / OS` for final-selection evidence.
 
 The prototype probe draft also includes `observedRuntime` so the handoff records the requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error when present. Treat that field as QA context only; it does not replace any `physical-device` probe value.
 

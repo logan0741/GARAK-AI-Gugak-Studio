@@ -103,6 +103,7 @@ export type PrototypeRuntimeObservation = {
 
 const PROTOTYPE_DRAFT_NOTE =
   'Estimate draft from fake prototype engine counters. Replace with physical-device candidate measurements before Day 5 handoff.';
+export const PROTOTYPE_DEVICE_LABEL_PLACEHOLDER = 'replace-with-physical-device-model';
 const EMPTY_EVENT_DISPATCH_LATENCY: PrototypeEventDispatchLatency = {
   sampleCount: 0,
   latestMs: null,
@@ -175,7 +176,7 @@ export function updatePrototypeQaDeviceLabel(
 
   return {
     ...snapshot,
-    deviceLabel: deviceLabel.length > 0 ? deviceLabel : snapshot.deviceLabel,
+    deviceLabel: deviceLabel.length > 0 ? deviceLabel : PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
     measuredAt: input.measuredAt,
   };
 }
