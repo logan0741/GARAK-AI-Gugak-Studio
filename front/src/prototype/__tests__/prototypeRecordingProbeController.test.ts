@@ -83,6 +83,27 @@ test('returns captured recording metadata from a supported engine', async () => 
   });
 });
 
+test('normalizes whitespace captured recording uri to null at the prototype stop boundary', async () => {
+  const engine = {
+    handleEvent: () => undefined,
+    startRecordingProbe: async () => ({
+      ok: true as const,
+      requestedDurationSeconds: 10,
+    }),
+    stopRecordingProbe: async () => ({
+      ok: true as const,
+      capturedSeconds: 10,
+      recordingUri: '   ',
+    }),
+  };
+
+  await expect(stopPrototypeRecordingProbe(engine)).resolves.toEqual({
+    status: 'captured',
+    capturedSeconds: 10,
+    recordingUri: null,
+  });
+});
+
 test('plays a captured recording probe through a supported engine', async () => {
   const playbackUris: string[] = [];
   const engine = {

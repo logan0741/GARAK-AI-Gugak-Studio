@@ -75,7 +75,7 @@ export async function stopPrototypeRecordingProbe(
     return {
       status: 'captured',
       capturedSeconds: result.capturedSeconds,
-      recordingUri: result.recordingUri,
+      recordingUri: normalizeRecordingUri(result.recordingUri),
     };
   } catch (error: unknown) {
     return { status: 'failed', errorMessage: getErrorMessage(error) };
@@ -127,4 +127,12 @@ function isRecordingProbePlaybackCapableEngine(
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function normalizeRecordingUri(recordingUri: string | null): string | null {
+  if (recordingUri === null || recordingUri.trim().length === 0) {
+    return null;
+  }
+
+  return recordingUri;
 }
