@@ -33,7 +33,8 @@ export function runWeek1SmokeTemplateCommand(
     return 1;
   }
 
-  if (!isPhysicalDeviceLabel(deviceLabel)) {
+  const normalizedDeviceLabel = deviceLabel.trim();
+  if (!isPhysicalDeviceLabel(normalizedDeviceLabel)) {
     input.writeStderr(
       'Could not write Week 1 smoke report template: device label must name the physical device',
     );
@@ -45,7 +46,7 @@ export function runWeek1SmokeTemplateCommand(
     generatedAt,
     testedAt: generatedAt,
     tester: normalizedTester,
-    deviceLabel,
+    deviceLabel: normalizedDeviceLabel,
   });
 
   try {
