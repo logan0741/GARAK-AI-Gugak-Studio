@@ -190,6 +190,35 @@ test('rejects incomplete sample manifests before creating a native candidate', a
   expect(resolvedUris).toEqual([]);
 });
 
+test('rejects duplicate sample string indexes before creating a native candidate', async () => {
+  const resolvedUris: string[] = [];
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'react-native-audio-api',
+      manifest: {
+        version: 'duplicate-manifest',
+        assets: [...manifest.assets, { ...manifest.assets[0], id: 'duplicate-string-1' }],
+      },
+      assetResolver: {
+        resolveFileUri: async (fileUri) => {
+          resolvedUris.push(fileUri);
+          return fileUri;
+        },
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow('Prototype native sampler requires exactly one sample for each string; duplicate strings: 1');
+  expect(resolvedUris).toEqual([]);
+});
+
 test.each(['expo-audio', 'react-native-audio-api'] as const)(
   'rejects incomplete sample manifests before loading default native dependencies for %s',
   async (candidate) => {
