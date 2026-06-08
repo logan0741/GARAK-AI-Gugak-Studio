@@ -99,6 +99,10 @@ test('writes a Day 5 probe record to an explicit output file path', () => {
           generatedAt: '2026-06-08T03:10:00.000Z',
           entries: [
             {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measurements,
+            },
+            {
               inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
               measurements,
             },
@@ -119,6 +123,37 @@ test('writes a Day 5 probe record to an explicit output file path', () => {
   });
 });
 
+test('rejects prototype handoffs that are not ready for probe record generation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writtenFiles = new Map<string, string>();
+
+  expect(
+    runPrototypeProbeHandoffCommand({
+      argv: ['incomplete-handoff.json', 'probe-record.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T03:10:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeTextFile: (path, value) => writtenFiles.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect([...writtenFiles.entries()]).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not build prototype probe record: prototype handoff is not ready for probe record: missing candidates: expo-audio',
+  ]);
+});
+
 test('rejects generated probe records that do not pass Day 5 parser validation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -130,6 +165,10 @@ test('rejects generated probe records that do not pass Day 5 parser validation',
         JSON.stringify({
           generatedAt: 'not-an-iso-timestamp',
           entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measurements,
+            },
             {
               inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
               measurements,
@@ -144,7 +183,7 @@ test('rejects generated probe records that do not pass Day 5 parser validation',
 
   expect(stdout).toEqual([]);
   expect(stderr).toEqual([
-    'Could not build prototype probe record: generated probe record is invalid: generatedAt must be a UTC ISO timestamp',
+    'Could not build prototype probe record: prototype handoff is not ready for probe record: timestamp issues: generatedAt must be a UTC ISO timestamp',
   ]);
 });
 
@@ -184,6 +223,10 @@ test('returns readable errors when the output probe record cannot be written', (
           generatedAt: '2026-06-08T03:10:00.000Z',
           entries: [
             {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measurements,
+            },
+            {
               inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
               measurements,
             },
@@ -213,6 +256,10 @@ test('returns readable errors when prototype runtime is not ready', () => {
           generatedAt: '2026-06-08T03:10:00.000Z',
           entries: [
             {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measurements,
+            },
+            {
               inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api', {
                 activeRuntime: 'fake-prototype',
                 nativePreloadStatus: 'preloading',
@@ -229,7 +276,7 @@ test('returns readable errors when prototype runtime is not ready', () => {
 
   expect(stdout).toEqual([]);
   expect(stderr).toEqual([
-    'Could not build prototype probe record: prototype runtime must be ready for react-native-audio-api before physical-device promotion',
+    'Could not build prototype probe record: prototype handoff is not ready for probe record: runtime issues: react-native-audio-api runtime is not ready',
   ]);
 });
 
