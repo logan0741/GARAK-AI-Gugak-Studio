@@ -33,6 +33,8 @@ import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
+  recordPrototypeRecordingCapture,
+  recordPrototypeRecordingPlayback,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
 import {
@@ -236,6 +238,13 @@ export function GayageumPrototypeScreen() {
     setRecordingProbeState(result);
     if (result.status === 'captured') {
       const { recordingUri } = result;
+      setQaSnapshot((current) =>
+        recordPrototypeRecordingCapture(current, {
+          capturedSeconds: result.capturedSeconds,
+          measuredAt: new Date().toISOString(),
+          recordingUri,
+        }),
+      );
       if (typeof recordingUri === 'string') {
         setSession((current) => attachRecordingUriToSession(current, recordingUri));
       }
@@ -254,6 +263,12 @@ export function GayageumPrototypeScreen() {
 
     const result = await playCapturedPrototypeRecordingProbe(engineRef.current, recordingUri);
     setRecordingProbeState(result);
+    setQaSnapshot((current) =>
+      recordPrototypeRecordingPlayback(current, {
+        measuredAt: new Date().toISOString(),
+        playbackConfirmed: result.status === 'playing',
+      }),
+    );
   }
 
   function handleTouchFrame(phase: TouchFrame['phase'], event: GestureResponderEvent, gestureState: PanResponderGestureState) {
