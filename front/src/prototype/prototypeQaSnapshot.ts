@@ -92,6 +92,7 @@ export type PrototypeRuntimeObservation = {
   activeRuntime: 'fake-prototype' | AudioEngineCandidateId;
   runtimeStatus:
     | 'missing_sample_manifest'
+    | 'duplicate_sample_manifest'
     | 'native_candidate_preloading'
     | 'native_candidate_failed'
     | 'native_candidate_ready';
