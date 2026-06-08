@@ -104,6 +104,27 @@ test('normalizes whitespace captured recording uri to null at the prototype stop
   });
 });
 
+test('trims captured recording uri at the prototype stop boundary', async () => {
+  const engine = {
+    handleEvent: () => undefined,
+    startRecordingProbe: async () => ({
+      ok: true as const,
+      requestedDurationSeconds: 10,
+    }),
+    stopRecordingProbe: async () => ({
+      ok: true as const,
+      capturedSeconds: 10,
+      recordingUri: '  file://probe.m4a  ',
+    }),
+  };
+
+  await expect(stopPrototypeRecordingProbe(engine)).resolves.toEqual({
+    status: 'captured',
+    capturedSeconds: 10,
+    recordingUri: 'file://probe.m4a',
+  });
+});
+
 test('plays a captured recording probe through a supported engine', async () => {
   const playbackUris: string[] = [];
   const engine = {
@@ -118,6 +139,26 @@ test('plays a captured recording probe through a supported engine', async () => 
   };
 
   await expect(playCapturedPrototypeRecordingProbe(engine, 'file://probe.m4a')).resolves.toEqual({
+    status: 'playing',
+    recordingUri: 'file://probe.m4a',
+  });
+  expect(playbackUris).toEqual(['file://probe.m4a']);
+});
+
+test('trims captured recording uri before playback probe', async () => {
+  const playbackUris: string[] = [];
+  const engine = {
+    handleEvent: () => undefined,
+    playRecordingProbe: async (recordingUri: string) => {
+      playbackUris.push(recordingUri);
+      return {
+        ok: true as const,
+        recordingUri,
+      };
+    },
+  };
+
+  await expect(playCapturedPrototypeRecordingProbe(engine, '  file://probe.m4a  ')).resolves.toEqual({
     status: 'playing',
     recordingUri: 'file://probe.m4a',
   });

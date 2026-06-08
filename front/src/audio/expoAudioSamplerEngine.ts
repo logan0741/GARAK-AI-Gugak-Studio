@@ -195,18 +195,19 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   async playRecordingProbe(recordingUri: string): Promise<ExpoAudioRecordingPlaybackResult> {
-    if (recordingUri.trim().length === 0) {
+    const normalizedRecordingUri = normalizeRecordingUri(recordingUri);
+    if (normalizedRecordingUri === null) {
       return { ok: false, reason: 'recording_playback_uri_missing' };
     }
 
     try {
       await this.runtime.setAudioModeAsync(PLAYBACK_MODE);
-      const player = this.runtime.createAudioPlayer({ uri: recordingUri }, PLAYER_OPTIONS);
+      const player = this.runtime.createAudioPlayer({ uri: normalizedRecordingUri }, PLAYER_OPTIONS);
       this.recordingProbePlayer = player;
       player.volume = 1;
       await player.seekTo(0);
       player.play();
-      return { ok: true, recordingUri };
+      return { ok: true, recordingUri: normalizedRecordingUri };
     } catch {
       return { ok: false, reason: 'recording_playback_failed' };
     }
@@ -262,11 +263,12 @@ function clampPlaybackRate(value: number): number {
 }
 
 function normalizeRecordingUri(recordingUri: string | null): string | null {
-  if (recordingUri === null || recordingUri.trim().length === 0) {
+  const normalizedRecordingUri = recordingUri?.trim() ?? '';
+  if (normalizedRecordingUri.length === 0) {
     return null;
   }
 
-  return recordingUri;
+  return normalizedRecordingUri;
 }
 
 function normalizeCapturedSeconds(durationMillis: number): number {
