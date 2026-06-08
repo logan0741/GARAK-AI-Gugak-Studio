@@ -43,6 +43,25 @@ const PHYSICAL_DEVICE_MEASUREMENT_FIELDS = [
   'recordingCaptureSeconds',
 ] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
 
+const PHYSICAL_DEVICE_DURATION_FIELDS = [
+  'touchToSoundLatencyMs',
+  'recordingCaptureSeconds',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+
+const PHYSICAL_DEVICE_COUNT_FIELDS = [
+  'maxStableVoices',
+  'glissandoTriggeredStrings',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+
+const PHYSICAL_DEVICE_BOOLEAN_FIELDS = [
+  'pitchBendSmooth',
+  'muteReleaseClean',
+  'preloadStable',
+  'sessionFallbackPreserved',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+
+const MAX_GAYAGEUM_STRING_COUNT = 12;
+
 export function createAudioEngineProbeDraft(input: AudioEngineProbeDraftInput): AudioEngineProbe {
   return {
     candidate: input.candidate,
@@ -79,6 +98,11 @@ export function promoteAudioEngineProbeDraftToPhysicalDevice(input: {
     throw new Error(`physical-device measurements missing: ${missingFields.join(', ')}`);
   }
 
+  const invalidFields = getInvalidPhysicalDeviceMeasurementFields(input.measurements);
+  if (invalidFields.length > 0) {
+    throw new Error(`physical-device measurements invalid: ${invalidFields.join(', ')}`);
+  }
+
   return {
     ...input.draft,
     ...input.measurements,
@@ -104,4 +128,53 @@ function countTriggeredGlissandoStrings(events: PerformanceEvent[]): number {
       .filter((event) => event.type === 'glissando_step')
       .map((event) => event.stringIndex),
   ).size;
+}
+
+function getInvalidPhysicalDeviceMeasurementFields(
+  measurements: PhysicalDeviceAudioEngineProbeMeasurements,
+): string[] {
+  const invalidFields: string[] = [];
+
+  for (const field of PHYSICAL_DEVICE_DURATION_FIELDS) {
+    if (!isNonNegativeFiniteNumber(measurements[field])) {
+      invalidFields.push(field);
+    }
+  }
+
+  for (const field of PHYSICAL_DEVICE_COUNT_FIELDS) {
+    if (!isNonNegativeInteger(measurements[field])) {
+      invalidFields.push(field);
+    }
+  }
+
+  if (
+    isNonNegativeInteger(measurements.glissandoTriggeredStrings) &&
+    measurements.glissandoTriggeredStrings > MAX_GAYAGEUM_STRING_COUNT
+  ) {
+    invalidFields.push('glissandoTriggeredStrings');
+  }
+
+  for (const field of PHYSICAL_DEVICE_BOOLEAN_FIELDS) {
+    if (typeof measurements[field] !== 'boolean') {
+      invalidFields.push(field);
+    }
+  }
+
+  return orderMeasurementFields([...new Set(invalidFields)]);
+}
+
+function orderMeasurementFields(fields: string[]): string[] {
+  const order = new Map<string, number>(
+    PHYSICAL_DEVICE_MEASUREMENT_FIELDS.map((field, index) => [field, index]),
+  );
+
+  return [...fields].sort((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0));
+}
+
+function isNonNegativeFiniteNumber(input: unknown): input is number {
+  return typeof input === 'number' && Number.isFinite(input) && input >= 0;
+}
+
+function isNonNegativeInteger(input: unknown): input is number {
+  return Number.isInteger(input) && typeof input === 'number' && input >= 0;
 }
