@@ -79,6 +79,8 @@ Captured recording URIs are trimmed before they are stored or sent to playback. 
 
 Captured playback must use the current candidate's recording probe state. After changing the requested candidate, `Play Rec` must not reuse a stale session recording URI from the previous candidate.
 
+When a new capture result or recording fallback is recorded, `observedPrototypeRecording.playbackConfirmed` must reset to `false`. Treat playback confirmation as valid only after `Play Rec` succeeds for the current captured URI.
+
 ```ts
 {
   candidate: 'react-native-audio-api' | 'expo-audio',

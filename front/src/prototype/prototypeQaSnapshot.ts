@@ -206,6 +206,7 @@ export function recordPrototypeRecordingCapture(
     measuredAt: input.measuredAt,
     recordingCaptureSeconds: input.capturedSeconds,
     recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
+    recordingPlaybackConfirmed: false,
     recordingUriAvailable,
   };
 }
@@ -221,6 +222,7 @@ export function recordPrototypeRecordingFallback(
     ...snapshot,
     measuredAt: input.measuredAt,
     recordingFallbackReason: input.fallbackReason,
+    recordingPlaybackConfirmed: false,
   };
 }
 
