@@ -36,7 +36,9 @@ export function buildDay5AudioEngineDecisionRecord(input: {
   probes: AudioEngineProbe[];
 }): Day5AudioEngineDecisionRecord {
   const physicalDeviceProbes = input.probes.filter(
-    (probe) => probe.evidenceSource === 'physical-device',
+    (probe) =>
+      probe.evidenceSource === 'physical-device' &&
+      isDay5RequiredAudioEngineCandidate(probe.candidate),
   );
   const evaluations = physicalDeviceProbes.map(evaluateAudioEngineProbe);
   const measuredCandidates = new Set(physicalDeviceProbes.map((probe) => probe.candidate));
@@ -126,6 +128,12 @@ function collectDeviceLabelIssues(probes: AudioEngineProbe[]): string[] {
   }
 
   return issues;
+}
+
+function isDay5RequiredAudioEngineCandidate(
+  candidate: AudioEngineCandidateId,
+): candidate is AudioEngineCandidateId {
+  return DAY_5_REQUIRED_AUDIO_ENGINE_CANDIDATES.includes(candidate);
 }
 
 function unique(values: string[]): string[] {

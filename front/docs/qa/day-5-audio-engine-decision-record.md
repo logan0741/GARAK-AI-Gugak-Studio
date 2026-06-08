@@ -83,6 +83,8 @@ This candidate set is fixed for the Week 1 Day 5 gate. Callers must not narrow i
 
 Only probes with `evidenceSource: 'physical-device'` count as measured for this record. Emulator, unit-test, and estimate probes may support development, but they do not satisfy the Day 5 final-selection gate.
 
+If a caller bypasses `parseAudioEngineProbeRecord()` and passes an unexpected candidate into the decision builder, that probe is ignored for measured-candidate, duplicate-candidate, evaluation, and final-selection purposes. The Week 1 decision can only be made from `expo-audio` and `react-native-audio-api` physical-device probes.
+
 When a draft is promoted to `physical-device`, `deviceLabel` must be replaced with the tested physical model, for example `Galaxy S24 / Android 15` or `iPhone 15 / iOS 18`. The parser rejects estimate placeholders such as `replace-with-physical-device-model`, `Device / OS`, or `physical device` for physical-device evidence.
 
 Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026`, slash-separated dates, or impossible calendar dates such as `2026-02-31T10:00:00.000Z` are rejected by the parser.
