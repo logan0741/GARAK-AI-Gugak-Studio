@@ -71,6 +71,8 @@ The copyable prototype probe draft includes `observedRuntime` for handoff tracea
 
 If a candidate cannot start, stop, or play a recording probe, copy `observedPrototypeRecording.fallbackReason` and the `Session fallback` JSON. This records the fallback decision for review, but it is not a passing 10-second capture result.
 
+For `expo-audio` recording probes, a non-finite or negative native recorder duration is normalized to `0` captured seconds before it reaches the prototype inspector. Treat that as failed recording evidence unless the tester has a separate verified 10-second capture and playback result.
+
 ```ts
 {
   candidate: 'react-native-audio-api' | 'expo-audio',
