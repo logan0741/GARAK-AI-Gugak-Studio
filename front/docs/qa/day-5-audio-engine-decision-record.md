@@ -21,14 +21,17 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/prototype/prototypeQaSnapshot.ts` | Prototype-only read model that tracks observable fake counters and renders estimate probe and prototype handoff templates with nullable physical-device measurement fields. |
 | `src/prototype/prototypeProbeHandoff.ts` | Converts prototype inspector drafts into physical-device probes or a Day 5 probe record only when observed runtime context proves each requested native candidate is ready. |
 | `src/prototype/prototypeHandoffMergeCommand.ts` | CLI command boundary that combines separately copied prototype handoff files and rejects duplicate candidate entries without promoting measurements. |
+| `src/prototype/prototypeHandoffCheckCommand.ts` | CLI command boundary that checks a filled prototype handoff for required candidates, duplicate candidates, missing manual measurements, runtime readiness, and generated probe-record parser validity before probe-record generation. |
 | `src/prototype/prototypeProbeHandoffCommand.ts` | CLI command boundary that reads a prototype handoff JSON, validates the generated Day 5 probe record, and writes it without selecting the final engine. |
 | `scripts/day5-audio-engine-handoff.ts` | Node-only QA command entry point used by `npm run qa:day5-audio -- <probe-record.json>`. |
 | `scripts/day5-prototype-handoff-merge.ts` | Node-only QA command entry point used by `npm run qa:prototype-handoff-merge -- <output-handoff.json> <prototype-handoff.json...>`. |
+| `scripts/day5-prototype-handoff-check.ts` | Node-only QA command entry point used by `npm run qa:prototype-handoff-check -- <prototype-handoff.json>`. |
 | `scripts/day5-prototype-probe-record.ts` | Node-only QA command entry point used by `npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>`. |
 | `src/audio/__tests__/audioEngineProbeDraft.test.ts` | Verifies draft probes stay `estimate`, count triggered glissando strings, can be wrapped in a probe record, and require explicit measurements before physical-device promotion. |
 | `src/prototype/__tests__/prototypeQaSnapshot.test.ts` | Verifies the prototype inspector draft does not claim audible-quality or physical-device evidence automatically. |
 | `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects fake, preloading, or missing runtime observation before physical-device probe or record creation. |
 | `src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts` | Verifies separately copied prototype handoff files can be merged and duplicate candidates are rejected. |
+| `src/prototype/__tests__/prototypeHandoffCheckCommand.test.ts` | Verifies filled prototype handoff files are reported as ready only when both required candidates, all manual measurements, and ready native runtime observations are present. |
 | `src/prototype/__tests__/prototypeProbeHandoffCommand.test.ts` | Verifies the prototype handoff CLI command emits usage, readable errors, and parseable Day 5 probe record JSON. |
 | `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
@@ -100,6 +103,14 @@ npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> 
 
 The merge command does not promote evidence or fill manual values. It only combines `entries[]` and rejects duplicate candidates so the resulting file can be passed to `qa:prototype-probe-record`.
 
+Before generating the probe record, run the readiness check:
+
+```bash
+npm run qa:prototype-handoff-check -- <merged-handoff.json>
+```
+
+The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, nullable manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`.
+
 The `qa:prototype-probe-record` command only produces and parser-validates the probe record JSON. It does not replace the final `qa:day5-audio` decision check.
 
 Before publishing the Day 5 record, run the QA command entry point:
@@ -128,6 +139,7 @@ npm test src/audio/__tests__/audioEngineProbeDraft.test.ts
 npm test src/prototype/__tests__/prototypeQaSnapshot.test.ts
 npm test src/prototype/__tests__/prototypeProbeHandoff.test.ts
 npm test src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts
+npm test src/prototype/__tests__/prototypeHandoffCheckCommand.test.ts
 npm test src/audio/__tests__/audioEngineProbeRecord.test.ts
 npm test src/audio/__tests__/audioEngineDecisionSummary.test.ts
 npm test src/audio/__tests__/audioEngineProbeHandoff.test.ts
