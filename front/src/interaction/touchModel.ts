@@ -106,9 +106,10 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 
     if (stringIndex !== pointer.lastStringIndex) {
       const crossed = crossedStringIndexes(pointer.lastStringIndex, stringIndex);
+      const events = mapSwipeAcrossStrings({ tsMs: frame.tsMs, stringIndexes: crossed });
       pointer.mode = 'swipe';
       pointer.lastStringIndex = stringIndex;
-      return mapSwipeAcrossStrings({ tsMs: frame.tsMs, stringIndexes: crossed });
+      return events;
     }
 
     if (pointer.mode === 'swipe') {
@@ -119,14 +120,13 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return [];
     }
 
+    const event = mapHoldDrag({
+      tsMs: frame.tsMs,
+      stringIndex,
+      normalizedDelta: (frame.x - pointer.startX) / bendRangePx,
+    });
     pointer.mode = 'bend';
-    return [
-      mapHoldDrag({
-        tsMs: frame.tsMs,
-        stringIndex,
-        normalizedDelta: (frame.x - pointer.startX) / bendRangePx,
-      }),
-    ];
+    return [event];
   }
 
   function handleEnd(frame: TouchFrame): PerformanceEvent[] {
@@ -135,8 +135,9 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return [];
     }
 
+    const event = mapRelease({ tsMs: frame.tsMs, stringIndex: pointer.lastStringIndex });
     activePointers.delete(frame.pointerId);
-    return [mapRelease({ tsMs: frame.tsMs, stringIndex: pointer.lastStringIndex })];
+    return [event];
   }
 
   function mapMuteIfNeeded(
@@ -148,8 +149,9 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return [];
     }
 
+    const event = mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 });
     pointer.mutedStringIndexes.add(stringIndex);
-    return [mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 })];
+    return [event];
   }
 }
 
