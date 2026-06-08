@@ -15,7 +15,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria and treats non-finite, out-of-range, or non-boolean manual measurements as failed criteria. |
 | `src/audio/audioEngineProbeDraft.ts` | Creates `estimate` probe drafts from observed QA values and promotes a draft to `physical-device` only when every manual measurement field is supplied explicitly as a non-null, correctly typed, in-range value. Draft output is not final-selection evidence. |
 | `src/audio/audioEngineProbeRecord.ts` | Validates a manual QA probe record before building the Day 5 decision record. |
-| `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing, duplicated, or copied from different physical device labels. |
+| `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing, duplicated, still using placeholder labels, or copied from different physical device labels. |
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
 | `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
 | `src/qa/week1SmokeReportCommand.ts` | CLI command boundary that validates Day 2, Day 3, and Day 4 physical-device smoke report completeness and same-device evidence before Day 5 review. |
@@ -91,7 +91,7 @@ The decision evaluator is also conservative if a caller bypasses the parser: neg
 
 If a required candidate has more than one physical-device probe in a single record, the record reports it in `duplicateCandidates` and does not select a final engine. Consolidate repeated measurements into one candidate probe before publishing the Day 5 decision.
 
-All physical-device probes in the final decision record must use one tested device label after trimming whitespace and normalizing slash spacing. If candidate probes come from different physical devices, the decision record reports `deviceLabelIssues`, keeps `status: 'INCOMPLETE_DEVICE_EVIDENCE'`, and does not select a final engine.
+All physical-device probes in the final decision record must name a real tested device and must use one tested device label after trimming whitespace and normalizing slash spacing. If a caller bypasses the parser with blank or placeholder labels, or if candidate probes come from different physical devices, the decision record reports `deviceLabelIssues`, keeps `status: 'INCOMPLETE_DEVICE_EVIDENCE'`, and does not select a final engine.
 
 Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should be reflected in the glissando, pitch bend, mute, and session fallback fields.
 
@@ -164,7 +164,7 @@ Use the filled physical-device probe record when publishing a real Day 5 handoff
 
 | Status | Rule |
 | --- | --- |
-| `INCOMPLETE_DEVICE_EVIDENCE` | At least one required candidate has no physical-device probe, a required candidate has duplicate physical-device probes, or physical-device probes use mixed device labels. Do not select an engine. |
+| `INCOMPLETE_DEVICE_EVIDENCE` | At least one required candidate has no physical-device probe, a required candidate has duplicate physical-device probes, or physical-device probes have placeholder, blank, or mixed device labels. Do not select an engine. |
 | `FINAL_ENGINE_SELECTED` | Required candidates are measured and the strongest evaluation is `PASS` or `PASS_WITH_LIMITS`. |
 | `NO_FINAL_ENGINE` | Required candidates are measured, but no candidate passes the Day 5 gate. Pause Week 2 feature work. |
 

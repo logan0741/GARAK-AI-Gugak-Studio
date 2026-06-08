@@ -150,6 +150,36 @@ test('does not select an engine when physical-device probes use different device
   });
 });
 
+test('does not select an engine when physical-device probes still use placeholder labels', () => {
+  const record = buildDay5AudioEngineDecisionRecord({
+    generatedAt: '2026-06-08T01:00:00.000Z',
+    probes: [
+      {
+        ...passingExpoProbe,
+        deviceLabel: 'replace-with-physical-device-model',
+      },
+      {
+        ...passingAudioApiProbe,
+        deviceLabel: 'replace-with-physical-device-model',
+      },
+    ],
+  });
+
+  expect(record).toMatchObject({
+    status: 'INCOMPLETE_DEVICE_EVIDENCE',
+    missingCandidates: [],
+    duplicateCandidates: [],
+    deviceLabelIssues: [
+      'expo-audio.deviceLabel must name the physical device',
+      'react-native-audio-api.deviceLabel must name the physical device',
+    ],
+    selection: {
+      decision: 'NO_GO',
+      reason: 'expo-audio.deviceLabel must name the physical device',
+    },
+  });
+});
+
 test('selects the strongest candidate when both required candidates have probes', () => {
   const record = buildDay5AudioEngineDecisionRecord({
     generatedAt: '2026-06-08T01:00:00.000Z',
