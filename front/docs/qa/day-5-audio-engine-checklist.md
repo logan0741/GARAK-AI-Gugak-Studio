@@ -8,6 +8,7 @@ Related candidate smoke checks:
 - Candidate A `expo-audio`: `docs/qa/day-2-expo-audio-smoke.md`
 - Candidate B `react-native-audio-api`: `docs/qa/day-3-react-native-audio-api-smoke.md`
 - Touch model: `docs/qa/day-4-touch-model-smoke.md`
+- Week 1 smoke report: `docs/qa/week-1-smoke-report.md`
 - Decision record: `docs/qa/day-5-audio-engine-decision-record.md`
 - Probe record example: `docs/qa/day-5-audio-engine-probes.example.json`
 
@@ -97,6 +98,8 @@ Decision mapping:
 | `NO_GO` | Fewer than two core audio criteria pass. |
 
 After exactly one physical-device probe per candidate is recorded, run the handoff object through `npm run qa:day5-audio -- <probe-record.json>`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
+
+Before relying on the Day 5 record, validate the Week 1 smoke report with `npm run qa:week1-smoke-report -- <week1-smoke-report.json>`. The smoke report must show Day 2, Day 3, and Day 4 were all recorded without missing areas, duplicate areas, missing checks, duplicate checks, or blocked checks.
 
 ## Current Prototype Smoke Test
 
