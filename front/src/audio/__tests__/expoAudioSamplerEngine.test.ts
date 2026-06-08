@@ -146,6 +146,19 @@ test('normalizes whitespace recording uri to null when stopping a probe', async 
   });
 });
 
+test('normalizes invalid recorder duration to zero when stopping a probe', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.startRecordingProbe(10);
+  runtime.recorders[0].durationMillis = Number.NaN;
+
+  await expect(engine.stopRecordingProbe()).resolves.toEqual({
+    ok: true,
+    capturedSeconds: 0,
+    recordingUri: 'file://recording.m4a',
+  });
+});
+
 test('plays back a captured recording probe from its uri', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -283,6 +296,7 @@ class FakeExpoAudioRecorder {
   prepared = false;
   recordCalls: Array<{ forDuration: number }> = [];
   stopCalls = 0;
+  durationMillis = 10_000;
   uri = 'file://recording.m4a';
 
   constructor(private readonly input: { stopFails: boolean } = { stopFails: false }) {}
@@ -305,7 +319,7 @@ class FakeExpoAudioRecorder {
   getStatus() {
     return {
       canRecord: false,
-      durationMillis: 10_000,
+      durationMillis: this.durationMillis,
       isRecording: false,
       mediaServicesDidReset: false,
       url: this.uri,
