@@ -30,6 +30,7 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   runtimePorts?: PrototypeNativeSamplerEngineRuntimePorts;
 }): Promise<SamplerEngine> {
   assertCompletePrototypeSampleManifest(input.manifest);
+  assertLocalPrototypeSampleSourceUris(input.manifest);
 
   const manifest = await resolveSampleAssetManifestUris({
     manifest: input.manifest,
@@ -50,6 +51,17 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   await engine.preload();
 
   return engine;
+}
+
+function assertLocalPrototypeSampleSourceUris(manifest: SampleAssetManifest): void {
+  for (const asset of manifest.assets) {
+    const fileUri = asset.fileUri.trim();
+    if (fileUri.length === 0 || isRemoteUri(fileUri)) {
+      throw new Error(
+        `Prototype native sampler requires local sample source URIs before preload; ${asset.id} uses ${fileUri || 'empty URI'}`,
+      );
+    }
+  }
 }
 
 function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): void {

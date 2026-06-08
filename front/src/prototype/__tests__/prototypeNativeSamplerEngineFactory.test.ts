@@ -266,6 +266,44 @@ test.each([
   },
 );
 
+test('rejects remote sample source URIs before asset resolution or native preload', async () => {
+  clearDefaultDependencyLoadMocks();
+  const resolveFileUri = vi.fn(async () => 'file://resolved/string-01.wav');
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'expo-audio',
+      manifest: {
+        ...manifest,
+        assets: [
+          {
+            ...manifest.assets[0],
+            fileUri: 'https://cdn.example.com/gayageum/string-01.wav',
+          },
+          ...manifest.assets.slice(1),
+        ],
+      },
+      assetResolver: {
+        resolveFileUri,
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow('Prototype native sampler requires local sample source URIs');
+
+  expect(resolveFileUri).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+});
+
 function clearDefaultDependencyLoadMocks(): void {
   defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded.mockClear();
   defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded.mockClear();
