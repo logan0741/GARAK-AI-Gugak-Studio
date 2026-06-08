@@ -67,6 +67,7 @@ Invariants:
 
 - Session의 기준 데이터는 `PerformanceEvent[]`다.
 - Recording이 없어도 Session은 저장되고 리플레이 가능해야 한다.
+- Session의 `recordingUri`는 선택 값이며, 비어 있거나 공백뿐인 URI는 Recording 산출물로 저장하지 않는다.
 - Session은 자신이 사용한 `SampleAssetManifest` 버전을 기록한다.
 - Session 밖의 독립 `PerformanceEvent`는 저장하지 않는다.
 
@@ -190,4 +191,3 @@ Mapping rules:
 | AI 반주 생성 | 장단 추천, 로컬 장단 시퀀싱 | 생성형 오디오로 오해될 수 있다. |
 | 공공데이터 원본 탑재 | 공공데이터 기반 에셋, 분석 참조, 검증 기준 | 권리/품질 레이어를 명확히 한다. |
 | DAW | Studio Session | MVP는 타임라인 편집기가 아니다. |
-
