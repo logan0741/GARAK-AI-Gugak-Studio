@@ -14,6 +14,7 @@ Use this document when validating whether `react-native-audio-api` can support t
 | --- | --- |
 | `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, and voice budget behavior. |
 | `src/audio/reactNativeAudioApiRuntime.ts` | Only runtime bridge that imports `react-native-audio-api`. Keeps UI and domain code independent from the concrete package. |
+| `src/prototype/gayageumPrototypeController.ts` | Prototype event planner for tap, glissando, and the 8-voice polyphony burst used by device QA. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that should report `recording_probe_not_supported` for engines without recording methods instead of treating playback validation as failed. |
 | `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, 8-voice polyphony, graph wiring, pitch bend, mute/release, and voice stealing. |
 | `src/audio/__tests__/reactNativeAudioApiRuntime.test.ts` | Mocked package-delegation test for the installed `react-native-audio-api` API surface. |
@@ -53,7 +54,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 1. Build or launch an Expo dev build on a physical device.
 2. Preload the manifest through `ReactNativeAudioApiSamplerEngine.preload()` and confirm the inspector reaches `native_candidate_ready`.
 3. Tap one string and confirm the graph plays from a decoded buffer without runtime file loading.
-4. Trigger at least 8 different strings rapidly and listen for dropout, clipping, or unwanted voice stealing.
+4. Press `8 Voice` and listen for dropout, clipping, or unwanted voice stealing across the simultaneous 8-string burst.
 5. Hold one active string and send `string_bend` values across a practical range such as -120 to +120 cents.
 6. Confirm bend changes are continuous and do not create click noise.
 7. Confirm each voice routes `source -> lowpass filter -> gain -> destination`.

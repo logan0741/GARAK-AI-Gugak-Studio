@@ -19,6 +19,7 @@ import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
+  planPolyphonyBurst,
   safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
 import {
@@ -57,6 +58,7 @@ import {
 import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
+const POLYPHONY_BURST_STRINGS = ALL_STRINGS.slice(0, 8);
 const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
   stringCount: PROTOTYPE_STRING_COUNT,
 });
@@ -215,6 +217,15 @@ export function GayageumPrototypeScreen() {
     applyPerformanceEvents(events);
   }
 
+  function handlePolyphonyBurstPress() {
+    const events = planPolyphonyBurst({
+      nowMs: Date.now(),
+      stringIndexes: POLYPHONY_BURST_STRINGS,
+    });
+
+    applyPerformanceEvents(events);
+  }
+
   async function handleStartRecordingProbe() {
     const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
     setRecordingProbeState(result);
@@ -299,6 +310,14 @@ export function GayageumPrototypeScreen() {
           style={styles.glissandoButton}
         >
           <Text style={styles.glissandoButtonText}>Glissando</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play eight voice polyphony burst"
+          onPress={handlePolyphonyBurstPress}
+          style={styles.polyphonyButton}
+        >
+          <Text style={styles.glissandoButtonText}>8 Voice</Text>
         </Pressable>
       </View>
 
@@ -485,6 +504,15 @@ const styles = StyleSheet.create({
   glissandoButton: {
     alignItems: 'center',
     backgroundColor: '#d7b65d',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 118,
+    paddingHorizontal: 14,
+  },
+  polyphonyButton: {
+    alignItems: 'center',
+    backgroundColor: '#80b8aa',
     borderRadius: 8,
     justifyContent: 'center',
     minHeight: 44,
