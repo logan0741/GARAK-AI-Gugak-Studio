@@ -30,6 +30,7 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   assetResolver?: PrototypeSampleAssetResolver;
   runtimePorts?: PrototypeNativeSamplerEngineRuntimePorts;
 }): Promise<SamplerEngine> {
+  assertSupportedPrototypeNativeAudioCandidate(input.candidate);
   assertCompletePrototypeSampleManifest(input.manifest);
   assertLocalPrototypeSampleSourceUris(input.manifest);
 
@@ -52,6 +53,12 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   await engine.preload();
 
   return engine;
+}
+
+function assertSupportedPrototypeNativeAudioCandidate(candidate: AudioEngineCandidateId): void {
+  if (candidate !== 'expo-audio' && candidate !== 'react-native-audio-api') {
+    throw new Error(`Unsupported prototype native audio candidate: ${String(candidate)}`);
+  }
 }
 
 function assertLocalPrototypeSampleSourceUris(manifest: SampleAssetManifest): void {

@@ -22,6 +22,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/qa/week1SmokeReportCommand.ts` | CLI command boundary that validates Day 2, Day 3, and Day 4 physical-device smoke report completeness and same-device evidence before Day 5 review. |
 | `src/qa/week1SmokeTemplateCommand.ts` | CLI command boundary that generates a blocked Week 1 smoke report template with every required Day 2/3/4 check ID. |
 | `src/qa/day5ReadinessCommand.ts` | CLI command boundary that confirms the completed Week 1 smoke report and Day 5 probe record are aligned before the final decision command. |
+| `src/prototype/prototypeNativeSamplerEngineFactory.ts` | Prototype native sampler boundary that rejects unsupported candidate IDs before sample resolution or native preload, then routes only `expo-audio` or `react-native-audio-api` into the matching runtime. |
 | `src/prototype/prototypeQaSnapshot.ts` | Prototype-only read model that tracks observable fake counters and renders estimate probe and prototype handoff templates with nullable physical-device measurement fields. |
 | `src/prototype/prototypeProbeHandoff.ts` | Converts prototype inspector drafts into physical-device probes or a Day 5 probe record only when estimate-only inspector guard fields are intact, device labels name the same physical device, and observed runtime context proves each requested native candidate is ready and uses the Week 1 fixture sample manifest. |
 | `src/prototype/prototypeHandoffFile.ts` | Shared parser for prototype handoff JSON files used by merge, readiness, and probe-record commands. |
@@ -40,6 +41,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/qa/__tests__/week1SmokeReportCommand.test.ts` | Verifies the Week 1 smoke report command rejects missing, duplicate, blocked, mixed-device, or malformed Day 2/3/4 smoke evidence while preserving final engine selection for Day 5. |
 | `src/qa/__tests__/week1SmokeTemplateCommand.test.ts` | Verifies the Week 1 smoke template command writes every required check as blocked and rejects placeholder device labels before file output. |
 | `src/qa/__tests__/day5ReadinessCommand.test.ts` | Verifies Week 1 smoke evidence and Day 5 probe records are ready only when both required candidates are measured on the same physical device. |
+| `src/prototype/__tests__/prototypeNativeSamplerEngineFactory.test.ts` | Verifies native sampler creation rejects unsupported candidate IDs before touching sample assets or native runtimes, and preloads supported candidates through the correct runtime. |
 | `src/prototype/__tests__/prototypeQaSnapshot.test.ts` | Verifies the prototype inspector draft does not claim audible-quality or physical-device evidence automatically. |
 | `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects edited guard fields, fake fallback, preloading, mismatched sample-manifest, or missing runtime observation before physical-device probe or record creation. |
 | `src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts` | Verifies separately copied prototype handoff files can be merged and duplicate candidates are rejected. |
@@ -182,6 +184,7 @@ npm test src/audio/__tests__/audioEngineProbeDraft.test.ts
 npm test src/qa/__tests__/week1SmokeReportCommand.test.ts
 npm test src/qa/__tests__/week1SmokeTemplateCommand.test.ts
 npm test src/qa/__tests__/day5ReadinessCommand.test.ts
+npm test src/prototype/__tests__/prototypeNativeSamplerEngineFactory.test.ts
 npm test src/prototype/__tests__/prototypeQaSnapshot.test.ts
 npm test src/prototype/__tests__/prototypeProbeHandoff.test.ts
 npm test src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts
