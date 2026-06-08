@@ -181,6 +181,43 @@ test('reports placeholder inspector draft device labels before probe record gene
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
+test('reports mismatched device labels across candidate handoff entries', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['mismatched-device-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api', {}, {
+                deviceLabel: 'Galaxy S24 / Android 15',
+              }),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Device label issues: prototype handoff must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+  );
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
 test('reports handoff timestamp issues before probe record generation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
