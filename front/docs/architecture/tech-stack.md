@@ -181,6 +181,7 @@ This section supersedes the package-version rows in section 6 when they conflict
 | `expo-asset` | `12.0.13` | Required peer for `expo-audio`; pinned to the SDK 54-compatible version. |
 | `expo-dev-client` | `6.0.21` | Required for physical-device native audio candidate QA outside Expo Go. |
 | `react-native-audio-api` | `0.11.7` | Week 1 low-latency sampler candidate. `0.12.2` is held because it asks for `react-native-worklets >= 0.6.0`, while the current Expo SDK 54 scaffold uses `react-native-worklets@0.5.1`. |
+| `react-native-web` | `0.21.2` | Required for Expo Router web smoke checks. Web rendering can catch blank-screen/layout regressions, but it is not valid evidence for native audio latency or audio quality. |
 | `react-native-worklets` | `0.5.1` | Expo SDK 54-compatible version brought by the current Expo/Reanimated setup. |
 
 Audio engine comparison must use `src/audio/audioEngineEvaluation.ts` and the Day 5 QA checklist before selecting the final `SamplerEngine` implementation.

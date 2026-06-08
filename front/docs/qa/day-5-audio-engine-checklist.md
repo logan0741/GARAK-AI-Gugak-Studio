@@ -13,6 +13,8 @@ Related candidate smoke checks:
 
 Use this checklist on a physical Android or iOS device. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
 
+Web smoke checks are allowed only for layout, blank-screen, and inspector-state regressions. Web results must not be used as physical-device audio evidence.
+
 ## Development Client Setup
 
 Native audio candidates require an Expo development client. Verify the config before device QA:
