@@ -4,7 +4,7 @@ import {
   type PrototypeHandoffFile,
 } from './prototypeHandoffFile';
 import { type PhysicalDevicePrototypeProbeHandoffInput } from './prototypeProbeHandoff';
-import { isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
+import { isIsoTimestamp, isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
 
 export type PrototypeHandoffMergeCommandInput = {
   argv: string[];
@@ -81,8 +81,16 @@ export function runPrototypeHandoffMergeCommand(
     return 1;
   }
 
+  const generatedAt = input.getGeneratedAt();
+  if (!isIsoTimestamp(generatedAt)) {
+    input.writeStderr(
+      'Could not merge prototype handoffs: generatedAt must be a UTC ISO timestamp',
+    );
+    return 1;
+  }
+
   const mergedHandoff: PrototypeHandoffFile = {
-    generatedAt: input.getGeneratedAt(),
+    generatedAt,
     entries,
   };
 
