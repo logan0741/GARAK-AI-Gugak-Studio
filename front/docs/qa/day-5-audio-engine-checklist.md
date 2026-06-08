@@ -34,6 +34,8 @@ The generated `dev-synthetic-gayageum-2026-06-08` samples are Week 1 technical f
 
 The prototype native sampler factory must resolve each fixture sample to a non-empty local URI before a candidate runtime is loaded. Empty resolved URIs or `http(s)` URIs are invalid for normal-play latency checks.
 
+Candidate engines must reject non-finite playback control values before touching native player, node, or automation state. `velocity`, `cents`, and `strength` may be clamped when finite, but `NaN` or infinite values must fail at the `SamplerEngine` boundary instead of becoming device QA evidence.
+
 ## Device Setup
 
 | Field | Value |

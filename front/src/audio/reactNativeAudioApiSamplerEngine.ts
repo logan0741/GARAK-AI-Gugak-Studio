@@ -123,6 +123,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   private startVoice(stringIndex: number, velocity: number): void {
+    const clampedVelocity = clamp01(velocity, 'velocity');
     const context = this.requireContext();
     const buffer = this.requireBuffer(stringIndex);
     const source = context.createBufferSource({ pitchCorrection: true });
@@ -133,7 +134,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
     filter.type = 'lowpass';
     filter.frequency.value = DEFAULT_FILTER_FREQUENCY_HZ;
     filter.Q.value = DEFAULT_FILTER_Q;
-    gain.gain.value = clamp01(velocity);
+    gain.gain.value = clampedVelocity;
 
     source.connect(filter);
     filter.connect(gain);
@@ -154,6 +155,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   private bendString(stringIndex: number, cents: number): void {
+    assertFiniteControlValue(cents, 'cents');
     const currentTime = this.requireContext().currentTime;
     for (const voice of this.activeVoicesForString(stringIndex)) {
       voice.source.detune.setTargetAtTime(cents, currentTime, BEND_TIME_CONSTANT_SECONDS);
@@ -161,9 +163,10 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   private muteString(stringIndex: number, strength: number): void {
+    const clampedStrength = clamp01(strength, 'strength');
     const currentTime = this.requireContext().currentTime;
     for (const voice of this.activeVoicesForString(stringIndex)) {
-      voice.gain.gain.setTargetAtTime(1 - clamp01(strength), currentTime, MUTE_TIME_CONSTANT_SECONDS);
+      voice.gain.gain.setTargetAtTime(1 - clampedStrength, currentTime, MUTE_TIME_CONSTANT_SECONDS);
     }
   }
 
@@ -232,8 +235,15 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 }
 
-function clamp01(value: number): number {
+function clamp01(value: number, fieldName: string): number {
+  assertFiniteControlValue(value, fieldName);
   return Math.max(0, Math.min(1, value));
+}
+
+function assertFiniteControlValue(value: number, fieldName: string): void {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${fieldName} must be finite`);
+  }
 }
 
 function removeMatching<T>(items: T[], predicate: (item: T) => boolean): boolean {

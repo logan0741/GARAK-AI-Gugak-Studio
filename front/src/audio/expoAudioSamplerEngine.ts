@@ -226,9 +226,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   private playString(stringIndex: number, velocity: number): void {
+    const clampedVelocity = clamp01(velocity, 'velocity');
     const player = this.requirePlayer(stringIndex);
     const playbackGeneration = this.advancePlaybackGeneration(stringIndex);
-    player.volume = clamp01(velocity);
+    player.volume = clampedVelocity;
     this.queuePlayback(stringIndex, async () => {
       await player.seekTo(0);
       if (this.playbackGenerationsByString.get(stringIndex) !== playbackGeneration) {
@@ -239,13 +240,15 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   private bendString(stringIndex: number, cents: number): void {
+    assertFiniteControlValue(cents, 'cents');
     const player = this.requirePlayer(stringIndex);
     player.setPlaybackRate(clampPlaybackRate(Math.pow(2, cents / 1200)));
   }
 
   private muteString(stringIndex: number, strength: number): void {
+    const clampedStrength = clamp01(strength, 'strength');
     const player = this.requirePlayer(stringIndex);
-    player.volume = Number((1 - clamp01(strength)).toFixed(3));
+    player.volume = Number((1 - clampedStrength).toFixed(3));
   }
 
   private releaseString(stringIndex: number): void {
@@ -292,12 +295,19 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 }
 
-function clamp01(value: number): number {
+function clamp01(value: number, fieldName: string): number {
+  assertFiniteControlValue(value, fieldName);
   return Math.max(0, Math.min(1, value));
 }
 
 function clampPlaybackRate(value: number): number {
   return Math.max(0.1, Math.min(2, value));
+}
+
+function assertFiniteControlValue(value: number, fieldName: string): void {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${fieldName} must be finite`);
+  }
 }
 
 function normalizeRecordingUri(recordingUri: string | null): string | null {
