@@ -1,5 +1,7 @@
 import { expect, test } from 'vitest';
 import {
+  canStartRecordingProbe,
+  canStopRecordingProbe,
   formatRecordingProbeState,
   getRecordingProbeFallbackReason,
   selectPlayableRecordingUri,
@@ -9,6 +11,25 @@ test('formats recording playback state for the prototype inspector', () => {
   expect(formatRecordingProbeState({ status: 'playing', recordingUri: 'file://probe.m4a' })).toBe(
     'playing file://probe.m4a',
   );
+});
+
+test('enables recording controls only for the valid current probe state', () => {
+  expect(canStartRecordingProbe({ recordingProbeState: { status: 'idle' } })).toBe(true);
+  expect(canStartRecordingProbe({
+    recordingProbeState: { status: 'recording', requestedDurationSeconds: 10 },
+  })).toBe(false);
+
+  expect(canStopRecordingProbe({
+    recordingProbeState: { status: 'recording', requestedDurationSeconds: 10 },
+  })).toBe(true);
+  expect(canStopRecordingProbe({ recordingProbeState: { status: 'idle' } })).toBe(false);
+  expect(canStopRecordingProbe({
+    recordingProbeState: {
+      status: 'captured',
+      capturedSeconds: 10,
+      recordingUri: 'file://captured.m4a',
+    },
+  })).toBe(false);
 });
 
 test('selects a captured recording uri that the prototype can play back', () => {

@@ -55,7 +55,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 2. Preload the manifest through `ExpoAudioSamplerEngine.preload()` and confirm the inspector reaches `native_candidate_ready`.
 3. Trigger one `string_pluck` event and confirm immediate audible playback.
 4. Trigger 12 sequential `glissando_step` events and confirm every string produces a sound.
-5. Press `Rec 10s`, perform a short interaction, then press `Stop Rec`.
+5. Press `Rec 10s`, confirm `Rec 10s` becomes unavailable while recording and `Stop Rec` is available only during that active recording, perform a short interaction, then press `Stop Rec`.
 6. Record the returned `capturedSeconds` and `recordingUri`.
 7. Confirm `Probe draft (estimate only, fake engine counters)` includes `observedPrototypeRecording.capturedSeconds` and `uriAvailable`. If recording fails, confirm `observedPrototypeRecording.fallbackReason` records the native failure reason.
 8. Press `Play Rec` and confirm the captured performance plays back from the returned URI. `Play Rec` must stay unavailable while the current candidate has no captured or playing recording probe state, even if a previous session fallback contains an older recording URI.

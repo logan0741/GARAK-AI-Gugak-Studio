@@ -14,6 +14,14 @@ type SelectPlayableRecordingUriInput = {
   recordingProbeState: RecordingProbeUiState;
 };
 
+export function canStartRecordingProbe(input: SelectPlayableRecordingUriInput): boolean {
+  return input.recordingProbeState.status !== 'recording';
+}
+
+export function canStopRecordingProbe(input: SelectPlayableRecordingUriInput): boolean {
+  return input.recordingProbeState.status === 'recording';
+}
+
 export function selectPlayableRecordingUri(input: SelectPlayableRecordingUriInput): string | null {
   const { recordingProbeState } = input;
   if (
