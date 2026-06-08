@@ -26,6 +26,8 @@ The command exits 0 only when all required Day 2/3/4 areas are present once, eve
 
 `deviceLabel` must name the tested physical device and OS, for example `Pixel 8 / Android 15`. Placeholder labels such as `Device / OS`, `physical device`, or `replace-with-physical-device-model` are rejected by both template generation and report validation.
 
+After creating the Day 5 probe record, run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` to confirm this report and the candidate probes were recorded on the same physical device before selecting an engine.
+
 ## JSON Shape
 
 ```json

@@ -8,6 +8,7 @@
     "start:dev-client": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "qa:day5-readiness": "vite-node scripts/day5-readiness.ts",
     "qa:day5-audio": "vite-node scripts/day5-audio-engine-handoff.ts",
     "qa:prototype-handoff-check": "vite-node scripts/day5-prototype-handoff-check.ts",
     "qa:prototype-handoff-merge": "vite-node scripts/day5-prototype-handoff-merge.ts",
