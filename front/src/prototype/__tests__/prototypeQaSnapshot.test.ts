@@ -5,6 +5,7 @@ import {
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
+  recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
   updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
@@ -97,6 +98,7 @@ test('formats a copyable estimate probe draft for the inspector', () => {
     },
     observedPrototypeRecording: {
       capturedSeconds: null,
+      fallbackReason: null,
       playbackConfirmed: false,
       uriAvailable: false,
     },
@@ -230,6 +232,70 @@ test('records prototype recording capture and playback observations without clai
       capturedSeconds: 10.4,
       playbackConfirmed: true,
       uriAvailable: true,
+    },
+    probeTemplate: {
+      evidenceSource: 'estimate',
+      recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('records prototype recording fallback reason without claiming final evidence', () => {
+  const snapshot = recordPrototypeRecordingFallback(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:35:00.000Z',
+    }),
+    {
+      fallbackReason: 'recording_probe_not_supported',
+      measuredAt: '2026-06-08T04:35:03.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    measuredAt: '2026-06-08T04:35:03.000Z',
+    recordingFallbackReason: 'recording_probe_not_supported',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    measuredCandidateEvidence: false,
+    observedPrototypeRecording: {
+      capturedSeconds: null,
+      fallbackReason: 'recording_probe_not_supported',
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
+    probeTemplate: {
+      evidenceSource: 'estimate',
+      recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('records missing captured recording uri as playback fallback context', () => {
+  const snapshot = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:37:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:37:12.000Z',
+      recordingUri: null,
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    recordingCaptureSeconds: 10,
+    recordingFallbackReason: 'recording_playback_uri_missing',
+    recordingUriAvailable: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    observedPrototypeRecording: {
+      capturedSeconds: 10,
+      fallbackReason: 'recording_playback_uri_missing',
+      uriAvailable: false,
     },
     probeTemplate: {
       evidenceSource: 'estimate',

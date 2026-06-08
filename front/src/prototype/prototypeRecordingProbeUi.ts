@@ -50,6 +50,18 @@ export function formatRecordingProbeState(state: RecordingProbeUiState): string 
   }
 }
 
+export function getRecordingProbeFallbackReason(state: RecordingProbeUiState): string | null {
+  if (state.status === 'unsupported') {
+    return state.reason;
+  }
+
+  if (state.status === 'failed') {
+    return state.errorMessage;
+  }
+
+  return null;
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0;
 }
