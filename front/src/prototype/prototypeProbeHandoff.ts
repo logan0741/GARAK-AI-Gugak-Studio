@@ -27,6 +27,7 @@ export function buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts(input
 export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
   input: PhysicalDevicePrototypeProbeHandoffInput,
 ): AudioEngineProbe {
+  assertInspectorDraftEstimateGuard(input.inspectorDraft);
   assertObservedRuntimeReady(input.inspectorDraft);
 
   const draft = input.inspectorDraft.probeTemplate;
@@ -64,6 +65,36 @@ export function isPrototypeObservedRuntimeReady(
     observedRuntime.runtimeStatus === 'native_candidate_ready' &&
     observedRuntime.nativePreloadStatus === 'ready'
   );
+}
+
+function assertInspectorDraftEstimateGuard(
+  inspectorDraft: PrototypeProbeDraftInspectorModel,
+): void {
+  const draft = inspectorDraft as {
+    measuredCandidateEvidence?: unknown;
+    runtimeUnderTest?: unknown;
+    probeTemplate?: {
+      evidenceSource?: unknown;
+    };
+  };
+
+  if (draft.measuredCandidateEvidence !== false) {
+    throw new Error(
+      'prototype inspector draft measuredCandidateEvidence must be false before physical-device promotion',
+    );
+  }
+
+  if (draft.runtimeUnderTest !== 'fake-sampler-engine') {
+    throw new Error(
+      'prototype inspector draft runtimeUnderTest must be fake-sampler-engine before physical-device promotion',
+    );
+  }
+
+  if (draft.probeTemplate?.evidenceSource !== 'estimate') {
+    throw new Error(
+      'prototype inspector draft probeTemplate.evidenceSource must be estimate before physical-device promotion',
+    );
+  }
 }
 
 function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {

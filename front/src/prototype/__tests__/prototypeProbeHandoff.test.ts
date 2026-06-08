@@ -177,6 +177,42 @@ test('rejects physical-device promotion without runtime observation context', ()
   ).toThrow('prototype runtime observation is required before physical-device promotion');
 });
 
+test.each([
+  [
+    'measured candidate evidence',
+    { measuredCandidateEvidence: true },
+    'prototype inspector draft measuredCandidateEvidence must be false before physical-device promotion',
+  ],
+  [
+    'runtime under test',
+    { runtimeUnderTest: 'candidate-sampler-engine' },
+    'prototype inspector draft runtimeUnderTest must be fake-sampler-engine before physical-device promotion',
+  ],
+  [
+    'probe template evidence source',
+    {
+      probeTemplate: {
+        ...createInspectorDraft().probeTemplate,
+        evidenceSource: 'physical-device',
+      },
+    },
+    'prototype inspector draft probeTemplate.evidenceSource must be estimate before physical-device promotion',
+  ],
+] as const)(
+  'rejects physical-device promotion when inspector draft has contaminated %s',
+  (_label, override, expectedMessage) => {
+    expect(() =>
+      buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+        inspectorDraft: {
+          ...createInspectorDraft(),
+          ...override,
+        } as unknown as PrototypeProbeDraftInspectorModel,
+        measurements,
+      }),
+    ).toThrow(expectedMessage);
+  },
+);
+
 function createInspectorDraft(
   override: Partial<PrototypeProbeDraftInspectorModel> = {},
 ): PrototypeProbeDraftInspectorModel {
