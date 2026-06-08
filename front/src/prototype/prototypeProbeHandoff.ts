@@ -3,14 +3,29 @@ import {
   PhysicalDeviceAudioEngineProbeMeasurements,
   promoteAudioEngineProbeDraftToPhysicalDevice,
 } from '../audio/audioEngineProbeDraft';
+import { AudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
 import { PrototypeProbeDraftInspectorModel } from './prototypeQaSnapshot';
 
-export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(input: {
+export type PhysicalDevicePrototypeProbeHandoffInput = {
   inspectorDraft: PrototypeProbeDraftInspectorModel;
   measurements: PhysicalDeviceAudioEngineProbeMeasurements;
   measuredAt?: string;
   deviceLabel?: string;
-}): AudioEngineProbe {
+};
+
+export function buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts(input: {
+  generatedAt: string;
+  entries: PhysicalDevicePrototypeProbeHandoffInput[];
+}): AudioEngineProbeRecord {
+  return {
+    generatedAt: input.generatedAt,
+    probes: input.entries.map(buildPhysicalDeviceProbeFromPrototypeInspectorDraft),
+  };
+}
+
+export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
+  input: PhysicalDevicePrototypeProbeHandoffInput,
+): AudioEngineProbe {
   assertObservedRuntimeReady(input.inspectorDraft);
 
   const draft = input.inspectorDraft.probeTemplate;

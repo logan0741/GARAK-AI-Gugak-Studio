@@ -19,11 +19,11 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
 | `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
 | `src/prototype/prototypeQaSnapshot.ts` | Prototype-only read model that tracks observable fake counters and renders an estimate inspector template with nullable physical-device measurement fields. |
-| `src/prototype/prototypeProbeHandoff.ts` | Converts a prototype inspector draft into one physical-device probe only when observed runtime context proves the requested native candidate is ready. |
+| `src/prototype/prototypeProbeHandoff.ts` | Converts prototype inspector drafts into physical-device probes or a Day 5 probe record only when observed runtime context proves each requested native candidate is ready. |
 | `scripts/day5-audio-engine-handoff.ts` | Node-only QA command entry point used by `npm run qa:day5-audio -- <probe-record.json>`. |
 | `src/audio/__tests__/audioEngineProbeDraft.test.ts` | Verifies draft probes stay `estimate`, count triggered glissando strings, can be wrapped in a probe record, and require explicit measurements before physical-device promotion. |
 | `src/prototype/__tests__/prototypeQaSnapshot.test.ts` | Verifies the prototype inspector draft does not claim audible-quality or physical-device evidence automatically. |
-| `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects fake, preloading, or missing runtime observation before physical-device probe creation. |
+| `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects fake, preloading, or missing runtime observation before physical-device probe or record creation. |
 | `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
 | `src/audio/__tests__/audioEngineDecisionSummary.test.ts` | Verifies selected and incomplete decision summaries do not imply the wrong engine state. |
