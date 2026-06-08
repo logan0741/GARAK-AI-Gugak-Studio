@@ -201,6 +201,39 @@ test('selects the strongest candidate when both required candidates have probes'
   });
 });
 
+test('ignores unexpected physical-device candidates when selecting the final engine', () => {
+  const record = buildDay5AudioEngineDecisionRecord({
+    generatedAt: '2026-06-08T01:00:00.000Z',
+    probes: [
+      {
+        ...passingAudioApiProbe,
+        candidate: 'other-native-engine' as never,
+      },
+      {
+        ...passingExpoProbe,
+        recordingCaptureSeconds: 4,
+      },
+      {
+        ...passingAudioApiProbe,
+        pitchBendSmooth: false,
+      },
+    ],
+  });
+
+  expect(record.status).toBe('FINAL_ENGINE_SELECTED');
+  expect(record.missingCandidates).toEqual([]);
+  expect(record.duplicateCandidates).toEqual([]);
+  expect(record.evaluations.map((evaluation) => evaluation.candidate)).toEqual([
+    'expo-audio',
+    'react-native-audio-api',
+  ]);
+  expect(record.selection).toEqual({
+    selectedCandidate: 'expo-audio',
+    decision: 'PASS_WITH_LIMITS',
+    reason: 'expo-audio has the strongest Day 5 result',
+  });
+});
+
 test('keeps the decision record open when all candidates still fail', () => {
   const record = buildDay5AudioEngineDecisionRecord({
     generatedAt: '2026-06-08T01:00:00.000Z',
