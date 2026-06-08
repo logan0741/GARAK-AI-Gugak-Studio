@@ -12,7 +12,7 @@ Use this document when validating whether `expo-audio` can cover basic playback 
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, pluck playback, bend approximation, mute/release mapping, and recording probe lifecycle. |
+| `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, pluck playback, queued playback failure reporting through `waitForIdle()`, bend approximation, mute/release mapping, and recording probe lifecycle. |
 | `src/audio/expoAudioRuntime.ts` | Only runtime bridge that imports `expo-audio`. Keeps UI and domain code independent from the concrete library and reuses the SDK source resolver and recording option normalizer. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods and reports unsupported, failed, recording, or captured states without breaking session fallback. |
 | `src/audio/__tests__/expoAudioSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, playback controls, bend/mute/release mapping, and recording probe lifecycle. |
@@ -63,6 +63,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 | --- | --- | --- | --- |
 | Preload | All manifest strings resolve/download to playable URIs before players are created |  | Players are created with `downloadFirst: false` after explicit source resolution. |
 | Tap playback | One pluck event plays the matching preloaded string |  |  |
+| Playback queue failure | Automated smoke fails if `waitForIdle()` reports queued `seekTo()` or play errors |  | Do not treat a silent queue failure as successful playback. |
 | Glissando playback | 12 sequential steps trigger 12 audible attacks |  |  |
 | Bend approximation | `string_bend` changes playback rate without crash |  | `expo-audio` rate change is an approximation, not true instrument pitch bend. |
 | Mute/release | Mute lowers volume; release pauses player without pop noise |  |  |
