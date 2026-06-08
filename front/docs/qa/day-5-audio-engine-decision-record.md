@@ -83,7 +83,7 @@ Only probes with `evidenceSource: 'physical-device'` count as measured for this 
 
 When a draft is promoted to `physical-device`, `deviceLabel` must be replaced with the tested physical model, for example `Galaxy S24 / Android 15` or `iPhone 15 / iOS 18`. The parser rejects estimate placeholders such as `replace-with-physical-device-model`, `Device / OS`, or `physical device` for physical-device evidence.
 
-Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026` or slash-separated dates are rejected by the parser.
+Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026`, slash-separated dates, or impossible calendar dates such as `2026-02-31T10:00:00.000Z` are rejected by the parser.
 
 `glissandoTriggeredStrings` is the count of unique strings triggered during a 12-string swipe. It must be an integer from 0 to 12; values above 12 are treated as handoff input errors, not better results.
 
