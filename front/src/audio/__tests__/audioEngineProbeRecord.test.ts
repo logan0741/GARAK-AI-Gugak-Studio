@@ -136,6 +136,25 @@ test('keeps estimate records from satisfying the physical-device Day 5 gate', ()
   });
 });
 
+test('rejects physical-device probes that still use the placeholder device label', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          deviceLabel: 'replace-with-physical-device-model',
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'probes[0].deviceLabel must name the physical device when evidenceSource is physical-device',
+    ],
+  });
+});
+
 test('parses the documented probe handoff example without satisfying the final gate', () => {
   const example = JSON.parse(
     readFileSync('docs/qa/day-5-audio-engine-probes.example.json', 'utf8'),

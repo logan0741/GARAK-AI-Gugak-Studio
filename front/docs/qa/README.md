@@ -12,6 +12,8 @@ npm run qa:day5-audio -- <probe-record.json>
 
 `src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine.
 
+When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The Day 5 parser rejects that placeholder for final-selection evidence.
+
 ## Required QA Areas
 
 | Area | Standard |
