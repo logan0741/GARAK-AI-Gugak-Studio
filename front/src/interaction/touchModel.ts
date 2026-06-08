@@ -44,6 +44,7 @@ const DEFAULT_HOLD_THRESHOLD_MS = 120;
 const DEFAULT_MUTE_AREA_THRESHOLD = 0.72;
 
 export function createTouchModel(input: TouchModelOptions): TouchModel {
+  assertValidTouchLayout(input.layout);
   const activePointers = new Map<string, ActivePointer>();
   const bendRangePx = input.bendRangePx ?? DEFAULT_BEND_RANGE_PX;
   const holdThresholdMs = input.holdThresholdMs ?? DEFAULT_HOLD_THRESHOLD_MS;
@@ -158,6 +159,20 @@ function stringIndexForY(layout: TouchStringLayout, y: number): number {
   const rowHeight = layout.height / layout.stringCount;
   const rawIndex = Math.floor((y - layout.topY) / rowHeight) + 1;
   return Math.max(1, Math.min(layout.stringCount, rawIndex));
+}
+
+function assertValidTouchLayout(layout: TouchStringLayout): void {
+  if (!Number.isFinite(layout.topY)) {
+    throw new Error('touch layout topY must be finite');
+  }
+
+  if (!Number.isFinite(layout.height) || layout.height <= 0) {
+    throw new Error('touch layout height must be finite and > 0');
+  }
+
+  if (layout.stringCount !== 12) {
+    throw new Error('touch layout stringCount must be 12');
+  }
 }
 
 function assertFiniteTouchCoordinate(value: number, axis: 'x' | 'y'): void {

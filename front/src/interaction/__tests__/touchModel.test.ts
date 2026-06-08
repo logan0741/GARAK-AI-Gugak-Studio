@@ -7,6 +7,18 @@ const layout = {
   stringCount: 12,
 } as const;
 
+test('rejects invalid touch layouts before creating session evidence', () => {
+  expect(() => createTouchModel({ layout: { ...layout, topY: Number.NaN } })).toThrow(
+    'touch layout topY must be finite',
+  );
+  expect(() => createTouchModel({ layout: { ...layout, height: 0 } })).toThrow(
+    'touch layout height must be finite and > 0',
+  );
+  expect(() => createTouchModel({ layout: { ...layout, height: Number.POSITIVE_INFINITY } })).toThrow(
+    'touch layout height must be finite and > 0',
+  );
+});
+
 test('fires a pluck immediately on touch start for the string under the finger', () => {
   const model = createTouchModel({ layout });
 
