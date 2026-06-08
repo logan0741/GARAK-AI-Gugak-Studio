@@ -4,6 +4,7 @@ import {
   AudioEngineEvidenceSource,
   AudioEngineProbe,
 } from './audioEngineEvaluation';
+import { isPhysicalDeviceLabel } from '../qa/physicalDeviceLabel';
 
 export type AudioEngineProbeRecord = {
   generatedAt: string;
@@ -25,14 +26,6 @@ const EVIDENCE_SOURCES: AudioEngineEvidenceSource[] = [
   'unit-test',
   'estimate',
 ];
-const PHYSICAL_DEVICE_LABEL_PLACEHOLDERS = new Set([
-  'replace-with-physical-device-model',
-  'replace with physical device model',
-  'device os',
-  'device / os',
-  'device/os',
-  'physical device',
-]);
 const UTC_ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 const DURATION_PROBE_FIELDS = ['touchToSoundLatencyMs', 'recordingCaptureSeconds'] as const satisfies ReadonlyArray<
@@ -126,9 +119,11 @@ function parseProbe(
     errors.push(`${path}.deviceLabel must be a non-empty string`);
   } else if (
     probe.evidenceSource === 'physical-device' &&
-    PHYSICAL_DEVICE_LABEL_PLACEHOLDERS.has(normalizeLabel(probe.deviceLabel))
+    !isPhysicalDeviceLabel(probe.deviceLabel)
   ) {
-    errors.push(`${path}.deviceLabel must name the physical device when evidenceSource is physical-device`);
+    errors.push(
+      `${path}.deviceLabel must name the physical device when evidenceSource is physical-device`,
+    );
   }
   if (!isNonEmptyString(probe.measuredAt)) {
     errors.push(`${path}.measuredAt must be a non-empty string`);
@@ -190,14 +185,6 @@ function isObject(input: unknown): input is Record<string, unknown> {
 
 function isNonEmptyString(input: unknown): input is string {
   return typeof input === 'string' && input.trim().length > 0;
-}
-
-function normalizeLabel(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/\s*\/\s*/g, '/')
-    .replace(/\s+/g, ' ');
 }
 
 function isUtcIsoTimestamp(input: string): boolean {

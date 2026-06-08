@@ -1,10 +1,10 @@
 import {
-  isIsoTimestamp,
-  isPhysicalDeviceLabel,
   REQUIRED_AREAS,
   REQUIRED_CHECKS_BY_AREA,
+  isIsoTimestamp,
   type Week1SmokeReport,
 } from './week1SmokeReportCommand';
+import { isPhysicalDeviceLabel } from './physicalDeviceLabel';
 
 export type Week1SmokeTemplateCommandInput = {
   argv: string[];

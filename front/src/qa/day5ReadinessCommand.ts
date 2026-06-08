@@ -10,6 +10,7 @@ import {
   type Week1SmokeReport,
   type Week1SmokeReportSummary,
 } from './week1SmokeReportCommand';
+import { normalizePhysicalDeviceLabelForReport } from './physicalDeviceLabel';
 
 type Day5ReadinessStatus = 'READY_FOR_DAY5_DECISION' | 'NOT_READY_FOR_DAY5_DECISION';
 
@@ -209,12 +210,14 @@ function collectDeviceAlignmentIssues(input: {
 }): string[] {
   const issues: string[] = [];
   const smokeDeviceLabels = unique(
-    input.smokeReport.runs.map((run) => normalizeDeviceLabel(run.deviceLabel)),
+    input.smokeReport.runs.map((run) =>
+      normalizePhysicalDeviceLabelForReport(run.deviceLabel),
+    ),
   );
   const physicalProbeDeviceLabels = unique(
     input.probeRecord.probes
       .filter((probe) => probe.evidenceSource === 'physical-device')
-      .map((probe) => normalizeDeviceLabel(probe.deviceLabel)),
+      .map((probe) => normalizePhysicalDeviceLabelForReport(probe.deviceLabel)),
   );
 
   if (smokeDeviceLabels.length !== 1) {
@@ -238,7 +241,7 @@ function collectDeviceAlignmentIssues(input: {
           (probe) =>
             probe.evidenceSource === 'physical-device' && probe.candidate === candidate,
         )
-        .map((probe) => normalizeDeviceLabel(probe.deviceLabel)),
+        .map((probe) => normalizePhysicalDeviceLabelForReport(probe.deviceLabel)),
     );
 
     if (candidateLabels.length > 1) {
@@ -266,13 +269,6 @@ function formatDay5ReadinessReport(report: Day5ReadinessReport): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
-}
-
-function normalizeDeviceLabel(input: string): string {
-  return input
-    .trim()
-    .replace(/\s*\/\s*/g, ' / ')
-    .replace(/\s+/g, ' ');
 }
 
 function formatList(values: string[]): string {
