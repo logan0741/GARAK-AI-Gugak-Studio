@@ -183,8 +183,9 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   private enforceVoiceBudget(): void {
-    while (this.activeVoices.length > this.maxVoices) {
-      const stolen = this.activeVoices.shift();
+    while (this.activeVoices.filter((voice) => !voice.releaseScheduled).length > this.maxVoices) {
+      const stolenIndex = this.activeVoices.findIndex((voice) => !voice.releaseScheduled);
+      const stolen = stolenIndex >= 0 ? this.activeVoices.splice(stolenIndex, 1)[0] : undefined;
       if (stolen) {
         stolen.source.stop(this.requireContext().currentTime);
         this.disconnectVoice(stolen);
