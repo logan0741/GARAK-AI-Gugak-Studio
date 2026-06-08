@@ -366,7 +366,7 @@ function isWeek1SmokeCheckResult(input: unknown): input is Week1SmokeCheckResult
   return input === 'pass' || input === 'fail' || input === 'blocked';
 }
 
-function isIsoTimestamp(input: unknown): input is string {
+export function isIsoTimestamp(input: unknown): input is string {
   if (typeof input !== 'string') {
     return false;
   }

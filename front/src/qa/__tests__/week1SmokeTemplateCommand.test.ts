@@ -165,6 +165,28 @@ test('rejects blank tester names before writing a template', () => {
   ]);
 });
 
+test('rejects invalid generated timestamps before writing a template', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writes = new Map<string, string>();
+
+  expect(
+    runWeek1SmokeTemplateCommand({
+      argv: ['week1-smoke.json', 'CJH', 'Pixel 8 / Android 15'],
+      getGeneratedAt: () => 'June 8, 2026 16:00',
+      writeTextFile: (path, value) => writes.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect([...writes]).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not write Week 1 smoke report template: generatedAt must be an ISO timestamp',
+  ]);
+});
+
 test('trims tester and device label values before writing a template', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
