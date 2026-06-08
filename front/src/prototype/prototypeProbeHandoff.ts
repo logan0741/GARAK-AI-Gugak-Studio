@@ -77,7 +77,7 @@ export function isPrototypeRecordingMeasurementBackedByPlayback(input: {
   inspectorDraft: PrototypeProbeDraftInspectorModel;
   recordingCaptureSeconds: unknown;
 }): boolean {
-  if (!isPassingRecordingCaptureSeconds(input.recordingCaptureSeconds)) {
+  if (!isPositiveRecordingCaptureSeconds(input.recordingCaptureSeconds)) {
     return true;
   }
 
@@ -193,6 +193,6 @@ function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspector
   }
 }
 
-function isPassingRecordingCaptureSeconds(input: unknown): input is number {
-  return typeof input === 'number' && Number.isFinite(input) && input >= 10;
+function isPositiveRecordingCaptureSeconds(input: unknown): input is number {
+  return typeof input === 'number' && Number.isFinite(input) && input > 0;
 }
