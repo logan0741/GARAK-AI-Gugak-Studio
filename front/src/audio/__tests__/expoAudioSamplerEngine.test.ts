@@ -146,6 +146,19 @@ test('normalizes whitespace recording uri to null when stopping a probe', async 
   });
 });
 
+test('trims captured recording uri when stopping a probe', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.startRecordingProbe(10);
+  runtime.recorders[0].uri = '  file://recording.m4a  ';
+
+  await expect(engine.stopRecordingProbe()).resolves.toEqual({
+    ok: true,
+    capturedSeconds: 10,
+    recordingUri: 'file://recording.m4a',
+  });
+});
+
 test('normalizes invalid recorder duration to zero when stopping a probe', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -175,6 +188,21 @@ test('plays back a captured recording probe from its uri', async () => {
   expect(runtime.players.at(-1)?.seekCalls).toEqual([0]);
   expect(runtime.players.at(-1)?.playCalls).toBe(1);
   expect(runtime.modeCalls.at(-1)).toMatchObject({ allowsRecording: false });
+});
+
+test('trims captured recording uri before creating a playback player', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+  await expect(engine.playRecordingProbe('  file://recording.m4a  ')).resolves.toEqual({
+    ok: true,
+    recordingUri: 'file://recording.m4a',
+  });
+
+  expect(runtime.createdPlayers.at(-1)).toEqual({
+    source: { uri: 'file://recording.m4a' },
+    options: { downloadFirst: false, keepAudioSessionActive: true, updateInterval: 50 },
+  });
 });
 
 test('rejects whitespace captured recording uri before creating a playback player', async () => {

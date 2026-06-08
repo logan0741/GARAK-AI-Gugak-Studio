@@ -86,7 +86,8 @@ export async function playCapturedPrototypeRecordingProbe(
   engine: SamplerEngine,
   recordingUri: string,
 ): Promise<PrototypeRecordingProbePlaybackResult> {
-  if (recordingUri.trim().length === 0) {
+  const normalizedRecordingUri = normalizeRecordingUri(recordingUri);
+  if (normalizedRecordingUri === null) {
     return { status: 'failed', errorMessage: 'recording_playback_uri_missing' };
   }
 
@@ -95,7 +96,7 @@ export async function playCapturedPrototypeRecordingProbe(
   }
 
   try {
-    const result = await engine.playRecordingProbe(recordingUri);
+    const result = await engine.playRecordingProbe(normalizedRecordingUri);
 
     if (!result.ok) {
       return { status: 'failed', errorMessage: result.reason };
@@ -103,7 +104,7 @@ export async function playCapturedPrototypeRecordingProbe(
 
     return {
       status: 'playing',
-      recordingUri: result.recordingUri,
+      recordingUri: normalizeRecordingUri(result.recordingUri) ?? normalizedRecordingUri,
     };
   } catch (error: unknown) {
     return { status: 'failed', errorMessage: getErrorMessage(error) };
@@ -130,9 +131,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 function normalizeRecordingUri(recordingUri: string | null): string | null {
-  if (recordingUri === null || recordingUri.trim().length === 0) {
+  const normalizedRecordingUri = recordingUri?.trim() ?? '';
+  if (normalizedRecordingUri.length === 0) {
     return null;
   }
 
-  return recordingUri;
+  return normalizedRecordingUri;
 }
