@@ -61,6 +61,8 @@ For an EAS development build, use the `development` profile in `eas.json`.
 8. Press `Play Rec` and confirm the captured performance plays back from the returned URI.
 9. Confirm `observedPrototypeRecording.playbackConfirmed` becomes `true`.
 
+Treat a `null`, empty, or whitespace-only `recordingUri` as missing playback context. The inspector must keep `uriAvailable: false` and record `fallbackReason: "recording_playback_uri_missing"` instead of enabling captured playback.
+
 ## Result Table
 
 | Check | Expected | Result | Notes |
@@ -72,7 +74,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 | Bend approximation | `string_bend` changes playback rate without crash |  | `expo-audio` rate change is an approximation, not true instrument pitch bend. |
 | Mute/release | Mute lowers volume; release pauses player without pop noise |  |  |
 | Recording permission | Permission request succeeds on device |  |  |
-| 10-second capture | `stopRecordingProbe()` returns about 10 seconds and a non-empty URI |  |  |
+| 10-second capture | `stopRecordingProbe()` returns about 10 seconds and a non-empty, non-whitespace URI |  |  |
 | Captured playback | `Play Rec` plays the captured recording URI without throwing |  | Confirms self-playback feasibility, not final sound quality. |
 | Inspector recording observation | `observedPrototypeRecording` records capture seconds, URI availability, playback confirmation, and any fallback reason |  | Still copy values into a physical-device probe record manually before Day 5. |
 
