@@ -94,7 +94,7 @@ test('maps bend, mute, and release events onto Expo Audio player controls', asyn
   expect(runtime.players[1].pauseCalls).toBe(1);
 });
 
-test('queues release behind pending Expo Audio seek and play work', async () => {
+test('cancels pending Expo Audio play when release arrives before seek finishes', async () => {
   const runtime = createRuntimePort({ deferSeek: true });
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
   await engine.preload();
@@ -108,7 +108,7 @@ test('queues release behind pending Expo Audio seek and play work', async () => 
   await engine.waitForIdle();
 
   expect(runtime.players[0].seekCalls).toEqual([0]);
-  expect(runtime.players[0].playCalls).toBe(1);
+  expect(runtime.players[0].playCalls).toBe(0);
   expect(runtime.players[0].pauseCalls).toBe(1);
 });
 

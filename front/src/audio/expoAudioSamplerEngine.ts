@@ -94,6 +94,7 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   private readonly manifest: SampleAssetManifest;
   private readonly runtime: ExpoAudioRuntimePort;
   private readonly playersByString = new Map<number, ExpoAudioPlayerPort>();
+  private readonly playbackGenerationsByString = new Map<number, number>();
   private readonly playbackQueuesByString = new Map<number, Promise<void>>();
   private playbackQueueFailure: unknown;
   private activeRecorder: ExpoAudioRecorderPort | undefined;
@@ -226,9 +227,13 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   private playString(stringIndex: number, velocity: number): void {
     const player = this.requirePlayer(stringIndex);
+    const playbackGeneration = this.advancePlaybackGeneration(stringIndex);
     player.volume = clamp01(velocity);
     this.queuePlayback(stringIndex, async () => {
       await player.seekTo(0);
+      if (this.playbackGenerationsByString.get(stringIndex) !== playbackGeneration) {
+        return;
+      }
       player.play();
     });
   }
@@ -245,6 +250,7 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   private releaseString(stringIndex: number): void {
     const player = this.requirePlayer(stringIndex);
+    this.advancePlaybackGeneration(stringIndex);
     if (this.playbackQueuesByString.has(stringIndex)) {
       this.queuePlayback(stringIndex, async () => {
         player.pause();
@@ -253,6 +259,12 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
     }
 
     player.pause();
+  }
+
+  private advancePlaybackGeneration(stringIndex: number): number {
+    const nextGeneration = (this.playbackGenerationsByString.get(stringIndex) ?? 0) + 1;
+    this.playbackGenerationsByString.set(stringIndex, nextGeneration);
+    return nextGeneration;
   }
 
   private requirePlayer(stringIndex: number): ExpoAudioPlayerPort {
