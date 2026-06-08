@@ -14,7 +14,7 @@ Use this document when validating whether `expo-audio` can cover basic playback 
 | --- | --- |
 | `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, pluck playback, queued playback failure reporting through `waitForIdle()`, bend approximation, mute/release mapping, recording probe lifecycle, and captured recording URI playback. |
 | `src/audio/expoAudioRuntime.ts` | Only runtime bridge that imports `expo-audio`. Keeps UI and domain code independent from the concrete library and reuses the SDK source resolver and recording option normalizer. |
-| `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods and reports unsupported, failed, recording, or captured states without breaking session fallback. |
+| `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods and reports unsupported, failed, recording, captured, or playback states without breaking session fallback. |
 | `src/audio/__tests__/expoAudioSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, playback controls, bend/mute/release mapping, and recording probe lifecycle. |
 | `src/audio/__tests__/expoAudioRuntime.test.ts` | Mocked package-delegation test for the installed `expo-audio` API surface. |
 
@@ -56,7 +56,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 4. Trigger 12 sequential `glissando_step` events and confirm every string produces a sound.
 5. Press `Rec 10s`, perform a short interaction, then press `Stop Rec`.
 6. Record the returned `capturedSeconds` and `recordingUri`.
-7. Run `playRecordingProbe(recordingUri)` and confirm the captured performance plays back from the returned URI.
+7. Press `Play Rec` and confirm the captured performance plays back from the returned URI.
 
 ## Result Table
 
@@ -70,7 +70,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 | Mute/release | Mute lowers volume; release pauses player without pop noise |  |  |
 | Recording permission | Permission request succeeds on device |  |  |
 | 10-second capture | `stopRecordingProbe()` returns about 10 seconds and a non-empty URI |  |  |
-| Captured playback | `playRecordingProbe(recordingUri)` plays the captured recording URI without throwing |  | Confirms self-playback feasibility, not final sound quality. |
+| Captured playback | `Play Rec` plays the captured recording URI without throwing |  | Confirms self-playback feasibility, not final sound quality. |
 
 ## Handoff To Day 5
 
