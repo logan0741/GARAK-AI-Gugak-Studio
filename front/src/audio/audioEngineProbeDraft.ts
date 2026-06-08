@@ -73,7 +73,7 @@ export function promoteAudioEngineProbeDraftToPhysicalDevice(input: {
   }
 
   const missingFields = PHYSICAL_DEVICE_MEASUREMENT_FIELDS.filter(
-    (field) => input.measurements[field] === undefined,
+    (field) => input.measurements[field] === null || input.measurements[field] === undefined,
   );
   if (missingFields.length > 0) {
     throw new Error(`physical-device measurements missing: ${missingFields.join(', ')}`);

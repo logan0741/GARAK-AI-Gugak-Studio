@@ -13,7 +13,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | File | Responsibility |
 | --- | --- |
 | `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria. |
-| `src/audio/audioEngineProbeDraft.ts` | Creates `estimate` probe drafts from observed QA values and promotes a draft to `physical-device` only when every manual measurement field is supplied explicitly. Draft output is not final-selection evidence. |
+| `src/audio/audioEngineProbeDraft.ts` | Creates `estimate` probe drafts from observed QA values and promotes a draft to `physical-device` only when every manual measurement field is supplied explicitly as a non-null value. Draft output is not final-selection evidence. |
 | `src/audio/audioEngineProbeRecord.ts` | Validates a manual QA probe record before building the Day 5 decision record. |
 | `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing. |
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
@@ -74,7 +74,7 @@ Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should 
 
 Use `docs/qa/day-5-audio-engine-probes.example.json` as the starting shape for a manual QA handoff. Keep `evidenceSource: 'estimate'` until the values have been measured on a physical Android or iOS device. After physical-device measurement, each required candidate should appear once with `evidenceSource: 'physical-device'`.
 
-If a device smoke harness collects partial observations first, it may use `createAudioEngineProbeDraft()` to format those observations into the same shape. Drafts always use `evidenceSource: 'estimate'`; promote a draft to `physical-device` only after the tester has confirmed every value on the physical device and checked audible quality fields such as pitch-bend smoothness and mute release cleanliness. `promoteAudioEngineProbeDraftToPhysicalDevice()` requires all Day 5 measurement fields before changing `evidenceSource`, but the resulting probe still must pass `parseAudioEngineProbeRecord()` and the `npm run qa:day5-audio -- <probe-record.json>` handoff.
+If a device smoke harness collects partial observations first, it may use `createAudioEngineProbeDraft()` to format those observations into the same shape. Drafts always use `evidenceSource: 'estimate'`; promote a draft to `physical-device` only after the tester has confirmed every value on the physical device and checked audible quality fields such as pitch-bend smoothness and mute release cleanliness. `promoteAudioEngineProbeDraftToPhysicalDevice()` requires all Day 5 measurement fields to be non-null before changing `evidenceSource`, but the resulting probe still must pass `parseAudioEngineProbeRecord()` and the `npm run qa:day5-audio -- <probe-record.json>` handoff.
 
 The prototype inspector may show a copyable `Probe draft (estimate only, fake engine counters)` JSON block. Treat it as a rehearsal artifact: it can preserve fake observed counters and show the probe field names, but nullable physical-device measurement fields must be replaced with measured values from the real candidate runtime before any Day 5 handoff. The inspector JSON includes `runtimeUnderTest: "fake-sampler-engine"` and `measuredCandidateEvidence: false` to prevent confusing fake-engine counters with candidate-engine measurements.
 
