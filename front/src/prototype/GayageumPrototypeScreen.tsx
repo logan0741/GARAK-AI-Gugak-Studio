@@ -523,6 +523,9 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorText}>
           Duplicate sample strings: {engineHost.duplicateStringIndexes.join(', ') || 'none'}
         </Text>
+        <Text style={styles.inspectorText}>
+          Unexpected sample strings: {engineHost.unexpectedStringIndexes.join(', ') || 'none'}
+        </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>

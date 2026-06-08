@@ -272,6 +272,48 @@ test('rejects duplicate sample string indexes before creating a native candidate
   expect(resolvedUris).toEqual([]);
 });
 
+test('rejects sample string indexes outside the 12-string prototype range before native preload', async () => {
+  clearDefaultDependencyLoadMocks();
+  const resolveFileUri = vi.fn(async () => 'file://resolved/string-13.wav');
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'react-native-audio-api',
+      manifest: {
+        version: 'unexpected-string-manifest',
+        assets: [
+          ...manifest.assets,
+          {
+            ...manifest.assets[0],
+            id: 'string-13',
+            stringIndex: 13,
+            fileUri: 'asset://gayageum/13.wav',
+          },
+        ],
+      },
+      assetResolver: {
+        resolveFileUri,
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow(
+    'Prototype native sampler requires only 12-string sample indexes; unexpected strings: 13',
+  );
+
+  expect(resolveFileUri).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+});
+
 test.each(['expo-audio', 'react-native-audio-api'] as const)(
   'rejects incomplete sample manifests before loading default native dependencies for %s',
   async (candidate) => {
