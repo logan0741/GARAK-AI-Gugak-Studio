@@ -260,6 +260,43 @@ test('blocks readiness when probe device labels differ from the smoke report dev
   );
 });
 
+test('reports mixed physical-device labels inside the probe record', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(createSmokeReport());
+        }
+
+        return JSON.stringify(
+          createProbeRecord({
+            deviceLabelsByCandidate: {
+              'expo-audio': 'Pixel 8 / Android 15',
+              'react-native-audio-api': 'Galaxy S24 / Android 15',
+            },
+          }),
+        );
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_DAY5_DECISION');
+  expect(output).toContain(
+    '- Probe record issues: physical-device probes must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+  );
+  expect(output).toContain(
+    '- Device alignment issues: probe device labels must match smoke report device label Pixel 8 / Android 15',
+  );
+});
+
 test('treats surrounding whitespace in device labels as the same physical device', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -382,6 +419,7 @@ function createSmokeReport(input: {
 function createProbeRecord(input: {
   candidates?: ProbeCandidate[];
   deviceLabel?: string;
+  deviceLabelsByCandidate?: Partial<Record<ProbeCandidate, string>>;
 } = {}) {
   const candidates = input.candidates ?? ['expo-audio', 'react-native-audio-api'];
   return {
@@ -389,7 +427,10 @@ function createProbeRecord(input: {
     probes: candidates.map((candidate, index) => ({
       candidate,
       evidenceSource: 'physical-device',
-      deviceLabel: input.deviceLabel ?? 'Pixel 8 / Android 15',
+      deviceLabel:
+        input.deviceLabelsByCandidate?.[candidate] ??
+        input.deviceLabel ??
+        'Pixel 8 / Android 15',
       measuredAt: `2026-06-08T08:0${index + 1}:00.000Z`,
       touchToSoundLatencyMs: 38,
       maxStableVoices: 9,
