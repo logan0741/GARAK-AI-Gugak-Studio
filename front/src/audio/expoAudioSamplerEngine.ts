@@ -244,7 +244,15 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   private releaseString(stringIndex: number): void {
-    this.requirePlayer(stringIndex).pause();
+    const player = this.requirePlayer(stringIndex);
+    if (this.playbackQueuesByString.has(stringIndex)) {
+      this.queuePlayback(stringIndex, async () => {
+        player.pause();
+      });
+      return;
+    }
+
+    player.pause();
   }
 
   private requirePlayer(stringIndex: number): ExpoAudioPlayerPort {
@@ -258,9 +266,16 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   private queuePlayback(stringIndex: number, operation: () => Promise<void>): void {
     const previous = this.playbackQueuesByString.get(stringIndex) ?? Promise.resolve();
-    const next = previous.then(operation).catch((error: unknown) => {
-      this.playbackQueueFailure = error;
-    });
+    const next = previous
+      .then(operation)
+      .catch((error: unknown) => {
+        this.playbackQueueFailure = error;
+      })
+      .finally(() => {
+        if (this.playbackQueuesByString.get(stringIndex) === next) {
+          this.playbackQueuesByString.delete(stringIndex);
+        }
+      });
     this.playbackQueuesByString.set(stringIndex, next);
   }
 }
