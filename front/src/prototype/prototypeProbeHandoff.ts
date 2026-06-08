@@ -5,6 +5,7 @@ import {
 } from '../audio/audioEngineProbeDraft';
 import { AudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
 import { PrototypeProbeDraftInspectorModel } from './prototypeQaSnapshot';
+import { PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION } from './prototypeSampleManifest';
 
 export type PhysicalDevicePrototypeProbeHandoffInput = {
   inspectorDraft: PrototypeProbeDraftInspectorModel;
@@ -68,6 +69,15 @@ export function isPrototypeObservedRuntimeReady(
 function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
   if (!inspectorDraft.observedRuntime) {
     throw new Error('prototype runtime observation is required before physical-device promotion');
+  }
+
+  if (
+    inspectorDraft.observedRuntime.sampleManifestVersion !==
+    PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION
+  ) {
+    throw new Error(
+      `prototype runtime must use sample manifest ${PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION} before physical-device promotion`,
+    );
   }
 
   if (!isPrototypeObservedRuntimeReady(inspectorDraft)) {

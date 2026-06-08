@@ -28,7 +28,7 @@ When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with
 
 The prototype probe draft also includes `observedRuntime` so the handoff records the requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error when present. Treat that field as QA context only; it does not replace any `physical-device` probe value.
 
-`src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate and the runtime/preload status is ready. This prevents fake fallback or preloading states from being promoted.
+`src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate, the runtime/preload status is ready, and `observedRuntime.sampleManifestVersion` is `dev-synthetic-gayageum-2026-06-08`. This prevents fake fallback, preloading states, or mismatched sample fixtures from being promoted.
 
 To produce a Day 5 probe record from prototype inspector drafts, copy the prototype inspector's `Prototype handoff JSON` block after testing each candidate. Each entry contains the copied `inspectorDraft`, `measuredAt`, `deviceLabel`, and nullable manual `measurements`. Replace every `measurements` null with explicit physical-device values, then check readiness before generating a probe record:
 
@@ -37,7 +37,7 @@ npm run qa:prototype-handoff-check -- <prototype-handoff.json>
 npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
 ```
 
-The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command also enforces runtime readiness and the expected sample manifest before writing the probe record JSON file, then validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
 
 If each candidate was tested in a separate run, merge the copied handoff files before building the probe record. The merged handoff must still represent one physical device label across all candidate entries:
 

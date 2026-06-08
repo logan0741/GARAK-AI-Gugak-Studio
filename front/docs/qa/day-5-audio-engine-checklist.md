@@ -130,7 +130,7 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 21. Confirm `Prototype handoff JSON` has `generatedAt`, one `entries[]` item for the current candidate, the same `inspectorDraft`, and `measurements` fields set to `null` until the tester replaces them with physical-device values.
 22. If candidate handoffs were copied into separate files, run `npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>`. The merged entries must use the same physical device label.
 23. Run `npm run qa:prototype-handoff-check -- <merged-handoff.json>` and confirm `READY_FOR_PROBE_RECORD` before generating the probe record. Resolve missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, nullable measurement fields, runtime readiness issues, or generated probe-record validation issues first.
-24. Run `npm run qa:prototype-probe-record -- <merged-handoff.json> <probe-record.json>`.
+24. Run `npm run qa:prototype-probe-record -- <merged-handoff.json> <probe-record.json>`; the command must reject non-ready runtimes or any `sampleManifestVersion` other than `dev-synthetic-gayageum-2026-06-08`.
 25. Run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` and confirm `READY_FOR_DAY5_DECISION`.
 26. Run `npm run qa:day5-audio -- <probe-record.json>`.
 
