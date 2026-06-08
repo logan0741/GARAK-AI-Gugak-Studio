@@ -12,7 +12,7 @@ Use this document when validating whether the prototype can turn raw touch movem
 
 | File | Responsibility |
 | --- | --- |
-| `src/interaction/touchModel.ts` | Converts raw touch frames into `PerformanceEvent[]` using the existing `GestureMapper` functions. Touch timestamps, pluck/glissando velocity, pitch-bend cents, and mute strength must be finite before they can become session evidence. |
+| `src/interaction/touchModel.ts` | Converts raw touch frames into `PerformanceEvent[]` using the existing `GestureMapper` functions. Touch timestamps, x/y coordinates, pluck/glissando velocity, pitch-bend cents, and mute strength must be finite before they can become session evidence. |
 | `src/interaction/__tests__/touchModel.test.ts` | Pure tests for tap start, forward/reverse glissando crossing, hold-drag bend threshold, ji-eum mute state, and release cleanup. |
 | `src/prototype/GayageumPrototypeScreen.tsx` | Uses a `PanResponder` instrument surface and dispatches touch-model events to the current `SamplerEngine`, including additional touch starts for ji-eum mute. Also exposes deterministic `Bend` and `Mute` probe buttons for repeated engine smoke checks; these do not replace raw touch validation. |
 | `src/prototype/prototypeQaSnapshot.ts` | Tracks prototype-observable QA counters and formats an `estimate` inspector template with nullable unmeasured fields. It does not create final physical-device evidence. |
