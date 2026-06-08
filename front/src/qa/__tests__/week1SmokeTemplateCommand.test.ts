@@ -156,6 +156,30 @@ test('rejects blank tester names before writing a template', () => {
   ]);
 });
 
+test('trims tester and device label values before writing a template', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writes = new Map<string, string>();
+
+  expect(
+    runWeek1SmokeTemplateCommand({
+      argv: ['week1-smoke.json', ' CJH ', ' Pixel 8 / Android 15 '],
+      getGeneratedAt: () => '2026-06-08T07:00:00.000Z',
+      writeTextFile: (path, value) => writes.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  expect(stdout).toEqual(['Wrote Week 1 smoke report template: week1-smoke.json']);
+  const report = JSON.parse(writes.get('week1-smoke.json') ?? '');
+  expect(report.runs[0]).toMatchObject({
+    tester: 'CJH',
+    deviceLabel: 'Pixel 8 / Android 15',
+  });
+});
+
 test('returns write errors without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];

@@ -16,7 +16,7 @@ npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-l
 
 The template command writes every required Day 2/3/4 check with `result: "blocked"`. Replace each result with `pass` or `fail` after running the corresponding physical-device smoke step.
 
-`tester` must be a non-empty name after trimming whitespace. The template command rejects blank tester names before writing a report so generated smoke reports remain parseable by `qa:week1-smoke-report`.
+`tester` must be a non-empty name after trimming whitespace. The template command rejects blank tester names before writing a report so generated smoke reports remain parseable by `qa:week1-smoke-report`. The written `tester` and `deviceLabel` values are trimmed before they are saved.
 
 Validate a filled report with:
 
