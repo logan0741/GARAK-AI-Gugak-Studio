@@ -19,6 +19,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
 | `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
 | `src/qa/week1SmokeReportCommand.ts` | CLI command boundary that validates Day 2, Day 3, and Day 4 physical-device smoke report completeness before Day 5 review. |
+| `src/qa/week1SmokeTemplateCommand.ts` | CLI command boundary that generates a blocked Week 1 smoke report template with every required Day 2/3/4 check ID. |
 | `src/prototype/prototypeQaSnapshot.ts` | Prototype-only read model that tracks observable fake counters and renders estimate probe and prototype handoff templates with nullable physical-device measurement fields. |
 | `src/prototype/prototypeProbeHandoff.ts` | Converts prototype inspector drafts into physical-device probes or a Day 5 probe record only when observed runtime context proves each requested native candidate is ready. |
 | `src/prototype/prototypeHandoffMergeCommand.ts` | CLI command boundary that combines separately copied prototype handoff files and rejects duplicate candidate entries without promoting measurements. |
@@ -26,11 +27,13 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/prototype/prototypeProbeHandoffCommand.ts` | CLI command boundary that reads a prototype handoff JSON, validates the generated Day 5 probe record, and writes it without selecting the final engine. |
 | `scripts/day5-audio-engine-handoff.ts` | Node-only QA command entry point used by `npm run qa:day5-audio -- <probe-record.json>`. |
 | `scripts/week1-smoke-report.ts` | Node-only QA command entry point used by `npm run qa:week1-smoke-report -- <week1-smoke-report.json>`. |
+| `scripts/week1-smoke-template.ts` | Node-only QA command entry point used by `npm run qa:week1-smoke-template -- <output-json> <tester> <device-label>`. |
 | `scripts/day5-prototype-handoff-merge.ts` | Node-only QA command entry point used by `npm run qa:prototype-handoff-merge -- <output-handoff.json> <prototype-handoff.json...>`. |
 | `scripts/day5-prototype-handoff-check.ts` | Node-only QA command entry point used by `npm run qa:prototype-handoff-check -- <prototype-handoff.json>`. |
 | `scripts/day5-prototype-probe-record.ts` | Node-only QA command entry point used by `npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>`. |
 | `src/audio/__tests__/audioEngineProbeDraft.test.ts` | Verifies draft probes stay `estimate`, count triggered glissando strings, can be wrapped in a probe record, and require explicit measurements before physical-device promotion. |
 | `src/qa/__tests__/week1SmokeReportCommand.test.ts` | Verifies the Week 1 smoke report command rejects missing, duplicate, blocked, or malformed Day 2/3/4 smoke evidence while preserving final engine selection for Day 5. |
+| `src/qa/__tests__/week1SmokeTemplateCommand.test.ts` | Verifies the Week 1 smoke template command writes every required check as blocked and rejects placeholder device labels before file output. |
 | `src/prototype/__tests__/prototypeQaSnapshot.test.ts` | Verifies the prototype inspector draft does not claim audible-quality or physical-device evidence automatically. |
 | `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects fake, preloading, or missing runtime observation before physical-device probe or record creation. |
 | `src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts` | Verifies separately copied prototype handoff files can be merged and duplicate candidates are rejected. |
@@ -84,13 +87,14 @@ If a required candidate has more than one physical-device probe in a single reco
 
 Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should be reflected in the glissando, pitch bend, mute, and session fallback fields.
 
-Before building the Day 5 record, validate the Week 1 smoke report:
+Before building the Day 5 record, create and validate the Week 1 smoke report:
 
 ```bash
+npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-label>"
 npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 ```
 
-The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, or blocked checks must be resolved before relying on the Day 5 record.
+The template command starts every required check as `blocked`; fill each result from physical-device QA before validation. The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, or blocked checks must be resolved before relying on the Day 5 record.
 
 ## Probe Record Handoff
 
@@ -148,6 +152,7 @@ Run before publishing a Day 5 record:
 npm test src/audio/__tests__/audioEngineDecisionRecord.test.ts
 npm test src/audio/__tests__/audioEngineProbeDraft.test.ts
 npm test src/qa/__tests__/week1SmokeReportCommand.test.ts
+npm test src/qa/__tests__/week1SmokeTemplateCommand.test.ts
 npm test src/prototype/__tests__/prototypeQaSnapshot.test.ts
 npm test src/prototype/__tests__/prototypeProbeHandoff.test.ts
 npm test src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts

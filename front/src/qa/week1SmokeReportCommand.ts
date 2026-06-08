@@ -1,17 +1,17 @@
-type Week1SmokeAreaId =
+export type Week1SmokeAreaId =
   | 'day-2-expo-audio'
   | 'day-3-react-native-audio-api'
   | 'day-4-touch-model';
 
-type Week1SmokeCheckResult = 'pass' | 'fail' | 'blocked';
+export type Week1SmokeCheckResult = 'pass' | 'fail' | 'blocked';
 
-type Week1SmokeCheck = {
+export type Week1SmokeCheck = {
   id: string;
   result: Week1SmokeCheckResult;
   notes?: string;
 };
 
-type Week1SmokeRun = {
+export type Week1SmokeRun = {
   area: Week1SmokeAreaId;
   testedAt: string;
   tester: string;
@@ -19,7 +19,7 @@ type Week1SmokeRun = {
   checks: Week1SmokeCheck[];
 };
 
-type Week1SmokeReport = {
+export type Week1SmokeReport = {
   generatedAt: string;
   runs: Week1SmokeRun[];
 };
@@ -45,7 +45,7 @@ export type Week1SmokeReportCommandInput = {
   writeStderr: (value: string) => void;
 };
 
-const REQUIRED_CHECKS_BY_AREA = {
+export const REQUIRED_CHECKS_BY_AREA = {
   'day-2-expo-audio': [
     'preload',
     'tap-playback',
@@ -70,7 +70,7 @@ const REQUIRED_CHECKS_BY_AREA = {
   'day-4-touch-model': ['tap', 'glissando', 'hold-drag', 'ji-eum', 'fallback'],
 } as const satisfies Record<Week1SmokeAreaId, readonly string[]>;
 
-const REQUIRED_AREAS = Object.keys(REQUIRED_CHECKS_BY_AREA) as Week1SmokeAreaId[];
+export const REQUIRED_AREAS = Object.keys(REQUIRED_CHECKS_BY_AREA) as Week1SmokeAreaId[];
 
 export function runWeek1SmokeReportCommand(input: Week1SmokeReportCommandInput): number {
   const [smokeReportPath] = input.argv;
@@ -353,7 +353,7 @@ function isNonEmptyString(input: unknown): input is string {
   return typeof input === 'string' && input.trim().length > 0;
 }
 
-function isPhysicalDeviceLabel(input: unknown): input is string {
+export function isPhysicalDeviceLabel(input: unknown): input is string {
   if (!isNonEmptyString(input)) {
     return false;
   }
