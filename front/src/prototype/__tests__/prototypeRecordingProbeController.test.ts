@@ -103,6 +103,26 @@ test('plays a captured recording probe through a supported engine', async () => 
   expect(playbackUris).toEqual(['file://probe.m4a']);
 });
 
+test('does not pass whitespace recording uri into captured playback engine', async () => {
+  const playbackUris: string[] = [];
+  const engine = {
+    handleEvent: () => undefined,
+    playRecordingProbe: async (recordingUri: string) => {
+      playbackUris.push(recordingUri);
+      return {
+        ok: true as const,
+        recordingUri,
+      };
+    },
+  };
+
+  await expect(playCapturedPrototypeRecordingProbe(engine, '   ')).resolves.toEqual({
+    status: 'failed',
+    errorMessage: 'recording_playback_uri_missing',
+  });
+  expect(playbackUris).toEqual([]);
+});
+
 test('turns recording playback probe failures into failed probe state', async () => {
   const engine = {
     handleEvent: () => undefined,

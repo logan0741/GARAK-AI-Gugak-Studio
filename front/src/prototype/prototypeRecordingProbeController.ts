@@ -86,6 +86,10 @@ export async function playCapturedPrototypeRecordingProbe(
   engine: SamplerEngine,
   recordingUri: string,
 ): Promise<PrototypeRecordingProbePlaybackResult> {
+  if (recordingUri.trim().length === 0) {
+    return { status: 'failed', errorMessage: 'recording_playback_uri_missing' };
+  }
+
   if (!isRecordingProbePlaybackCapableEngine(engine)) {
     return { status: 'unsupported', reason: 'recording_playback_probe_not_supported' };
   }
