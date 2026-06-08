@@ -197,7 +197,9 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   private activeVoicesForString(stringIndex: number): ActiveVoice[] {
-    return this.activeVoices.filter((voice) => voice.stringIndex === stringIndex);
+    return this.activeVoices.filter(
+      (voice) => voice.stringIndex === stringIndex && !voice.releaseScheduled,
+    );
   }
 
   private requireContext(): ReactNativeAudioApiContextPort {
