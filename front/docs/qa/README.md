@@ -26,6 +26,14 @@ npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json
 
 The command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
 
+If each candidate was tested in a separate run, merge the copied handoff files before building the probe record:
+
+```bash
+npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>
+```
+
+The merge command only combines `entries[]` and rejects duplicate candidate entries. It does not fill or validate physical-device measurements; `qa:prototype-probe-record` remains responsible for turning the filled handoff into a parser-valid probe record.
+
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 
 Use UTC ISO timestamps such as `2026-06-08T01:00:00.000Z` for `generatedAt` and `measuredAt` in probe records.
