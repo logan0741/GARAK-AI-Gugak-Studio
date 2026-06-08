@@ -112,6 +112,20 @@ test('does not schedule duplicate source stops for repeated release events', asy
   expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
 });
 
+test('does not stop an already released voice again when enforcing the voice budget', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 1 });
+  await engine.preload();
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.8 });
+  engine.handleEvent({ type: 'string_release', tsMs: 150, stringIndex: 1 });
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 160, stringIndex: 2, velocity: 0.8 });
+
+  expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
+  expect(runtime.context.sources[0].disconnectCalls).toEqual([]);
+  expect(runtime.context.sources[1].stopCalls).toEqual([]);
+});
+
 test('steals the oldest voice only after the configured voice budget is exceeded', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 2 });
