@@ -12,7 +12,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria. |
+| `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria and treats non-finite, out-of-range, or non-boolean manual measurements as failed criteria. |
 | `src/audio/audioEngineProbeDraft.ts` | Creates `estimate` probe drafts from observed QA values and promotes a draft to `physical-device` only when every manual measurement field is supplied explicitly as a non-null value. Draft output is not final-selection evidence. |
 | `src/audio/audioEngineProbeRecord.ts` | Validates a manual QA probe record before building the Day 5 decision record. |
 | `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing. |
@@ -86,6 +86,8 @@ When a draft is promoted to `physical-device`, `deviceLabel` must be replaced wi
 Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026`, slash-separated dates, or impossible calendar dates such as `2026-02-31T10:00:00.000Z` are rejected by the parser.
 
 `glissandoTriggeredStrings` is the count of unique strings triggered during a 12-string swipe. It must be an integer from 0 to 12; values above 12 are treated as handoff input errors, not better results.
+
+The decision evaluator is also conservative if a caller bypasses the parser: negative or non-finite duration values, fractional voice/string counts, values above the 12-string glissando range, or non-boolean audible-quality fields are counted as failed Day 5 criteria rather than passing by JavaScript truthiness.
 
 If a required candidate has more than one physical-device probe in a single record, the record reports it in `duplicateCandidates` and does not select a final engine. Consolidate repeated measurements into one candidate probe before publishing the Day 5 decision.
 
