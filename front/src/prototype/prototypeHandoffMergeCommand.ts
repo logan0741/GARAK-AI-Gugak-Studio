@@ -64,6 +64,14 @@ export function runPrototypeHandoffMergeCommand(
     return 1;
   }
 
+  const deviceLabels = collectDeviceLabels(entries);
+  if (deviceLabels.length > 1) {
+    input.writeStderr(
+      `Could not merge prototype handoffs: device labels must match: ${deviceLabels.join(', ')}`,
+    );
+    return 1;
+  }
+
   const mergedHandoff: PrototypeHandoffFile = {
     generatedAt: input.getGeneratedAt(),
     entries,
@@ -95,4 +103,27 @@ function findDuplicateCandidates(
   }
 
   return [...duplicates].sort();
+}
+
+function collectDeviceLabels(
+  entries: PhysicalDevicePrototypeProbeHandoffInput[],
+): string[] {
+  const labels = entries.flatMap((entry) => [
+    entry.deviceLabel,
+    entry.inspectorDraft.probeTemplate.deviceLabel,
+  ]);
+
+  return unique(labels.filter(isString).map(normalizeDeviceLabelForReport));
+}
+
+function normalizeDeviceLabelForReport(input: string): string {
+  return input.trim().replace(/\s*\/\s*/g, ' / ').replace(/\s+/g, ' ');
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function isString(input: unknown): input is string {
+  return typeof input === 'string';
 }
