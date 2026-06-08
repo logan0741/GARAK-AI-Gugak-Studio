@@ -14,7 +14,7 @@ import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import { FakeSamplerEngine } from '../audio/fakeSamplerEngine';
 import { VoiceState } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
-import { createEmptySession } from '../domain/session';
+import { attachRecordingUriToSession, createEmptySession } from '../domain/session';
 import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
@@ -50,6 +50,7 @@ import {
   PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
   prototypeGayageumSampleManifest,
 } from './prototypeSampleManifest';
+import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
 const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
@@ -221,6 +222,12 @@ export function GayageumPrototypeScreen() {
   async function handleStopRecordingProbe() {
     const result = await stopPrototypeRecordingProbe(engineRef.current);
     setRecordingProbeState(result);
+    if (result.status === 'captured') {
+      const { recordingUri } = result;
+      if (typeof recordingUri === 'string') {
+        setSession((current) => attachRecordingUriToSession(current, recordingUri));
+      }
+    }
   }
 
   function handleTouchFrame(phase: TouchFrame['phase'], event: GestureResponderEvent, gestureState: PanResponderGestureState) {
@@ -257,6 +264,7 @@ export function GayageumPrototypeScreen() {
   const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
   const commands = fakeEngineSnapshot.commands;
   const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
+  const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
 
   return (
     <View style={styles.screen}>
@@ -359,6 +367,10 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorTitle}>Probe draft (estimate only, fake engine counters)</Text>
         <Text selectable style={styles.probeDraftText}>
           {probeDraftText}
+        </Text>
+        <Text style={styles.inspectorTitle}>Session fallback (copyable)</Text>
+        <Text selectable style={styles.probeDraftText}>
+          {sessionFallbackText}
         </Text>
       </ScrollView>
     </View>

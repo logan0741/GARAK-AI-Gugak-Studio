@@ -94,7 +94,7 @@ After exactly one physical-device probe per candidate is recorded, run the hando
 
 ## Current Prototype Smoke Test
 
-The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls and status, missing sample string indexes, session event count, audible fake voice count, command log, audio failure status, and a copyable `Probe draft (estimate only, fake engine counters)` JSON block in the prototype inspector.
+The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls and status, missing sample string indexes, session event count, audible fake voice count, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, and a copyable `Session fallback` JSON block in the prototype inspector.
 
 1. Open the 12-string prototype screen on a physical device or Expo dev build.
 2. Confirm the inspector separates requested candidate from active runtime. If no complete 12-string sample manifest is passed into the host, active runtime must remain `fake-prototype`.
@@ -111,7 +111,8 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 13. Press the glissando control and confirm the event count increments by 12.
 14. While active runtime is `fake-prototype`, confirm audible fake voice count grows for plucks and does not count released voices.
 15. Confirm audio status remains `ok` while the current engine handles events.
-16. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, keeps unmeasured physical-device fields as `null`, and does not show a Day 5 decision or selected engine.
+16. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, and preserves the full `Session.events` list even if recording is unsupported or fails.
+17. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, keeps unmeasured physical-device fields as `null`, and does not show a Day 5 decision or selected engine.
 
 ## Day 5 Full Test Script
 
@@ -124,7 +125,7 @@ Prerequisite: before running this full script, the active `SamplerEngine` candid
 5. Swipe across all 12 strings in both directions and verify no missing string trigger.
 6. Trigger a mute or cover gesture and listen for pop noise or unnatural cutoff.
 7. Record or attempt to record 10 seconds of live interaction if the candidate engine supports capture.
-8. Save the event session and confirm the event log is still available even if audio capture fails.
+8. Save the `Session fallback (copyable)` JSON and confirm the event log is still available even if audio capture fails.
 
 ## Decision
 
