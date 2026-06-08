@@ -114,6 +114,7 @@ function formatReadinessIssues(report: PrototypeHandoffReadinessReport): string 
     ['device label issues', report.deviceLabelIssues],
     ['timestamp issues', report.timestampIssues],
     ['manifest issues', report.manifestIssues],
+    ['inspector draft issues', report.inspectorDraftIssues],
     ['missing measurement fields', report.missingMeasurementFields],
     ['invalid measurement fields', report.invalidMeasurementFields],
     ['runtime issues', report.runtimeIssues],
