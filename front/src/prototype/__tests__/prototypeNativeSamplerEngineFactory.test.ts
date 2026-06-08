@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { ExpoAudioRuntimePort } from '../../audio/expoAudioSamplerEngine';
 import {
   ReactNativeAudioApiContextPort,
@@ -6,6 +6,51 @@ import {
 } from '../../audio/reactNativeAudioApiSamplerEngine';
 import { SampleAssetManifest } from '../../domain/sampleManifest';
 import { createAndPreloadPrototypeNativeSamplerEngine } from '../prototypeNativeSamplerEngineFactory';
+
+const defaultDependencyLoadMocks = vi.hoisted(() => ({
+  bundledSampleRegistryModuleLoaded: vi.fn(),
+  expoAssetModuleLoaded: vi.fn(),
+  expoAudioRuntimeModuleLoaded: vi.fn(),
+  reactNativeAudioApiRuntimeModuleLoaded: vi.fn(),
+}));
+
+vi.mock('../../audio/expoAudioRuntime', () => {
+  defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded();
+  return {
+    createExpoAudioRuntimePort: () => {
+      throw new Error('default expo-audio runtime should not be loaded');
+    },
+  };
+});
+
+vi.mock('../../audio/reactNativeAudioApiRuntime', () => {
+  defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded();
+  return {
+    createReactNativeAudioApiRuntimePort: () => {
+      throw new Error('default react-native-audio-api runtime should not be loaded');
+    },
+  };
+});
+
+vi.mock('expo-asset', () => {
+  defaultDependencyLoadMocks.expoAssetModuleLoaded();
+  return {
+    Asset: {
+      fromModule: () => ({
+        downloadAsync: async () => undefined,
+        localUri: undefined,
+        uri: undefined,
+      }),
+    },
+  };
+});
+
+vi.mock('../prototypeBundledSampleAssetRegistry', () => {
+  defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded();
+  return {
+    prototypeBundledSampleAssetModules: {},
+  };
+});
 
 const manifest: SampleAssetManifest = {
   version: 'test-12-string-manifest',
@@ -115,6 +160,64 @@ test('creates and preloads the react-native-audio-api candidate through injected
   expect(resolvedUris).toEqual(manifest.assets.map((asset) => `file://decoded/${asset.fileUri}`));
   expect(decodedInputs).toEqual(resolvedUris);
 });
+
+test('rejects incomplete sample manifests before creating a native candidate', async () => {
+  const resolvedUris: string[] = [];
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'react-native-audio-api',
+      manifest: {
+        version: 'partial-manifest',
+        assets: manifest.assets.slice(0, 11),
+      },
+      assetResolver: {
+        resolveFileUri: async (fileUri) => {
+          resolvedUris.push(fileUri);
+          return fileUri;
+        },
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow('Prototype native sampler requires all 12 sample strings before preload; missing strings: 12');
+  expect(resolvedUris).toEqual([]);
+});
+
+test.each(['expo-audio', 'react-native-audio-api'] as const)(
+  'rejects incomplete sample manifests before loading default native dependencies for %s',
+  async (candidate) => {
+    clearDefaultDependencyLoadMocks();
+
+    await expect(
+      createAndPreloadPrototypeNativeSamplerEngine({
+        candidate,
+        manifest: {
+          version: 'partial-manifest',
+          assets: manifest.assets.slice(0, 11),
+        },
+      }),
+    ).rejects.toThrow('Prototype native sampler requires all 12 sample strings before preload; missing strings: 12');
+
+    expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+  },
+);
+
+function clearDefaultDependencyLoadMocks(): void {
+  defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded.mockClear();
+  defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded.mockClear();
+  defaultDependencyLoadMocks.expoAssetModuleLoaded.mockClear();
+  defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded.mockClear();
+}
 
 function createNode(): ReactNativeAudioApiContextPort['destination'] {
   return {
