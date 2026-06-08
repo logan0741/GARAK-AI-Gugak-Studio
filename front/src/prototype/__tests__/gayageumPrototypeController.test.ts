@@ -7,6 +7,7 @@ import {
   safelyDispatchEventsToCurrentEngine,
   safelyDispatchEventsToEngine,
   planGlissando,
+  planPolyphonyBurst,
   planStringPlay,
 } from '../gayageumPrototypeController';
 
@@ -83,5 +84,24 @@ test('appends planned events to session in order', () => {
     'pluck:string=1:velocity=1',
     'pluck:string=2:velocity=1',
     'pluck:string=3:velocity=1',
+  ]);
+});
+
+test('plans an 8 voice polyphony burst at the same timestamp', () => {
+  const events = planPolyphonyBurst({
+    nowMs: 300,
+    stringIndexes: [1, 2, 3, 4, 5, 6, 7, 8],
+  });
+
+  expect(events).toHaveLength(8);
+  expect(events).toEqual([
+    { type: 'string_pluck', tsMs: 300, stringIndex: 1, velocity: 1 },
+    { type: 'string_pluck', tsMs: 300, stringIndex: 2, velocity: 1 },
+    { type: 'string_pluck', tsMs: 300, stringIndex: 3, velocity: 1 },
+    { type: 'string_pluck', tsMs: 300, stringIndex: 4, velocity: 1 },
+    { type: 'string_pluck', tsMs: 300, stringIndex: 5, velocity: 1 },
+    { type: 'string_pluck', tsMs: 300, stringIndex: 6, velocity: 1 },
+    { type: 'string_pluck', tsMs: 300, stringIndex: 7, velocity: 1 },
+    { type: 'string_pluck', tsMs: 300, stringIndex: 8, velocity: 1 },
   ]);
 });
