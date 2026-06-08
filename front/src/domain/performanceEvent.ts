@@ -15,6 +15,12 @@ export function assertStringIndex(stringIndex: number): void {
   }
 }
 
+export function assertEventTimestamp(tsMs: number): void {
+  if (!Number.isFinite(tsMs)) {
+    throw new Error('tsMs must be finite');
+  }
+}
+
 export function clampBendCents(cents: number): number {
   return Math.max(-MAX_BEND_CENTS, Math.min(MAX_BEND_CENTS, cents));
 }
@@ -24,6 +30,7 @@ export function createStringPluck(input: {
   stringIndex: number;
   velocity: number;
 }): PerformanceEvent {
+  assertEventTimestamp(input.tsMs);
   assertStringIndex(input.stringIndex);
 
   return {
@@ -39,6 +46,7 @@ export function createStringBend(input: {
   stringIndex: number;
   cents: number;
 }): PerformanceEvent {
+  assertEventTimestamp(input.tsMs);
   assertStringIndex(input.stringIndex);
 
   return {

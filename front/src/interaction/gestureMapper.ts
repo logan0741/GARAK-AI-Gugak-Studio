@@ -1,4 +1,10 @@
-import { PerformanceEvent, assertStringIndex, clampBendCents, createStringPluck } from '../domain/performanceEvent';
+import {
+  PerformanceEvent,
+  assertEventTimestamp,
+  assertStringIndex,
+  clampBendCents,
+  createStringPluck,
+} from '../domain/performanceEvent';
 
 const GLISSANDO_STEP_MS = 16;
 
@@ -32,6 +38,7 @@ export function mapHoldDrag(input: {
   stringIndex: number;
   normalizedDelta: number;
 }): PerformanceEvent {
+  assertEventTimestamp(input.tsMs);
   assertStringIndex(input.stringIndex);
   requireFinite(input.normalizedDelta, 'normalizedDelta');
 
@@ -48,6 +55,7 @@ export function mapSwipeAcrossStrings(input: {
   stringIndexes: number[];
   velocity?: number;
 }): PerformanceEvent[] {
+  assertEventTimestamp(input.tsMs);
   return dedupeConsecutiveStringIndexes(input.stringIndexes).map((stringIndex, index) => {
     assertStringIndex(stringIndex);
 
@@ -61,6 +69,7 @@ export function mapSwipeAcrossStrings(input: {
 }
 
 export function mapCover(input: { tsMs: number; stringIndex: number; area: number }): PerformanceEvent {
+  assertEventTimestamp(input.tsMs);
   assertStringIndex(input.stringIndex);
 
   return {
@@ -72,6 +81,7 @@ export function mapCover(input: { tsMs: number; stringIndex: number; area: numbe
 }
 
 export function mapRelease(input: { tsMs: number; stringIndex: number }): PerformanceEvent {
+  assertEventTimestamp(input.tsMs);
   assertStringIndex(input.stringIndex);
 
   return {
