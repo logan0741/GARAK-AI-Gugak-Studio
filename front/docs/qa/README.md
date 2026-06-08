@@ -18,13 +18,13 @@ The prototype probe draft also includes `observedRuntime` so the handoff records
 
 `src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate and the runtime/preload status is ready. This prevents fake fallback or preloading states from being promoted.
 
-To produce a Day 5 probe record from prototype inspector drafts, save a prototype handoff JSON with `generatedAt` and `entries`. Each entry must contain the copied `inspectorDraft`, explicit physical-device `measurements`, and optional `measuredAt` or `deviceLabel` overrides. Then run:
+To produce a Day 5 probe record from prototype inspector drafts, copy the prototype inspector's `Prototype handoff JSON` block after testing each candidate. Each entry contains the copied `inspectorDraft`, `measuredAt`, `deviceLabel`, and nullable manual `measurements`. Replace every `measurements` null with explicit physical-device values before running:
 
 ```bash
 npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
 ```
 
-The command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Validate that output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+The command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
 
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 
