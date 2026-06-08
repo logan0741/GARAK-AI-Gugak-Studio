@@ -67,6 +67,7 @@ test('reports ready handoffs without producing a Day 5 decision', () => {
   expect(stdout.join('\n')).toContain('- Timestamp issues: none');
   expect(stdout.join('\n')).toContain('- Manifest issues: none');
   expect(stdout.join('\n')).toContain('- Missing measurement fields: none');
+  expect(stdout.join('\n')).toContain('- Invalid measurement fields: none');
   expect(stdout.join('\n')).toContain('- Runtime issues: none');
   expect(stdout.join('\n')).toContain('- Probe record issues: none');
   expect(stdout.join('\n')).not.toContain('FINAL_ENGINE_SELECTED');
@@ -332,7 +333,7 @@ test('reports unexpected sample manifest versions before probe record generation
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
-test('reports generated probe record validation issues before declaring readiness', () => {
+test('reports invalid measurement fields before probe record generation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
 
@@ -364,7 +365,8 @@ test('reports generated probe record validation issues before declaring readines
   expect(stderr).toEqual([]);
   const output = stdout.join('\n');
   expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
-  expect(output).toContain('- Probe record issues: generated probe record is invalid:');
+  expect(output).toContain('- Invalid measurement fields: expo-audio.touchToSoundLatencyMs');
+  expect(output).toContain('- Probe record issues: none');
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 

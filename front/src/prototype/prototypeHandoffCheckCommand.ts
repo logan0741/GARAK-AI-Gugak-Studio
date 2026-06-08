@@ -25,6 +25,7 @@ type PrototypeHandoffReadinessReport = {
   timestampIssues: string[];
   manifestIssues: string[];
   missingMeasurementFields: string[];
+  invalidMeasurementFields: string[];
   runtimeIssues: string[];
   probeRecordIssues: string[];
 };
@@ -45,6 +46,21 @@ const MEASUREMENT_FIELDS = [
   'sessionFallbackPreserved',
   'recordingCaptureSeconds',
 ] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const DURATION_MEASUREMENT_FIELDS = [
+  'touchToSoundLatencyMs',
+  'recordingCaptureSeconds',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const COUNT_MEASUREMENT_FIELDS = [
+  'maxStableVoices',
+  'glissandoTriggeredStrings',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const BOOLEAN_MEASUREMENT_FIELDS = [
+  'pitchBendSmooth',
+  'muteReleaseClean',
+  'preloadStable',
+  'sessionFallbackPreserved',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const MAX_GAYAGEUM_STRING_COUNT = 12;
 
 export type PrototypeHandoffCheckCommandInput = {
   argv: string[];
@@ -106,6 +122,7 @@ function buildPrototypeHandoffReadinessReport(
   const timestampIssues = collectTimestampIssues(handoff);
   const manifestIssues = collectManifestIssues(handoff.entries);
   const missingMeasurementFields = collectMissingMeasurementFields(handoff.entries);
+  const invalidMeasurementFields = collectInvalidMeasurementFields(handoff.entries);
   const runtimeIssues = collectRuntimeIssues(handoff.entries);
   const probeRecordIssues = collectProbeRecordIssues({
     handoff,
@@ -115,6 +132,7 @@ function buildPrototypeHandoffReadinessReport(
     timestampIssues,
     manifestIssues,
     missingMeasurementFields,
+    invalidMeasurementFields,
     runtimeIssues,
   });
   const status =
@@ -124,6 +142,7 @@ function buildPrototypeHandoffReadinessReport(
     timestampIssues.length === 0 &&
     manifestIssues.length === 0 &&
     missingMeasurementFields.length === 0 &&
+    invalidMeasurementFields.length === 0 &&
     runtimeIssues.length === 0 &&
     probeRecordIssues.length === 0
       ? 'READY_FOR_PROBE_RECORD'
@@ -137,6 +156,7 @@ function buildPrototypeHandoffReadinessReport(
     timestampIssues,
     manifestIssues,
     missingMeasurementFields,
+    invalidMeasurementFields,
     runtimeIssues,
     probeRecordIssues,
   };
@@ -256,6 +276,21 @@ function collectMissingMeasurementFields(
   return missingFields;
 }
 
+function collectInvalidMeasurementFields(
+  entries: PhysicalDevicePrototypeProbeHandoffInput[],
+): string[] {
+  const invalidFields: string[] = [];
+
+  for (const entry of entries) {
+    const candidate = entry.inspectorDraft.probeTemplate.candidate;
+    for (const field of getInvalidMeasurementFields(entry.measurements)) {
+      invalidFields.push(`${candidate}.${field}`);
+    }
+  }
+
+  return invalidFields;
+}
+
 function collectRuntimeIssues(entries: PhysicalDevicePrototypeProbeHandoffInput[]): string[] {
   const issues: string[] = [];
 
@@ -278,6 +313,7 @@ function collectProbeRecordIssues(input: {
   timestampIssues: string[];
   manifestIssues: string[];
   missingMeasurementFields: string[];
+  invalidMeasurementFields: string[];
   runtimeIssues: string[];
 }): string[] {
   if (
@@ -287,6 +323,7 @@ function collectProbeRecordIssues(input: {
     input.timestampIssues.length > 0 ||
     input.manifestIssues.length > 0 ||
     input.missingMeasurementFields.length > 0 ||
+    input.invalidMeasurementFields.length > 0 ||
     input.runtimeIssues.length > 0
   ) {
     return [];
@@ -319,6 +356,7 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
     `- Timestamp issues: ${formatList(report.timestampIssues)}`,
     `- Manifest issues: ${formatList(report.manifestIssues)}`,
     `- Missing measurement fields: ${formatList(report.missingMeasurementFields)}`,
+    `- Invalid measurement fields: ${formatList(report.invalidMeasurementFields)}`,
     `- Runtime issues: ${formatList(report.runtimeIssues)}`,
     `- Probe record issues: ${formatList(report.probeRecordIssues)}`,
   ].join('\n');
@@ -348,4 +386,56 @@ function getErrorMessage(error: unknown): string {
   }
 
   return String(error);
+}
+
+function getInvalidMeasurementFields(
+  measurements: PhysicalDeviceAudioEngineProbeMeasurements,
+): string[] {
+  const invalidFields: string[] = [];
+
+  for (const field of DURATION_MEASUREMENT_FIELDS) {
+    const value = measurements[field];
+    if (value !== null && value !== undefined && !isNonNegativeFiniteNumber(value)) {
+      invalidFields.push(field);
+    }
+  }
+
+  for (const field of COUNT_MEASUREMENT_FIELDS) {
+    const value = measurements[field];
+    if (value !== null && value !== undefined && !isNonNegativeInteger(value)) {
+      invalidFields.push(field);
+    }
+  }
+
+  if (
+    isNonNegativeInteger(measurements.glissandoTriggeredStrings) &&
+    measurements.glissandoTriggeredStrings > MAX_GAYAGEUM_STRING_COUNT
+  ) {
+    invalidFields.push('glissandoTriggeredStrings');
+  }
+
+  for (const field of BOOLEAN_MEASUREMENT_FIELDS) {
+    const value = measurements[field];
+    if (value !== null && value !== undefined && typeof value !== 'boolean') {
+      invalidFields.push(field);
+    }
+  }
+
+  return orderMeasurementFields([...new Set(invalidFields)]);
+}
+
+function orderMeasurementFields(fields: string[]): string[] {
+  const order = new Map<string, number>(
+    MEASUREMENT_FIELDS.map((field, index) => [field, index]),
+  );
+
+  return [...fields].sort((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0));
+}
+
+function isNonNegativeFiniteNumber(input: unknown): input is number {
+  return typeof input === 'number' && Number.isFinite(input) && input >= 0;
+}
+
+function isNonNegativeInteger(input: unknown): input is number {
+  return Number.isInteger(input) && typeof input === 'number' && input >= 0;
 }

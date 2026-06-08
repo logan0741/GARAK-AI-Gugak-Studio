@@ -22,7 +22,7 @@ npm run qa:day5-audio -- <probe-record.json>
 
 The readiness command is the bridge between Week 1 smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files after trimming surrounding whitespace. When the smoke report is incomplete, its `Smoke report issues` line includes the concrete missing, duplicate, blocked, or device-label causes. It does not write a new record and does not select the final engine.
 
-`src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null values.
+`src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null, correctly typed, in-range values.
 
 When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The prototype screen has a `Device / OS` input that updates the copyable probe draft before handoff. The Day 5 parser rejects that placeholder and placeholder-like labels such as `Device / OS` for final-selection evidence.
 
@@ -37,7 +37,7 @@ npm run qa:prototype-handoff-check -- <prototype-handoff.json>
 npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
 ```
 
-The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command rejects malformed handoff JSON shape, then enforces runtime readiness and the expected sample manifest before writing the probe record JSON file, then validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command rejects malformed handoff JSON shape, then enforces runtime readiness and the expected sample manifest before writing the probe record JSON file, then validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
 
 If each candidate was tested in a separate run, merge the copied handoff files before building the probe record. The merged handoff must still represent one physical device label across all candidate entries:
 
@@ -53,7 +53,7 @@ After merging, check that the merged handoff is ready for promotion:
 npm run qa:prototype-handoff-check -- <merged-handoff.json>
 ```
 
-The readiness check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues. It does not write a probe record or select the final engine. Device label issues include placeholder labels, entry/draft label mismatches, and candidate entries that were copied from different physical devices. Manifest issues mean the observed runtime did not use `dev-synthetic-gayageum-2026-06-08`, the Week 1 technical fixture manifest.
+The readiness check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues. It does not write a probe record or select the final engine. Device label issues include placeholder labels, entry/draft label mismatches, and candidate entries that were copied from different physical devices. Manifest issues mean the observed runtime did not use `dev-synthetic-gayageum-2026-06-08`, the Week 1 technical fixture manifest.
 
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 

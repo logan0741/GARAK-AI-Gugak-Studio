@@ -197,6 +197,32 @@ test('rejects physical promotion when required manual measurements are still nul
   ).toThrow('physical-device measurements missing: pitchBendSmooth, muteReleaseClean');
 });
 
+test('rejects physical promotion when manual measurements have invalid shapes', () => {
+  const draft = createAudioEngineProbeDraft({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T02:10:00.000Z',
+  });
+
+  expect(() =>
+    promoteAudioEngineProbeDraftToPhysicalDevice({
+      draft,
+      measurements: {
+        touchToSoundLatencyMs: Number.NEGATIVE_INFINITY,
+        maxStableVoices: 8.5,
+        pitchBendSmooth: 'yes',
+        glissandoTriggeredStrings: 13,
+        muteReleaseClean: 'yes',
+        preloadStable: 'yes',
+        sessionFallbackPreserved: 'yes',
+        recordingCaptureSeconds: Number.POSITIVE_INFINITY,
+      } as never,
+    }),
+  ).toThrow(
+    'physical-device measurements invalid: touchToSoundLatencyMs, maxStableVoices, pitchBendSmooth, glissandoTriggeredStrings, muteReleaseClean, preloadStable, sessionFallbackPreserved, recordingCaptureSeconds',
+  );
+});
+
 test('rejects promotion from non-estimate probe evidence', () => {
   const draft = createAudioEngineProbeDraft({
     candidate: 'expo-audio',
