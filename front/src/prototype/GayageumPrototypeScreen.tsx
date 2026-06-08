@@ -295,7 +295,6 @@ export function GayageumPrototypeScreen() {
   async function handlePlayRecordingProbe() {
     const recordingUri = selectPlayableRecordingUri({
       recordingProbeState,
-      sessionRecordingUri: session.recordingUri,
     });
     if (recordingUri === null) {
       const result = { status: 'failed', errorMessage: 'recording_playback_uri_missing' } as const;
@@ -371,7 +370,6 @@ export function GayageumPrototypeScreen() {
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
   const playableRecordingUri = selectPlayableRecordingUri({
     recordingProbeState,
-    sessionRecordingUri: session.recordingUri,
   });
 
   return (
