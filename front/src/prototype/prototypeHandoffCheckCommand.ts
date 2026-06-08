@@ -13,11 +13,11 @@ import {
 } from './prototypeProbeHandoff';
 import { PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION } from './prototypeSampleManifest';
 
-type PrototypeHandoffReadinessStatus =
+export type PrototypeHandoffReadinessStatus =
   | 'READY_FOR_PROBE_RECORD'
   | 'NOT_READY_FOR_PROBE_RECORD';
 
-type PrototypeHandoffReadinessReport = {
+export type PrototypeHandoffReadinessReport = {
   status: PrototypeHandoffReadinessStatus;
   missingCandidates: AudioEngineCandidateId[];
   duplicateCandidates: AudioEngineCandidateId[];
@@ -108,7 +108,7 @@ export function runPrototypeHandoffCheckCommand(
   return report.status === 'READY_FOR_PROBE_RECORD' ? 0 : 1;
 }
 
-function buildPrototypeHandoffReadinessReport(
+export function buildPrototypeHandoffReadinessReport(
   handoff: PrototypeHandoffFile,
 ): PrototypeHandoffReadinessReport {
   const candidateCounts = countCandidates(handoff.entries);

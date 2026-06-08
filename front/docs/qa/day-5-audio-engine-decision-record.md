@@ -140,7 +140,7 @@ Before generating the probe record, run the readiness check:
 npm run qa:prototype-handoff-check -- <merged-handoff.json>
 ```
 
-The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps including impossible calendar dates, unexpected sample manifest versions, nullable or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`.
+The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps including impossible calendar dates, unexpected sample manifest versions, nullable or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`. The `qa:prototype-probe-record` command reuses the same readiness report and refuses to write output if the handoff is not ready.
 
 `qa:prototype-handoff-check` compares handoff `deviceLabel` values and inspector draft `probeTemplate.deviceLabel` values after trimming whitespace and normalizing slash spacing. For example, `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same physical device; different model names still fail the handoff check.
 
