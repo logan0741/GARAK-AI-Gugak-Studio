@@ -12,10 +12,10 @@ Use this document when validating whether `expo-audio` can cover basic playback 
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, pluck playback, queued playback failure reporting through `waitForIdle()`, release ordering behind pending seek/play work, bend approximation, mute/release mapping, recording probe lifecycle, non-empty captured recording URI validation, and captured recording URI playback. |
+| `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, finite playback-control validation before native player mutation, pluck playback, queued playback failure reporting through `waitForIdle()`, release ordering behind pending seek/play work, bend approximation, mute/release mapping, recording probe lifecycle, non-empty captured recording URI validation, and captured recording URI playback. |
 | `src/audio/expoAudioRuntime.ts` | Only runtime bridge that imports `expo-audio`. Keeps UI and domain code independent from the concrete library and reuses the SDK source resolver and recording option normalizer. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods, normalizes empty captured URIs to `null`, and reports unsupported, failed, recording, captured, missing-URI, or playback states without breaking session fallback. |
-| `src/audio/__tests__/expoAudioSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, playback controls, bend/mute/release mapping, and recording probe lifecycle. |
+| `src/audio/__tests__/expoAudioSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, finite playback-control guards, playback controls, bend/mute/release mapping, and recording probe lifecycle. |
 | `src/prototype/prototypeQaSnapshot.ts` | Inspector QA read model. Records prototype capture seconds, URI availability, playback confirmation, and fallback reason under `observedPrototypeRecording` without promoting it to final physical-device evidence. |
 | `src/audio/__tests__/expoAudioRuntime.test.ts` | Mocked package-delegation test for the installed `expo-audio` API surface. |
 

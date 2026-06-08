@@ -51,6 +51,29 @@ test('creates independent source nodes for at least 8 simultaneous voices', asyn
   expect(runtime.context.sources.some((source) => source.stopCalls.length > 0)).toBe(false);
 });
 
+test('rejects non-finite React Native Audio API control values before touching native nodes', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: Number.NaN }),
+  ).toThrow('velocity must be finite');
+  expect(runtime.context.sources).toHaveLength(0);
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 110, stringIndex: 1, velocity: 0.8 });
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_bend', tsMs: 120, stringIndex: 1, cents: Number.POSITIVE_INFINITY }),
+  ).toThrow('cents must be finite');
+  expect(runtime.context.sources[0].detune.automation).toEqual([]);
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_mute', tsMs: 130, stringIndex: 1, strength: Number.NaN }),
+  ).toThrow('strength must be finite');
+  expect(runtime.context.gains[0].gain.automation).toEqual([]);
+});
+
 test('connects each voice through a lowpass filter and gain before destination', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
