@@ -94,6 +94,24 @@ test('maps bend, mute, and release events onto Expo Audio player controls', asyn
   expect(runtime.players[1].pauseCalls).toBe(1);
 });
 
+test('queues release behind pending Expo Audio seek and play work', async () => {
+  const runtime = createRuntimePort({ deferSeek: true });
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.72 });
+  engine.handleEvent({ type: 'string_release', tsMs: 105, stringIndex: 1 });
+
+  await Promise.resolve();
+  expect(runtime.players[0].pauseCalls).toBe(0);
+  runtime.players[0].resolveNextSeek();
+  await engine.waitForIdle();
+
+  expect(runtime.players[0].seekCalls).toEqual([0]);
+  expect(runtime.players[0].playCalls).toBe(1);
+  expect(runtime.players[0].pauseCalls).toBe(1);
+});
+
 test('prepares a 10 second recording probe when permission is granted', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -263,7 +281,12 @@ test('returns a recording fallback result when permission is denied', async () =
   expect(runtime.recorders).toHaveLength(0);
 });
 
-function createRuntimePort(input: { permissionGranted?: boolean; seekFails?: boolean; stopFails?: boolean } = {}) {
+function createRuntimePort(input: {
+  deferSeek?: boolean;
+  permissionGranted?: boolean;
+  seekFails?: boolean;
+  stopFails?: boolean;
+} = {}) {
   const players: FakeExpoAudioPlayer[] = [];
   const recorders: FakeExpoAudioRecorder[] = [];
   const runtime = {
@@ -278,7 +301,10 @@ function createRuntimePort(input: { permissionGranted?: boolean; seekFails?: boo
     },
     createAudioPlayer(source: unknown, options: unknown) {
       this.createdPlayers.push({ source, options });
-      const player = new FakeExpoAudioPlayer({ seekFails: input.seekFails ?? false });
+      const player = new FakeExpoAudioPlayer({
+        deferSeek: input.deferSeek ?? false,
+        seekFails: input.seekFails ?? false,
+      });
       this.players.push(player);
       return player;
     },
@@ -313,8 +339,14 @@ class FakeExpoAudioPlayer {
   playCalls = 0;
   pauseCalls = 0;
   playbackRates: number[] = [];
+  private readonly pendingSeekResolvers: Array<() => void> = [];
 
-  constructor(private readonly input: { seekFails: boolean } = { seekFails: false }) {}
+  constructor(
+    private readonly input: { deferSeek: boolean; seekFails: boolean } = {
+      deferSeek: false,
+      seekFails: false,
+    },
+  ) {}
 
   play(): void {
     this.playCalls += 1;
@@ -329,10 +361,20 @@ class FakeExpoAudioPlayer {
     if (this.input.seekFails) {
       throw new Error('seek failed');
     }
+
+    if (this.input.deferSeek) {
+      await new Promise<void>((resolve) => {
+        this.pendingSeekResolvers.push(resolve);
+      });
+    }
   }
 
   setPlaybackRate(rate: number): void {
     this.playbackRates.push(rate);
+  }
+
+  resolveNextSeek(): void {
+    this.pendingSeekResolvers.shift()?.();
   }
 }
 
