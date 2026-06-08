@@ -20,6 +20,29 @@ export type AudioEngineProbeDraftInput = {
   recordingCaptureSeconds?: number;
 };
 
+export type PhysicalDeviceAudioEngineProbeMeasurements = Pick<
+  AudioEngineProbe,
+  | 'touchToSoundLatencyMs'
+  | 'maxStableVoices'
+  | 'pitchBendSmooth'
+  | 'glissandoTriggeredStrings'
+  | 'muteReleaseClean'
+  | 'preloadStable'
+  | 'sessionFallbackPreserved'
+  | 'recordingCaptureSeconds'
+>;
+
+const PHYSICAL_DEVICE_MEASUREMENT_FIELDS = [
+  'touchToSoundLatencyMs',
+  'maxStableVoices',
+  'pitchBendSmooth',
+  'glissandoTriggeredStrings',
+  'muteReleaseClean',
+  'preloadStable',
+  'sessionFallbackPreserved',
+  'recordingCaptureSeconds',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+
 export function createAudioEngineProbeDraft(input: AudioEngineProbeDraftInput): AudioEngineProbe {
   return {
     candidate: input.candidate,
@@ -36,6 +59,32 @@ export function createAudioEngineProbeDraft(input: AudioEngineProbeDraftInput): 
     preloadStable: input.preloadStable ?? false,
     sessionFallbackPreserved: input.sessionFallbackPreserved ?? false,
     recordingCaptureSeconds: input.recordingCaptureSeconds ?? 0,
+  };
+}
+
+export function promoteAudioEngineProbeDraftToPhysicalDevice(input: {
+  draft: AudioEngineProbe;
+  deviceLabel?: string;
+  measuredAt?: string;
+  measurements: PhysicalDeviceAudioEngineProbeMeasurements;
+}): AudioEngineProbe {
+  if (input.draft.evidenceSource !== 'estimate') {
+    throw new Error('only estimate probe drafts can be promoted to physical-device evidence');
+  }
+
+  const missingFields = PHYSICAL_DEVICE_MEASUREMENT_FIELDS.filter(
+    (field) => input.measurements[field] === undefined,
+  );
+  if (missingFields.length > 0) {
+    throw new Error(`physical-device measurements missing: ${missingFields.join(', ')}`);
+  }
+
+  return {
+    ...input.draft,
+    ...input.measurements,
+    evidenceSource: 'physical-device',
+    deviceLabel: input.deviceLabel?.trim() || input.draft.deviceLabel,
+    measuredAt: input.measuredAt ?? input.draft.measuredAt,
   };
 }
 
