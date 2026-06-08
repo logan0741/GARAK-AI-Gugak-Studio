@@ -17,6 +17,7 @@ export type PrototypeQaSnapshot = {
   audioDispatchFailures: number;
   sessionFallbackPreserved: boolean;
   recordingCaptureSeconds: number | null;
+  recordingFallbackReason: string | null;
   recordingPlaybackConfirmed: boolean;
   recordingUriAvailable: boolean;
 };
@@ -45,6 +46,7 @@ export type PrototypeProbeDraftInspectorModel = {
   };
   observedPrototypeRecording: {
     capturedSeconds: number | null;
+    fallbackReason: string | null;
     playbackConfirmed: boolean;
     uriAvailable: boolean;
   };
@@ -104,6 +106,7 @@ export function createInitialPrototypeQaSnapshot(input: {
     audioDispatchFailures: 0,
     sessionFallbackPreserved: false,
     recordingCaptureSeconds: null,
+    recordingFallbackReason: null,
     recordingPlaybackConfirmed: false,
     recordingUriAvailable: false,
   };
@@ -174,11 +177,28 @@ export function recordPrototypeRecordingCapture(
     recordingUri: string | null;
   },
 ): PrototypeQaSnapshot {
+  const recordingUriAvailable = isNonEmptyString(input.recordingUri);
+
   return {
     ...snapshot,
     measuredAt: input.measuredAt,
     recordingCaptureSeconds: input.capturedSeconds,
-    recordingUriAvailable: isNonEmptyString(input.recordingUri),
+    recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
+    recordingUriAvailable,
+  };
+}
+
+export function recordPrototypeRecordingFallback(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    fallbackReason: string;
+    measuredAt: string;
+  },
+): PrototypeQaSnapshot {
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingFallbackReason: input.fallbackReason,
   };
 }
 
@@ -228,6 +248,7 @@ function createPrototypeProbeDraftInspectorModel(
     },
     observedPrototypeRecording: {
       capturedSeconds: snapshot.recordingCaptureSeconds,
+      fallbackReason: snapshot.recordingFallbackReason,
       playbackConfirmed: snapshot.recordingPlaybackConfirmed,
       uriAvailable: snapshot.recordingUriAvailable,
     },

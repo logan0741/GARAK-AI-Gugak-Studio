@@ -35,6 +35,7 @@ import {
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
+  recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
   updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
@@ -47,6 +48,7 @@ import {
 } from './prototypeRecordingProbeController';
 import {
   formatRecordingProbeState,
+  getRecordingProbeFallbackReason,
   selectPlayableRecordingUri,
   type RecordingProbeUiState,
 } from './prototypeRecordingProbeUi';
@@ -245,6 +247,7 @@ export function GayageumPrototypeScreen() {
   async function handleStartRecordingProbe() {
     const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
     setRecordingProbeState(result);
+    recordRecordingProbeFallback(result);
   }
 
   async function handleStopRecordingProbe() {
@@ -262,6 +265,8 @@ export function GayageumPrototypeScreen() {
       if (typeof recordingUri === 'string') {
         setSession((current) => attachRecordingUriToSession(current, recordingUri));
       }
+    } else {
+      recordRecordingProbeFallback(result);
     }
   }
 
@@ -271,16 +276,33 @@ export function GayageumPrototypeScreen() {
       sessionRecordingUri: session.recordingUri,
     });
     if (recordingUri === null) {
-      setRecordingProbeState({ status: 'failed', errorMessage: 'recording_playback_uri_missing' });
+      const result = { status: 'failed', errorMessage: 'recording_playback_uri_missing' } as const;
+      setRecordingProbeState(result);
+      recordRecordingProbeFallback(result);
       return;
     }
 
     const result = await playCapturedPrototypeRecordingProbe(engineRef.current, recordingUri);
     setRecordingProbeState(result);
+    recordRecordingProbeFallback(result);
     setQaSnapshot((current) =>
       recordPrototypeRecordingPlayback(current, {
         measuredAt: new Date().toISOString(),
         playbackConfirmed: result.status === 'playing',
+      }),
+    );
+  }
+
+  function recordRecordingProbeFallback(state: RecordingProbeUiState) {
+    const fallbackReason = getRecordingProbeFallbackReason(state);
+    if (fallbackReason === null) {
+      return;
+    }
+
+    setQaSnapshot((current) =>
+      recordPrototypeRecordingFallback(current, {
+        fallbackReason,
+        measuredAt: new Date().toISOString(),
       }),
     );
   }
