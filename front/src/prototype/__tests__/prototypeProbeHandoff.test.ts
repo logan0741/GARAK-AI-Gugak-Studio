@@ -1,5 +1,9 @@
 import { expect, test } from 'vitest';
-import { buildPhysicalDeviceProbeFromPrototypeInspectorDraft } from '../prototypeProbeHandoff';
+import { parseAudioEngineProbeRecord } from '../../audio/audioEngineProbeRecord';
+import {
+  buildPhysicalDeviceProbeFromPrototypeInspectorDraft,
+  buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts,
+} from '../prototypeProbeHandoff';
 import { PrototypeProbeDraftInspectorModel } from '../prototypeQaSnapshot';
 
 const measurements = {
@@ -27,6 +31,51 @@ test('builds a physical-device probe only when the requested native runtime is r
     measuredAt: '2026-06-08T03:00:00.000Z',
     ...measurements,
   });
+});
+
+test('wraps promoted prototype inspector drafts in a parseable Day 5 probe record', () => {
+  const record = buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts({
+    generatedAt: '2026-06-08T03:10:00.000Z',
+    entries: [
+      {
+        inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+        measuredAt: '2026-06-08T03:00:00.000Z',
+        measurements: {
+          ...measurements,
+          recordingCaptureSeconds: 10,
+          touchToSoundLatencyMs: 45,
+        },
+      },
+      {
+        inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+        measuredAt: '2026-06-08T03:05:00.000Z',
+        measurements,
+      },
+    ],
+  });
+
+  expect(record).toEqual({
+    generatedAt: '2026-06-08T03:10:00.000Z',
+    probes: [
+      expect.objectContaining({
+        candidate: 'expo-audio',
+        evidenceSource: 'physical-device',
+        maxStableVoices: 9,
+        measuredAt: '2026-06-08T03:00:00.000Z',
+        recordingCaptureSeconds: 10,
+        touchToSoundLatencyMs: 45,
+      }),
+      expect.objectContaining({
+        candidate: 'react-native-audio-api',
+        evidenceSource: 'physical-device',
+        maxStableVoices: 9,
+        measuredAt: '2026-06-08T03:05:00.000Z',
+        recordingCaptureSeconds: 0,
+        touchToSoundLatencyMs: 38,
+      }),
+    ],
+  });
+  expect(parseAudioEngineProbeRecord(record)).toEqual({ ok: true, record });
 });
 
 test('rejects physical-device promotion when observed runtime is still fake fallback', () => {
@@ -160,4 +209,32 @@ function createInspectorDraft(
     },
     ...override,
   };
+}
+
+function createInspectorDraftForCandidate(
+  candidate: 'expo-audio' | 'react-native-audio-api',
+): PrototypeProbeDraftInspectorModel {
+  return createInspectorDraft({
+    observedRuntime: {
+      activeRuntime: candidate,
+      nativePreloadStatus: 'ready',
+      requestedCandidate: candidate,
+      runtimeStatus: 'native_candidate_ready',
+      sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+    },
+    probeTemplate: {
+      candidate,
+      deviceLabel: 'Pixel 8 / Android 15',
+      evidenceSource: 'estimate',
+      glissandoTriggeredStrings: null,
+      maxStableVoices: null,
+      measuredAt: '2026-06-08T02:55:00.000Z',
+      muteReleaseClean: null,
+      pitchBendSmooth: null,
+      preloadStable: null,
+      recordingCaptureSeconds: null,
+      sessionFallbackPreserved: null,
+      touchToSoundLatencyMs: null,
+    },
+  });
 }

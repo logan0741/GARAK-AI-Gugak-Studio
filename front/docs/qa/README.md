@@ -16,7 +16,7 @@ When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with
 
 The prototype probe draft also includes `observedRuntime` so the handoff records the requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error when present. Treat that field as QA context only; it does not replace any `physical-device` probe value.
 
-`src/prototype/prototypeProbeHandoff.ts` may build a physical-device probe from the prototype inspector draft only when `observedRuntime.activeRuntime` matches the probe candidate and the runtime/preload status is ready. This prevents fake fallback or preloading states from being promoted.
+`src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate and the runtime/preload status is ready. This prevents fake fallback or preloading states from being promoted.
 
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 
