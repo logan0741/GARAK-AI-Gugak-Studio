@@ -194,6 +194,29 @@ test('rejects placeholder device labels for physical-device smoke evidence', () 
   ]);
 });
 
+test('reports different smoke run device labels as not complete', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport();
+  report.runs[1].deviceLabel = 'Galaxy S24 / Android 15';
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['mixed-device-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_COMPLETE_FOR_DAY5_REVIEW');
+  expect(output).toContain(
+    '- Device label issues: smoke report must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+  );
+});
+
 test('returns invalid json errors without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
