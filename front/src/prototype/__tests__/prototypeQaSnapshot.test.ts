@@ -436,13 +436,17 @@ test('clears stale recording playback confirmation when a later fallback is reco
 
   expect(fallback).toMatchObject({
     measuredAt: '2026-06-08T04:36:20.000Z',
+    recordingCaptureSeconds: null,
     recordingFallbackReason: 'recording_permission_denied',
     recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
   });
   expect(JSON.parse(formatPrototypeProbeDraftForInspector(fallback))).toMatchObject({
     observedPrototypeRecording: {
+      capturedSeconds: null,
       fallbackReason: 'recording_permission_denied',
       playbackConfirmed: false,
+      uriAvailable: false,
     },
   });
 });

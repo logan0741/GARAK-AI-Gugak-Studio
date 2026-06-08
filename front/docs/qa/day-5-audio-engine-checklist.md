@@ -81,7 +81,7 @@ Captured recording URIs are trimmed before they are stored or sent to playback. 
 
 Captured playback must use the current candidate's recording probe state. After changing the requested candidate, `Play Rec` must not reuse a stale session recording URI from the previous candidate.
 
-When a new capture result or recording fallback is recorded, `observedPrototypeRecording.playbackConfirmed` must reset to `false`. Treat playback confirmation as valid only after `Play Rec` succeeds for the current captured URI.
+When a new capture result is recorded, `observedPrototypeRecording.playbackConfirmed` must reset to `false`. When a recording fallback is recorded, `capturedSeconds`, `uriAvailable`, and `playbackConfirmed` must reset so stale capture evidence is not copied. Treat playback confirmation as valid only after `Play Rec` succeeds for the current captured URI.
 
 ```ts
 {
