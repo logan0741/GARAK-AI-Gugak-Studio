@@ -26,6 +26,14 @@ const DAY_5_REQUIRED_AUDIO_ENGINE_CANDIDATES: AudioEngineCandidateId[] = [
   'expo-audio',
   'react-native-audio-api',
 ];
+const PHYSICAL_DEVICE_LABEL_PLACEHOLDERS = new Set([
+  'replace-with-physical-device-model',
+  'replace with physical device model',
+  'device os',
+  'device / os',
+  'device/os',
+  'physical device',
+]);
 
 export function buildDay5AudioEngineDecisionRecord(input: {
   generatedAt: string;
@@ -104,12 +112,36 @@ export function buildDay5AudioEngineDecisionRecord(input: {
 }
 
 function collectDeviceLabelIssues(probes: AudioEngineProbe[]): string[] {
-  const labels = unique(probes.map((probe) => normalizeDeviceLabel(probe.deviceLabel)));
-  if (labels.length <= 1) {
-    return [];
+  const issues: string[] = [];
+  const labels: string[] = [];
+
+  for (const probe of probes) {
+    if (!isPhysicalDeviceLabel(probe.deviceLabel)) {
+      issues.push(`${probe.candidate}.deviceLabel must name the physical device`);
+      continue;
+    }
+
+    labels.push(normalizeDeviceLabel(probe.deviceLabel));
   }
 
-  return [`physical-device probes must use one device label: ${labels.join(', ')}`];
+  const uniqueLabels = unique(labels);
+  if (uniqueLabels.length > 1) {
+    issues.push(`physical-device probes must use one device label: ${uniqueLabels.join(', ')}`);
+  }
+
+  return issues;
+}
+
+function isPhysicalDeviceLabel(input: string): boolean {
+  return input.trim().length > 0 && !PHYSICAL_DEVICE_LABEL_PLACEHOLDERS.has(normalizeLabelKey(input));
+}
+
+function normalizeLabelKey(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ');
 }
 
 function normalizeDeviceLabel(input: string): string {
