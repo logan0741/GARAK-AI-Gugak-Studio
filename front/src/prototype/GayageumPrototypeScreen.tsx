@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
@@ -35,6 +36,7 @@ import {
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingPlayback,
+  updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
 import {
@@ -145,6 +147,7 @@ export function GayageumPrototypeScreen() {
   const engine = engineHost.engine;
   const engineRef = useRef(engine);
   engineRef.current = engine;
+  const [deviceLabelInput, setDeviceLabelInput] = useState('');
   const [recordingProbeState, setRecordingProbeState] = useState<RecordingProbeUiState>({
     status: 'idle',
   });
@@ -204,7 +207,17 @@ export function GayageumPrototypeScreen() {
     setQaSnapshot(
       createInitialPrototypeQaSnapshot({
         candidate,
-        deviceLabel: DEFAULT_DEVICE_LABEL,
+        deviceLabel: deviceLabelInput.trim() || DEFAULT_DEVICE_LABEL,
+        measuredAt: new Date().toISOString(),
+      }),
+    );
+  }
+
+  function handleDeviceLabelChange(deviceLabel: string) {
+    setDeviceLabelInput(deviceLabel);
+    setQaSnapshot((current) =>
+      updatePrototypeQaDeviceLabel(current, {
+        deviceLabel,
         measuredAt: new Date().toISOString(),
       }),
     );
@@ -359,6 +372,16 @@ export function GayageumPrototypeScreen() {
           </Pressable>
         ))}
       </View>
+
+      <TextInput
+        accessibilityLabel="Physical device and OS label for probe draft"
+        autoCapitalize="words"
+        onChangeText={handleDeviceLabelChange}
+        placeholder="Device / OS"
+        placeholderTextColor="#6f7b76"
+        style={styles.deviceLabelInput}
+        value={deviceLabelInput}
+      />
 
       <View style={styles.recordingControls}>
         <Pressable
@@ -541,6 +564,19 @@ const styles = StyleSheet.create({
   probeControls: {
     flexDirection: 'row',
     gap: 8,
+  },
+  deviceLabelInput: {
+    alignSelf: 'stretch',
+    backgroundColor: '#eef3ef',
+    borderColor: '#80b8aa',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: '#101418',
+    fontSize: 12,
+    maxWidth: 340,
+    minHeight: 36,
+    minWidth: 0,
+    paddingHorizontal: 10,
   },
   recordingControls: {
     flexDirection: 'row',

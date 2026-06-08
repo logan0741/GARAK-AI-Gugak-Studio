@@ -6,6 +6,7 @@ import {
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingPlayback,
+  updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from '../prototypeQaSnapshot';
 
@@ -198,6 +199,30 @@ test('records prototype recording capture and playback observations without clai
     probeTemplate: {
       evidenceSource: 'estimate',
       recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('updates the prototype QA device label used by the probe draft', () => {
+  const snapshot = updatePrototypeQaDeviceLabel(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'replace-with-physical-device-model',
+      measuredAt: '2026-06-08T04:40:00.000Z',
+    }),
+    {
+      deviceLabel: '  Pixel 8 / Android 15  ',
+      measuredAt: '2026-06-08T04:40:10.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T04:40:10.000Z',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    probeTemplate: {
+      deviceLabel: 'Pixel 8 / Android 15',
     },
   });
 });

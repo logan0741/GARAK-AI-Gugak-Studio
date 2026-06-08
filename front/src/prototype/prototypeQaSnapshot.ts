@@ -125,6 +125,22 @@ export function updatePrototypeQaSnapshot(
   };
 }
 
+export function updatePrototypeQaDeviceLabel(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    deviceLabel: string;
+    measuredAt: string;
+  },
+): PrototypeQaSnapshot {
+  const deviceLabel = input.deviceLabel.trim();
+
+  return {
+    ...snapshot,
+    deviceLabel: deviceLabel.length > 0 ? deviceLabel : snapshot.deviceLabel,
+    measuredAt: input.measuredAt,
+  };
+}
+
 export function buildPrototypeProbeDraft(snapshot: PrototypeQaSnapshot): AudioEngineProbe {
   return createAudioEngineProbeDraft({
     candidate: snapshot.candidate,
