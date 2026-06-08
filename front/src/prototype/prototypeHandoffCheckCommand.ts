@@ -264,6 +264,13 @@ function collectManifestIssues(entries: PhysicalDevicePrototypeProbeHandoffInput
         `${candidate} sampleManifestVersion must be ${PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION}`,
       );
     }
+
+    const unexpectedStringIndexes = entry.inspectorDraft.observedRuntime?.unexpectedStringIndexes;
+    if (Array.isArray(unexpectedStringIndexes) && unexpectedStringIndexes.length > 0) {
+      issues.push(
+        `${candidate} unexpected sample string indexes: ${unexpectedStringIndexes.join(', ')}`,
+      );
+    }
   }
 
   return issues;

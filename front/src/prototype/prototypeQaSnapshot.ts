@@ -90,6 +90,7 @@ export type PrototypeProbeHandoffTemplateModel = {
 export type PrototypeRuntimeObservation = {
   requestedCandidate: AudioEngineCandidateId;
   activeRuntime: 'fake-prototype' | AudioEngineCandidateId;
+  unexpectedStringIndexes?: number[];
   runtimeStatus:
     | 'missing_sample_manifest'
     | 'duplicate_sample_manifest'
