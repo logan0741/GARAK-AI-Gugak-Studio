@@ -214,6 +214,35 @@ test('creates and preloads the react-native-audio-api candidate through injected
   expect(decodedInputs).toEqual(resolvedUris);
 });
 
+test('rejects unsupported native audio candidates before sample resolution or native preload', async () => {
+  clearDefaultDependencyLoadMocks();
+  const resolveFileUri = vi.fn(async (fileUri: string) => `file://resolved/${fileUri}`);
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'unexpected-audio-engine' as never,
+      manifest,
+      assetResolver: {
+        resolveFileUri,
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow('Unsupported prototype native audio candidate: unexpected-audio-engine');
+
+  expect(resolveFileUri).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+});
+
 test('rejects incomplete sample manifests before creating a native candidate', async () => {
   const resolvedUris: string[] = [];
 
