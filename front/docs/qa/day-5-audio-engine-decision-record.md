@@ -19,9 +19,11 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
 | `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
 | `src/prototype/prototypeQaSnapshot.ts` | Prototype-only read model that tracks observable fake counters and renders an estimate inspector template with nullable physical-device measurement fields. |
+| `src/prototype/prototypeProbeHandoff.ts` | Converts a prototype inspector draft into one physical-device probe only when observed runtime context proves the requested native candidate is ready. |
 | `scripts/day5-audio-engine-handoff.ts` | Node-only QA command entry point used by `npm run qa:day5-audio -- <probe-record.json>`. |
 | `src/audio/__tests__/audioEngineProbeDraft.test.ts` | Verifies draft probes stay `estimate`, count triggered glissando strings, can be wrapped in a probe record, and require explicit measurements before physical-device promotion. |
 | `src/prototype/__tests__/prototypeQaSnapshot.test.ts` | Verifies the prototype inspector draft does not claim audible-quality or physical-device evidence automatically. |
+| `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects fake, preloading, or missing runtime observation before physical-device probe creation. |
 | `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
 | `src/audio/__tests__/audioEngineDecisionSummary.test.ts` | Verifies selected and incomplete decision summaries do not imply the wrong engine state. |
@@ -76,7 +78,7 @@ Use `docs/qa/day-5-audio-engine-probes.example.json` as the starting shape for a
 
 If a device smoke harness collects partial observations first, it may use `createAudioEngineProbeDraft()` to format those observations into the same shape. Drafts always use `evidenceSource: 'estimate'`; promote a draft to `physical-device` only after the tester has confirmed every value on the physical device and checked audible quality fields such as pitch-bend smoothness and mute release cleanliness. `promoteAudioEngineProbeDraftToPhysicalDevice()` requires all Day 5 measurement fields to be non-null before changing `evidenceSource`, but the resulting probe still must pass `parseAudioEngineProbeRecord()` and the `npm run qa:day5-audio -- <probe-record.json>` handoff.
 
-The prototype inspector may show a copyable `Probe draft (estimate only, fake engine counters)` JSON block. Treat it as a rehearsal artifact: it can preserve fake observed counters and show the probe field names, but nullable physical-device measurement fields must be replaced with measured values from the real candidate runtime before any Day 5 handoff. The inspector JSON includes `runtimeUnderTest: "fake-sampler-engine"` and `measuredCandidateEvidence: false` to prevent confusing fake-engine counters with candidate-engine measurements.
+The prototype inspector may show a copyable `Probe draft (estimate only, fake engine counters)` JSON block. Treat it as a rehearsal artifact: it can preserve fake observed counters and show the probe field names, but nullable physical-device measurement fields must be replaced with measured values from the real candidate runtime before any Day 5 handoff. The inspector JSON includes `runtimeUnderTest: "fake-sampler-engine"` and `measuredCandidateEvidence: false` to prevent confusing fake-engine counters with candidate-engine measurements. Before using `prototypeProbeHandoff.ts`, confirm `observedRuntime.activeRuntime` matches the candidate and both runtime status and native preload status are ready; fake fallback and preloading states must not be promoted.
 
 Before publishing the Day 5 record, run the QA command entry point:
 
@@ -102,6 +104,7 @@ Run before publishing a Day 5 record:
 npm test src/audio/__tests__/audioEngineDecisionRecord.test.ts
 npm test src/audio/__tests__/audioEngineProbeDraft.test.ts
 npm test src/prototype/__tests__/prototypeQaSnapshot.test.ts
+npm test src/prototype/__tests__/prototypeProbeHandoff.test.ts
 npm test src/audio/__tests__/audioEngineProbeRecord.test.ts
 npm test src/audio/__tests__/audioEngineDecisionSummary.test.ts
 npm test src/audio/__tests__/audioEngineProbeHandoff.test.ts
