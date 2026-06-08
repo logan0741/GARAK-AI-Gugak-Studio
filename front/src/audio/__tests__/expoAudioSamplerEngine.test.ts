@@ -133,6 +133,34 @@ test('stops a recording probe and reports captured duration and uri', async () =
   expect(runtime.modeCalls.at(-1)).toMatchObject({ allowsRecording: false });
 });
 
+test('plays back a captured recording probe from its uri', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+  await expect(engine.playRecordingProbe('file://recording.m4a')).resolves.toEqual({
+    ok: true,
+    recordingUri: 'file://recording.m4a',
+  });
+
+  expect(runtime.createdPlayers.at(-1)).toEqual({
+    source: { uri: 'file://recording.m4a' },
+    options: { downloadFirst: false, keepAudioSessionActive: true, updateInterval: 50 },
+  });
+  expect(runtime.players.at(-1)?.seekCalls).toEqual([0]);
+  expect(runtime.players.at(-1)?.playCalls).toBe(1);
+  expect(runtime.modeCalls.at(-1)).toMatchObject({ allowsRecording: false });
+});
+
+test('reports recording playback probe failure without throwing', async () => {
+  const runtime = createRuntimePort({ seekFails: true });
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+  await expect(engine.playRecordingProbe('file://recording.m4a')).resolves.toEqual({
+    ok: false,
+    reason: 'recording_playback_failed',
+  });
+});
+
 test('restores playback mode even when recording stop fails', async () => {
   const runtime = createRuntimePort({ stopFails: true });
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });

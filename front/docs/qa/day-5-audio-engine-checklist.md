@@ -56,7 +56,7 @@ The generated `dev-synthetic-gayageum-2026-06-08` samples are Week 1 technical f
 | Mute | Ji-eum or cover gesture produces a natural release curve without pop noise |  |  |
 | Preload | Normal playing does not trigger runtime file loading or visible waiting |  |  |
 | Session fallback | `PerformanceEvent[]` remains saved and replayable if audio capture fails |  |  |
-| Recording possibility | Native path can capture at least 10 seconds of live performance audio, or fallback decision is recorded |  |  |
+| Recording possibility | Native path can capture at least 10 seconds of live performance audio and play the captured URI back, or fallback decision is recorded |  |  |
 
 ## Automated Evaluation Record
 
@@ -105,7 +105,7 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 5. If native preload fails, confirm runtime status is `native_candidate_failed` and session event logging still works through the fake fallback.
 6. If native preload succeeds, confirm runtime status is `native_candidate_ready` and active runtime matches the requested candidate.
 7. Press `Rec 10s` and confirm unsupported engines report `recording_probe_not_supported` without stopping session event logging.
-8. If active runtime is `expo-audio`, press `Rec 10s`, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector.
+8. If active runtime is `expo-audio`, press `Rec 10s`, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector. Then run the captured recording playback probe and confirm the URI can be played back.
 9. Touch each string once from 1 to 12 and confirm `string_pluck` appears on touch start and `string_release` appears on touch end.
 10. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
 11. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
@@ -127,7 +127,7 @@ Prerequisite: before running this full script, the active `SamplerEngine` candid
 4. Hold one active string and drag to test pitch bend continuity.
 5. Swipe across all 12 strings in both directions and verify no missing string trigger.
 6. Trigger a mute or cover gesture and listen for pop noise or unnatural cutoff.
-7. Record or attempt to record 10 seconds of live interaction if the candidate engine supports capture.
+7. Record or attempt to record 10 seconds of live interaction if the candidate engine supports capture, then play back the captured URI if one is returned.
 8. Save the `Session fallback (copyable)` JSON and confirm the event log is still available even if audio capture fails.
 
 ## Decision

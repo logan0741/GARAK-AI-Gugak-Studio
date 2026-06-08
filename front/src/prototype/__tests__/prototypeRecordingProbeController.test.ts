@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import {
+  playCapturedPrototypeRecordingProbe,
   startPrototypeRecordingProbe,
   stopPrototypeRecordingProbe,
 } from '../prototypeRecordingProbeController';
@@ -14,6 +15,10 @@ test('reports unsupported recording when the active engine has no recording prob
   await expect(stopPrototypeRecordingProbe(engine)).resolves.toEqual({
     status: 'unsupported',
     reason: 'recording_probe_not_supported',
+  });
+  await expect(playCapturedPrototypeRecordingProbe(engine, 'file://recording.m4a')).resolves.toEqual({
+    status: 'unsupported',
+    reason: 'recording_playback_probe_not_supported',
   });
 });
 
@@ -75,6 +80,41 @@ test('returns captured recording metadata from a supported engine', async () => 
     status: 'captured',
     capturedSeconds: 10.2,
     recordingUri: 'file://probe.m4a',
+  });
+});
+
+test('plays a captured recording probe through a supported engine', async () => {
+  const playbackUris: string[] = [];
+  const engine = {
+    handleEvent: () => undefined,
+    playRecordingProbe: async (recordingUri: string) => {
+      playbackUris.push(recordingUri);
+      return {
+        ok: true as const,
+        recordingUri,
+      };
+    },
+  };
+
+  await expect(playCapturedPrototypeRecordingProbe(engine, 'file://probe.m4a')).resolves.toEqual({
+    status: 'playing',
+    recordingUri: 'file://probe.m4a',
+  });
+  expect(playbackUris).toEqual(['file://probe.m4a']);
+});
+
+test('turns recording playback probe failures into failed probe state', async () => {
+  const engine = {
+    handleEvent: () => undefined,
+    playRecordingProbe: async () => ({
+      ok: false as const,
+      reason: 'recording_playback_failed',
+    }),
+  };
+
+  await expect(playCapturedPrototypeRecordingProbe(engine, 'file://probe.m4a')).resolves.toEqual({
+    status: 'failed',
+    errorMessage: 'recording_playback_failed',
   });
 });
 
