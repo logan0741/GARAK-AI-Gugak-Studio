@@ -64,6 +64,7 @@ test('reports ready handoffs without producing a Day 5 decision', () => {
   expect(stdout.join('\n')).toContain('- Missing candidates: none');
   expect(stdout.join('\n')).toContain('- Duplicate candidates: none');
   expect(stdout.join('\n')).toContain('- Device label issues: none');
+  expect(stdout.join('\n')).toContain('- Timestamp issues: none');
   expect(stdout.join('\n')).toContain('- Missing measurement fields: none');
   expect(stdout.join('\n')).toContain('- Runtime issues: none');
   expect(stdout.join('\n')).toContain('- Probe record issues: none');
@@ -176,6 +177,44 @@ test('reports placeholder inspector draft device labels before probe record gene
   expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
   expect(output).toContain(
     '- Device label issues: expo-audio.inspectorDraft.probeTemplate.deviceLabel must name the physical device',
+  );
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
+test('reports handoff timestamp issues before probe record generation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['bad-timestamp-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: 'June 8, 2026 15:00',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio', {}, {
+                measuredAt: '2026/06/08 15:05',
+              }),
+              measuredAt: 'June 8, 2026 15:10',
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Timestamp issues: generatedAt must be a UTC ISO timestamp, expo-audio.measuredAt must be a UTC ISO timestamp, expo-audio.inspectorDraft.probeTemplate.measuredAt must be a UTC ISO timestamp',
   );
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });

@@ -17,6 +17,7 @@ type PrototypeHandoffReadinessReport = {
   missingCandidates: AudioEngineCandidateId[];
   duplicateCandidates: AudioEngineCandidateId[];
   deviceLabelIssues: string[];
+  timestampIssues: string[];
   missingMeasurementFields: string[];
   runtimeIssues: string[];
   probeRecordIssues: string[];
@@ -138,6 +139,7 @@ function buildPrototypeHandoffReadinessReport(
     (candidate) => (candidateCounts.get(candidate) ?? 0) > 1,
   );
   const deviceLabelIssues = collectDeviceLabelIssues(handoff.entries);
+  const timestampIssues = collectTimestampIssues(handoff);
   const missingMeasurementFields = collectMissingMeasurementFields(handoff.entries);
   const runtimeIssues = collectRuntimeIssues(handoff.entries);
   const probeRecordIssues = collectProbeRecordIssues({
@@ -145,6 +147,7 @@ function buildPrototypeHandoffReadinessReport(
     missingCandidates,
     duplicateCandidates,
     deviceLabelIssues,
+    timestampIssues,
     missingMeasurementFields,
     runtimeIssues,
   });
@@ -152,6 +155,7 @@ function buildPrototypeHandoffReadinessReport(
     missingCandidates.length === 0 &&
     duplicateCandidates.length === 0 &&
     deviceLabelIssues.length === 0 &&
+    timestampIssues.length === 0 &&
     missingMeasurementFields.length === 0 &&
     runtimeIssues.length === 0 &&
     probeRecordIssues.length === 0
@@ -163,6 +167,7 @@ function buildPrototypeHandoffReadinessReport(
     missingCandidates,
     duplicateCandidates,
     deviceLabelIssues,
+    timestampIssues,
     missingMeasurementFields,
     runtimeIssues,
     probeRecordIssues,
@@ -214,6 +219,31 @@ function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffIn
   return issues;
 }
 
+function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
+  const issues: string[] = [];
+
+  if (!isUtcIsoTimestamp(handoff.generatedAt)) {
+    issues.push('generatedAt must be a UTC ISO timestamp');
+  }
+
+  for (const entry of handoff.entries) {
+    const candidate = entry.inspectorDraft.probeTemplate.candidate;
+    const effectiveMeasuredAt = entry.measuredAt ?? entry.inspectorDraft.probeTemplate.measuredAt;
+
+    if (!isUtcIsoTimestamp(effectiveMeasuredAt)) {
+      issues.push(`${candidate}.measuredAt must be a UTC ISO timestamp`);
+    }
+
+    if (!isUtcIsoTimestamp(entry.inspectorDraft.probeTemplate.measuredAt)) {
+      issues.push(
+        `${candidate}.inspectorDraft.probeTemplate.measuredAt must be a UTC ISO timestamp`,
+      );
+    }
+  }
+
+  return issues;
+}
+
 function collectMissingMeasurementFields(
   entries: PhysicalDevicePrototypeProbeHandoffInput[],
 ): string[] {
@@ -250,6 +280,7 @@ function collectProbeRecordIssues(input: {
   missingCandidates: AudioEngineCandidateId[];
   duplicateCandidates: AudioEngineCandidateId[];
   deviceLabelIssues: string[];
+  timestampIssues: string[];
   missingMeasurementFields: string[];
   runtimeIssues: string[];
 }): string[] {
@@ -257,6 +288,7 @@ function collectProbeRecordIssues(input: {
     input.missingCandidates.length > 0 ||
     input.duplicateCandidates.length > 0 ||
     input.deviceLabelIssues.length > 0 ||
+    input.timestampIssues.length > 0 ||
     input.missingMeasurementFields.length > 0 ||
     input.runtimeIssues.length > 0
   ) {
@@ -287,6 +319,7 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
     `- Missing candidates: ${formatList(report.missingCandidates)}`,
     `- Duplicate candidates: ${formatList(report.duplicateCandidates)}`,
     `- Device label issues: ${formatList(report.deviceLabelIssues)}`,
+    `- Timestamp issues: ${formatList(report.timestampIssues)}`,
     `- Missing measurement fields: ${formatList(report.missingMeasurementFields)}`,
     `- Runtime issues: ${formatList(report.runtimeIssues)}`,
     `- Probe record issues: ${formatList(report.probeRecordIssues)}`,
@@ -317,6 +350,14 @@ function isAudioEngineCandidate(input: unknown): input is AudioEngineCandidateId
 
 function isObject(input: unknown): input is Record<string, unknown> {
   return typeof input === 'object' && input !== null && !Array.isArray(input);
+}
+
+function isUtcIsoTimestamp(input: unknown): input is string {
+  return (
+    typeof input === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(input) &&
+    Number.isFinite(Date.parse(input))
+  );
 }
 
 function getErrorMessage(error: unknown): string {

@@ -37,7 +37,7 @@ npm run qa:prototype-handoff-check -- <prototype-handoff.json>
 npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
 ```
 
-The check reports missing candidates, duplicate candidates, device label issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
 
 If each candidate was tested in a separate run, merge the copied handoff files before building the probe record:
 
@@ -53,7 +53,7 @@ After merging, check that the merged handoff is ready for promotion:
 npm run qa:prototype-handoff-check -- <merged-handoff.json>
 ```
 
-The readiness check reports missing candidates, duplicate candidates, device label issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues. It does not write a probe record or select the final engine.
+The readiness check reports missing candidates, duplicate candidates, device label issues, timestamp issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues. It does not write a probe record or select the final engine.
 
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 
