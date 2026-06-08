@@ -9,6 +9,7 @@ import {
 } from '../audio/reactNativeAudioApiSamplerEngine';
 import { SamplerEngine } from '../audio/samplerEngine';
 import { SampleAssetManifest } from '../domain/sampleManifest';
+import { getMissingSampleStringIndexes } from './prototypeSamplerEngineHost';
 
 export type PrototypeNativeSamplerEngineRuntimePorts = {
   createExpoAudioRuntimePort(): ExpoAudioRuntimePort;
@@ -25,6 +26,8 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   assetResolver?: PrototypeSampleAssetResolver;
   runtimePorts?: PrototypeNativeSamplerEngineRuntimePorts;
 }): Promise<SamplerEngine> {
+  assertCompletePrototypeSampleManifest(input.manifest);
+
   const runtimePorts = input.runtimePorts ?? await loadDefaultRuntimePorts(input.candidate);
   const manifest = await resolveSampleAssetManifestUris({
     manifest: input.manifest,
@@ -44,6 +47,15 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   await engine.preload();
 
   return engine;
+}
+
+function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): void {
+  const missingStringIndexes = getMissingSampleStringIndexes(manifest);
+  if (missingStringIndexes.length > 0) {
+    throw new Error(
+      `Prototype native sampler requires all 12 sample strings before preload; missing strings: ${missingStringIndexes.join(', ')}`,
+    );
+  }
 }
 
 export async function resolveSampleAssetManifestUris(input: {
