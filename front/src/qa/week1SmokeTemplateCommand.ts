@@ -25,6 +25,14 @@ export function runWeek1SmokeTemplateCommand(
     return 1;
   }
 
+  const normalizedTester = tester.trim();
+  if (normalizedTester.length === 0) {
+    input.writeStderr(
+      'Could not write Week 1 smoke report template: tester must be a non-empty name',
+    );
+    return 1;
+  }
+
   if (!isPhysicalDeviceLabel(deviceLabel)) {
     input.writeStderr(
       'Could not write Week 1 smoke report template: device label must name the physical device',
@@ -36,7 +44,7 @@ export function runWeek1SmokeTemplateCommand(
   const report = createWeek1SmokeReportTemplate({
     generatedAt,
     testedAt: generatedAt,
-    tester,
+    tester: normalizedTester,
     deviceLabel,
   });
 
