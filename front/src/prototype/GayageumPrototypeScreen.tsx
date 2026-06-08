@@ -3,6 +3,7 @@ import {
   GestureResponderEvent,
   PanResponder,
   PanResponderGestureState,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -39,6 +40,7 @@ import {
   startPrototypeRecordingProbe,
   stopPrototypeRecordingProbe,
 } from './prototypeRecordingProbeController';
+import { shouldStartPrototypeNativeAudioCandidate } from './prototypePlatform';
 import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
 import {
   createPrototypeSamplerEngineHost,
@@ -58,6 +60,8 @@ const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api'
 const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
 const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
 const RECORDING_PROBE_SECONDS = 10;
+const CAN_START_NATIVE_AUDIO_CANDIDATE = shouldStartPrototypeNativeAudioCandidate(Platform.OS);
+const NATIVE_AUDIO_UNAVAILABLE_REASON = 'native audio candidate requires Expo dev build on iOS or Android';
 
 type NativeCandidateLoadState = {
   candidate: AudioEngineCandidateId;
@@ -73,10 +77,22 @@ export function GayageumPrototypeScreen() {
   const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
   const [nativeCandidateLoadState, setNativeCandidateLoadState] = useState<NativeCandidateLoadState>(() => ({
     candidate: DEFAULT_PROBE_CANDIDATE,
-    state: { status: 'preloading' },
+    state: CAN_START_NATIVE_AUDIO_CANDIDATE
+      ? { status: 'preloading' }
+      : { status: 'failed', errorMessage: NATIVE_AUDIO_UNAVAILABLE_REASON },
   }));
   useEffect(() => {
     let cancelled = false;
+
+    if (!CAN_START_NATIVE_AUDIO_CANDIDATE) {
+      setNativeCandidateLoadState({
+        candidate: probeCandidate,
+        state: { status: 'failed', errorMessage: NATIVE_AUDIO_UNAVAILABLE_REASON },
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     setNativeCandidateLoadState({
       candidate: probeCandidate,

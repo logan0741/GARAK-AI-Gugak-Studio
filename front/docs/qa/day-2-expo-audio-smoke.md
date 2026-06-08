@@ -40,7 +40,7 @@ Prerequisite: run `npm run samples:generate-dev` from `front/` before building t
 
 The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, and recording plumbing, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
 
-Resolve every `SampleAssetManifest.fileUri` before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
+Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
 
 Use a development client, not Expo Go, because this candidate uses native audio modules and microphone permissions:
 
