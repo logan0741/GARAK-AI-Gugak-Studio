@@ -83,7 +83,7 @@ Captured playback must use the current candidate's recording probe state. After 
 
 When a new capture result is recorded, `observedPrototypeRecording.playbackConfirmed` must reset to `false`. When a recording fallback is recorded, `capturedSeconds`, `uriAvailable`, and `playbackConfirmed` must reset so stale capture evidence is not copied. Treat playback confirmation as valid only after `Play Rec` succeeds for the current captured URI.
 
-When `Prototype handoff JSON` is filled with `recordingCaptureSeconds >= 10`, the matching inspector draft must show `observedPrototypeRecording.capturedSeconds >= 10`, `uriAvailable: true`, `playbackConfirmed: true`, and `fallbackReason: null`. Otherwise `qa:prototype-handoff-check` must report `recordingCaptureSeconds` as an invalid measurement field. This prevents a fallback or stale recording observation from becoming passing 10-second recording evidence.
+When `Prototype handoff JSON` is filled with `recordingCaptureSeconds >= 10`, the matching inspector draft must show `observedPrototypeRecording.capturedSeconds` greater than or equal to that measurement, `uriAvailable: true`, `playbackConfirmed: true`, and `fallbackReason: null`. Otherwise `qa:prototype-handoff-check` must report `recordingCaptureSeconds` as an invalid measurement field. This prevents a fallback, stale recording observation, or inflated capture duration from becoming passing 10-second recording evidence.
 
 ```ts
 {
