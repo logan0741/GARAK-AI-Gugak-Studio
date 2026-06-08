@@ -197,14 +197,14 @@ function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffIn
 
     if (
       entry.deviceLabel !== undefined &&
-      entry.deviceLabel.trim() !== draftDeviceLabel.trim()
+      normalizeDeviceLabelForReport(entry.deviceLabel) !== normalizeDeviceLabelForReport(draftDeviceLabel)
     ) {
       issues.push(
         `${candidate}.deviceLabel must match inspector draft device label ${draftDeviceLabel}`,
       );
     }
 
-    physicalDeviceLabels.push(draftDeviceLabel.trim());
+    physicalDeviceLabels.push(normalizeDeviceLabelForReport(draftDeviceLabel));
   }
 
   const uniquePhysicalDeviceLabels = [...new Set(physicalDeviceLabels)];
@@ -364,6 +364,13 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
 
 function formatList(values: string[]): string {
   return values.length === 0 ? 'none' : values.join(', ');
+}
+
+function normalizeDeviceLabelForReport(input: string): string {
+  return input
+    .trim()
+    .replace(/\s*\/\s*/g, ' / ')
+    .replace(/\s+/g, ' ');
 }
 
 function isUtcIsoTimestamp(input: unknown): input is string {

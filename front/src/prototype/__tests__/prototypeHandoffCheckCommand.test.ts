@@ -220,6 +220,41 @@ test('reports mismatched device labels across candidate handoff entries', () => 
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
+test('treats slash spacing differences as the same prototype handoff device label', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['slash-spacing-device-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              deviceLabel: 'Pixel 8/Android 15',
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api', {}, {
+                deviceLabel: 'Pixel 8 /Android 15',
+              }),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: READY_FOR_PROBE_RECORD');
+  expect(output).toContain('- Device label issues: none');
+});
+
 test('reports handoff timestamp issues before probe record generation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
