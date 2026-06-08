@@ -9,7 +9,10 @@ import {
 } from '../audio/reactNativeAudioApiSamplerEngine';
 import { SamplerEngine } from '../audio/samplerEngine';
 import { SampleAssetManifest } from '../domain/sampleManifest';
-import { getMissingSampleStringIndexes } from './prototypeSamplerEngineHost';
+import {
+  getDuplicateSampleStringIndexes,
+  getMissingSampleStringIndexes,
+} from './prototypeSamplerEngineHost';
 
 export type PrototypeNativeSamplerEngineRuntimePorts = {
   createExpoAudioRuntimePort(): ExpoAudioRuntimePort;
@@ -63,20 +66,6 @@ function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): v
       `Prototype native sampler requires exactly one sample for each string; duplicate strings: ${duplicateStringIndexes.join(', ')}`,
     );
   }
-}
-
-function getDuplicateSampleStringIndexes(manifest: SampleAssetManifest): number[] {
-  const seenStringIndexes = new Set<number>();
-  const duplicateStringIndexes = new Set<number>();
-
-  for (const asset of manifest.assets) {
-    if (seenStringIndexes.has(asset.stringIndex)) {
-      duplicateStringIndexes.add(asset.stringIndex);
-    }
-    seenStringIndexes.add(asset.stringIndex);
-  }
-
-  return Array.from(duplicateStringIndexes).sort((left, right) => left - right);
 }
 
 export async function resolveSampleAssetManifestUris(input: {
