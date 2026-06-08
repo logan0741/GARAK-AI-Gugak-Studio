@@ -138,6 +138,39 @@ test('allows slash spacing differences for the same physical device label', () =
   expect(stdout).toEqual(['Wrote merged prototype handoff: merged.json (2 entries)']);
 });
 
+test('rejects invalid generated timestamps before writing a merged handoff', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writtenFiles = new Map<string, string>();
+  const inputFiles = new Map([
+    [
+      'expo-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('expo-audio')),
+    ],
+    [
+      'rn-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('react-native-audio-api')),
+    ],
+  ]);
+
+  expect(
+    runPrototypeHandoffMergeCommand({
+      argv: ['merged.json', 'expo-handoff.json', 'rn-handoff.json'],
+      getGeneratedAt: () => 'June 8, 2026 15:00',
+      readTextFile: (path) => inputFiles.get(path) ?? '',
+      writeTextFile: (path, value) => writtenFiles.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(writtenFiles.size).toBe(0);
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not merge prototype handoffs: generatedAt must be a UTC ISO timestamp',
+  ]);
+});
+
 test('rejects handoffs copied from different physical device labels', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
