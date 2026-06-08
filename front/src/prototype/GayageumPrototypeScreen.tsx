@@ -37,6 +37,7 @@ import {
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeHandoffTemplateForInspector,
   formatPrototypeProbeDraftForInspector,
+  PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
@@ -75,7 +76,6 @@ const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
 });
 const PRIMARY_POINTER_ID = 'primary-touch';
 const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api';
-const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
 const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
 const RECORDING_PROBE_SECONDS = 10;
 const CAN_START_NATIVE_AUDIO_CANDIDATE = shouldStartPrototypeNativeAudioCandidate(Platform.OS);
@@ -183,7 +183,7 @@ export function GayageumPrototypeScreen() {
   const [qaSnapshot, setQaSnapshot] = useState(() =>
     createInitialPrototypeQaSnapshot({
       candidate: DEFAULT_PROBE_CANDIDATE,
-      deviceLabel: DEFAULT_DEVICE_LABEL,
+      deviceLabel: PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
       measuredAt: new Date().toISOString(),
     }),
   );
@@ -214,7 +214,7 @@ export function GayageumPrototypeScreen() {
     setQaSnapshot(
       createInitialPrototypeQaSnapshot({
         candidate,
-        deviceLabel: deviceLabelInput.trim() || DEFAULT_DEVICE_LABEL,
+        deviceLabel: deviceLabelInput.trim() || PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
         measuredAt: new Date().toISOString(),
       }),
     );
