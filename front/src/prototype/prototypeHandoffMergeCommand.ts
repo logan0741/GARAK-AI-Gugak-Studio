@@ -1,10 +1,9 @@
 import { type AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
+import {
+  parsePrototypeHandoffFile,
+  type PrototypeHandoffFile,
+} from './prototypeHandoffFile';
 import { type PhysicalDevicePrototypeProbeHandoffInput } from './prototypeProbeHandoff';
-
-type PrototypeHandoffFile = {
-  generatedAt: string;
-  entries: PhysicalDevicePrototypeProbeHandoffInput[];
-};
 
 export type PrototypeHandoffMergeCommandInput = {
   argv: string[];
@@ -81,48 +80,6 @@ export function runPrototypeHandoffMergeCommand(
   return 0;
 }
 
-function parsePrototypeHandoffFile(
-  input: unknown,
-  sourcePath: string,
-): { ok: true; handoff: PrototypeHandoffFile } | { ok: false; error: string } {
-  if (!isObject(input)) {
-    return { ok: false, error: `${sourcePath} must be an object` };
-  }
-
-  if (!Array.isArray(input.entries)) {
-    return { ok: false, error: `${sourcePath} entries must be an array` };
-  }
-
-  for (const [index, entry] of input.entries.entries()) {
-    if (!isObject(entry)) {
-      return { ok: false, error: `${sourcePath} entries[${index}] must be an object` };
-    }
-
-    if (!isObject(entry.measurements)) {
-      return {
-        ok: false,
-        error: `${sourcePath} entries[${index}].measurements must be an object`,
-      };
-    }
-
-    const candidate = getEntryCandidate(entry);
-    if (!isAudioEngineCandidate(candidate)) {
-      return {
-        ok: false,
-        error: `${sourcePath} entries[${index}].inspectorDraft.probeTemplate.candidate must be expo-audio or react-native-audio-api`,
-      };
-    }
-  }
-
-  return {
-    ok: true,
-    handoff: {
-      generatedAt: typeof input.generatedAt === 'string' ? input.generatedAt : '',
-      entries: input.entries as PhysicalDevicePrototypeProbeHandoffInput[],
-    },
-  };
-}
-
 function findDuplicateCandidates(
   entries: PhysicalDevicePrototypeProbeHandoffInput[],
 ): AudioEngineCandidateId[] {
@@ -138,26 +95,4 @@ function findDuplicateCandidates(
   }
 
   return [...duplicates].sort();
-}
-
-function getEntryCandidate(entry: Record<string, unknown>): unknown {
-  const inspectorDraft = entry.inspectorDraft;
-  if (!isObject(inspectorDraft)) {
-    return undefined;
-  }
-
-  const probeTemplate = inspectorDraft.probeTemplate;
-  if (!isObject(probeTemplate)) {
-    return undefined;
-  }
-
-  return probeTemplate.candidate;
-}
-
-function isAudioEngineCandidate(input: unknown): input is AudioEngineCandidateId {
-  return input === 'expo-audio' || input === 'react-native-audio-api';
-}
-
-function isObject(input: unknown): input is Record<string, unknown> {
-  return typeof input === 'object' && input !== null && !Array.isArray(input);
 }
