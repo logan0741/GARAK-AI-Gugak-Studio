@@ -65,6 +65,7 @@ test('reports ready handoffs without producing a Day 5 decision', () => {
   expect(stdout.join('\n')).toContain('- Duplicate candidates: none');
   expect(stdout.join('\n')).toContain('- Device label issues: none');
   expect(stdout.join('\n')).toContain('- Timestamp issues: none');
+  expect(stdout.join('\n')).toContain('- Manifest issues: none');
   expect(stdout.join('\n')).toContain('- Missing measurement fields: none');
   expect(stdout.join('\n')).toContain('- Runtime issues: none');
   expect(stdout.join('\n')).toContain('- Probe record issues: none');
@@ -252,6 +253,43 @@ test('reports handoff timestamp issues before probe record generation', () => {
   expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
   expect(output).toContain(
     '- Timestamp issues: generatedAt must be a UTC ISO timestamp, expo-audio.measuredAt must be a UTC ISO timestamp, expo-audio.inspectorDraft.probeTemplate.measuredAt must be a UTC ISO timestamp',
+  );
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
+test('reports unexpected sample manifest versions before probe record generation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['wrong-manifest-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio', {
+                sampleManifestVersion: 'release-gayageum-samples-v1',
+              }),
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Manifest issues: expo-audio sampleManifestVersion must be dev-synthetic-gayageum-2026-06-08',
   );
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
