@@ -105,7 +105,7 @@ Before relying on the Day 5 record, create the Week 1 smoke report with `npm run
 
 ## Current Prototype Smoke Test
 
-The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, an 8-voice polyphony burst control, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, recording observation counters, missing sample string indexes, duplicate sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, a copyable `Prototype handoff JSON` block for the `qa:prototype-probe-record` command, and a copyable `Session fallback` JSON block in the prototype inspector.
+The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, deterministic `Bend` and `Mute` probe controls, an 8-voice polyphony burst control, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, recording observation counters, missing sample string indexes, duplicate sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, a copyable `Prototype handoff JSON` block for the `qa:prototype-probe-record` command, and a copyable `Session fallback` JSON block in the prototype inspector.
 
 1. Open the 12-string prototype screen on a physical device or Expo dev build.
 2. Enter the tested physical device and OS in `Device / OS`, for example `Pixel 8 / Android 15`, and confirm `probeTemplate.deviceLabel` no longer uses `replace-with-physical-device-model`.
@@ -120,19 +120,21 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 11. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
 12. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
 13. Use a broad or multi-touch contact and confirm `string_mute` appears.
-14. Press `Glissando` and confirm the event count increments by 12.
-15. Press `8 Voice` and confirm the event count increments by 8. On device, listen for dropout or voice stealing; on web fake runtime, confirm audible fake voice count reaches at least 8 before release cleanup.
-16. While active runtime is `fake-prototype`, confirm audible fake voice count grows for plucks and does not count released voices.
-17. Confirm audio status remains `ok` while the current engine handles events.
-18. Confirm the probe draft exposes `observedFakeCounters.eventDispatchLatency` after at least one handled event batch, and keep `probeTemplate.touchToSoundLatencyMs` as `null` until physical-device audio latency is measured.
-19. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, preserves the full `Session.events` list even if recording is unsupported or fails, and does not store a null, empty, or whitespace-only recording URI as a captured recording.
-20. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, exposes `observedRuntime` with requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error if present, keeps unmeasured physical-device fields as `null`, exposes recording observations and fallback reason only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
-21. Confirm `Prototype handoff JSON` has `generatedAt`, one `entries[]` item for the current candidate, the same `inspectorDraft`, and `measurements` fields set to `null` until the tester replaces them with physical-device values.
-22. If candidate handoffs were copied into separate files, run `npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>`. The merged entries must use the same physical device label.
-23. Run `npm run qa:prototype-handoff-check -- <merged-handoff.json>` and confirm `READY_FOR_PROBE_RECORD` before generating the probe record. Resolve missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, nullable or invalid measurement fields, runtime readiness issues, or generated probe-record validation issues first.
-24. Run `npm run qa:prototype-probe-record -- <merged-handoff.json> <probe-record.json>`; the command must reject non-ready runtimes or any `sampleManifestVersion` other than `dev-synthetic-gayageum-2026-06-08`.
-25. Run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` and confirm `READY_FOR_DAY5_DECISION`.
-26. Run `npm run qa:day5-audio -- <probe-record.json>`.
+14. Press `Bend` and confirm the event count increments by 4, `pitchBendObserved` becomes `true` in the probe draft, and the current engine handles a pluck, two bends, and release without audio failure.
+15. Press `Mute` and confirm the event count increments by 3, `muteObserved` becomes `true` in the probe draft, and the current engine handles a pluck, mute, and release without audio failure.
+16. Press `Glissando` and confirm the event count increments by 12.
+17. Press `8 Voice` and confirm the event count increments by 8. On device, listen for dropout or voice stealing; on web fake runtime, confirm audible fake voice count reaches at least 8 before release cleanup.
+18. While active runtime is `fake-prototype`, confirm audible fake voice count grows for plucks and does not count released voices.
+19. Confirm audio status remains `ok` while the current engine handles events.
+20. Confirm the probe draft exposes `observedFakeCounters.eventDispatchLatency` after at least one handled event batch, and keep `probeTemplate.touchToSoundLatencyMs` as `null` until physical-device audio latency is measured.
+21. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, preserves the full `Session.events` list even if recording is unsupported or fails, and does not store a null, empty, or whitespace-only recording URI as a captured recording.
+22. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, exposes `observedRuntime` with requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error if present, keeps unmeasured physical-device fields as `null`, exposes recording observations and fallback reason only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
+23. Confirm `Prototype handoff JSON` has `generatedAt`, one `entries[]` item for the current candidate, the same `inspectorDraft`, and `measurements` fields set to `null` until the tester replaces them with physical-device values.
+24. If candidate handoffs were copied into separate files, run `npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>`. The merged entries must use the same physical device label.
+25. Run `npm run qa:prototype-handoff-check -- <merged-handoff.json>` and confirm `READY_FOR_PROBE_RECORD` before generating the probe record. Resolve missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, nullable or invalid measurement fields, runtime readiness issues, or generated probe-record validation issues first.
+26. Run `npm run qa:prototype-probe-record -- <merged-handoff.json> <probe-record.json>`; the command must reject non-ready runtimes or any `sampleManifestVersion` other than `dev-synthetic-gayageum-2026-06-08`.
+27. Run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` and confirm `READY_FOR_DAY5_DECISION`.
+28. Run `npm run qa:day5-audio -- <probe-record.json>`.
 
 ## Day 5 Full Test Script
 
@@ -141,7 +143,7 @@ Prerequisite: before running this full script, the active `SamplerEngine` candid
 1. Open the 12-string prototype screen on a physical device.
 2. Tap each string once from 1 to 12 and verify immediate sound response.
 3. Press `8 Voice` and listen for voice dropout or stealing artifacts across the simultaneous 8-string burst.
-4. Hold one active string and drag to test pitch bend continuity.
+4. Press `Bend`, then hold one active string and drag to test pitch bend continuity through both deterministic and raw-touch paths.
 5. Swipe across all 12 strings in both directions and verify no missing string trigger.
 6. Trigger a mute or cover gesture and listen for pop noise or unnatural cutoff.
 7. Record or attempt to record 10 seconds of live interaction if the candidate engine supports capture, then press `Play Rec` if a captured URI is returned.

@@ -14,7 +14,7 @@ Use this document when validating whether `react-native-audio-api` can support t
 | --- | --- |
 | `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, voice budget behavior, and idempotent cleanup when a stolen voice later emits a native end callback. |
 | `src/audio/reactNativeAudioApiRuntime.ts` | Only runtime bridge that imports `react-native-audio-api`. Keeps UI and domain code independent from the concrete package. |
-| `src/prototype/gayageumPrototypeController.ts` | Prototype event planner for tap, glissando, and the 8-voice polyphony burst used by device QA. |
+| `src/prototype/gayageumPrototypeController.ts` | Prototype event planner for tap, glissando, 8-voice polyphony burst, pitch-bend probe, and mute probe used by device QA. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that should report `recording_probe_not_supported` for engines without recording methods instead of treating playback validation as failed. |
 | `src/prototype/prototypeQaSnapshot.ts` | Inspector QA read model. Records `observedPrototypeRecording.fallbackReason` when this candidate cannot provide a recording probe, without promoting it to final physical-device evidence. |
 | `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, 8-voice polyphony, graph wiring, pitch bend, mute/release, voice stealing, and late native end cleanup. |
@@ -56,10 +56,10 @@ For an EAS development build, use the `development` profile in `eas.json`.
 2. Preload the manifest through `ReactNativeAudioApiSamplerEngine.preload()` and confirm the inspector reaches `native_candidate_ready`.
 3. Tap one string and confirm the graph plays from a decoded buffer without runtime file loading.
 4. Press `8 Voice` and listen for dropout, clipping, or unwanted voice stealing across the simultaneous 8-string burst.
-5. Hold one active string and send `string_bend` values across a practical range such as -120 to +120 cents.
+5. Press `Bend` to send an active pluck, +120/-120 cents bend range, and release through the current candidate. Also hold one active string and drag horizontally to confirm the raw touch path emits `string_bend`.
 6. Confirm bend changes are continuous and do not create click noise.
 7. Confirm each voice routes `source -> lowpass filter -> gain -> destination`.
-8. Trigger `string_mute` and `string_release` and listen for release pops or abrupt cutoff.
+8. Press `Mute` to send an active pluck, full mute, and release through the current candidate. Also trigger a broad or multi-touch ji-eum gesture to confirm the raw touch path emits `string_mute`.
 9. Press `Rec 10s` and confirm the recording probe reports `recording_probe_not_supported` unless a recording-capable implementation has been explicitly added for this candidate.
 10. Confirm the probe draft records `observedPrototypeRecording.fallbackReason: "recording_probe_not_supported"` and keep the `Session fallback (copyable)` JSON for Day 5 review.
 

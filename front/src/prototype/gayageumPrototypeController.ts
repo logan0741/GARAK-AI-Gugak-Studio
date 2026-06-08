@@ -1,7 +1,13 @@
 import { SamplerEngine } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
 import { Session, appendPerformanceEvent } from '../domain/session';
-import { mapSwipeAcrossStrings, mapTap } from '../interaction/gestureMapper';
+import {
+  mapCover,
+  mapHoldDrag,
+  mapRelease,
+  mapSwipeAcrossStrings,
+  mapTap,
+} from '../interaction/gestureMapper';
 
 export function planStringPlay(input: { nowMs: number; stringIndex: number }): PerformanceEvent[] {
   return [
@@ -26,6 +32,23 @@ export function planPolyphonyBurst(input: { nowMs: number; stringIndexes: number
       stringIndex,
     }),
   );
+}
+
+export function planPitchBendProbe(input: { nowMs: number; stringIndex: number }): PerformanceEvent[] {
+  return [
+    mapTap({ tsMs: input.nowMs, stringIndex: input.stringIndex }),
+    mapHoldDrag({ tsMs: input.nowMs + 160, stringIndex: input.stringIndex, normalizedDelta: 2 }),
+    mapHoldDrag({ tsMs: input.nowMs + 240, stringIndex: input.stringIndex, normalizedDelta: -2 }),
+    mapRelease({ tsMs: input.nowMs + 320, stringIndex: input.stringIndex }),
+  ];
+}
+
+export function planMuteProbe(input: { nowMs: number; stringIndex: number }): PerformanceEvent[] {
+  return [
+    mapTap({ tsMs: input.nowMs, stringIndex: input.stringIndex }),
+    mapCover({ tsMs: input.nowMs + 120, stringIndex: input.stringIndex, area: 1 }),
+    mapRelease({ tsMs: input.nowMs + 200, stringIndex: input.stringIndex }),
+  ];
 }
 
 export function dispatchEventsToEngine(engine: SamplerEngine, events: PerformanceEvent[]): void {

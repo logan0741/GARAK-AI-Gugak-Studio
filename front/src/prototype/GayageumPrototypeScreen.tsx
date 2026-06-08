@@ -20,6 +20,8 @@ import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
+  planMuteProbe,
+  planPitchBendProbe,
   planPolyphonyBurst,
   safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
@@ -67,6 +69,7 @@ import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFa
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
 const POLYPHONY_BURST_STRINGS = ALL_STRINGS.slice(0, 8);
+const EXPRESSIVE_PROBE_STRING_INDEX = 6;
 const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
   stringCount: PROTOTYPE_STRING_COUNT,
 });
@@ -245,6 +248,24 @@ export function GayageumPrototypeScreen() {
     applyPerformanceEvents(events);
   }
 
+  function handlePitchBendProbePress() {
+    const events = planPitchBendProbe({
+      nowMs: Date.now(),
+      stringIndex: EXPRESSIVE_PROBE_STRING_INDEX,
+    });
+
+    applyPerformanceEvents(events);
+  }
+
+  function handleMuteProbePress() {
+    const events = planMuteProbe({
+      nowMs: Date.now(),
+      stringIndex: EXPRESSIVE_PROBE_STRING_INDEX,
+    });
+
+    applyPerformanceEvents(events);
+  }
+
   async function handleStartRecordingProbe() {
     const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
     setRecordingProbeState(result);
@@ -375,6 +396,22 @@ export function GayageumPrototypeScreen() {
           style={styles.polyphonyButton}
         >
           <Text style={styles.glissandoButtonText}>8 Voice</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play pitch bend probe"
+          onPress={handlePitchBendProbePress}
+          style={styles.pitchBendButton}
+        >
+          <Text style={styles.glissandoButtonText}>Bend</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play mute probe"
+          onPress={handleMuteProbePress}
+          style={styles.muteProbeButton}
+        >
+          <Text style={styles.glissandoButtonText}>Mute</Text>
         </Pressable>
       </View>
 
@@ -591,6 +628,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 44,
     minWidth: 118,
+    paddingHorizontal: 14,
+  },
+  pitchBendButton: {
+    alignItems: 'center',
+    backgroundColor: '#c98f65',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 92,
+    paddingHorizontal: 14,
+  },
+  muteProbeButton: {
+    alignItems: 'center',
+    backgroundColor: '#b55d4c',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 92,
     paddingHorizontal: 14,
   },
   glissandoButtonText: {
