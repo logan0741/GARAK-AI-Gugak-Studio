@@ -62,6 +62,8 @@ Only probes with `evidenceSource: 'physical-device'` count as measured for this 
 
 When a draft is promoted to `physical-device`, `deviceLabel` must be replaced with the tested physical model, for example `Galaxy S24 / Android 15` or `iPhone 15 / iOS 18`. The parser rejects the estimate placeholder `replace-with-physical-device-model` for physical-device evidence.
 
+Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026` or slash-separated dates are rejected by the parser.
+
 If a required candidate has more than one physical-device probe in a single record, the record reports it in `duplicateCandidates` and does not select a final engine. Consolidate repeated measurements into one candidate probe before publishing the Day 5 decision.
 
 Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should be reflected in the glissando, pitch bend, mute, and session fallback fields.
