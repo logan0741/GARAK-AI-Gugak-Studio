@@ -109,7 +109,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
     await this.runtime.setAudioModeAsync(PLAYBACK_MODE);
 
     for (const asset of this.manifest.assets) {
-      const source = await this.runtime.downloadAudioSource({ uri: asset.fileUri });
+      const source = normalizeDownloadedAudioSource(
+        await this.runtime.downloadAudioSource({ uri: asset.fileUri }),
+        asset.stringIndex,
+      );
       const player = this.runtime.createAudioPlayer(source, PLAYER_OPTIONS);
       this.playersByString.set(asset.stringIndex, player);
     }
@@ -317,6 +320,18 @@ function normalizeRecordingUri(recordingUri: string | null): string | null {
   }
 
   return normalizedRecordingUri;
+}
+
+function normalizeDownloadedAudioSource(
+  source: { uri: string },
+  stringIndex: number,
+): { uri: string } {
+  const uri = source.uri.trim();
+  if (uri.length === 0) {
+    throw new Error(`Downloaded expo-audio source URI missing for string ${stringIndex}`);
+  }
+
+  return { uri };
 }
 
 function normalizeCapturedSeconds(durationMillis: number): number {
