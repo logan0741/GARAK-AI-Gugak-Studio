@@ -402,6 +402,27 @@ test('records missing captured recording uri as playback fallback context', () =
   });
 });
 
+test('treats whitespace captured recording uri as missing playback context', () => {
+  const snapshot = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:38:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:38:12.000Z',
+      recordingUri: '   ',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    recordingCaptureSeconds: 10,
+    recordingFallbackReason: 'recording_playback_uri_missing',
+    recordingUriAvailable: false,
+  });
+});
+
 test('updates the prototype QA device label used by the probe draft', () => {
   const snapshot = updatePrototypeQaDeviceLabel(
     createInitialPrototypeQaSnapshot({
