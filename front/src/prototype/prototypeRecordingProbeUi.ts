@@ -16,16 +16,19 @@ type SelectPlayableRecordingUriInput = {
 };
 
 export function selectPlayableRecordingUri(input: SelectPlayableRecordingUriInput): string | null {
-  if (isNonEmptyString(input.sessionRecordingUri)) {
-    return input.sessionRecordingUri;
-  }
-
   const { recordingProbeState } = input;
   if (
     (recordingProbeState.status === 'captured' || recordingProbeState.status === 'playing') &&
     isNonEmptyString(recordingProbeState.recordingUri)
   ) {
     return recordingProbeState.recordingUri;
+  }
+
+  if (
+    (recordingProbeState.status === 'captured' || recordingProbeState.status === 'playing') &&
+    isNonEmptyString(input.sessionRecordingUri)
+  ) {
+    return input.sessionRecordingUri;
   }
 
   return null;
