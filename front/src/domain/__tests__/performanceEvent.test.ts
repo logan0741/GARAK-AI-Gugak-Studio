@@ -28,3 +28,12 @@ test('creates string bend events with clamped cents', () => {
     cents: 120,
   });
 });
+
+test('rejects non-finite timestamps when creating performance events', () => {
+  expect(() =>
+    createStringPluck({ tsMs: Number.NaN, stringIndex: 4, velocity: 0.8 }),
+  ).toThrow('tsMs must be finite');
+  expect(() =>
+    createStringBend({ tsMs: Number.POSITIVE_INFINITY, stringIndex: 7, cents: 60 }),
+  ).toThrow('tsMs must be finite');
+});
