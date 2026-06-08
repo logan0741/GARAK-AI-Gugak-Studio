@@ -81,6 +81,22 @@ test('applies pitch bend to active voices through detune automation', async () =
   ]);
 });
 
+test('does not apply a new same-string bend to an already released voice', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+  await engine.preload();
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 3, velocity: 0.8 });
+  engine.handleEvent({ type: 'string_release', tsMs: 120, stringIndex: 3 });
+  engine.handleEvent({ type: 'string_pluck', tsMs: 140, stringIndex: 3, velocity: 0.8 });
+
+  engine.handleEvent({ type: 'string_bend', tsMs: 160, stringIndex: 3, cents: 85 });
+
+  expect(runtime.context.sources[0].detune.automation).toEqual([]);
+  expect(runtime.context.sources[1].detune.automation).toEqual([
+    { type: 'setTargetAtTime', target: 85, startTime: 12.5, timeConstant: 0.015 },
+  ]);
+});
+
 test('maps mute and release onto gain envelope and source stop', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
