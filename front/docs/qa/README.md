@@ -13,14 +13,14 @@ npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 
 The template command writes all required Day 2/3/4 check IDs with `blocked` results so the tester can fill them after device QA. It requires a non-empty tester name and a real physical device label before writing. The report command checks whether every required smoke area and check has a completed `pass` or `fail` result, with no duplicate areas or duplicate checks, and whether all runs use one physical device label. It reports failures for review, but it does not select the final engine and does not replace the Day 5 probe record. See `week-1-smoke-report.md` for the JSON shape and required check IDs.
 
-Day 5 audio-engine values must be moved into a candidate probe record that follows `day-5-audio-engine-probes.example.json`. Final-selection probes must use `evidenceSource: 'physical-device'`, and the record must be validated with:
+Day 5 audio-engine values must be moved into a candidate probe record that follows `day-5-audio-engine-probes.example.json`. Final-selection probes must use `evidenceSource: 'physical-device'`, and all physical-device probes in the final decision record must come from one physical device label. The record must be validated with:
 
 ```bash
 npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>
 npm run qa:day5-audio -- <probe-record.json>
 ```
 
-The readiness command is the bridge between Week 1 smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files after trimming surrounding whitespace. When the smoke report is incomplete, its `Smoke report issues` line includes the concrete missing, duplicate, blocked, or device-label causes. It does not write a new record and does not select the final engine.
+The readiness command is the bridge between Week 1 smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files after trimming surrounding whitespace and normalizing slash spacing. When the smoke report is incomplete, its `Smoke report issues` line includes the concrete missing, duplicate, blocked, or device-label causes. It does not write a new record and does not select the final engine.
 
 `src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null, correctly typed, in-range values.
 
