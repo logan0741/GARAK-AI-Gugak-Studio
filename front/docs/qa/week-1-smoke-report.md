@@ -18,6 +18,8 @@ The template command writes every required Day 2/3/4 check with `result: "blocke
 
 `tester` must be a non-empty name after trimming whitespace. The template command rejects blank tester names before writing a report so generated smoke reports remain parseable by `qa:week1-smoke-report`. The written `tester` and `deviceLabel` values are trimmed before they are saved.
 
+The template command also validates its generated timestamp before writing. If the clock provider does not return an ISO timestamp that `qa:week1-smoke-report` can parse, the command fails instead of producing a broken smoke report.
+
 Validate a filled report with:
 
 ```bash

@@ -1,4 +1,5 @@
 import {
+  isIsoTimestamp,
   isPhysicalDeviceLabel,
   REQUIRED_AREAS,
   REQUIRED_CHECKS_BY_AREA,
@@ -42,6 +43,13 @@ export function runWeek1SmokeTemplateCommand(
   }
 
   const generatedAt = input.getGeneratedAt();
+  if (!isIsoTimestamp(generatedAt)) {
+    input.writeStderr(
+      'Could not write Week 1 smoke report template: generatedAt must be an ISO timestamp',
+    );
+    return 1;
+  }
+
   const report = createWeek1SmokeReportTemplate({
     generatedAt,
     testedAt: generatedAt,
