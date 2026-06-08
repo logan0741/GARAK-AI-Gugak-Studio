@@ -174,6 +174,39 @@ test('rejects handoffs copied from different physical device labels', () => {
   ]);
 });
 
+test('rejects placeholder physical device labels before writing a merged handoff', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const inputFiles = new Map([
+    [
+      'expo-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('expo-audio', 'Device / OS')),
+    ],
+    [
+      'rn-handoff.json',
+      JSON.stringify(
+        createPrototypeHandoffForCandidate('react-native-audio-api', 'Device / OS'),
+      ),
+    ],
+  ]);
+
+  expect(
+    runPrototypeHandoffMergeCommand({
+      argv: ['merged.json', 'expo-handoff.json', 'rn-handoff.json'],
+      getGeneratedAt: () => '2026-06-08T05:00:00.000Z',
+      readTextFile: (path) => inputFiles.get(path) ?? '',
+      writeTextFile: () => undefined,
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not merge prototype handoffs: device labels must name the physical device: expo-audio.deviceLabel, expo-audio.inspectorDraft.probeTemplate.deviceLabel, react-native-audio-api.deviceLabel, react-native-audio-api.inspectorDraft.probeTemplate.deviceLabel',
+  ]);
+});
+
 test('returns invalid json errors without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -251,7 +284,7 @@ function createPrototypeHandoffForCandidate(
     generatedAt: '2026-06-08T04:00:00.000Z',
     entries: [
       {
-        inspectorDraft: createInspectorDraftForCandidate(candidate),
+        inspectorDraft: createInspectorDraftForCandidate(candidate, deviceLabel),
         measuredAt: '2026-06-08T04:00:00.000Z',
         deviceLabel,
         measurements: nullMeasurements,

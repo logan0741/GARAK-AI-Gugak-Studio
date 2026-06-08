@@ -4,6 +4,7 @@ import {
   type PrototypeHandoffFile,
 } from './prototypeHandoffFile';
 import { type PhysicalDevicePrototypeProbeHandoffInput } from './prototypeProbeHandoff';
+import { isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
 
 export type PrototypeHandoffMergeCommandInput = {
   argv: string[];
@@ -64,6 +65,14 @@ export function runPrototypeHandoffMergeCommand(
     return 1;
   }
 
+  const deviceLabelIssues = collectPhysicalDeviceLabelIssues(entries);
+  if (deviceLabelIssues.length > 0) {
+    input.writeStderr(
+      `Could not merge prototype handoffs: device labels must name the physical device: ${deviceLabelIssues.join(', ')}`,
+    );
+    return 1;
+  }
+
   const deviceLabels = collectDeviceLabels(entries);
   if (deviceLabels.length > 1) {
     input.writeStderr(
@@ -103,6 +112,26 @@ function findDuplicateCandidates(
   }
 
   return [...duplicates].sort();
+}
+
+function collectPhysicalDeviceLabelIssues(
+  entries: PhysicalDevicePrototypeProbeHandoffInput[],
+): string[] {
+  const issues: string[] = [];
+
+  for (const entry of entries) {
+    const candidate = entry.inspectorDraft.probeTemplate.candidate;
+
+    if (entry.deviceLabel !== undefined && !isPhysicalDeviceLabel(entry.deviceLabel)) {
+      issues.push(`${candidate}.deviceLabel`);
+    }
+
+    if (!isPhysicalDeviceLabel(entry.inspectorDraft.probeTemplate.deviceLabel)) {
+      issues.push(`${candidate}.inspectorDraft.probeTemplate.deviceLabel`);
+    }
+  }
+
+  return issues;
 }
 
 function collectDeviceLabels(
