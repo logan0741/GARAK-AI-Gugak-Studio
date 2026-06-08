@@ -61,7 +61,7 @@ export type ExpoAudioRecordingStopResult = {
 
 export type ExpoAudioRecordingPlaybackResult =
   | { ok: true; recordingUri: string }
-  | { ok: false; reason: 'recording_playback_failed' };
+  | { ok: false; reason: 'recording_playback_failed' | 'recording_playback_uri_missing' };
 
 const PLAYBACK_MODE: ExpoAudioMode = {
   playsInSilentMode: true,
@@ -195,6 +195,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   async playRecordingProbe(recordingUri: string): Promise<ExpoAudioRecordingPlaybackResult> {
+    if (recordingUri.trim().length === 0) {
+      return { ok: false, reason: 'recording_playback_uri_missing' };
+    }
+
     try {
       await this.runtime.setAudioModeAsync(PLAYBACK_MODE);
       const player = this.runtime.createAudioPlayer({ uri: recordingUri }, PLAYER_OPTIONS);

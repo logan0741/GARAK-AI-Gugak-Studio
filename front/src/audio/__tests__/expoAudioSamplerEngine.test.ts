@@ -151,6 +151,18 @@ test('plays back a captured recording probe from its uri', async () => {
   expect(runtime.modeCalls.at(-1)).toMatchObject({ allowsRecording: false });
 });
 
+test('rejects whitespace captured recording uri before creating a playback player', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+  await expect(engine.playRecordingProbe('   ')).resolves.toEqual({
+    ok: false,
+    reason: 'recording_playback_uri_missing',
+  });
+
+  expect(runtime.createdPlayers).toEqual([]);
+});
+
 test('reports recording playback probe failure without throwing', async () => {
   const runtime = createRuntimePort({ seekFails: true });
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
