@@ -42,6 +42,10 @@ export async function startPrototypeRecordingProbe(
   engine: SamplerEngine,
   durationSeconds: number,
 ): Promise<PrototypeRecordingProbeStartResult> {
+  if (!isPositiveFiniteNumber(durationSeconds)) {
+    return { status: 'failed', errorMessage: 'recording_duration_invalid' };
+  }
+
   if (!isRecordingProbeCapableEngine(engine)) {
     return { status: 'unsupported', reason: 'recording_probe_not_supported' };
   }
@@ -137,4 +141,8 @@ function normalizeRecordingUri(recordingUri: string | null): string | null {
   }
 
   return normalizedRecordingUri;
+}
+
+function isPositiveFiniteNumber(input: number): boolean {
+  return Number.isFinite(input) && input > 0;
 }

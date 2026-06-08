@@ -51,7 +51,14 @@ export type ExpoAudioPreloadResult = {
 
 export type ExpoAudioRecordingProbeResult =
   | { ok: true; requestedDurationSeconds: number }
-  | { ok: false; reason: 'recording_already_active' | 'recording_permission_denied' | 'recording_start_failed' };
+  | {
+      ok: false;
+      reason:
+        | 'recording_already_active'
+        | 'recording_duration_invalid'
+        | 'recording_permission_denied'
+        | 'recording_start_failed';
+    };
 
 export type ExpoAudioRecordingStopResult = {
   ok: true;
@@ -143,6 +150,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   async startRecordingProbe(durationSeconds: number): Promise<ExpoAudioRecordingProbeResult> {
+    if (!isPositiveFiniteNumber(durationSeconds)) {
+      return { ok: false, reason: 'recording_duration_invalid' };
+    }
+
     if (this.activeRecorder) {
       return { ok: false, reason: 'recording_already_active' };
     }
@@ -277,6 +288,10 @@ function normalizeCapturedSeconds(durationMillis: number): number {
   }
 
   return durationMillis / 1000;
+}
+
+function isPositiveFiniteNumber(input: number): boolean {
+  return Number.isFinite(input) && input > 0;
 }
 
 function assertNever(value: never): never {
