@@ -31,11 +31,11 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
 }): Promise<SamplerEngine> {
   assertCompletePrototypeSampleManifest(input.manifest);
 
-  const runtimePorts = input.runtimePorts ?? await loadDefaultRuntimePorts(input.candidate);
   const manifest = await resolveSampleAssetManifestUris({
     manifest: input.manifest,
     assetResolver: input.assetResolver ?? await loadDefaultSampleAssetResolver(),
   });
+  const runtimePorts = input.runtimePorts ?? await loadDefaultRuntimePorts(input.candidate);
   const engine =
     input.candidate === 'expo-audio'
       ? new ExpoAudioSamplerEngine({
@@ -75,12 +75,37 @@ export async function resolveSampleAssetManifestUris(input: {
   return {
     ...input.manifest,
     assets: await Promise.all(
-      input.manifest.assets.map(async (asset) => ({
-        ...asset,
-        fileUri: await input.assetResolver.resolveFileUri(asset.fileUri),
-      })),
+      input.manifest.assets.map(async (asset) => {
+        const resolvedFileUri = await input.assetResolver.resolveFileUri(asset.fileUri);
+
+        return {
+          ...asset,
+          fileUri: normalizeResolvedSampleFileUri({
+            sourceFileUri: asset.fileUri,
+            resolvedFileUri,
+          }),
+        };
+      }),
     ),
   };
+}
+
+function normalizeResolvedSampleFileUri(input: {
+  sourceFileUri: string;
+  resolvedFileUri: string;
+}): string {
+  const resolvedFileUri = input.resolvedFileUri.trim();
+  if (resolvedFileUri.length === 0 || isRemoteUri(resolvedFileUri)) {
+    throw new Error(
+      `Prototype native sampler requires resolved local sample URIs; ${input.sourceFileUri} resolved to ${resolvedFileUri || 'empty URI'}`,
+    );
+  }
+
+  return resolvedFileUri;
+}
+
+function isRemoteUri(input: string): boolean {
+  return /^https?:\/\//i.test(input);
 }
 
 async function loadDefaultRuntimePorts(

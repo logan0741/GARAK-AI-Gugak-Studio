@@ -241,6 +241,31 @@ test.each(['expo-audio', 'react-native-audio-api'] as const)(
   },
 );
 
+test.each([
+  ['blank uri', '   '],
+  ['remote uri', 'https://cdn.example.com/gayageum/string-01.wav'],
+] as const)(
+  'rejects %s from sample asset resolution before loading default native dependencies',
+  async (_label, resolvedUri) => {
+    clearDefaultDependencyLoadMocks();
+
+    await expect(
+      createAndPreloadPrototypeNativeSamplerEngine({
+        candidate: 'expo-audio',
+        manifest,
+        assetResolver: {
+          resolveFileUri: async () => resolvedUri,
+        },
+      }),
+    ).rejects.toThrow('Prototype native sampler requires resolved local sample URIs');
+
+    expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+  },
+);
+
 function clearDefaultDependencyLoadMocks(): void {
   defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded.mockClear();
   defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded.mockClear();
