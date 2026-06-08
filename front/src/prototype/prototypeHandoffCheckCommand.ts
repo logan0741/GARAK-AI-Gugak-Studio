@@ -11,6 +11,7 @@ import {
 } from './prototypeHandoffFile';
 import {
   buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts,
+  isPrototypeRecordingMeasurementBackedByPlayback,
   isPrototypeObservedRuntimeReady,
   type PhysicalDevicePrototypeProbeHandoffInput,
 } from './prototypeProbeHandoff';
@@ -314,7 +315,7 @@ function collectInvalidMeasurementFields(
 
   for (const entry of entries) {
     const candidate = entry.inspectorDraft.probeTemplate.candidate;
-    for (const field of getInvalidMeasurementFields(entry.measurements)) {
+    for (const field of getInvalidMeasurementFields(entry)) {
       invalidFields.push(`${candidate}.${field}`);
     }
   }
@@ -422,10 +423,9 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
-function getInvalidMeasurementFields(
-  measurements: PhysicalDeviceAudioEngineProbeMeasurements,
-): string[] {
+function getInvalidMeasurementFields(entry: PhysicalDevicePrototypeProbeHandoffInput): string[] {
   const invalidFields: string[] = [];
+  const { measurements } = entry;
 
   for (const field of DURATION_MEASUREMENT_FIELDS) {
     const value = measurements[field];
@@ -453,6 +453,15 @@ function getInvalidMeasurementFields(
     if (value !== null && value !== undefined && typeof value !== 'boolean') {
       invalidFields.push(field);
     }
+  }
+
+  if (
+    !isPrototypeRecordingMeasurementBackedByPlayback({
+      inspectorDraft: entry.inspectorDraft,
+      recordingCaptureSeconds: measurements.recordingCaptureSeconds,
+    })
+  ) {
+    invalidFields.push('recordingCaptureSeconds');
   }
 
   return orderMeasurementFields([...new Set(invalidFields)]);

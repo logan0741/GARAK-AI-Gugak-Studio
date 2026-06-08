@@ -64,7 +64,15 @@ test('writes a parseable Day 5 probe record from prototype inspector drafts', ()
           generatedAt: '2026-06-08T03:10:00.000Z',
           entries: [
             {
-              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              inspectorDraft: {
+                ...createInspectorDraftForCandidate('expo-audio'),
+                observedPrototypeRecording: {
+                  capturedSeconds: 10,
+                  fallbackReason: null,
+                  playbackConfirmed: true,
+                  uriAvailable: true,
+                },
+              },
               measuredAt: '2026-06-08T03:00:00.000Z',
               measurements: {
                 ...measurements,
