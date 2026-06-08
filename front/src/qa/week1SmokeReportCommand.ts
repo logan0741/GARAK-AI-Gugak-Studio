@@ -68,7 +68,15 @@ export const REQUIRED_CHECKS_BY_AREA = {
     'mute-release',
     'recording-fallback',
   ],
-  'day-4-touch-model': ['tap', 'glissando', 'hold-drag', 'ji-eum', 'fallback'],
+  'day-4-touch-model': [
+    'tap',
+    'glissando',
+    'hold-drag',
+    'ji-eum',
+    'bend-button',
+    'mute-button',
+    'fallback',
+  ],
 } as const satisfies Record<Week1SmokeAreaId, readonly string[]>;
 
 export const REQUIRED_AREAS = Object.keys(REQUIRED_CHECKS_BY_AREA) as Week1SmokeAreaId[];

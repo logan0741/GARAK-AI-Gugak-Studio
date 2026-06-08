@@ -287,7 +287,15 @@ const requiredChecksByArea = {
     'mute-release',
     'recording-fallback',
   ],
-  'day-4-touch-model': ['tap', 'glissando', 'hold-drag', 'ji-eum', 'fallback'],
+  'day-4-touch-model': [
+    'tap',
+    'glissando',
+    'hold-drag',
+    'ji-eum',
+    'bend-button',
+    'mute-button',
+    'fallback',
+  ],
 } as const satisfies Record<SmokeAreaId, readonly string[]>;
 
 function createSmokeReport(input: {
