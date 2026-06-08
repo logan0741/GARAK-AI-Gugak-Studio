@@ -187,8 +187,7 @@ function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspector
     );
   }
 
-  const unexpectedStringIndexes = inspectorDraft.observedRuntime.unexpectedStringIndexes;
-  if (Array.isArray(unexpectedStringIndexes) && unexpectedStringIndexes.length > 0) {
+  if (hasUnexpectedStringIndexesField(inspectorDraft.observedRuntime)) {
     throw new Error(
       'prototype runtime must not report unexpected sample string indexes before physical-device promotion',
     );
@@ -207,4 +206,8 @@ function isPositiveRecordingCaptureSeconds(input: unknown): input is number {
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {
   return typeof input === 'number' && Number.isFinite(input) && input >= 0;
+}
+
+function hasUnexpectedStringIndexesField(input: object): boolean {
+  return Object.prototype.hasOwnProperty.call(input, 'unexpectedStringIndexes');
 }

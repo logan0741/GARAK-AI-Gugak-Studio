@@ -265,11 +265,16 @@ function collectManifestIssues(entries: PhysicalDevicePrototypeProbeHandoffInput
       );
     }
 
-    const unexpectedStringIndexes = entry.inspectorDraft.observedRuntime?.unexpectedStringIndexes;
-    if (Array.isArray(unexpectedStringIndexes) && unexpectedStringIndexes.length > 0) {
-      issues.push(
-        `${candidate} unexpected sample string indexes: ${unexpectedStringIndexes.join(', ')}`,
-      );
+    const observedRuntime = entry.inspectorDraft.observedRuntime;
+    if (observedRuntime && hasUnexpectedStringIndexesField(observedRuntime)) {
+      const unexpectedStringIndexes = observedRuntime.unexpectedStringIndexes;
+      if (Array.isArray(unexpectedStringIndexes) && unexpectedStringIndexes.length > 0) {
+        issues.push(
+          `${candidate} unexpected sample string indexes: ${unexpectedStringIndexes.join(', ')}`,
+        );
+      } else {
+        issues.push(`${candidate} unexpectedStringIndexes must be absent`);
+      }
     }
   }
 
@@ -488,4 +493,8 @@ function isNonNegativeFiniteNumber(input: unknown): input is number {
 
 function isNonNegativeInteger(input: unknown): input is number {
   return Number.isInteger(input) && typeof input === 'number' && input >= 0;
+}
+
+function hasUnexpectedStringIndexesField(input: object): boolean {
+  return Object.prototype.hasOwnProperty.call(input, 'unexpectedStringIndexes');
 }

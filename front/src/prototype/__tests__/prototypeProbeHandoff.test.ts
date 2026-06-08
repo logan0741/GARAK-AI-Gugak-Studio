@@ -177,6 +177,26 @@ test('rejects physical-device promotion when observed runtime reports unexpected
   );
 });
 
+test('rejects physical-device promotion when unexpected sample string index field is present', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraft({
+        observedRuntime: {
+          activeRuntime: 'react-native-audio-api',
+          nativePreloadStatus: 'ready',
+          requestedCandidate: 'react-native-audio-api',
+          runtimeStatus: 'native_candidate_ready',
+          sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+          unexpectedStringIndexes: [],
+        },
+      }),
+      measurements,
+    }),
+  ).toThrow(
+    'prototype runtime must not report unexpected sample string indexes before physical-device promotion',
+  );
+});
+
 test('rejects physical-device promotion when runtime status is not ready even if active runtime matches', () => {
   expect(() =>
     buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
