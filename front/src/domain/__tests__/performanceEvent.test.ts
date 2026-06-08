@@ -12,6 +12,12 @@ test('creates string pluck events with timestamp and string index', () => {
   });
 });
 
+test('rejects non-finite pluck velocity before creating audio gain events', () => {
+  expect(() =>
+    createStringPluck({ tsMs: 120, stringIndex: 4, velocity: Number.NaN }),
+  ).toThrow('velocity must be finite');
+});
+
 test('clamps bend cents to the MVP safe range', () => {
   expect(clampBendCents(180)).toBe(120);
   expect(clampBendCents(-180)).toBe(-120);

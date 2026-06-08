@@ -29,6 +29,14 @@ export function clampBendCents(cents: number): number {
   return Math.max(-MAX_BEND_CENTS, Math.min(MAX_BEND_CENTS, cents));
 }
 
+function clampVelocity(velocity: number): number {
+  if (!Number.isFinite(velocity)) {
+    throw new Error('velocity must be finite');
+  }
+
+  return Math.max(0, Math.min(1, velocity));
+}
+
 export function createStringPluck(input: {
   tsMs: number;
   stringIndex: number;
@@ -41,7 +49,7 @@ export function createStringPluck(input: {
     type: 'string_pluck',
     tsMs: input.tsMs,
     stringIndex: input.stringIndex,
-    velocity: Math.max(0, Math.min(1, input.velocity)),
+    velocity: clampVelocity(input.velocity),
   };
 }
 
