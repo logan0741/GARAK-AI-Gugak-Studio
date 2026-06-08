@@ -210,8 +210,9 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   private cleanupVoice(voice: ActiveVoice): void {
-    removeMatching(this.activeVoices, (candidate) => candidate === voice);
-    this.disconnectVoice(voice);
+    if (removeMatching(this.activeVoices, (candidate) => candidate === voice)) {
+      this.disconnectVoice(voice);
+    }
   }
 
   private disconnectVoice(voice: ActiveVoice): void {
@@ -225,12 +226,17 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function removeMatching<T>(items: T[], predicate: (item: T) => boolean): void {
+function removeMatching<T>(items: T[], predicate: (item: T) => boolean): boolean {
+  let removed = false;
+
   for (let index = items.length - 1; index >= 0; index -= 1) {
     if (predicate(items[index])) {
       items.splice(index, 1);
+      removed = true;
     }
   }
+
+  return removed;
 }
 
 function assertNever(value: never): never {

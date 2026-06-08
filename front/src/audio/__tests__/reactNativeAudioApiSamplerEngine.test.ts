@@ -124,6 +124,21 @@ test('steals the oldest voice only after the configured voice budget is exceeded
   expect(runtime.context.sources[2].stopCalls).toEqual([]);
 });
 
+test('does not disconnect a stolen voice twice when the native end event arrives later', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 1 });
+  await engine.preload();
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.8 });
+  engine.handleEvent({ type: 'string_pluck', tsMs: 110, stringIndex: 2, velocity: 0.8 });
+
+  runtime.context.sources[0].onEnded?.(undefined as never);
+
+  expect(runtime.context.sources[0].disconnectCalls).toEqual([runtime.context.filters[0]]);
+  expect(runtime.context.filters[0].disconnectCalls).toEqual([runtime.context.gains[0]]);
+  expect(runtime.context.gains[0].disconnectCalls).toEqual([runtime.context.destination]);
+});
+
 test('cleans up a voice graph when the native source ends', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 2 });
