@@ -23,6 +23,6 @@ Use UTC ISO timestamps such as `2026-06-08T01:00:00.000Z` for `generatedAt` and 
 | Touch-to-sound latency | Physical-device target <= 50 ms |
 | Polyphony | At least 8 simultaneous voices |
 | Pitch bend | Continuous pitch change without click noise |
-| Glissando | 12-string swipe has no missing input |
+| Glissando | 12-string swipe has no missing input; probe count range is 0-12 |
 | Mute | Ji-eum release decays naturally |
 | Session fallback | Event session is preserved if audio capture fails |
