@@ -7,6 +7,8 @@ import {
   safelyDispatchEventsToCurrentEngine,
   safelyDispatchEventsToEngine,
   planGlissando,
+  planMuteProbe,
+  planPitchBendProbe,
   planPolyphonyBurst,
   planStringPlay,
 } from '../gayageumPrototypeController';
@@ -103,5 +105,32 @@ test('plans an 8 voice polyphony burst at the same timestamp', () => {
     { type: 'string_pluck', tsMs: 300, stringIndex: 6, velocity: 1 },
     { type: 'string_pluck', tsMs: 300, stringIndex: 7, velocity: 1 },
     { type: 'string_pluck', tsMs: 300, stringIndex: 8, velocity: 1 },
+  ]);
+});
+
+test('plans a pitch bend probe with an active pluck, bend range, and release', () => {
+  const events = planPitchBendProbe({
+    nowMs: 400,
+    stringIndex: 6,
+  });
+
+  expect(events).toEqual([
+    { type: 'string_pluck', tsMs: 400, stringIndex: 6, velocity: 1 },
+    { type: 'string_bend', tsMs: 560, stringIndex: 6, cents: 120 },
+    { type: 'string_bend', tsMs: 640, stringIndex: 6, cents: -120 },
+    { type: 'string_release', tsMs: 720, stringIndex: 6 },
+  ]);
+});
+
+test('plans a mute probe with an active pluck, clean mute, and release', () => {
+  const events = planMuteProbe({
+    nowMs: 500,
+    stringIndex: 6,
+  });
+
+  expect(events).toEqual([
+    { type: 'string_pluck', tsMs: 500, stringIndex: 6, velocity: 1 },
+    { type: 'string_mute', tsMs: 620, stringIndex: 6, strength: 1 },
+    { type: 'string_release', tsMs: 700, stringIndex: 6 },
   ]);
 });
