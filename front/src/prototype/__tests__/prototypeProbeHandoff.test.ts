@@ -213,6 +213,40 @@ test.each([
   },
 );
 
+test('rejects physical-device promotion when inspector draft device label is still a placeholder', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraft({
+        probeTemplate: {
+          ...createInspectorDraft().probeTemplate,
+          deviceLabel: 'replace-with-physical-device-model',
+        },
+      }),
+      measurements,
+    }),
+  ).toThrow('prototype inspector draft deviceLabel must name the physical device before physical-device promotion');
+});
+
+test('rejects physical-device promotion when handoff device label is still a placeholder', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraft(),
+      deviceLabel: 'replace-with-physical-device-model',
+      measurements,
+    }),
+  ).toThrow('prototype handoff deviceLabel must name the physical device before physical-device promotion');
+});
+
+test('rejects physical-device promotion when handoff device label does not match inspector draft', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraft(),
+      deviceLabel: 'Galaxy S24 / Android 15',
+      measurements,
+    }),
+  ).toThrow('prototype handoff deviceLabel must match inspector draft device label Pixel 8 / Android 15');
+});
+
 function createInspectorDraft(
   override: Partial<PrototypeProbeDraftInspectorModel> = {},
 ): PrototypeProbeDraftInspectorModel {
