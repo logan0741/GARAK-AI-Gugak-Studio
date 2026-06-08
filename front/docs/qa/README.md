@@ -18,13 +18,14 @@ The prototype probe draft also includes `observedRuntime` so the handoff records
 
 `src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate and the runtime/preload status is ready. This prevents fake fallback or preloading states from being promoted.
 
-To produce a Day 5 probe record from prototype inspector drafts, copy the prototype inspector's `Prototype handoff JSON` block after testing each candidate. Each entry contains the copied `inspectorDraft`, `measuredAt`, `deviceLabel`, and nullable manual `measurements`. Replace every `measurements` null with explicit physical-device values before running:
+To produce a Day 5 probe record from prototype inspector drafts, copy the prototype inspector's `Prototype handoff JSON` block after testing each candidate. Each entry contains the copied `inspectorDraft`, `measuredAt`, `deviceLabel`, and nullable manual `measurements`. Replace every `measurements` null with explicit physical-device values, then check readiness before generating a probe record:
 
 ```bash
+npm run qa:prototype-handoff-check -- <prototype-handoff.json>
 npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
 ```
 
-The command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+The check reports missing candidates, duplicate candidates, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
 
 If each candidate was tested in a separate run, merge the copied handoff files before building the probe record:
 
@@ -33,6 +34,14 @@ npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> 
 ```
 
 The merge command only combines `entries[]` and rejects duplicate candidate entries. It does not fill or validate physical-device measurements; `qa:prototype-probe-record` remains responsible for turning the filled handoff into a parser-valid probe record.
+
+After merging, check that the merged handoff is ready for promotion:
+
+```bash
+npm run qa:prototype-handoff-check -- <merged-handoff.json>
+```
+
+The readiness check reports missing candidates, duplicate candidates, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues. It does not write a probe record or select the final engine.
 
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 

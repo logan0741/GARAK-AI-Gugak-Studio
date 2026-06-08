@@ -51,21 +51,28 @@ export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
   });
 }
 
-function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
+export function isPrototypeObservedRuntimeReady(
+  inspectorDraft: PrototypeProbeDraftInspectorModel,
+): boolean {
   const { observedRuntime, probeTemplate } = inspectorDraft;
 
-  if (!observedRuntime) {
+  return (
+    !!observedRuntime &&
+    observedRuntime.requestedCandidate === probeTemplate.candidate &&
+    observedRuntime.activeRuntime === probeTemplate.candidate &&
+    observedRuntime.runtimeStatus === 'native_candidate_ready' &&
+    observedRuntime.nativePreloadStatus === 'ready'
+  );
+}
+
+function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
+  if (!inspectorDraft.observedRuntime) {
     throw new Error('prototype runtime observation is required before physical-device promotion');
   }
 
-  if (
-    observedRuntime.requestedCandidate !== probeTemplate.candidate ||
-    observedRuntime.activeRuntime !== probeTemplate.candidate ||
-    observedRuntime.runtimeStatus !== 'native_candidate_ready' ||
-    observedRuntime.nativePreloadStatus !== 'ready'
-  ) {
+  if (!isPrototypeObservedRuntimeReady(inspectorDraft)) {
     throw new Error(
-      `prototype runtime must be ready for ${probeTemplate.candidate} before physical-device promotion`,
+      `prototype runtime must be ready for ${inspectorDraft.probeTemplate.candidate} before physical-device promotion`,
     );
   }
 }
