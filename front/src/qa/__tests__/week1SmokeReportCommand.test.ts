@@ -173,6 +173,27 @@ test('returns parse errors for invalid smoke report check results', () => {
   ]);
 });
 
+test('rejects placeholder device labels for physical-device smoke evidence', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport();
+  report.runs[0].deviceLabel = 'Device / OS';
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['placeholder-device-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not parse Week 1 smoke report: runs[0].deviceLabel must name the physical device',
+  ]);
+});
+
 test('returns invalid json errors without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];

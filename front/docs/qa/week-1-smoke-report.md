@@ -16,6 +16,8 @@ npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 
 The command exits 0 only when all required Day 2/3/4 areas are present once, every required check appears once, every required check has a `pass` or `fail` result, and no check is `blocked`. Failed checks are reported for review but still count as executed evidence; Day 5 decides whether the failures block the final engine choice.
 
+`deviceLabel` must name the tested physical device and OS, for example `Pixel 8 / Android 15`. Placeholder labels such as `Device / OS`, `physical device`, or `replace-with-physical-device-model` are rejected.
+
 ## JSON Shape
 
 ```json
