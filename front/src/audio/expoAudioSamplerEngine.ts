@@ -84,6 +84,7 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   private readonly runtime: ExpoAudioRuntimePort;
   private readonly playersByString = new Map<number, ExpoAudioPlayerPort>();
   private readonly playbackQueuesByString = new Map<number, Promise<void>>();
+  private playbackQueueFailure: unknown;
   private activeRecorder: ExpoAudioRecorderPort | undefined;
 
   constructor(input: { manifest: SampleAssetManifest; runtime: ExpoAudioRuntimePort }) {
@@ -109,6 +110,11 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   async waitForIdle(): Promise<void> {
     await Promise.all(this.playbackQueuesByString.values());
+    if (this.playbackQueueFailure) {
+      const failure = this.playbackQueueFailure;
+      this.playbackQueueFailure = undefined;
+      throw failure;
+    }
   }
 
   handleEvent(event: PerformanceEvent): void {
@@ -217,8 +223,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   private queuePlayback(stringIndex: number, operation: () => Promise<void>): void {
     const previous = this.playbackQueuesByString.get(stringIndex) ?? Promise.resolve();
-    const next = previous.then(operation);
-    this.playbackQueuesByString.set(stringIndex, next.catch(() => undefined));
+    const next = previous.then(operation).catch((error: unknown) => {
+      this.playbackQueueFailure = error;
+    });
+    this.playbackQueuesByString.set(stringIndex, next);
   }
 }
 

@@ -70,6 +70,16 @@ test('plays a preloaded string immediately when a pluck event arrives', async ()
   expect(runtime.players[0].playCalls).toBe(1);
 });
 
+test('surfaces queued playback failures during idle checks', async () => {
+  const runtime = createRuntimePort({ seekFails: true });
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 });
+
+  await expect(engine.waitForIdle()).rejects.toThrow('seek failed');
+});
+
 test('maps bend, mute, and release events onto Expo Audio player controls', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -143,7 +153,7 @@ test('returns a recording fallback result when permission is denied', async () =
   expect(runtime.recorders).toHaveLength(0);
 });
 
-function createRuntimePort(input: { permissionGranted?: boolean; stopFails?: boolean } = {}) {
+function createRuntimePort(input: { permissionGranted?: boolean; seekFails?: boolean; stopFails?: boolean } = {}) {
   const players: FakeExpoAudioPlayer[] = [];
   const recorders: FakeExpoAudioRecorder[] = [];
   const runtime = {
@@ -158,7 +168,7 @@ function createRuntimePort(input: { permissionGranted?: boolean; stopFails?: boo
     },
     createAudioPlayer(source: unknown, options: unknown) {
       this.createdPlayers.push({ source, options });
-      const player = new FakeExpoAudioPlayer();
+      const player = new FakeExpoAudioPlayer({ seekFails: input.seekFails ?? false });
       this.players.push(player);
       return player;
     },
@@ -194,6 +204,8 @@ class FakeExpoAudioPlayer {
   pauseCalls = 0;
   playbackRates: number[] = [];
 
+  constructor(private readonly input: { seekFails: boolean } = { seekFails: false }) {}
+
   play(): void {
     this.playCalls += 1;
   }
@@ -204,6 +216,9 @@ class FakeExpoAudioPlayer {
 
   async seekTo(seconds: number): Promise<void> {
     this.seekCalls.push(seconds);
+    if (this.input.seekFails) {
+      throw new Error('seek failed');
+    }
   }
 
   setPlaybackRate(rate: number): void {
