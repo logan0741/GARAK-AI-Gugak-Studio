@@ -35,6 +35,19 @@ test('preloads manifest assets into decoded audio buffers', async () => {
   expect(runtime.context.decodeInputs).toEqual(manifest.assets.map((asset) => asset.fileUri));
 });
 
+test('rejects preload when a decoded buffer is missing', async () => {
+  const runtime = createRuntimePort({ missingDecodedBuffers: new Set(['asset://gayageum/02.wav']) });
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+
+  await expect(engine.preload()).rejects.toThrow(
+    'Decoded react-native-audio-api buffer missing for string 2',
+  );
+  expect(runtime.context.decodeInputs).toEqual([
+    'asset://gayageum/01.wav',
+    'asset://gayageum/02.wav',
+  ]);
+});
+
 test('creates independent source nodes for at least 8 simultaneous voices', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 8 });
@@ -212,8 +225,8 @@ test('cleans up a voice graph when the native source ends', async () => {
   expect(runtime.context.sources[2].stopCalls).toEqual([]);
 });
 
-function createRuntimePort() {
-  const context = new FakeAudioContext();
+function createRuntimePort(input: { missingDecodedBuffers?: Set<string> } = {}) {
+  const context = new FakeAudioContext(input);
   const runtime = {
     context,
     createAudioContext() {
@@ -233,8 +246,14 @@ class FakeAudioContext {
   gains: FakeGainNode[] = [];
   filters: FakeBiquadFilterNode[] = [];
 
-  async decodeAudioData(input: string): Promise<FakeAudioBuffer> {
+  constructor(private readonly input: { missingDecodedBuffers?: Set<string> } = {}) {}
+
+  async decodeAudioData(input: string): Promise<FakeAudioBuffer | null> {
     this.decodeInputs.push(input);
+    if (this.input.missingDecodedBuffers?.has(input)) {
+      return null;
+    }
+
     const buffer = new FakeAudioBuffer(input);
     this.buffers.push(buffer);
     return buffer;
