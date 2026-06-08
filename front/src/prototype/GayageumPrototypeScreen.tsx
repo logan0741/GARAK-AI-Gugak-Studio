@@ -52,6 +52,8 @@ import {
   stopPrototypeRecordingProbe,
 } from './prototypeRecordingProbeController';
 import {
+  canStartRecordingProbe,
+  canStopRecordingProbe,
   formatRecordingProbeState,
   getRecordingProbeFallbackReason,
   selectPlayableRecordingUri,
@@ -376,6 +378,12 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const canStartRecording = canStartRecordingProbe({
+    recordingProbeState,
+  });
+  const canStopRecording = canStopRecordingProbe({
+    recordingProbeState,
+  });
   const playableRecordingUri = selectPlayableRecordingUri({
     recordingProbeState,
   });
@@ -459,16 +467,25 @@ export function GayageumPrototypeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Start 10 second recording probe"
+          disabled={!canStartRecording}
           onPress={handleStartRecordingProbe}
-          style={styles.recordingButton}
+          style={[
+            styles.recordingButton,
+            !canStartRecording ? styles.recordingDisabledButton : undefined,
+          ]}
         >
           <Text style={styles.recordingButtonText}>Rec 10s</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Stop recording probe"
+          disabled={!canStopRecording}
           onPress={handleStopRecordingProbe}
-          style={[styles.recordingButton, styles.recordingStopButton]}
+          style={[
+            styles.recordingButton,
+            styles.recordingStopButton,
+            !canStopRecording ? styles.recordingDisabledButton : undefined,
+          ]}
         >
           <Text style={styles.recordingButtonText}>Stop Rec</Text>
         </Pressable>
