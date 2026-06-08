@@ -61,7 +61,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 8. Press `Play Rec` and confirm the captured performance plays back from the returned URI. `Play Rec` must stay unavailable while the current candidate has no captured or playing recording probe state, even if a previous session fallback contains an older recording URI.
 9. Confirm `observedPrototypeRecording.playbackConfirmed` becomes `true`.
 
-Treat a `null`, empty, or whitespace-only `recordingUri` as missing playback context. The Expo Audio stop result must normalize it to `null`; the inspector must keep `uriAvailable: false` and record `fallbackReason: "recording_playback_uri_missing"` instead of enabling captured playback.
+Treat a `null`, empty, or whitespace-only `recordingUri` as missing playback context. The Expo Audio stop result must normalize it to `null`; the inspector must keep `uriAvailable: false` and record `fallbackReason: "recording_playback_uri_missing"` instead of enabling captured playback. A new capture or recording fallback must also clear any previous `playbackConfirmed: true`; replay the current captured URI before copying playback evidence.
 
 ## Result Table
 
