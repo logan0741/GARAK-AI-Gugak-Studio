@@ -80,6 +80,15 @@ export function parseAudioEngineProbeRecord(input: unknown): AudioEngineProbeRec
     }
   });
 
+  const generatedAt = input.generatedAt;
+  if (
+    isNonEmptyString(generatedAt) &&
+    isUtcIsoTimestamp(generatedAt) &&
+    probes.some((probe) => Date.parse(probe.measuredAt) > Date.parse(generatedAt))
+  ) {
+    errors.push('generatedAt must be at or after every probe measuredAt timestamp');
+  }
+
   if (errors.length > 0) {
     return {
       ok: false,

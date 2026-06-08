@@ -39,7 +39,7 @@ test('reports ready handoffs without producing a Day 5 decision', () => {
       argv: ['ready-handoff.json'],
       readTextFile: () =>
         JSON.stringify({
-          generatedAt: '2026-06-08T06:00:00.000Z',
+          generatedAt: '2026-06-08T06:10:00.000Z',
           entries: [
             {
               inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
@@ -290,6 +290,43 @@ test('reports handoff timestamp issues before probe record generation', () => {
   expect(output).toContain(
     '- Timestamp issues: generatedAt must be a UTC ISO timestamp, expo-audio.measuredAt must be a UTC ISO timestamp, expo-audio.inspectorDraft.probeTemplate.measuredAt must be a UTC ISO timestamp',
   );
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
+test('reports handoff generatedAt timestamps that predate measured values', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['predated-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measuredAt: '2026-06-08T06:05:00.000Z',
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Timestamp issues: generatedAt must be at or after every handoff measuredAt timestamp',
+  );
+  expect(output).toContain('- Probe record issues: none');
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 

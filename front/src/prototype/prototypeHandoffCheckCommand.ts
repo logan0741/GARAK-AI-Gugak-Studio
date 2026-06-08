@@ -229,10 +229,13 @@ function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffIn
 
 function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
   const issues: string[] = [];
+  const generatedAtIsValid = isUtcIsoTimestamp(handoff.generatedAt);
 
-  if (!isUtcIsoTimestamp(handoff.generatedAt)) {
+  if (!generatedAtIsValid) {
     issues.push('generatedAt must be a UTC ISO timestamp');
   }
+
+  let generatedBeforeMeasurement = false;
 
   for (const entry of handoff.entries) {
     const candidate = entry.inspectorDraft.probeTemplate.candidate;
@@ -240,6 +243,11 @@ function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
 
     if (!isUtcIsoTimestamp(effectiveMeasuredAt)) {
       issues.push(`${candidate}.measuredAt must be a UTC ISO timestamp`);
+    } else if (
+      generatedAtIsValid &&
+      Date.parse(effectiveMeasuredAt) > Date.parse(handoff.generatedAt)
+    ) {
+      generatedBeforeMeasurement = true;
     }
 
     if (!isUtcIsoTimestamp(entry.inspectorDraft.probeTemplate.measuredAt)) {
@@ -247,6 +255,10 @@ function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
         `${candidate}.inspectorDraft.probeTemplate.measuredAt must be a UTC ISO timestamp`,
       );
     }
+  }
+
+  if (generatedBeforeMeasurement) {
+    issues.push('generatedAt must be at or after every handoff measuredAt timestamp');
   }
 
   return issues;
