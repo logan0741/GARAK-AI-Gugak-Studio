@@ -57,6 +57,7 @@ type ActiveVoice = {
   filter: ReactNativeAudioApiFilterPort;
   destination: ReactNativeAudioApiNodePort;
   stringIndex: number;
+  releaseScheduled: boolean;
 };
 
 const DEFAULT_MAX_VOICES = 8;
@@ -145,6 +146,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
       filter,
       destination: context.destination,
       stringIndex,
+      releaseScheduled: false,
     };
     source.onEnded = () => this.cleanupVoice(voice);
     this.activeVoices.push(voice);
@@ -171,6 +173,11 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
     const voicesToRelease = this.activeVoicesForString(stringIndex);
 
     for (const voice of voicesToRelease) {
+      if (voice.releaseScheduled) {
+        continue;
+      }
+
+      voice.releaseScheduled = true;
       voice.gain.gain.setTargetAtTime(0, currentTime, RELEASE_TIME_CONSTANT_SECONDS);
       voice.source.stop(stopAt);
       removeMatching(this.activeVoices, (candidate) => candidate === voice);

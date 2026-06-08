@@ -12,7 +12,7 @@ Use this document when validating whether `react-native-audio-api` can support t
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, voice budget behavior, and idempotent cleanup when a stolen voice later emits a native end callback. |
+| `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, voice budget behavior, duplicate release stop suppression, and idempotent cleanup when a stolen voice later emits a native end callback. |
 | `src/audio/reactNativeAudioApiRuntime.ts` | Only runtime bridge that imports `react-native-audio-api`. Keeps UI and domain code independent from the concrete package. |
 | `src/prototype/gayageumPrototypeController.ts` | Prototype event planner for tap, glissando, 8-voice polyphony burst, pitch-bend probe, and mute probe used by device QA. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that should report `recording_probe_not_supported` for engines without recording methods instead of treating playback validation as failed. |
