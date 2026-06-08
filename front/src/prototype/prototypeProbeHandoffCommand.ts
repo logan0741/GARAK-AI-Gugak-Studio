@@ -1,9 +1,6 @@
 import { parseAudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
+import { parsePrototypeHandoffFile } from './prototypeHandoffFile';
 import { buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts } from './prototypeProbeHandoff';
-
-type PrototypeProbeRecordHandoffInput = Parameters<
-  typeof buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts
->[0];
 
 export type PrototypeProbeHandoffCommandInput = {
   argv: string[];
@@ -43,11 +40,17 @@ export function runPrototypeProbeHandoffCommand(
     return 1;
   }
 
+  const parseHandoffResult = parsePrototypeHandoffFile(handoffInput);
+  if (!parseHandoffResult.ok) {
+    input.writeStderr(`Could not build prototype probe record: ${parseHandoffResult.error}`);
+    return 1;
+  }
+
   let record: ReturnType<typeof buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts>;
 
   try {
     record = buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts(
-      handoffInput as PrototypeProbeRecordHandoffInput,
+      parseHandoffResult.handoff,
     );
   } catch (error) {
     input.writeStderr(`Could not build prototype probe record: ${getErrorMessage(error)}`);

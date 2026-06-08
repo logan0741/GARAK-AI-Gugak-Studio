@@ -37,7 +37,7 @@ npm run qa:prototype-handoff-check -- <prototype-handoff.json>
 npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
 ```
 
-The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command also enforces runtime readiness and the expected sample manifest before writing the probe record JSON file, then validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command rejects malformed handoff JSON shape, then enforces runtime readiness and the expected sample manifest before writing the probe record JSON file, then validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
 
 If each candidate was tested in a separate run, merge the copied handoff files before building the probe record. The merged handoff must still represent one physical device label across all candidate entries:
 

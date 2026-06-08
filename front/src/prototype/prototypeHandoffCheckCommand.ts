@@ -3,6 +3,10 @@ import { type PhysicalDeviceAudioEngineProbeMeasurements } from '../audio/audioE
 import { parseAudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
 import { isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
 import {
+  parsePrototypeHandoffFile,
+  type PrototypeHandoffFile,
+} from './prototypeHandoffFile';
+import {
   buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts,
   isPrototypeObservedRuntimeReady,
   type PhysicalDevicePrototypeProbeHandoffInput,
@@ -23,11 +27,6 @@ type PrototypeHandoffReadinessReport = {
   missingMeasurementFields: string[];
   runtimeIssues: string[];
   probeRecordIssues: string[];
-};
-
-type PrototypeHandoffFile = {
-  generatedAt: string;
-  entries: PhysicalDevicePrototypeProbeHandoffInput[];
 };
 
 const REQUIRED_CANDIDATES: AudioEngineCandidateId[] = [
@@ -90,44 +89,6 @@ export function runPrototypeHandoffCheckCommand(
   const report = buildPrototypeHandoffReadinessReport(parseResult.handoff);
   input.writeStdout(formatPrototypeHandoffReadinessReport(report));
   return report.status === 'READY_FOR_PROBE_RECORD' ? 0 : 1;
-}
-
-function parsePrototypeHandoffFile(
-  input: unknown,
-): { ok: true; handoff: PrototypeHandoffFile } | { ok: false; error: string } {
-  if (!isObject(input)) {
-    return { ok: false, error: 'handoff must be an object' };
-  }
-
-  if (!Array.isArray(input.entries)) {
-    return { ok: false, error: 'handoff entries must be an array' };
-  }
-
-  for (const [index, entry] of input.entries.entries()) {
-    if (!isObject(entry)) {
-      return { ok: false, error: `entries[${index}] must be an object` };
-    }
-
-    const candidate = getEntryCandidate(entry);
-    if (!isAudioEngineCandidate(candidate)) {
-      return {
-        ok: false,
-        error: `entries[${index}].inspectorDraft.probeTemplate.candidate must be expo-audio or react-native-audio-api`,
-      };
-    }
-
-    if (!isObject(entry.measurements)) {
-      return { ok: false, error: `entries[${index}].measurements must be an object` };
-    }
-  }
-
-  return {
-    ok: true,
-    handoff: {
-      generatedAt: typeof input.generatedAt === 'string' ? input.generatedAt : '',
-      entries: input.entries as PhysicalDevicePrototypeProbeHandoffInput[],
-    },
-  };
 }
 
 function buildPrototypeHandoffReadinessReport(
@@ -364,28 +325,6 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
 
 function formatList(values: string[]): string {
   return values.length === 0 ? 'none' : values.join(', ');
-}
-
-function getEntryCandidate(entry: Record<string, unknown>): unknown {
-  const inspectorDraft = entry.inspectorDraft;
-  if (!isObject(inspectorDraft)) {
-    return undefined;
-  }
-
-  const probeTemplate = inspectorDraft.probeTemplate;
-  if (!isObject(probeTemplate)) {
-    return undefined;
-  }
-
-  return probeTemplate.candidate;
-}
-
-function isAudioEngineCandidate(input: unknown): input is AudioEngineCandidateId {
-  return input === 'expo-audio' || input === 'react-native-audio-api';
-}
-
-function isObject(input: unknown): input is Record<string, unknown> {
-  return typeof input === 'object' && input !== null && !Array.isArray(input);
 }
 
 function isUtcIsoTimestamp(input: unknown): input is string {
