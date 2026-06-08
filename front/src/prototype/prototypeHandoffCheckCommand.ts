@@ -33,6 +33,7 @@ const REQUIRED_CANDIDATES: AudioEngineCandidateId[] = [
   'expo-audio',
   'react-native-audio-api',
 ];
+const UTC_ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 const MEASUREMENT_FIELDS = [
   'touchToSoundLatencyMs',
@@ -328,11 +329,17 @@ function formatList(values: string[]): string {
 }
 
 function isUtcIsoTimestamp(input: unknown): input is string {
-  return (
-    typeof input === 'string' &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(input) &&
-    Number.isFinite(Date.parse(input))
-  );
+  if (typeof input !== 'string' || !UTC_ISO_TIMESTAMP_PATTERN.test(input)) {
+    return false;
+  }
+
+  const parsed = new Date(input);
+  if (!Number.isFinite(parsed.getTime())) {
+    return false;
+  }
+
+  const canonicalInput = input.includes('.') ? input : input.replace('Z', '.000Z');
+  return parsed.toISOString() === canonicalInput;
 }
 
 function getErrorMessage(error: unknown): string {

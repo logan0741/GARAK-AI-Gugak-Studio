@@ -136,7 +136,7 @@ Before generating the probe record, run the readiness check:
 npm run qa:prototype-handoff-check -- <merged-handoff.json>
 ```
 
-The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps, unexpected sample manifest versions, nullable manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`.
+The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps including impossible calendar dates, unexpected sample manifest versions, nullable manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`.
 
 The `qa:prototype-probe-record` command first validates the handoff JSON shape, then enforces runtime readiness and the expected sample manifest, then produces and parser-validates the probe record JSON. It does not replace the final `qa:day5-audio` decision check.
 
