@@ -98,4 +98,6 @@ Allowed `result` values:
 | `glissando` | Glissando |
 | `hold-drag` | Hold drag |
 | `ji-eum` | Ji-eum |
+| `bend-button` | Bend button |
+| `mute-button` | Mute button |
 | `fallback` | Fallback |

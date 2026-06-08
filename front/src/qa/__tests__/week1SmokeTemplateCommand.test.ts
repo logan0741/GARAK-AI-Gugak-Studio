@@ -70,11 +70,20 @@ test('writes a blocked Week 1 smoke report template for every required smoke are
     'captured-playback',
     'inspector-recording-observation',
   ]);
+  expect(report.runs[2].checks.map((check: { id: string }) => check.id)).toEqual([
+    'tap',
+    'glissando',
+    'hold-drag',
+    'ji-eum',
+    'bend-button',
+    'mute-button',
+    'fallback',
+  ]);
   expect(
     report.runs.flatMap((run: { checks: Array<{ result: string }> }) =>
       run.checks.map((check) => check.result),
     ),
-  ).toEqual(new Array(22).fill('blocked'));
+  ).toEqual(new Array(24).fill('blocked'));
 });
 
 test('generated templates are parseable by the smoke report command before results are filled', () => {
