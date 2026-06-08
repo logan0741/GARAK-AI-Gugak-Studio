@@ -213,6 +213,22 @@ export function recordPrototypeRecordingCapture(
   };
 }
 
+export function recordPrototypeRecordingStart(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    measuredAt: string;
+  },
+): PrototypeQaSnapshot {
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingCaptureSeconds: null,
+    recordingFallbackReason: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  };
+}
+
 export function recordPrototypeRecordingFallback(
   snapshot: PrototypeQaSnapshot,
   input: {

@@ -41,6 +41,7 @@ import {
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
+  recordPrototypeRecordingStart,
   updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
@@ -269,6 +270,13 @@ export function GayageumPrototypeScreen() {
   async function handleStartRecordingProbe() {
     const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
     setRecordingProbeState(result);
+    if (result.status === 'recording') {
+      setQaSnapshot((current) =>
+        recordPrototypeRecordingStart(current, {
+          measuredAt: new Date().toISOString(),
+        }),
+      );
+    }
     recordRecordingProbeFallback(result);
   }
 

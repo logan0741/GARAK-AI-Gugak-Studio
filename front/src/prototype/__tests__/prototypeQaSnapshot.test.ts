@@ -8,6 +8,7 @@ import {
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
+  recordPrototypeRecordingStart,
   updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from '../prototypeQaSnapshot';
@@ -373,6 +374,45 @@ test('clears stale recording playback confirmation when a later capture has no p
     observedPrototypeRecording: {
       capturedSeconds: 10,
       fallbackReason: 'recording_playback_uri_missing',
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
+  });
+});
+
+test('clears stale recording observations when a new recording probe starts', () => {
+  const firstCapture = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:32:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:32:12.000Z',
+      recordingUri: 'file://first.m4a',
+    },
+  );
+  const firstPlayback = recordPrototypeRecordingPlayback(firstCapture, {
+    measuredAt: '2026-06-08T04:32:15.000Z',
+    playbackConfirmed: true,
+  });
+
+  const recordingStarted = recordPrototypeRecordingStart(firstPlayback, {
+    measuredAt: '2026-06-08T04:32:30.000Z',
+  });
+
+  expect(recordingStarted).toMatchObject({
+    measuredAt: '2026-06-08T04:32:30.000Z',
+    recordingCaptureSeconds: null,
+    recordingFallbackReason: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(recordingStarted))).toMatchObject({
+    observedPrototypeRecording: {
+      capturedSeconds: null,
+      fallbackReason: null,
       playbackConfirmed: false,
       uriAvailable: false,
     },
