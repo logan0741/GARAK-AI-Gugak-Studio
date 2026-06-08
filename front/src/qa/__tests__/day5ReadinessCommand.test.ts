@@ -260,6 +260,39 @@ test('blocks readiness when probe device labels differ from the smoke report dev
   );
 });
 
+test('blocks readiness when physical-device probes predate the Week 1 smoke runs', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(createSmokeReport());
+        }
+
+        return JSON.stringify(
+          createProbeRecord({
+            measuredAtsByCandidate: {
+              'expo-audio': '2026-06-08T07:02:00.000Z',
+            },
+          }),
+        );
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_DAY5_DECISION');
+  expect(output).toContain(
+    '- Device alignment issues: physical-device probe measurements must be at or after latest smoke run testedAt 2026-06-08T07:03:00.000Z: expo-audio',
+  );
+});
+
 test('reports mixed physical-device labels inside the probe record', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -420,6 +453,7 @@ function createProbeRecord(input: {
   candidates?: ProbeCandidate[];
   deviceLabel?: string;
   deviceLabelsByCandidate?: Partial<Record<ProbeCandidate, string>>;
+  measuredAtsByCandidate?: Partial<Record<ProbeCandidate, string>>;
 } = {}) {
   const candidates = input.candidates ?? ['expo-audio', 'react-native-audio-api'];
   return {
@@ -431,7 +465,9 @@ function createProbeRecord(input: {
         input.deviceLabelsByCandidate?.[candidate] ??
         input.deviceLabel ??
         'Pixel 8 / Android 15',
-      measuredAt: `2026-06-08T08:0${index + 1}:00.000Z`,
+      measuredAt:
+        input.measuredAtsByCandidate?.[candidate] ??
+        `2026-06-08T08:0${index + 1}:00.000Z`,
       touchToSoundLatencyMs: 38,
       maxStableVoices: 9,
       pitchBendSmooth: true,

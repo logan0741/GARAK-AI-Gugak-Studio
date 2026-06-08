@@ -234,6 +234,20 @@ function collectDeviceAlignmentIssues(input: {
     );
   }
 
+  const latestSmokeRunTimeMs = Math.max(
+    ...input.smokeReport.runs.map((run) => Date.parse(run.testedAt)),
+  );
+  const probesPredatingSmokeRuns = input.probeRecord.probes
+    .filter((probe) => probe.evidenceSource === 'physical-device')
+    .filter((probe) => Date.parse(probe.measuredAt) < latestSmokeRunTimeMs)
+    .map((probe) => probe.candidate);
+
+  if (probesPredatingSmokeRuns.length > 0) {
+    issues.push(
+      `physical-device probe measurements must be at or after latest smoke run testedAt ${new Date(latestSmokeRunTimeMs).toISOString()}: ${formatList(probesPredatingSmokeRuns)}`,
+    );
+  }
+
   for (const candidate of REQUIRED_CANDIDATES) {
     const candidateLabels = unique(
       input.probeRecord.probes
