@@ -187,6 +187,41 @@ test('blocks readiness when probe device labels differ from the smoke report dev
   );
 });
 
+test('treats surrounding whitespace in device labels as the same physical device', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(
+            createSmokeReport({
+              deviceLabels: {
+                'day-2-expo-audio': ' Pixel 8 / Android 15 ',
+              },
+            }),
+          );
+        }
+
+        return JSON.stringify(
+          createProbeRecord({
+            deviceLabel: 'Pixel 8 / Android 15',
+          }),
+        );
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: READY_FOR_DAY5_DECISION');
+  expect(output).toContain('- Device alignment issues: none');
+});
+
 test('returns parse errors for malformed inputs without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
