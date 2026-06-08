@@ -9,6 +9,7 @@ export type PrototypeQaSnapshot = {
   deviceLabel: string;
   measuredAt: string;
   eventCount: number;
+  eventDispatchLatency: PrototypeEventDispatchLatency;
   maxStableVoices: number;
   glissandoTriggeredStrings: number[];
   pitchBendObserved: boolean;
@@ -17,12 +18,20 @@ export type PrototypeQaSnapshot = {
   sessionFallbackPreserved: boolean;
 };
 
+export type PrototypeEventDispatchLatency = {
+  sampleCount: number;
+  latestMs: number | null;
+  maxMs: number | null;
+  averageMs: number | null;
+};
+
 export type PrototypeProbeDraftInspectorModel = {
   note: string;
   measuredCandidateEvidence: false;
   runtimeUnderTest: 'fake-sampler-engine';
   observedFakeCounters: {
     audioDispatchFailures: number;
+    eventDispatchLatency: PrototypeEventDispatchLatency;
     eventCount: number;
     glissandoTriggeredStrings: number;
     maxActiveVoices: number;
@@ -48,6 +57,12 @@ export type PrototypeProbeDraftInspectorModel = {
 
 const PROTOTYPE_DRAFT_NOTE =
   'Estimate draft from fake prototype engine counters. Replace with physical-device candidate measurements before Day 5 handoff.';
+const EMPTY_EVENT_DISPATCH_LATENCY: PrototypeEventDispatchLatency = {
+  sampleCount: 0,
+  latestMs: null,
+  maxMs: null,
+  averageMs: null,
+};
 
 export function createInitialPrototypeQaSnapshot(input: {
   candidate: AudioEngineCandidateId;
@@ -59,6 +74,7 @@ export function createInitialPrototypeQaSnapshot(input: {
     deviceLabel: input.deviceLabel,
     measuredAt: input.measuredAt,
     eventCount: 0,
+    eventDispatchLatency: EMPTY_EVENT_DISPATCH_LATENCY,
     maxStableVoices: 0,
     glissandoTriggeredStrings: [],
     pitchBendObserved: false,
@@ -74,6 +90,7 @@ export function updatePrototypeQaSnapshot(
     events: PerformanceEvent[];
     activeVoiceCount: number;
     audioDispatchOk: boolean;
+    dispatchedAtMs?: number;
     measuredAt: string;
   },
 ): PrototypeQaSnapshot {
@@ -81,6 +98,7 @@ export function updatePrototypeQaSnapshot(
     ...snapshot,
     measuredAt: input.measuredAt,
     eventCount: snapshot.eventCount + input.events.length,
+    eventDispatchLatency: updateEventDispatchLatency(snapshot.eventDispatchLatency, input),
     maxStableVoices: Math.max(snapshot.maxStableVoices, input.activeVoiceCount),
     glissandoTriggeredStrings: collectGlissandoStringIndexes(
       snapshot.glissandoTriggeredStrings,
@@ -124,6 +142,7 @@ function createPrototypeProbeDraftInspectorModel(
     runtimeUnderTest: 'fake-sampler-engine',
     observedFakeCounters: {
       audioDispatchFailures: snapshot.audioDispatchFailures,
+      eventDispatchLatency: snapshot.eventDispatchLatency,
       eventCount: snapshot.eventCount,
       glissandoTriggeredStrings: snapshot.glissandoTriggeredStrings.length,
       maxActiveVoices: snapshot.maxStableVoices,
@@ -146,6 +165,39 @@ function createPrototypeProbeDraftInspectorModel(
       recordingCaptureSeconds: null,
     },
   };
+}
+
+function updateEventDispatchLatency(
+  current: PrototypeEventDispatchLatency,
+  input: {
+    events: PerformanceEvent[];
+    dispatchedAtMs?: number;
+  },
+): PrototypeEventDispatchLatency {
+  if (input.dispatchedAtMs === undefined || input.events.length === 0) {
+    return current;
+  }
+
+  const firstEventTsMs = Math.min(...input.events.map((event) => event.tsMs));
+  if (!Number.isFinite(firstEventTsMs)) {
+    return current;
+  }
+
+  const latestMs = roundLatencyMs(Math.max(0, input.dispatchedAtMs - firstEventTsMs));
+  const sampleCount = current.sampleCount + 1;
+  const previousTotalMs = (current.averageMs ?? 0) * current.sampleCount;
+  const averageMs = roundLatencyMs((previousTotalMs + latestMs) / sampleCount);
+
+  return {
+    sampleCount,
+    latestMs,
+    maxMs: current.maxMs === null ? latestMs : Math.max(current.maxMs, latestMs),
+    averageMs,
+  };
+}
+
+function roundLatencyMs(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function collectGlissandoStringIndexes(

@@ -182,12 +182,14 @@ export function GayageumPrototypeScreen() {
     }
     setSession((current) => appendEventsToSession(current, events));
     const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
+    const dispatchedAtMs = Date.now();
     const currentEngine = engineRef.current;
     setAudioError(result.ok ? undefined : result.errorMessage);
     setQaSnapshot((current) =>
       updatePrototypeQaSnapshot(current, {
         activeVoiceCount: countPrototypeAudibleVoices(getFakeEngineSnapshot(currentEngine).activeVoices),
         audioDispatchOk: result.ok,
+        dispatchedAtMs,
         events,
         measuredAt: new Date().toISOString(),
       }),

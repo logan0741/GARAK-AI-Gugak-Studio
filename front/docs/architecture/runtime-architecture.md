@@ -86,9 +86,9 @@ MVP implementation should record debug-only metrics without making them part of 
 | --- | --- |
 | touch timestamp | Estimate touch-to-event latency. |
 | audio scheduled timestamp | Estimate scheduling delay. |
+| event batch dispatch latency | Debug-only delay from first `PerformanceEvent.tsMs` in a handled batch to `SamplerEngine` dispatch completion; not proof of touch-to-sound latency. |
 | active voice count | Confirm polyphony and voice stealing behavior. |
 | dropped/missing sample count | Detect manifest or asset packaging errors. |
 | jangdan recommendation score | Explain recommendation confidence. |
 
 These metrics are debug/QA data. They are not part of the core Session unless explicitly serialized under a debug namespace.
-
