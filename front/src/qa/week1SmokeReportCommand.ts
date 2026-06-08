@@ -37,6 +37,7 @@ export type Week1SmokeReportSummary = {
   deviceLabelIssues: string[];
   blockedChecks: string[];
   failedChecks: string[];
+  failedCheckNoteIssues: string[];
 };
 
 export type Week1SmokeReportCommandInput = {
@@ -207,13 +208,15 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
   const deviceLabelIssues = collectDeviceLabelIssues(report.runs);
   const blockedChecks = collectChecksByResult(report.runs, 'blocked');
   const failedChecks = collectChecksByResult(report.runs, 'fail');
+  const failedCheckNoteIssues = collectFailedCheckNoteIssues(report.runs);
   const status =
     missingAreas.length === 0 &&
     duplicateAreas.length === 0 &&
     missingChecks.length === 0 &&
     duplicateChecks.length === 0 &&
     deviceLabelIssues.length === 0 &&
-    blockedChecks.length === 0
+    blockedChecks.length === 0 &&
+    failedCheckNoteIssues.length === 0
       ? 'COMPLETE_FOR_DAY5_REVIEW'
       : 'NOT_COMPLETE_FOR_DAY5_REVIEW';
 
@@ -226,6 +229,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
     deviceLabelIssues,
     blockedChecks,
     failedChecks,
+    failedCheckNoteIssues,
   };
 }
 
@@ -310,6 +314,20 @@ function collectChecksByResult(
   return [...checks];
 }
 
+function collectFailedCheckNoteIssues(runs: Week1SmokeRun[]): string[] {
+  const checks = new Set<string>();
+
+  for (const run of runs) {
+    for (const check of run.checks) {
+      if (check.result === 'fail' && (!check.notes || check.notes.trim().length === 0)) {
+        checks.add(`${run.area}.${check.id}`);
+      }
+    }
+  }
+
+  return orderCheckReferences([...checks]);
+}
+
 function orderCheckReferences(checks: string[]): string[] {
   const order = new Map<string, number>();
   let index = 0;
@@ -336,6 +354,7 @@ function formatWeek1SmokeReportSummary(summary: Week1SmokeReportSummary): string
     `- Device label issues: ${formatList(summary.deviceLabelIssues)}`,
     `- Blocked checks: ${formatList(summary.blockedChecks)}`,
     `- Failed checks: ${formatList(summary.failedChecks)}`,
+    `- Failed check note issues: ${formatList(summary.failedCheckNoteIssues)}`,
   ].join('\n');
 }
 

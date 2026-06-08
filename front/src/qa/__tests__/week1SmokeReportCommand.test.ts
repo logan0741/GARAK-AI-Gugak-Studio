@@ -137,6 +137,40 @@ test('reports duplicate checks as not complete', () => {
   expect(output).toContain('- Duplicate checks: day-4-touch-model.tap');
 });
 
+test('requires notes for failed smoke checks before Day 5 review', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport({
+    overrides: {
+      'day-3-react-native-audio-api': {
+        'pitch-bend': 'fail',
+      },
+    },
+  });
+  const rnRun = report.runs.find((run) => run.area === 'day-3-react-native-audio-api');
+  const pitchBendCheck = rnRun?.checks.find((check) => check.id === 'pitch-bend');
+  if (!pitchBendCheck) {
+    throw new Error('test fixture must include day-3 pitch-bend check');
+  }
+  pitchBendCheck.notes = '   ';
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['failed-without-notes-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_COMPLETE_FOR_DAY5_REVIEW');
+  expect(output).toContain(
+    '- Failed check note issues: day-3-react-native-audio-api.pitch-bend',
+  );
+});
+
 test('returns parse errors for invalid smoke report check results', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -340,11 +374,14 @@ function createSmokeReport(input: {
       deviceLabel: 'Pixel 8 / Android 15',
       checks: requiredChecksByArea[area]
         .filter((id) => !(input.omitChecks?.[area] ?? []).includes(id))
-        .map((id) => ({
-          id,
-          result: input.overrides?.[area]?.[id] ?? 'pass',
-          notes: '',
-        })),
+        .map((id) => {
+          const result = input.overrides?.[area]?.[id] ?? 'pass';
+          return {
+            id,
+            result,
+            notes: result === 'fail' ? 'Observed failure during physical-device smoke run.' : '',
+          };
+        }),
     })),
   };
 }

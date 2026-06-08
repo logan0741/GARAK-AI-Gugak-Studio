@@ -89,6 +89,46 @@ test('keeps failed smoke checks visible without blocking readiness', () => {
   );
 });
 
+test('blocks readiness when failed smoke checks do not include review notes', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const smokeReport = createSmokeReport({
+    overrides: {
+      'day-3-react-native-audio-api': {
+        'pitch-bend': 'fail',
+      },
+    },
+  });
+  const rnRun = smokeReport.runs.find((run) => run.area === 'day-3-react-native-audio-api');
+  const pitchBendCheck = rnRun?.checks.find((check) => check.id === 'pitch-bend');
+  if (!pitchBendCheck) {
+    throw new Error('test fixture must include day-3 pitch-bend check');
+  }
+  pitchBendCheck.notes = '';
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(smokeReport);
+        }
+
+        return JSON.stringify(createProbeRecord());
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_DAY5_DECISION');
+  expect(output).toContain(
+    '- Smoke report issues: smoke report is not complete for Day 5 review, failed checks require notes: day-3-react-native-audio-api.pitch-bend',
+  );
+});
+
 test('blocks Day 5 readiness when Week 1 smoke report still has blocked checks', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -327,11 +367,14 @@ function createSmokeReport(input: {
       testedAt: `2026-06-08T07:0${index + 1}:00.000Z`,
       tester: 'CJH',
       deviceLabel: input.deviceLabels?.[area] ?? 'Pixel 8 / Android 15',
-      checks: REQUIRED_CHECKS_BY_AREA[area].map((id) => ({
-        id,
-        result: input.overrides?.[area]?.[id] ?? 'pass',
-        notes: '',
-      })),
+      checks: REQUIRED_CHECKS_BY_AREA[area].map((id) => {
+        const result = input.overrides?.[area]?.[id] ?? 'pass';
+        return {
+          id,
+          result,
+          notes: result === 'fail' ? 'Observed failure during physical-device smoke run.' : '',
+        };
+      }),
     })),
   };
 }

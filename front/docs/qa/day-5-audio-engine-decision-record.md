@@ -102,7 +102,7 @@ npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-l
 npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 ```
 
-The template command starts every required check as `blocked`; fill each result from physical-device QA before validation. The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded on one physical device label. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, mixed device labels, or blocked checks must be resolved before relying on the Day 5 record.
+The template command starts every required check as `blocked`; fill each result from physical-device QA before validation. The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded on one physical device label. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, mixed device labels, blocked checks, or failed checks without notes must be resolved before relying on the Day 5 record.
 
 After a physical-device probe record exists, run the readiness gate before the final decision command:
 

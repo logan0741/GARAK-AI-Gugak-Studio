@@ -11,7 +11,7 @@ npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-l
 npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 ```
 
-The template command writes all required Day 2/3/4 check IDs with `blocked` results so the tester can fill them after device QA. It requires a non-empty tester name and a real physical device label before writing. The report command checks whether every required smoke area and check has a completed `pass` or `fail` result, with no duplicate areas or duplicate checks, and whether all runs use one physical device label. It reports failures for review, but it does not select the final engine and does not replace the Day 5 probe record. See `week-1-smoke-report.md` for the JSON shape and required check IDs.
+The template command writes all required Day 2/3/4 check IDs with `blocked` results so the tester can fill them after device QA. It requires a non-empty tester name and a real physical device label before writing. The report command checks completed `pass` or `fail` results, notes for failed checks, duplicate areas or checks, and one physical device label across all runs. It reports failures for review, but it does not select the final engine and does not replace the Day 5 probe record. See `week-1-smoke-report.md` for the JSON shape and required check IDs.
 
 Day 5 audio-engine values must be moved into a candidate probe record that follows `day-5-audio-engine-probes.example.json`. Final-selection probes must use `evidenceSource: 'physical-device'`, and all physical-device probes in the final decision record must come from one physical device label. The record must be validated with:
 
