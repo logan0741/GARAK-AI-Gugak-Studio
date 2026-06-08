@@ -24,7 +24,7 @@ npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 
 The command exits 0 only when all required Day 2/3/4 areas are present once, every required check appears once, every required check has a `pass` or `fail` result, all runs use the same physical device label, and no check is `blocked`. Failed checks are reported for review but still count as executed evidence; Day 5 decides whether the failures block the final engine choice.
 
-`deviceLabel` must name the tested physical device and OS, for example `Pixel 8 / Android 15`. Placeholder labels such as `Device / OS`, `physical device`, or `replace-with-physical-device-model` are rejected by both template generation and report validation. A filled report must use one `deviceLabel` across Day 2, Day 3, and Day 4 runs so the later Day 5 probe record can be aligned to the same physical device.
+`deviceLabel` must name the tested physical device and OS, for example `Pixel 8 / Android 15`. Placeholder labels such as `Device / OS`, `Device/OS`, `physical device`, `replace-with-physical-device-model`, or `replace with physical device model` are rejected by both template generation and report validation. A filled report must use one `deviceLabel` across Day 2, Day 3, and Day 4 runs so the later Day 5 probe record can be aligned to the same physical device.
 
 After creating the Day 5 probe record, run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` to confirm this report and the candidate probes were recorded on the same physical device before selecting an engine.
 
