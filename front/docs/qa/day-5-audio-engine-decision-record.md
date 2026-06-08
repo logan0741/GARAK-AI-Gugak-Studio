@@ -44,7 +44,7 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects edited guard fields, fake fallback, preloading, mismatched sample-manifest, or missing runtime observation before physical-device probe or record creation. |
 | `src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts` | Verifies separately copied prototype handoff files can be merged and duplicate candidates are rejected. |
 | `src/prototype/__tests__/prototypeHandoffCheckCommand.test.ts` | Verifies filled prototype handoff files are reported as ready only when both required candidates, physical device labels, UTC ISO timestamps, valid manual measurements, and ready native runtime observations are present. |
-| `src/prototype/__tests__/prototypeProbeHandoffCommand.test.ts` | Verifies the prototype handoff CLI command emits usage, readable errors, and parseable Day 5 probe record JSON. |
+| `src/prototype/__tests__/prototypeProbeHandoffCommand.test.ts` | Verifies the prototype handoff CLI command requires an output path, emits readable errors, and writes parseable Day 5 probe record JSON. |
 | `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
 | `src/audio/__tests__/audioEngineDecisionSummary.test.ts` | Verifies selected and incomplete decision summaries do not imply the wrong engine state. |

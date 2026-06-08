@@ -19,7 +19,7 @@ export function runPrototypeProbeHandoffCommand(
 ): number {
   const [prototypeHandoffPath, probeRecordOutputPath] = input.argv;
 
-  if (!prototypeHandoffPath) {
+  if (!prototypeHandoffPath || !probeRecordOutputPath) {
     input.writeStderr(
       'Usage: npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>',
     );
@@ -78,24 +78,19 @@ export function runPrototypeProbeHandoffCommand(
   }
 
   const recordText = JSON.stringify(parseResult.record, null, 2);
-  if (probeRecordOutputPath) {
-    if (!input.writeTextFile) {
-      input.writeStderr('Could not write probe record: output file writer is unavailable');
-      return 1;
-    }
-
-    try {
-      input.writeTextFile(probeRecordOutputPath, recordText);
-    } catch {
-      input.writeStderr(`Could not write probe record: ${probeRecordOutputPath}`);
-      return 1;
-    }
-
-    input.writeStdout(`Wrote Day 5 probe record: ${probeRecordOutputPath}`);
-    return 0;
+  if (!input.writeTextFile) {
+    input.writeStderr('Could not write probe record: output file writer is unavailable');
+    return 1;
   }
 
-  input.writeStdout(recordText);
+  try {
+    input.writeTextFile(probeRecordOutputPath, recordText);
+  } catch {
+    input.writeStderr(`Could not write probe record: ${probeRecordOutputPath}`);
+    return 1;
+  }
+
+  input.writeStdout(`Wrote Day 5 probe record: ${probeRecordOutputPath}`);
   return 0;
 }
 
