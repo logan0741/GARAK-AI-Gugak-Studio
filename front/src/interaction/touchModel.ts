@@ -98,6 +98,10 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return muteEvents;
     }
 
+    if (pointer.mode === 'mute') {
+      return [];
+    }
+
     if (stringIndex !== pointer.lastStringIndex) {
       const crossed = crossedStringIndexes(pointer.lastStringIndex, stringIndex);
       pointer.mode = 'swipe';
@@ -105,7 +109,7 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return mapSwipeAcrossStrings({ tsMs: frame.tsMs, stringIndexes: crossed });
     }
 
-    if (pointer.mode === 'swipe' || pointer.mode === 'mute') {
+    if (pointer.mode === 'swipe') {
       return [];
     }
 

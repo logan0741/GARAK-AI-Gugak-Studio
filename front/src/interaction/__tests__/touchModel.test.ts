@@ -77,6 +77,14 @@ test('maps a broad contact area to ji-eum mute', () => {
   ]);
 });
 
+test('does not turn a ji-eum mute pointer into glissando before release', () => {
+  const model = createTouchModel({ layout, muteAreaThreshold: 0.65 });
+  model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 });
+  model.handleFrame({ phase: 'move', pointerId: 'p1', tsMs: 150, x: 42, y: 55, contactArea: 0.8 });
+
+  expect(model.handleFrame({ phase: 'move', pointerId: 'p1', tsMs: 180, x: 42, y: 85 })).toEqual([]);
+});
+
 test('emits release on touch end and ignores later frames for that pointer', () => {
   const model = createTouchModel({ layout });
   model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 });
