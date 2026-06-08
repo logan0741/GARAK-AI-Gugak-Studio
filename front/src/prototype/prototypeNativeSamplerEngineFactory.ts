@@ -56,6 +56,27 @@ function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): v
       `Prototype native sampler requires all 12 sample strings before preload; missing strings: ${missingStringIndexes.join(', ')}`,
     );
   }
+
+  const duplicateStringIndexes = getDuplicateSampleStringIndexes(manifest);
+  if (duplicateStringIndexes.length > 0) {
+    throw new Error(
+      `Prototype native sampler requires exactly one sample for each string; duplicate strings: ${duplicateStringIndexes.join(', ')}`,
+    );
+  }
+}
+
+function getDuplicateSampleStringIndexes(manifest: SampleAssetManifest): number[] {
+  const seenStringIndexes = new Set<number>();
+  const duplicateStringIndexes = new Set<number>();
+
+  for (const asset of manifest.assets) {
+    if (seenStringIndexes.has(asset.stringIndex)) {
+      duplicateStringIndexes.add(asset.stringIndex);
+    }
+    seenStringIndexes.add(asset.stringIndex);
+  }
+
+  return Array.from(duplicateStringIndexes).sort((left, right) => left - right);
 }
 
 export async function resolveSampleAssetManifestUris(input: {
