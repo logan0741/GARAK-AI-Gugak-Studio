@@ -368,6 +368,51 @@ test('reports unexpected sample manifest versions before probe record generation
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
+test('reports contaminated inspector drafts before probe record generation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const contaminatedDraft = createInspectorDraftForCandidate('expo-audio');
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['contaminated-inspector-draft-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: {
+                ...contaminatedDraft,
+                measuredCandidateEvidence: true,
+                runtimeUnderTest: 'candidate-sampler-engine',
+                probeTemplate: {
+                  ...contaminatedDraft.probeTemplate,
+                  evidenceSource: 'physical-device',
+                },
+              },
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Inspector draft issues: expo-audio.inspectorDraft.measuredCandidateEvidence must be false, expo-audio.inspectorDraft.runtimeUnderTest must be fake-sampler-engine, expo-audio.inspectorDraft.probeTemplate.evidenceSource must be estimate',
+  );
+  expect(output).toContain('- Probe record issues: none');
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
 test('reports invalid measurement fields before probe record generation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
