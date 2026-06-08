@@ -61,7 +61,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 8. Press `Play Rec` and confirm the captured performance plays back from the returned URI.
 9. Confirm `observedPrototypeRecording.playbackConfirmed` becomes `true`.
 
-Treat a `null`, empty, or whitespace-only `recordingUri` as missing playback context. The inspector must keep `uriAvailable: false` and record `fallbackReason: "recording_playback_uri_missing"` instead of enabling captured playback.
+Treat a `null`, empty, or whitespace-only `recordingUri` as missing playback context. The Expo Audio stop result must normalize it to `null`; the inspector must keep `uriAvailable: false` and record `fallbackReason: "recording_playback_uri_missing"` instead of enabling captured playback.
 
 ## Result Table
 

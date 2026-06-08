@@ -190,7 +190,7 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
     return {
       ok: true,
       capturedSeconds: status.durationMillis / 1000,
-      recordingUri: status.url,
+      recordingUri: normalizeRecordingUri(status.url),
     };
   }
 
@@ -259,6 +259,14 @@ function clamp01(value: number): number {
 
 function clampPlaybackRate(value: number): number {
   return Math.max(0.1, Math.min(2, value));
+}
+
+function normalizeRecordingUri(recordingUri: string | null): string | null {
+  if (recordingUri === null || recordingUri.trim().length === 0) {
+    return null;
+  }
+
+  return recordingUri;
 }
 
 function assertNever(value: never): never {

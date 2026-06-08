@@ -133,6 +133,19 @@ test('stops a recording probe and reports captured duration and uri', async () =
   expect(runtime.modeCalls.at(-1)).toMatchObject({ allowsRecording: false });
 });
 
+test('normalizes whitespace recording uri to null when stopping a probe', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.startRecordingProbe(10);
+  runtime.recorders[0].uri = '   ';
+
+  await expect(engine.stopRecordingProbe()).resolves.toEqual({
+    ok: true,
+    capturedSeconds: 10,
+    recordingUri: null,
+  });
+});
+
 test('plays back a captured recording probe from its uri', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
