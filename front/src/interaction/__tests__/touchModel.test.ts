@@ -39,6 +39,23 @@ test('does not retain a pointer when touch start rejects a non-finite velocity',
   expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 120, x: 40, y: 25 })).toEqual([]);
 });
 
+test('does not retain a pointer when touch start rejects a non-finite x coordinate', () => {
+  const model = createTouchModel({ layout });
+
+  expect(() =>
+    model.handleFrame({
+      phase: 'start',
+      pointerId: 'p1',
+      tsMs: 100,
+      x: Number.NaN,
+      y: 25,
+      force: 0.72,
+    }),
+  ).toThrow('touch x must be finite');
+
+  expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 120, x: 40, y: 25 })).toEqual([]);
+});
+
 test('emits glissando steps for every newly crossed string during a swipe', () => {
   const model = createTouchModel({ layout });
   model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 15 });

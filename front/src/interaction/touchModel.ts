@@ -51,6 +51,7 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 
   return {
     handleFrame(frame) {
+      assertFiniteTouchCoordinate(frame.x, 'x');
       switch (frame.phase) {
         case 'start':
           return handleStart(frame);
@@ -152,13 +153,17 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 }
 
 function stringIndexForY(layout: TouchStringLayout, y: number): number {
-  if (!Number.isFinite(y)) {
-    throw new Error('touch y must be finite');
-  }
+  assertFiniteTouchCoordinate(y, 'y');
 
   const rowHeight = layout.height / layout.stringCount;
   const rawIndex = Math.floor((y - layout.topY) / rowHeight) + 1;
   return Math.max(1, Math.min(layout.stringCount, rawIndex));
+}
+
+function assertFiniteTouchCoordinate(value: number, axis: 'x' | 'y'): void {
+  if (!Number.isFinite(value)) {
+    throw new Error(`touch ${axis} must be finite`);
+  }
 }
 
 function crossedStringIndexes(from: number, to: number): number[] {
