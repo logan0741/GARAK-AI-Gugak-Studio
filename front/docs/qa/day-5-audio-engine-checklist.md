@@ -66,6 +66,8 @@ During rehearsal, `src/audio/audioEngineProbeDraft.ts` can create an `estimate` 
 
 The prototype inspector also reports `observedFakeCounters.eventDispatchLatency`. This is a debug-only measurement from the first `PerformanceEvent.tsMs` in a handled batch to the moment the current `SamplerEngine` dispatch call returns. It is useful for spotting JS event pipeline regressions, but it is not touch-to-sound latency evidence and must not be copied into `touchToSoundLatencyMs`.
 
+The copyable prototype probe draft includes `observedRuntime` for handoff traceability. Use it to confirm whether the selected candidate actually became the active runtime on the device build, but keep all final gate fields under a separate `physical-device` probe.
+
 ```ts
 {
   candidate: 'react-native-audio-api' | 'expo-audio',
@@ -117,7 +119,7 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 17. Confirm audio status remains `ok` while the current engine handles events.
 18. Confirm the probe draft exposes `observedFakeCounters.eventDispatchLatency` after at least one handled event batch, and keep `probeTemplate.touchToSoundLatencyMs` as `null` until physical-device audio latency is measured.
 19. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, and preserves the full `Session.events` list even if recording is unsupported or fails.
-20. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, keeps unmeasured physical-device fields as `null`, exposes recording observations only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
+20. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, exposes `observedRuntime` with requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error if present, keeps unmeasured physical-device fields as `null`, exposes recording observations only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
 
 ## Day 5 Full Test Script
 

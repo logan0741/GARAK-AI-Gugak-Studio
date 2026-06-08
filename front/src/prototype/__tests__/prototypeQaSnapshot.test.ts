@@ -117,6 +117,41 @@ test('formats a copyable estimate probe draft for the inspector', () => {
   });
 });
 
+test('includes runtime observation in the copyable estimate probe draft', () => {
+  const snapshot = createInitialPrototypeQaSnapshot({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T04:15:00.000Z',
+  });
+
+  expect(
+    JSON.parse(
+      formatPrototypeProbeDraftForInspector(snapshot, {
+        activeRuntime: 'fake-prototype',
+        nativePreloadStatus: 'failed',
+        preloadErrorMessage: 'native audio candidate requires Expo dev build on iOS or Android',
+        requestedCandidate: 'expo-audio',
+        runtimeStatus: 'native_candidate_failed',
+        sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+      }),
+    ),
+  ).toMatchObject({
+    measuredCandidateEvidence: false,
+    observedRuntime: {
+      activeRuntime: 'fake-prototype',
+      nativePreloadStatus: 'failed',
+      preloadErrorMessage: 'native audio candidate requires Expo dev build on iOS or Android',
+      requestedCandidate: 'expo-audio',
+      runtimeStatus: 'native_candidate_failed',
+      sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+    },
+    probeTemplate: {
+      candidate: 'expo-audio',
+      evidenceSource: 'estimate',
+    },
+  });
+});
+
 test('tracks event batch dispatch latency as debug-only evidence', () => {
   const snapshot = updatePrototypeQaSnapshot(
     createInitialPrototypeQaSnapshot({
