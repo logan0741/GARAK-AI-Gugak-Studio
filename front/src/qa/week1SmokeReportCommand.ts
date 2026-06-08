@@ -144,8 +144,8 @@ function parseWeek1SmokeReport(
       return { ok: false, error: `runs[${runIndex}].tester must be a non-empty string` };
     }
 
-    if (!isNonEmptyString(run.deviceLabel)) {
-      return { ok: false, error: `runs[${runIndex}].deviceLabel must be a non-empty string` };
+    if (!isPhysicalDeviceLabel(run.deviceLabel)) {
+      return { ok: false, error: `runs[${runIndex}].deviceLabel must name the physical device` };
     }
 
     if (!Array.isArray(run.checks)) {
@@ -351,6 +351,19 @@ function isIsoTimestamp(input: unknown): input is string {
 
 function isNonEmptyString(input: unknown): input is string {
   return typeof input === 'string' && input.trim().length > 0;
+}
+
+function isPhysicalDeviceLabel(input: unknown): input is string {
+  if (!isNonEmptyString(input)) {
+    return false;
+  }
+
+  const normalized = input.trim().toLowerCase();
+  return ![
+    'replace-with-physical-device-model',
+    'device / os',
+    'physical device',
+  ].includes(normalized);
 }
 
 function isObject(input: unknown): input is Record<string, unknown> {
