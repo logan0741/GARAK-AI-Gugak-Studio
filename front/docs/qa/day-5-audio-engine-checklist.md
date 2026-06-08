@@ -77,6 +77,8 @@ For recording probes, a non-finite or negative native recorder duration is norma
 
 Captured recording URIs are trimmed before they are stored or sent to playback. Whitespace-only URIs are treated as missing capture output and must not be copied as recording evidence.
 
+Captured playback must use the current candidate's recording probe state. After changing the requested candidate, `Play Rec` must not reuse a stale session recording URI from the previous candidate.
+
 ```ts
 {
   candidate: 'react-native-audio-api' | 'expo-audio',
@@ -121,7 +123,7 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 6. If native preload fails, confirm runtime status is `native_candidate_failed` and session event logging still works through the fake fallback.
 7. If native preload succeeds, confirm runtime status is `native_candidate_ready` and active runtime matches the requested candidate.
 8. Press `Rec 10s` and confirm unsupported engines report `recording_probe_not_supported` without stopping session event logging.
-9. If active runtime is `expo-audio`, press `Rec 10s`, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector. Confirm `observedPrototypeRecording.capturedSeconds` and `uriAvailable` in the probe draft. Then press `Play Rec` and confirm `playbackConfirmed` becomes `true`. If recording is unsupported or fails, confirm `observedPrototypeRecording.fallbackReason` records the reason.
+9. If active runtime is `expo-audio`, press `Rec 10s`, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector. Confirm `observedPrototypeRecording.capturedSeconds` and `uriAvailable` in the probe draft. Then press `Play Rec` and confirm `playbackConfirmed` becomes `true` for the current candidate recording probe. If recording is unsupported or fails, confirm `observedPrototypeRecording.fallbackReason` records the reason.
 10. Touch each string once from 1 to 12 and confirm `string_pluck` appears on touch start and `string_release` appears on touch end.
 11. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
 12. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
