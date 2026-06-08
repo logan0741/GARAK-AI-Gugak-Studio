@@ -100,6 +100,13 @@ export function runPrototypeHandoffMergeCommand(
     return 1;
   }
 
+  if (hasMeasurementAfterGeneratedAt(entries, generatedAt)) {
+    input.writeStderr(
+      'Could not merge prototype handoffs: generatedAt must be at or after every handoff measuredAt timestamp',
+    );
+    return 1;
+  }
+
   const mergedHandoff: PrototypeHandoffFile = {
     generatedAt,
     entries,
@@ -166,6 +173,18 @@ function collectDeviceLabels(
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function hasMeasurementAfterGeneratedAt(
+  entries: PhysicalDevicePrototypeProbeHandoffInput[],
+  generatedAt: string,
+): boolean {
+  const generatedAtMs = Date.parse(generatedAt);
+
+  return entries.some((entry) => {
+    const measuredAt = entry.measuredAt ?? entry.inspectorDraft.probeTemplate.measuredAt;
+    return isIsoTimestamp(measuredAt) && Date.parse(measuredAt) > generatedAtMs;
+  });
 }
 
 function isString(input: unknown): input is string {
