@@ -175,6 +175,10 @@ function collectSmokeReportIssues(summary: Week1SmokeReportSummary): string[] {
     issues.push(`blocked checks: ${formatList(summary.blockedChecks)}`);
   }
 
+  if (summary.failedCheckNoteIssues.length > 0) {
+    issues.push(`failed checks require notes: ${formatList(summary.failedCheckNoteIssues)}`);
+  }
+
   return issues;
 }
 
