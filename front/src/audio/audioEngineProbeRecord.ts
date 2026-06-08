@@ -28,6 +28,7 @@ const EVIDENCE_SOURCES: AudioEngineEvidenceSource[] = [
 const PHYSICAL_DEVICE_LABEL_PLACEHOLDERS = new Set([
   'replace-with-physical-device-model',
 ]);
+const UTC_ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 const DURATION_PROBE_FIELDS = ['touchToSoundLatencyMs', 'recordingCaptureSeconds'] as const satisfies ReadonlyArray<
   keyof AudioEngineProbe
@@ -56,6 +57,8 @@ export function parseAudioEngineProbeRecord(input: unknown): AudioEngineProbeRec
 
   if (!isNonEmptyString(input.generatedAt)) {
     errors.push('generatedAt must be a non-empty string');
+  } else if (!isUtcIsoTimestamp(input.generatedAt)) {
+    errors.push('generatedAt must be a UTC ISO timestamp');
   }
   if (!Array.isArray(input.probes)) {
     errors.push('probes must be an array');
@@ -123,6 +126,8 @@ function parseProbe(
   }
   if (!isNonEmptyString(probe.measuredAt)) {
     errors.push(`${path}.measuredAt must be a non-empty string`);
+  } else if (!isUtcIsoTimestamp(probe.measuredAt)) {
+    errors.push(`${path}.measuredAt must be a UTC ISO timestamp`);
   }
 
   for (const field of DURATION_PROBE_FIELDS) {
@@ -176,6 +181,10 @@ function isNonEmptyString(input: unknown): input is string {
 
 function normalizeLabel(input: string): string {
   return input.trim().toLowerCase();
+}
+
+function isUtcIsoTimestamp(input: string): boolean {
+  return UTC_ISO_TIMESTAMP_PATTERN.test(input) && Number.isFinite(Date.parse(input));
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {

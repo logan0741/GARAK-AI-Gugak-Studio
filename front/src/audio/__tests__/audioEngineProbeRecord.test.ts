@@ -155,6 +155,27 @@ test('rejects physical-device probes that still use the placeholder device label
   });
 });
 
+test('requires UTC ISO timestamps for generated and measured probe times', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      generatedAt: 'June 8, 2026 10:00',
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          measuredAt: '2026/06/08 10:05',
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'generatedAt must be a UTC ISO timestamp',
+      'probes[0].measuredAt must be a UTC ISO timestamp',
+    ],
+  });
+});
+
 test('parses the documented probe handoff example without satisfying the final gate', () => {
   const example = JSON.parse(
     readFileSync('docs/qa/day-5-audio-engine-probes.example.json', 'utf8'),
