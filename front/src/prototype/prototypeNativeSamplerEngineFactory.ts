@@ -55,12 +55,7 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
 
 function assertLocalPrototypeSampleSourceUris(manifest: SampleAssetManifest): void {
   for (const asset of manifest.assets) {
-    const fileUri = asset.fileUri.trim();
-    if (fileUri.length === 0 || isRemoteUri(fileUri)) {
-      throw new Error(
-        `Prototype native sampler requires local sample source URIs before preload; ${asset.id} uses ${fileUri || 'empty URI'}`,
-      );
-    }
+    normalizeSourceSampleFileUri(asset);
   }
 }
 
@@ -88,18 +83,30 @@ export async function resolveSampleAssetManifestUris(input: {
     ...input.manifest,
     assets: await Promise.all(
       input.manifest.assets.map(async (asset) => {
-        const resolvedFileUri = await input.assetResolver.resolveFileUri(asset.fileUri);
+        const sourceFileUri = normalizeSourceSampleFileUri(asset);
+        const resolvedFileUri = await input.assetResolver.resolveFileUri(sourceFileUri);
 
         return {
           ...asset,
           fileUri: normalizeResolvedSampleFileUri({
-            sourceFileUri: asset.fileUri,
+            sourceFileUri,
             resolvedFileUri,
           }),
         };
       }),
     ),
   };
+}
+
+function normalizeSourceSampleFileUri(asset: { id: string; fileUri: string }): string {
+  const fileUri = asset.fileUri.trim();
+  if (fileUri.length === 0 || isRemoteUri(fileUri)) {
+    throw new Error(
+      `Prototype native sampler requires local sample source URIs before preload; ${asset.id} uses ${fileUri || 'empty URI'}`,
+    );
+  }
+
+  return fileUri;
 }
 
 function normalizeResolvedSampleFileUri(input: {
