@@ -409,6 +409,43 @@ test('reports unexpected sample string indexes before probe record generation', 
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
+test('reports present unexpected sample string index field before probe record generation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['unexpected-sample-string-field-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio', {
+                unexpectedStringIndexes: [],
+              }),
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Manifest issues: expo-audio unexpectedStringIndexes must be absent',
+  );
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
 test('reports contaminated inspector drafts before probe record generation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
