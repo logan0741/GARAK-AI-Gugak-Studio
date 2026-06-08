@@ -68,6 +68,27 @@ test('does not retain a pointer when touch start rejects a non-finite x coordina
   expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 120, x: 40, y: 25 })).toEqual([]);
 });
 
+test('does not advance swipe state when a crossed-string move rejects a non-finite timestamp', () => {
+  const model = createTouchModel({ layout });
+  model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 15 });
+
+  expect(() =>
+    model.handleFrame({
+      phase: 'move',
+      pointerId: 'p1',
+      tsMs: Number.NaN,
+      x: 42,
+      y: 45,
+    }),
+  ).toThrow('tsMs must be finite');
+
+  expect(model.handleFrame({ phase: 'move', pointerId: 'p1', tsMs: 120, x: 42, y: 45 })).toEqual([
+    { type: 'glissando_step', tsMs: 120, stringIndex: 3, velocity: 1 },
+    { type: 'glissando_step', tsMs: 136, stringIndex: 4, velocity: 1 },
+    { type: 'glissando_step', tsMs: 152, stringIndex: 5, velocity: 1 },
+  ]);
+});
+
 test('emits glissando steps for every newly crossed string during a swipe', () => {
   const model = createTouchModel({ layout });
   model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 15 });
@@ -123,17 +144,23 @@ test('maps a broad contact area to ji-eum mute', () => {
   ]);
 });
 
-test('falls back to the first string before layout height is measured', () => {
-  const model = createTouchModel({
-    layout: {
-      topY: 0,
-      height: 0,
-      stringCount: 12,
-    },
-  });
+test('does not mark a ji-eum string muted when the mute frame rejects a non-finite timestamp', () => {
+  const model = createTouchModel({ layout, muteAreaThreshold: 0.65 });
+  model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 });
 
-  expect(model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 })).toEqual([
-    { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 },
+  expect(() =>
+    model.handleFrame({
+      phase: 'move',
+      pointerId: 'p1',
+      tsMs: Number.NaN,
+      x: 42,
+      y: 55,
+      contactArea: 0.8,
+    }),
+  ).toThrow('tsMs must be finite');
+
+  expect(model.handleFrame({ phase: 'move', pointerId: 'p1', tsMs: 150, x: 42, y: 55, contactArea: 0.8 })).toEqual([
+    { type: 'string_mute', tsMs: 150, stringIndex: 6, strength: 0.8 },
   ]);
 });
 
@@ -153,4 +180,23 @@ test('emits release on touch end and ignores later frames for that pointer', () 
     { type: 'string_release', tsMs: 180, stringIndex: 6 },
   ]);
   expect(model.handleFrame({ phase: 'move', pointerId: 'p1', tsMs: 200, x: 42, y: 65 })).toEqual([]);
+});
+
+test('does not clear the active pointer when release rejects a non-finite timestamp', () => {
+  const model = createTouchModel({ layout });
+  model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 });
+
+  expect(() =>
+    model.handleFrame({
+      phase: 'end',
+      pointerId: 'p1',
+      tsMs: Number.NaN,
+      x: 42,
+      y: 55,
+    }),
+  ).toThrow('tsMs must be finite');
+
+  expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 180, x: 42, y: 55 })).toEqual([
+    { type: 'string_release', tsMs: 180, stringIndex: 6 },
+  ]);
 });
