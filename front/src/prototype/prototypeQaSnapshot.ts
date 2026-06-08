@@ -32,6 +32,7 @@ export type PrototypeProbeDraftInspectorModel = {
   note: string;
   measuredCandidateEvidence: false;
   runtimeUnderTest: 'fake-sampler-engine';
+  observedRuntime?: PrototypeRuntimeObservation;
   observedFakeCounters: {
     audioDispatchFailures: number;
     eventDispatchLatency: PrototypeEventDispatchLatency;
@@ -61,6 +62,19 @@ export type PrototypeProbeDraftInspectorModel = {
     sessionFallbackPreserved: null;
     recordingCaptureSeconds: null;
   };
+};
+
+export type PrototypeRuntimeObservation = {
+  requestedCandidate: AudioEngineCandidateId;
+  activeRuntime: 'fake-prototype' | AudioEngineCandidateId;
+  runtimeStatus:
+    | 'missing_sample_manifest'
+    | 'native_candidate_preloading'
+    | 'native_candidate_failed'
+    | 'native_candidate_ready';
+  nativePreloadStatus: 'not_started' | 'preloading' | 'failed' | 'ready';
+  sampleManifestVersion: string | null;
+  preloadErrorMessage?: string;
 };
 
 const PROTOTYPE_DRAFT_NOTE =
@@ -182,8 +196,11 @@ export function recordPrototypeRecordingPlayback(
   };
 }
 
-export function formatPrototypeProbeDraftForInspector(snapshot: PrototypeQaSnapshot): string {
-  return JSON.stringify(createPrototypeProbeDraftInspectorModel(snapshot), null, 2);
+export function formatPrototypeProbeDraftForInspector(
+  snapshot: PrototypeQaSnapshot,
+  runtimeObservation?: PrototypeRuntimeObservation,
+): string {
+  return JSON.stringify(createPrototypeProbeDraftInspectorModel(snapshot, runtimeObservation), null, 2);
 }
 
 export function countPrototypeAudibleVoices(voices: VoiceState[]): number {
@@ -192,11 +209,13 @@ export function countPrototypeAudibleVoices(voices: VoiceState[]): number {
 
 function createPrototypeProbeDraftInspectorModel(
   snapshot: PrototypeQaSnapshot,
+  runtimeObservation?: PrototypeRuntimeObservation,
 ): PrototypeProbeDraftInspectorModel {
   return {
     note: PROTOTYPE_DRAFT_NOTE,
     measuredCandidateEvidence: false,
     runtimeUnderTest: 'fake-sampler-engine',
+    ...(runtimeObservation ? { observedRuntime: runtimeObservation } : {}),
     observedFakeCounters: {
       audioDispatchFailures: snapshot.audioDispatchFailures,
       eventDispatchLatency: snapshot.eventDispatchLatency,

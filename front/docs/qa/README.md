@@ -14,6 +14,8 @@ npm run qa:day5-audio -- <probe-record.json>
 
 When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The prototype screen has a `Device / OS` input that updates the copyable probe draft before handoff. The Day 5 parser rejects that placeholder for final-selection evidence.
 
+The prototype probe draft also includes `observedRuntime` so the handoff records the requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error when present. Treat that field as QA context only; it does not replace any `physical-device` probe value.
+
 Use UTC ISO timestamps such as `2026-06-08T01:00:00.000Z` for `generatedAt` and `measuredAt` in probe records.
 
 ## Required QA Areas

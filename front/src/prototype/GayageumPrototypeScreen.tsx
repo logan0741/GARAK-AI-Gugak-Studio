@@ -39,6 +39,7 @@ import {
   updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
+import { createPrototypeRuntimeObservation } from './prototypeRuntimeObservation';
 import {
   playCapturedPrototypeRecordingProbe,
   startPrototypeRecordingProbe,
@@ -53,7 +54,7 @@ import { shouldStartPrototypeNativeAudioCandidate } from './prototypePlatform';
 import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
 import {
   createPrototypeSamplerEngineHost,
-  PrototypeNativeCandidateState,
+  type PrototypeNativeCandidateState,
 } from './prototypeSamplerEngineHost';
 import {
   PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
@@ -317,7 +318,10 @@ export function GayageumPrototypeScreen() {
   const activeVoices = fakeEngineSnapshot.activeVoices;
   const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
   const commands = fakeEngineSnapshot.commands;
-  const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
+  const probeDraftText = formatPrototypeProbeDraftForInspector(
+    qaSnapshot,
+    createPrototypeRuntimeObservation(engineHost),
+  );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
   const playableRecordingUri = selectPlayableRecordingUri({
     recordingProbeState,
