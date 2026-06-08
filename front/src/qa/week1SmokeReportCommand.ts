@@ -258,10 +258,6 @@ function collectMissingChecks(runs: Week1SmokeRun[]): string[] {
         .flatMap((run) => run.checks.map((check) => check.id)),
     );
 
-    if (presentCheckIds.size === 0) {
-      continue;
-    }
-
     for (const requiredCheck of REQUIRED_CHECKS_BY_AREA[area]) {
       if (!presentCheckIds.has(requiredCheck)) {
         missingChecks.push(`${area}.${requiredCheck}`);
