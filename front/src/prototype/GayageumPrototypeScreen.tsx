@@ -35,11 +35,15 @@ import {
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
 import {
-  PrototypeRecordingProbeStartResult,
-  PrototypeRecordingProbeStopResult,
+  playCapturedPrototypeRecordingProbe,
   startPrototypeRecordingProbe,
   stopPrototypeRecordingProbe,
 } from './prototypeRecordingProbeController';
+import {
+  formatRecordingProbeState,
+  selectPlayableRecordingUri,
+  type RecordingProbeUiState,
+} from './prototypeRecordingProbeUi';
 import { shouldStartPrototypeNativeAudioCandidate } from './prototypePlatform';
 import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
 import {
@@ -68,11 +72,6 @@ type NativeCandidateLoadState = {
   candidate: AudioEngineCandidateId;
   state: PrototypeNativeCandidateState;
 };
-
-type RecordingProbeUiState =
-  | { status: 'idle' }
-  | PrototypeRecordingProbeStartResult
-  | PrototypeRecordingProbeStopResult;
 
 export function GayageumPrototypeScreen() {
   const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
@@ -232,6 +231,20 @@ export function GayageumPrototypeScreen() {
     }
   }
 
+  async function handlePlayRecordingProbe() {
+    const recordingUri = selectPlayableRecordingUri({
+      recordingProbeState,
+      sessionRecordingUri: session.recordingUri,
+    });
+    if (recordingUri === null) {
+      setRecordingProbeState({ status: 'failed', errorMessage: 'recording_playback_uri_missing' });
+      return;
+    }
+
+    const result = await playCapturedPrototypeRecordingProbe(engineRef.current, recordingUri);
+    setRecordingProbeState(result);
+  }
+
   function handleTouchFrame(phase: TouchFrame['phase'], event: GestureResponderEvent, gestureState: PanResponderGestureState) {
     applyPerformanceEvents(
       touchModel.handleFrame({
@@ -267,6 +280,10 @@ export function GayageumPrototypeScreen() {
   const commands = fakeEngineSnapshot.commands;
   const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const playableRecordingUri = selectPlayableRecordingUri({
+    recordingProbeState,
+    sessionRecordingUri: session.recordingUri,
+  });
 
   return (
     <View style={styles.screen}>
@@ -325,6 +342,19 @@ export function GayageumPrototypeScreen() {
           style={[styles.recordingButton, styles.recordingStopButton]}
         >
           <Text style={styles.recordingButtonText}>Stop Rec</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play captured recording probe"
+          disabled={playableRecordingUri === null}
+          onPress={handlePlayRecordingProbe}
+          style={[
+            styles.recordingButton,
+            styles.recordingPlaybackButton,
+            playableRecordingUri === null ? styles.recordingDisabledButton : undefined,
+          ]}
+        >
+          <Text style={styles.recordingButtonText}>Play Rec</Text>
         </Pressable>
       </View>
 
@@ -423,27 +453,6 @@ function formatNativePreloadStatus(host: {
   return 'not started';
 }
 
-function formatRecordingProbeState(state: RecordingProbeUiState): string {
-  switch (state.status) {
-    case 'idle':
-      return 'idle';
-    case 'recording':
-      return `recording ${state.requestedDurationSeconds}s`;
-    case 'captured':
-      return `captured ${state.capturedSeconds}s ${state.recordingUri ?? 'no uri'}`;
-    case 'unsupported':
-      return state.reason;
-    case 'failed':
-      return `failed: ${state.errorMessage}`;
-    default:
-      return assertNever(state);
-  }
-}
-
-function assertNever(value: never): never {
-  throw new Error(`Unhandled recording probe state: ${JSON.stringify(value)}`);
-}
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -454,8 +463,9 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     minHeight: 56,
   },
   headerText: {
@@ -525,6 +535,12 @@ const styles = StyleSheet.create({
   },
   recordingStopButton: {
     backgroundColor: '#b55d4c',
+  },
+  recordingPlaybackButton: {
+    backgroundColor: '#d7b65d',
+  },
+  recordingDisabledButton: {
+    opacity: 0.45,
   },
   recordingButtonText: {
     color: '#101418',
