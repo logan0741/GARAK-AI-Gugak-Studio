@@ -174,11 +174,13 @@ function collectDeviceAlignmentIssues(input: {
   probeRecord: AudioEngineProbeRecord;
 }): string[] {
   const issues: string[] = [];
-  const smokeDeviceLabels = unique(input.smokeReport.runs.map((run) => run.deviceLabel));
+  const smokeDeviceLabels = unique(
+    input.smokeReport.runs.map((run) => normalizeDeviceLabel(run.deviceLabel)),
+  );
   const physicalProbeDeviceLabels = unique(
     input.probeRecord.probes
       .filter((probe) => probe.evidenceSource === 'physical-device')
-      .map((probe) => probe.deviceLabel),
+      .map((probe) => normalizeDeviceLabel(probe.deviceLabel)),
   );
 
   if (smokeDeviceLabels.length !== 1) {
@@ -202,7 +204,7 @@ function collectDeviceAlignmentIssues(input: {
           (probe) =>
             probe.evidenceSource === 'physical-device' && probe.candidate === candidate,
         )
-        .map((probe) => probe.deviceLabel),
+        .map((probe) => normalizeDeviceLabel(probe.deviceLabel)),
     );
 
     if (candidateLabels.length > 1) {
@@ -230,6 +232,10 @@ function formatDay5ReadinessReport(report: Day5ReadinessReport): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function normalizeDeviceLabel(input: string): string {
+  return input.trim();
 }
 
 function formatList(values: string[]): string {

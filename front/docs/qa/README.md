@@ -20,7 +20,7 @@ npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>
 npm run qa:day5-audio -- <probe-record.json>
 ```
 
-The readiness command is the bridge between Week 1 smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files. It does not write a new record and does not select the final engine.
+The readiness command is the bridge between Week 1 smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files after trimming surrounding whitespace. It does not write a new record and does not select the final engine.
 
 `src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null values.
 
