@@ -33,6 +33,7 @@ import {
 import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
+  formatPrototypeProbeHandoffTemplateForInspector,
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
@@ -340,9 +341,11 @@ export function GayageumPrototypeScreen() {
   const activeVoices = fakeEngineSnapshot.activeVoices;
   const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
   const commands = fakeEngineSnapshot.commands;
-  const probeDraftText = formatPrototypeProbeDraftForInspector(
+  const runtimeObservation = createPrototypeRuntimeObservation(engineHost);
+  const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot, runtimeObservation);
+  const prototypeHandoffText = formatPrototypeProbeHandoffTemplateForInspector(
     qaSnapshot,
-    createPrototypeRuntimeObservation(engineHost),
+    runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
   const playableRecordingUri = selectPlayableRecordingUri({
@@ -482,6 +485,10 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorTitle}>Probe draft (estimate only, fake engine counters)</Text>
         <Text selectable style={styles.probeDraftText}>
           {probeDraftText}
+        </Text>
+        <Text style={styles.inspectorTitle}>Prototype handoff JSON</Text>
+        <Text selectable style={styles.probeDraftText}>
+          {prototypeHandoffText}
         </Text>
         <Text style={styles.inspectorTitle}>Session fallback (copyable)</Text>
         <Text selectable style={styles.probeDraftText}>

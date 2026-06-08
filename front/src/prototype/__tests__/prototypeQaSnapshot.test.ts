@@ -3,6 +3,7 @@ import {
   buildPrototypeProbeDraft,
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
+  formatPrototypeProbeHandoffTemplateForInspector,
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
@@ -151,6 +152,103 @@ test('includes runtime observation in the copyable estimate probe draft', () => 
       candidate: 'expo-audio',
       evidenceSource: 'estimate',
     },
+  });
+});
+
+test('formats a copyable prototype handoff JSON template with null manual measurements', () => {
+  const snapshot = updatePrototypeQaSnapshot(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:18:00.000Z',
+    }),
+    {
+      activeVoiceCount: 8,
+      audioDispatchOk: true,
+      measuredAt: '2026-06-08T04:18:05.000Z',
+      events: [
+        { type: 'glissando_step', tsMs: 100, stringIndex: 1, velocity: 1 },
+        { type: 'string_bend', tsMs: 160, stringIndex: 1, cents: 40 },
+        { type: 'string_mute', tsMs: 220, stringIndex: 1, strength: 1 },
+      ],
+    },
+  );
+
+  expect(
+    JSON.parse(
+      formatPrototypeProbeHandoffTemplateForInspector(snapshot, {
+        activeRuntime: 'react-native-audio-api',
+        nativePreloadStatus: 'ready',
+        requestedCandidate: 'react-native-audio-api',
+        runtimeStatus: 'native_candidate_ready',
+        sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+      }),
+    ),
+  ).toEqual({
+    generatedAt: '2026-06-08T04:18:05.000Z',
+    entries: [
+      {
+        inspectorDraft: {
+          note: 'Estimate draft from fake prototype engine counters. Replace with physical-device candidate measurements before Day 5 handoff.',
+          measuredCandidateEvidence: false,
+          runtimeUnderTest: 'fake-sampler-engine',
+          observedRuntime: {
+            activeRuntime: 'react-native-audio-api',
+            nativePreloadStatus: 'ready',
+            requestedCandidate: 'react-native-audio-api',
+            runtimeStatus: 'native_candidate_ready',
+            sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+          },
+          observedFakeCounters: {
+            audioDispatchFailures: 0,
+            eventDispatchLatency: {
+              sampleCount: 0,
+              latestMs: null,
+              maxMs: null,
+              averageMs: null,
+            },
+            eventCount: 3,
+            glissandoTriggeredStrings: 1,
+            maxActiveVoices: 8,
+            muteObserved: true,
+            pitchBendObserved: true,
+            sessionFallbackPreserved: false,
+          },
+          observedPrototypeRecording: {
+            capturedSeconds: null,
+            fallbackReason: null,
+            playbackConfirmed: false,
+            uriAvailable: false,
+          },
+          probeTemplate: {
+            candidate: 'react-native-audio-api',
+            evidenceSource: 'estimate',
+            deviceLabel: 'Pixel 8 / Android 15',
+            measuredAt: '2026-06-08T04:18:05.000Z',
+            touchToSoundLatencyMs: null,
+            maxStableVoices: null,
+            pitchBendSmooth: null,
+            glissandoTriggeredStrings: null,
+            muteReleaseClean: null,
+            preloadStable: null,
+            sessionFallbackPreserved: null,
+            recordingCaptureSeconds: null,
+          },
+        },
+        measuredAt: '2026-06-08T04:18:05.000Z',
+        deviceLabel: 'Pixel 8 / Android 15',
+        measurements: {
+          touchToSoundLatencyMs: null,
+          maxStableVoices: null,
+          pitchBendSmooth: null,
+          glissandoTriggeredStrings: null,
+          muteReleaseClean: null,
+          preloadStable: null,
+          sessionFallbackPreserved: null,
+          recordingCaptureSeconds: null,
+        },
+      },
+    ],
   });
 });
 
