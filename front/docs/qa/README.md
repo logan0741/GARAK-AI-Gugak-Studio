@@ -46,6 +46,7 @@ npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> 
 ```
 
 The merge command combines `entries[]`, rejects duplicate candidate entries, and rejects handoffs copied from different physical device labels. Device labels are compared after trimming whitespace and normalizing slash spacing, so `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same device. It does not fill or validate physical-device measurements; `qa:prototype-probe-record` remains responsible for turning the filled handoff into a parser-valid probe record.
+The merge command also rejects placeholder or blank device labels before writing a merged handoff, including labels copied from the inspector draft. Replace `Device / OS` with the tested physical device before merging.
 
 After merging, check that the merged handoff is ready for promotion:
 
