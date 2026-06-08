@@ -79,4 +79,6 @@ For an EAS development build, use the `development` profile in `eas.json`.
 
 Transfer measured values into `src/audio/audioEngineEvaluation.ts` using candidate `react-native-audio-api`.
 
+Also add one `day-3-react-native-audio-api` run to the Week 1 smoke report and validate it with `npm run qa:week1-smoke-report -- <week1-smoke-report.json>` after Day 2, Day 3, and Day 4 runs have all been recorded. Use `docs/qa/week-1-smoke-report.md` for the required check IDs.
+
 If polyphony and pitch bend pass but recording is weaker than `expo-audio`, keep `react-native-audio-api` as the playback engine and document a split playback/recording strategy before Day 5 selection.
