@@ -114,7 +114,7 @@ After a physical-device probe record exists, run the readiness gate before the f
 npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>
 ```
 
-The readiness gate requires `READY_FOR_DAY5_DECISION`. It checks that the Week 1 smoke report is complete, the probe record has one physical-device probe for both required candidates, and the physical-device labels match across the smoke report and probe record after trimming surrounding whitespace. If the smoke report is incomplete, `Smoke report issues` includes the concrete missing, duplicate, blocked, or device-label causes. It reports failed smoke checks for review context, but it does not write files and does not select a final engine.
+The readiness gate requires `READY_FOR_DAY5_DECISION`. It checks that the Week 1 smoke report is complete, the probe record has one physical-device probe for both required candidates, the physical-device labels match across the smoke report and probe record after trimming surrounding whitespace, and every physical-device probe `measuredAt` is at or after the latest Week 1 smoke run `testedAt`. If the smoke report is incomplete, `Smoke report issues` includes the concrete missing, duplicate, blocked, or device-label causes. It reports failed smoke checks for review context, but it does not write files and does not select a final engine.
 
 ## Probe Record Handoff
 
@@ -153,7 +153,7 @@ The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record
 
 The `qa:prototype-probe-record` command first validates the handoff JSON shape, then enforces runtime readiness and the expected sample manifest, then produces and parser-validates the probe record JSON. It does not replace the final `qa:day5-audio` decision check.
 
-`qa:day5-readiness` compares the Week 1 smoke report and probe record device labels after trimming whitespace and normalizing slash spacing. For example, `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same physical device; different model names still fail readiness.
+`qa:day5-readiness` compares the Week 1 smoke report and probe record device labels after trimming whitespace and normalizing slash spacing. For example, `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same physical device; different model names still fail readiness. It also rejects physical-device probes whose `measuredAt` predates the latest Week 1 smoke run `testedAt`, because the Day 5 probe record must be created from evidence available after the Day 2, Day 3, and Day 4 smoke procedures have run.
 
 Before publishing the Day 5 record, run the QA command entry point:
 
