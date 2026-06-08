@@ -58,6 +58,13 @@ export function runPrototypeHandoffMergeCommand(
       return 1;
     }
 
+    if (!isIsoTimestamp(parseResult.handoff.generatedAt)) {
+      input.writeStderr(
+        `Could not merge prototype handoffs: ${handoffPath} generatedAt must be a UTC ISO timestamp`,
+      );
+      return 1;
+    }
+
     entries.push(...parseResult.handoff.entries);
   }
 
