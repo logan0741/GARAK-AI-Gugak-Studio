@@ -189,6 +189,7 @@ function countCandidates(
 
 function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffInput[]): string[] {
   const issues: string[] = [];
+  const physicalDeviceLabels: string[] = [];
 
   for (const entry of entries) {
     const candidate = entry.inspectorDraft.probeTemplate.candidate;
@@ -214,6 +215,15 @@ function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffIn
         `${candidate}.deviceLabel must match inspector draft device label ${draftDeviceLabel}`,
       );
     }
+
+    physicalDeviceLabels.push(draftDeviceLabel.trim());
+  }
+
+  const uniquePhysicalDeviceLabels = [...new Set(physicalDeviceLabels)];
+  if (uniquePhysicalDeviceLabels.length > 1) {
+    issues.push(
+      `prototype handoff must use one device label: ${formatList(uniquePhysicalDeviceLabels)}`,
+    );
   }
 
   return issues;
