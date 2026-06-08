@@ -7,6 +7,7 @@ import {
   isPrototypeObservedRuntimeReady,
   type PhysicalDevicePrototypeProbeHandoffInput,
 } from './prototypeProbeHandoff';
+import { PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION } from './prototypeSampleManifest';
 
 type PrototypeHandoffReadinessStatus =
   | 'READY_FOR_PROBE_RECORD'
@@ -18,6 +19,7 @@ type PrototypeHandoffReadinessReport = {
   duplicateCandidates: AudioEngineCandidateId[];
   deviceLabelIssues: string[];
   timestampIssues: string[];
+  manifestIssues: string[];
   missingMeasurementFields: string[];
   runtimeIssues: string[];
   probeRecordIssues: string[];
@@ -140,6 +142,7 @@ function buildPrototypeHandoffReadinessReport(
   );
   const deviceLabelIssues = collectDeviceLabelIssues(handoff.entries);
   const timestampIssues = collectTimestampIssues(handoff);
+  const manifestIssues = collectManifestIssues(handoff.entries);
   const missingMeasurementFields = collectMissingMeasurementFields(handoff.entries);
   const runtimeIssues = collectRuntimeIssues(handoff.entries);
   const probeRecordIssues = collectProbeRecordIssues({
@@ -148,6 +151,7 @@ function buildPrototypeHandoffReadinessReport(
     duplicateCandidates,
     deviceLabelIssues,
     timestampIssues,
+    manifestIssues,
     missingMeasurementFields,
     runtimeIssues,
   });
@@ -156,6 +160,7 @@ function buildPrototypeHandoffReadinessReport(
     duplicateCandidates.length === 0 &&
     deviceLabelIssues.length === 0 &&
     timestampIssues.length === 0 &&
+    manifestIssues.length === 0 &&
     missingMeasurementFields.length === 0 &&
     runtimeIssues.length === 0 &&
     probeRecordIssues.length === 0
@@ -168,6 +173,7 @@ function buildPrototypeHandoffReadinessReport(
     duplicateCandidates,
     deviceLabelIssues,
     timestampIssues,
+    manifestIssues,
     missingMeasurementFields,
     runtimeIssues,
     probeRecordIssues,
@@ -254,6 +260,23 @@ function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
   return issues;
 }
 
+function collectManifestIssues(entries: PhysicalDevicePrototypeProbeHandoffInput[]): string[] {
+  const issues: string[] = [];
+
+  for (const entry of entries) {
+    const candidate = entry.inspectorDraft.probeTemplate.candidate;
+    const manifestVersion = entry.inspectorDraft.observedRuntime?.sampleManifestVersion;
+
+    if (manifestVersion !== PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION) {
+      issues.push(
+        `${candidate} sampleManifestVersion must be ${PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION}`,
+      );
+    }
+  }
+
+  return issues;
+}
+
 function collectMissingMeasurementFields(
   entries: PhysicalDevicePrototypeProbeHandoffInput[],
 ): string[] {
@@ -291,6 +314,7 @@ function collectProbeRecordIssues(input: {
   duplicateCandidates: AudioEngineCandidateId[];
   deviceLabelIssues: string[];
   timestampIssues: string[];
+  manifestIssues: string[];
   missingMeasurementFields: string[];
   runtimeIssues: string[];
 }): string[] {
@@ -299,6 +323,7 @@ function collectProbeRecordIssues(input: {
     input.duplicateCandidates.length > 0 ||
     input.deviceLabelIssues.length > 0 ||
     input.timestampIssues.length > 0 ||
+    input.manifestIssues.length > 0 ||
     input.missingMeasurementFields.length > 0 ||
     input.runtimeIssues.length > 0
   ) {
@@ -330,6 +355,7 @@ function formatPrototypeHandoffReadinessReport(report: PrototypeHandoffReadiness
     `- Duplicate candidates: ${formatList(report.duplicateCandidates)}`,
     `- Device label issues: ${formatList(report.deviceLabelIssues)}`,
     `- Timestamp issues: ${formatList(report.timestampIssues)}`,
+    `- Manifest issues: ${formatList(report.manifestIssues)}`,
     `- Missing measurement fields: ${formatList(report.missingMeasurementFields)}`,
     `- Runtime issues: ${formatList(report.runtimeIssues)}`,
     `- Probe record issues: ${formatList(report.probeRecordIssues)}`,
