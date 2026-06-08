@@ -38,7 +38,15 @@ test('wraps promoted prototype inspector drafts in a parseable Day 5 probe recor
     generatedAt: '2026-06-08T03:10:00.000Z',
     entries: [
       {
-        inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+        inspectorDraft: {
+          ...createInspectorDraftForCandidate('expo-audio'),
+          observedPrototypeRecording: {
+            capturedSeconds: 10,
+            fallbackReason: null,
+            playbackConfirmed: true,
+            uriAvailable: true,
+          },
+        },
         measuredAt: '2026-06-08T03:00:00.000Z',
         measurements: {
           ...measurements,
@@ -175,6 +183,20 @@ test('rejects physical-device promotion without runtime observation context', ()
       measurements,
     }),
   ).toThrow('prototype runtime observation is required before physical-device promotion');
+});
+
+test('rejects ten-second recording promotion without inspector playback confirmation', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+      measurements: {
+        ...measurements,
+        recordingCaptureSeconds: 10,
+      },
+    }),
+  ).toThrow(
+    'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+  );
 });
 
 test.each([

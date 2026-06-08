@@ -34,6 +34,7 @@ export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
   assertInspectorDraftEstimateGuard(input.inspectorDraft);
   assertObservedRuntimeReady(input.inspectorDraft);
   assertPrototypeHandoffDeviceLabel(input);
+  assertPrototypeRecordingEvidenceConsistency(input);
 
   const draft = input.inspectorDraft.probeTemplate;
 
@@ -69,6 +70,28 @@ export function isPrototypeObservedRuntimeReady(
     observedRuntime.activeRuntime === probeTemplate.candidate &&
     observedRuntime.runtimeStatus === 'native_candidate_ready' &&
     observedRuntime.nativePreloadStatus === 'ready'
+  );
+}
+
+export function isPrototypeRecordingMeasurementBackedByPlayback(input: {
+  inspectorDraft: PrototypeProbeDraftInspectorModel;
+  recordingCaptureSeconds: unknown;
+}): boolean {
+  if (!isPassingRecordingCaptureSeconds(input.recordingCaptureSeconds)) {
+    return true;
+  }
+
+  const observedRecording = input.inspectorDraft.observedPrototypeRecording as
+    | PrototypeProbeDraftInspectorModel['observedPrototypeRecording']
+    | undefined;
+
+  return (
+    observedRecording?.capturedSeconds !== null &&
+    observedRecording?.capturedSeconds !== undefined &&
+    observedRecording.capturedSeconds >= 10 &&
+    observedRecording.uriAvailable === true &&
+    observedRecording.playbackConfirmed === true &&
+    observedRecording.fallbackReason === null
   );
 }
 
@@ -133,6 +156,21 @@ function assertPrototypeHandoffDeviceLabel(
   }
 }
 
+function assertPrototypeRecordingEvidenceConsistency(
+  input: PhysicalDevicePrototypeProbeHandoffInput,
+): void {
+  if (
+    !isPrototypeRecordingMeasurementBackedByPlayback({
+      inspectorDraft: input.inspectorDraft,
+      recordingCaptureSeconds: input.measurements.recordingCaptureSeconds,
+    })
+  ) {
+    throw new Error(
+      'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+    );
+  }
+}
+
 function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
   if (!inspectorDraft.observedRuntime) {
     throw new Error('prototype runtime observation is required before physical-device promotion');
@@ -152,4 +190,8 @@ function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspector
       `prototype runtime must be ready for ${inspectorDraft.probeTemplate.candidate} before physical-device promotion`,
     );
   }
+}
+
+function isPassingRecordingCaptureSeconds(input: unknown): input is number {
+  return typeof input === 'number' && Number.isFinite(input) && input >= 10;
 }

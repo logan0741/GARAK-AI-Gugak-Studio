@@ -10,7 +10,7 @@ const measurements = {
   muteReleaseClean: true,
   preloadStable: true,
   sessionFallbackPreserved: true,
-  recordingCaptureSeconds: 10,
+  recordingCaptureSeconds: 0,
 };
 
 test('returns usage when no prototype handoff path is provided', () => {
@@ -446,6 +446,43 @@ test('reports invalid measurement fields before probe record generation', () => 
   const output = stdout.join('\n');
   expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
   expect(output).toContain('- Invalid measurement fields: expo-audio.touchToSoundLatencyMs');
+  expect(output).toContain('- Probe record issues: none');
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
+test('rejects a passing recording measurement without inspector capture playback confirmation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['stale-recording-evidence-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measurements: {
+                ...measurements,
+                recordingCaptureSeconds: 10,
+              },
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain('- Invalid measurement fields: expo-audio.recordingCaptureSeconds');
   expect(output).toContain('- Probe record issues: none');
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
