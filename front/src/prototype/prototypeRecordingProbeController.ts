@@ -10,9 +10,17 @@ type RecordingProbeStopResponse = {
   recordingUri: string | null;
 };
 
+type RecordingProbePlaybackResponse =
+  | { ok: true; recordingUri: string }
+  | { ok: false; reason: string };
+
 type RecordingProbeCapableEngine = SamplerEngine & {
   startRecordingProbe(durationSeconds: number): Promise<RecordingProbeStartResponse>;
   stopRecordingProbe(): Promise<RecordingProbeStopResponse>;
+};
+
+type RecordingProbePlaybackCapableEngine = SamplerEngine & {
+  playRecordingProbe(recordingUri: string): Promise<RecordingProbePlaybackResponse>;
 };
 
 export type PrototypeRecordingProbeStartResult =
@@ -23,6 +31,11 @@ export type PrototypeRecordingProbeStartResult =
 export type PrototypeRecordingProbeStopResult =
   | { status: 'captured'; capturedSeconds: number; recordingUri: string | null }
   | { status: 'unsupported'; reason: 'recording_probe_not_supported' }
+  | { status: 'failed'; errorMessage: string };
+
+export type PrototypeRecordingProbePlaybackResult =
+  | { status: 'playing'; recordingUri: string }
+  | { status: 'unsupported'; reason: 'recording_playback_probe_not_supported' }
   | { status: 'failed'; errorMessage: string };
 
 export async function startPrototypeRecordingProbe(
@@ -69,12 +82,43 @@ export async function stopPrototypeRecordingProbe(
   }
 }
 
+export async function playCapturedPrototypeRecordingProbe(
+  engine: SamplerEngine,
+  recordingUri: string,
+): Promise<PrototypeRecordingProbePlaybackResult> {
+  if (!isRecordingProbePlaybackCapableEngine(engine)) {
+    return { status: 'unsupported', reason: 'recording_playback_probe_not_supported' };
+  }
+
+  try {
+    const result = await engine.playRecordingProbe(recordingUri);
+
+    if (!result.ok) {
+      return { status: 'failed', errorMessage: result.reason };
+    }
+
+    return {
+      status: 'playing',
+      recordingUri: result.recordingUri,
+    };
+  } catch (error: unknown) {
+    return { status: 'failed', errorMessage: getErrorMessage(error) };
+  }
+}
+
 function isRecordingProbeCapableEngine(engine: SamplerEngine): engine is RecordingProbeCapableEngine {
   const candidate = engine as Partial<RecordingProbeCapableEngine>;
   return (
     typeof candidate.startRecordingProbe === 'function' &&
     typeof candidate.stopRecordingProbe === 'function'
   );
+}
+
+function isRecordingProbePlaybackCapableEngine(
+  engine: SamplerEngine,
+): engine is RecordingProbePlaybackCapableEngine {
+  const candidate = engine as Partial<RecordingProbePlaybackCapableEngine>;
+  return typeof candidate.playRecordingProbe === 'function';
 }
 
 function getErrorMessage(error: unknown): string {
