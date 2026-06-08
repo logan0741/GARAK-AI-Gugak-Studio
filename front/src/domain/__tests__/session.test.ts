@@ -75,6 +75,27 @@ test('attaches a captured recording uri without dropping event fallback data', (
   expect(next.events).toEqual(session.events);
 });
 
+test('trims captured recording uri before storing it on session fallback data', () => {
+  const session = appendPerformanceEvent(
+    createEmptySession({
+      id: 'session-1',
+      createdAt: '2026-06-02T00:00:00.000Z',
+      sampleAssetManifestVersion: '2026-06-02-dev',
+    }),
+    {
+      type: 'string_pluck',
+      tsMs: 100,
+      stringIndex: 1,
+      velocity: 1,
+    },
+  );
+
+  const next = attachRecordingUriToSession(session, '  file://recording.m4a  ');
+
+  expect(next.recordingUri).toBe('file://recording.m4a');
+  expect(next.events).toEqual(session.events);
+});
+
 test('does not attach whitespace recording uri to session fallback data', () => {
   const session = appendPerformanceEvent(
     createEmptySession({
