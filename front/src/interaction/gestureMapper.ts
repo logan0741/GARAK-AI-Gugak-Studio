@@ -3,6 +3,7 @@ import {
   assertEventTimestamp,
   assertStringIndex,
   clampBendCents,
+  createStringMute,
   createStringPluck,
 } from '../domain/performanceEvent';
 
@@ -69,15 +70,11 @@ export function mapSwipeAcrossStrings(input: {
 }
 
 export function mapCover(input: { tsMs: number; stringIndex: number; area: number }): PerformanceEvent {
-  assertEventTimestamp(input.tsMs);
-  assertStringIndex(input.stringIndex);
-
-  return {
-    type: 'string_mute',
+  return createStringMute({
     tsMs: input.tsMs,
     stringIndex: input.stringIndex,
     strength: clampUnit(input.area, 'area'),
-  };
+  });
 }
 
 export function mapRelease(input: { tsMs: number; stringIndex: number }): PerformanceEvent {

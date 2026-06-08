@@ -1,5 +1,10 @@
 import { expect, test } from 'vitest';
-import { clampBendCents, createStringBend, createStringPluck } from '../performanceEvent';
+import {
+  clampBendCents,
+  createStringBend,
+  createStringMute,
+  createStringPluck,
+} from '../performanceEvent';
 
 test('creates string pluck events with timestamp and string index', () => {
   const event = createStringPluck({ tsMs: 120, stringIndex: 4, velocity: 0.8 });
@@ -40,6 +45,27 @@ test('creates string bend events with clamped cents', () => {
     stringIndex: 7,
     cents: 120,
   });
+});
+
+test('creates string mute events with clamped strength', () => {
+  expect(createStringMute({ tsMs: 300, stringIndex: 2, strength: 1.4 })).toEqual({
+    type: 'string_mute',
+    tsMs: 300,
+    stringIndex: 2,
+    strength: 1,
+  });
+  expect(createStringMute({ tsMs: 320, stringIndex: 2, strength: -0.4 })).toEqual({
+    type: 'string_mute',
+    tsMs: 320,
+    stringIndex: 2,
+    strength: 0,
+  });
+});
+
+test('rejects non-finite mute strength before creating gain events', () => {
+  expect(() =>
+    createStringMute({ tsMs: 300, stringIndex: 2, strength: Number.NaN }),
+  ).toThrow('strength must be finite');
 });
 
 test('rejects non-finite timestamps when creating performance events', () => {

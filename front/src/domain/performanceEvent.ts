@@ -37,6 +37,14 @@ function clampVelocity(velocity: number): number {
   return Math.max(0, Math.min(1, velocity));
 }
 
+function clampMuteStrength(strength: number): number {
+  if (!Number.isFinite(strength)) {
+    throw new Error('strength must be finite');
+  }
+
+  return Math.max(0, Math.min(1, strength));
+}
+
 export function createStringPluck(input: {
   tsMs: number;
   stringIndex: number;
@@ -66,5 +74,21 @@ export function createStringBend(input: {
     tsMs: input.tsMs,
     stringIndex: input.stringIndex,
     cents: clampBendCents(input.cents),
+  };
+}
+
+export function createStringMute(input: {
+  tsMs: number;
+  stringIndex: number;
+  strength: number;
+}): PerformanceEvent {
+  assertEventTimestamp(input.tsMs);
+  assertStringIndex(input.stringIndex);
+
+  return {
+    type: 'string_mute',
+    tsMs: input.tsMs,
+    stringIndex: input.stringIndex,
+    strength: clampMuteStrength(input.strength),
   };
 }

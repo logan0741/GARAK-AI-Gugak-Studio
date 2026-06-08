@@ -12,7 +12,7 @@ Use this document when validating whether the prototype can turn raw touch movem
 
 | File | Responsibility |
 | --- | --- |
-| `src/interaction/touchModel.ts` | Converts raw touch frames into `PerformanceEvent[]` using the existing `GestureMapper` functions. Touch timestamps, pluck/glissando velocity, and pitch-bend cents must be finite before they can become session evidence. |
+| `src/interaction/touchModel.ts` | Converts raw touch frames into `PerformanceEvent[]` using the existing `GestureMapper` functions. Touch timestamps, pluck/glissando velocity, pitch-bend cents, and mute strength must be finite before they can become session evidence. |
 | `src/interaction/__tests__/touchModel.test.ts` | Pure tests for tap start, forward/reverse glissando crossing, hold-drag bend threshold, ji-eum mute state, and release cleanup. |
 | `src/prototype/GayageumPrototypeScreen.tsx` | Uses a `PanResponder` instrument surface and dispatches touch-model events to the current `SamplerEngine`, including additional touch starts for ji-eum mute. Also exposes deterministic `Bend` and `Mute` probe buttons for repeated engine smoke checks; these do not replace raw touch validation. |
 | `src/prototype/prototypeQaSnapshot.ts` | Tracks prototype-observable QA counters and formats an `estimate` inspector template with nullable unmeasured fields. It does not create final physical-device evidence. |
@@ -41,8 +41,9 @@ Expected result: all commands exit 0.
 9. Confirm generated events show finite numeric `tsMs` values in the session log; non-finite timestamps are invalid touch evidence.
 10. Confirm `string_pluck.velocity` and `glissando_step.velocity` values are finite numeric values in the session log; non-finite velocity is invalid playback evidence.
 11. Confirm `string_bend.cents` values are finite numeric values in the session log; non-finite bend values are invalid pitch-bend evidence.
-12. Confirm the session event log remains available even if the audio engine reports a failure.
-13. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields.
+12. Confirm `string_mute.strength` values are finite numeric values in the session log; non-finite strength is invalid mute evidence.
+13. Confirm the session event log remains available even if the audio engine reports a failure.
+14. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields.
 
 ## Result Table
 
