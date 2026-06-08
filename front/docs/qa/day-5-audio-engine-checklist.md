@@ -73,7 +73,7 @@ If a candidate cannot start, stop, or play a recording probe, copy `observedProt
 
 Recording probes reject non-finite, zero, or negative requested durations before touching native recording APIs. The Week 1 prototype UI should use the fixed `Rec 10s` path for candidate evidence.
 
-For `expo-audio` recording probes, a non-finite or negative native recorder duration is normalized to `0` captured seconds before it reaches the prototype inspector. Treat that as failed recording evidence unless the tester has a separate verified 10-second capture and playback result.
+For recording probes, a non-finite or negative native recorder duration is normalized to `0` captured seconds before it reaches the prototype inspector. Treat that as failed recording evidence unless the tester has a separate verified 10-second capture and playback result.
 
 Captured recording URIs are trimmed before they are stored or sent to playback. Whitespace-only URIs are treated as missing capture output and must not be copied as recording evidence.
 

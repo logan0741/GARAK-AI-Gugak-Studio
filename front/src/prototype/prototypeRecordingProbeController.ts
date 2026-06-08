@@ -78,7 +78,7 @@ export async function stopPrototypeRecordingProbe(
 
     return {
       status: 'captured',
-      capturedSeconds: result.capturedSeconds,
+      capturedSeconds: normalizeCapturedSeconds(result.capturedSeconds),
       recordingUri: normalizeRecordingUri(result.recordingUri),
     };
   } catch (error: unknown) {
@@ -141,6 +141,14 @@ function normalizeRecordingUri(recordingUri: string | null): string | null {
   }
 
   return normalizedRecordingUri;
+}
+
+function normalizeCapturedSeconds(capturedSeconds: number): number {
+  if (!Number.isFinite(capturedSeconds) || capturedSeconds < 0) {
+    return 0;
+  }
+
+  return capturedSeconds;
 }
 
 function isPositiveFiniteNumber(input: number): boolean {
