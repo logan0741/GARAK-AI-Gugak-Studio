@@ -106,7 +106,7 @@ After a physical-device probe record exists, run the readiness gate before the f
 npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>
 ```
 
-The readiness gate requires `READY_FOR_DAY5_DECISION`. It checks that the Week 1 smoke report is complete, the probe record has one physical-device probe for both required candidates, and the physical-device labels match across the smoke report and probe record after trimming surrounding whitespace. It reports failed smoke checks for review context, but it does not write files and does not select a final engine.
+The readiness gate requires `READY_FOR_DAY5_DECISION`. It checks that the Week 1 smoke report is complete, the probe record has one physical-device probe for both required candidates, and the physical-device labels match across the smoke report and probe record after trimming surrounding whitespace. If the smoke report is incomplete, `Smoke report issues` includes the concrete missing, duplicate, blocked, or device-label causes. It reports failed smoke checks for review context, but it does not write files and does not select a final engine.
 
 ## Probe Record Handoff
 

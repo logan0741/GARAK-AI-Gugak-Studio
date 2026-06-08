@@ -125,6 +125,39 @@ test('blocks Day 5 readiness when Week 1 smoke report still has blocked checks',
   expect(output).toContain('- Blocked smoke checks: day-2-expo-audio.ten-second-capture');
 });
 
+test('reports smoke report device label issues in the readiness summary', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(
+            createSmokeReport({
+              deviceLabels: {
+                'day-3-react-native-audio-api': 'Galaxy S24 / Android 15',
+              },
+            }),
+          );
+        }
+
+        return JSON.stringify(createProbeRecord());
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_DAY5_DECISION');
+  expect(output).toContain(
+    '- Smoke report issues: smoke report is not complete for Day 5 review, device label issues: smoke report must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+  );
+});
+
 test('blocks readiness when a required candidate has no physical-device probe', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];

@@ -145,9 +145,37 @@ function buildDay5ReadinessReport(input: {
 }
 
 function collectSmokeReportIssues(summary: Week1SmokeReportSummary): string[] {
-  return summary.status === 'COMPLETE_FOR_DAY5_REVIEW'
-    ? []
-    : ['smoke report is not complete for Day 5 review'];
+  if (summary.status === 'COMPLETE_FOR_DAY5_REVIEW') {
+    return [];
+  }
+
+  const issues = ['smoke report is not complete for Day 5 review'];
+
+  if (summary.missingAreas.length > 0) {
+    issues.push(`missing areas: ${formatList(summary.missingAreas)}`);
+  }
+
+  if (summary.duplicateAreas.length > 0) {
+    issues.push(`duplicate areas: ${formatList(summary.duplicateAreas)}`);
+  }
+
+  if (summary.missingChecks.length > 0) {
+    issues.push(`missing checks: ${formatList(summary.missingChecks)}`);
+  }
+
+  if (summary.duplicateChecks.length > 0) {
+    issues.push(`duplicate checks: ${formatList(summary.duplicateChecks)}`);
+  }
+
+  if (summary.deviceLabelIssues.length > 0) {
+    issues.push(`device label issues: ${formatList(summary.deviceLabelIssues)}`);
+  }
+
+  if (summary.blockedChecks.length > 0) {
+    issues.push(`blocked checks: ${formatList(summary.blockedChecks)}`);
+  }
+
+  return issues;
 }
 
 function collectProbeRecordIssues(probeRecord: AudioEngineProbeRecord): string[] {
