@@ -4,6 +4,7 @@ import {
   promoteAudioEngineProbeDraftToPhysicalDevice,
 } from '../audio/audioEngineProbeDraft';
 import { AudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
+import { isPhysicalDeviceLabel } from '../qa/week1SmokeReportCommand';
 import { PrototypeProbeDraftInspectorModel } from './prototypeQaSnapshot';
 import { PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION } from './prototypeSampleManifest';
 
@@ -29,6 +30,7 @@ export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
 ): AudioEngineProbe {
   assertInspectorDraftEstimateGuard(input.inspectorDraft);
   assertObservedRuntimeReady(input.inspectorDraft);
+  assertPrototypeHandoffDeviceLabel(input);
 
   const draft = input.inspectorDraft.probeTemplate;
 
@@ -95,6 +97,44 @@ function assertInspectorDraftEstimateGuard(
       'prototype inspector draft probeTemplate.evidenceSource must be estimate before physical-device promotion',
     );
   }
+}
+
+function assertPrototypeHandoffDeviceLabel(
+  input: PhysicalDevicePrototypeProbeHandoffInput,
+): void {
+  const draftDeviceLabel = input.inspectorDraft.probeTemplate.deviceLabel;
+
+  if (!isPhysicalDeviceLabel(draftDeviceLabel)) {
+    throw new Error(
+      'prototype inspector draft deviceLabel must name the physical device before physical-device promotion',
+    );
+  }
+
+  if (input.deviceLabel === undefined) {
+    return;
+  }
+
+  if (!isPhysicalDeviceLabel(input.deviceLabel)) {
+    throw new Error(
+      'prototype handoff deviceLabel must name the physical device before physical-device promotion',
+    );
+  }
+
+  if (
+    normalizePrototypeHandoffDeviceLabel(input.deviceLabel) !==
+    normalizePrototypeHandoffDeviceLabel(draftDeviceLabel)
+  ) {
+    throw new Error(
+      `prototype handoff deviceLabel must match inspector draft device label ${draftDeviceLabel}`,
+    );
+  }
+}
+
+function normalizePrototypeHandoffDeviceLabel(input: string): string {
+  return input
+    .trim()
+    .replace(/\s*\/\s*/g, ' / ')
+    .replace(/\s+/g, ' ');
 }
 
 function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
