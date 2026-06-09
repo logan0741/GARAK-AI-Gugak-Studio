@@ -2,6 +2,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import { validateSampleAssetManifest } from '../../domain/sampleManifest';
 import { createPrototypeSamplerEngineHost, getMissingSampleStringIndexes } from '../prototypeSamplerEngineHost';
+import { prototypeBundledSampleAssetUris } from '../prototypeBundledSampleAssetUris';
 import {
   prototypeGayageumSampleManifest,
   resolvePrototypeSampleAssetPath,
@@ -27,6 +28,13 @@ test('points every dev sample manifest entry at a local wav fixture', () => {
     expect(header.slice(0, 4)).toBe('RIFF');
     expect(header.slice(8, 12)).toBe('WAVE');
   }
+});
+
+test('keeps bundled sample asset uri list aligned with the dev sample manifest', () => {
+  expect(prototypeBundledSampleAssetUris).toEqual(
+    prototypeGayageumSampleManifest.assets.map((asset) => asset.fileUri),
+  );
+  expect(new Set(prototypeBundledSampleAssetUris).size).toBe(12);
 });
 
 test('summarizes dev sample provenance for the prototype inspector', () => {
