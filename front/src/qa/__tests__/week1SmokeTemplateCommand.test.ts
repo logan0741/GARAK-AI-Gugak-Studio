@@ -79,13 +79,14 @@ test('writes a blocked Week 1 smoke report template for every required smoke are
     'mute-button',
     'session-replay-ready',
     'session-replay-dispatch',
+    'session-replay-dispatch-reset',
     'fallback',
   ]);
   expect(
     report.runs.flatMap((run: { checks: Array<{ result: string }> }) =>
       run.checks.map((check) => check.result),
     ),
-  ).toEqual(new Array(26).fill('blocked'));
+  ).toEqual(new Array(27).fill('blocked'));
 });
 
 test('generated templates are parseable by the smoke report command before results are filled', () => {
