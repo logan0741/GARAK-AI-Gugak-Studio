@@ -26,14 +26,32 @@ export function formatPrototypeSessionFallbackForInspector(session: Session): st
 }
 
 function sanitizeSessionForFallback(session: Session): Session {
-  const recordingUri = session.recordingUri?.trim();
+  const recordingUri = normalizeRecordingUri(session.recordingUri);
+  const recordings = session.recordings.flatMap((recording) => {
+    const uri = normalizeRecordingUri(recording.uri);
+    return uri === null ? [] : [{ ...recording, uri }];
+  });
+  const sanitizedSession = {
+    ...session,
+    recordings,
+  };
+
   if (!recordingUri) {
-    const { recordingUri: _recordingUri, ...sessionWithoutRecordingUri } = session;
+    const { recordingUri: _recordingUri, ...sessionWithoutRecordingUri } = sanitizedSession;
     return sessionWithoutRecordingUri;
   }
 
   return {
-    ...session,
+    ...sanitizedSession,
     recordingUri,
   };
+}
+
+function normalizeRecordingUri(recordingUri: unknown): string | null {
+  if (typeof recordingUri !== 'string') {
+    return null;
+  }
+
+  const normalizedRecordingUri = recordingUri.trim();
+  return normalizedRecordingUri.length > 0 ? normalizedRecordingUri : null;
 }

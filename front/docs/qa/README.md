@@ -60,6 +60,8 @@ The readiness check reports missing candidates, duplicate candidates, device lab
 
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 
+The `Session fallback` formatter trims captured recording URIs in both the MVP compatibility `recordingUri` field and `recordings[]`, and it omits blank or whitespace-only recording outputs before producing copyable JSON.
+
 Use UTC ISO timestamps such as `2026-06-08T01:00:00.000Z` for `generatedAt` and `measuredAt` in probe records. The parser also rejects impossible calendar dates even when the string shape looks like UTC ISO.
 
 ## Required QA Areas
