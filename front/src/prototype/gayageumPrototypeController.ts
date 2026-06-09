@@ -51,24 +51,63 @@ export function planMuteProbe(input: { nowMs: number; stringIndex: number }): Pe
   ];
 }
 
-export function dispatchEventsToEngine(engine: SamplerEngine, events: PerformanceEvent[]): void {
+export function dispatchEventsToEngine(
+  engine: SamplerEngine,
+  events: PerformanceEvent[],
+): EngineDispatchSuccess {
   for (const event of events) {
     engine.handleEvent(event);
   }
+
+  return {
+    handledEvents: events.length,
+    ok: true,
+    totalEvents: events.length,
+  };
 }
 
-export type EngineDispatchResult = { ok: true } | { ok: false; errorMessage: string };
+export type EngineDispatchSuccess = {
+  handledEvents: number;
+  ok: true;
+  totalEvents: number;
+};
+
+export type EngineDispatchFailure = {
+  errorMessage: string;
+  failedEvent: PerformanceEvent;
+  failedEventIndex: number;
+  handledEvents: number;
+  ok: false;
+  totalEvents: number;
+};
+
+export type EngineDispatchResult = EngineDispatchSuccess | EngineDispatchFailure;
 
 export function safelyDispatchEventsToEngine(engine: SamplerEngine, events: PerformanceEvent[]): EngineDispatchResult {
-  try {
-    dispatchEventsToEngine(engine, events);
-    return { ok: true };
-  } catch (error) {
-    return {
-      ok: false,
-      errorMessage: error instanceof Error ? error.message : 'Unknown audio engine failure',
-    };
+  let handledEvents = 0;
+
+  for (let index = 0; index < events.length; index += 1) {
+    const event = events[index];
+    try {
+      engine.handleEvent(event);
+      handledEvents += 1;
+    } catch (error) {
+      return {
+        errorMessage: error instanceof Error ? error.message : 'Unknown audio engine failure',
+        failedEvent: event,
+        failedEventIndex: index,
+        handledEvents,
+        ok: false,
+        totalEvents: events.length,
+      };
+    }
   }
+
+  return {
+    handledEvents,
+    ok: true,
+    totalEvents: events.length,
+  };
 }
 
 export function safelyDispatchEventsToCurrentEngine(
@@ -80,4 +119,11 @@ export function safelyDispatchEventsToCurrentEngine(
 
 export function appendEventsToSession(session: Session, events: PerformanceEvent[]): Session {
   return events.reduce((current, event) => appendPerformanceEvent(current, event), session);
+}
+
+export function formatEngineDispatchFailure(failure: EngineDispatchFailure): string {
+  return [
+    `failed after ${failure.handledEvents}/${failure.totalEvents} events at index ${failure.failedEventIndex}`,
+    `${failure.errorMessage}; event=${JSON.stringify(failure.failedEvent)}`,
+  ].join(': ');
 }
