@@ -138,6 +138,18 @@ export function createInitialPrototypeQaSnapshot(input: {
   };
 }
 
+export function createPrototypeQaSnapshotForCandidateChange(input: {
+  candidate: AudioEngineCandidateId;
+  deviceLabel: string;
+  measuredAt: string;
+}): PrototypeQaSnapshot {
+  return createInitialPrototypeQaSnapshot({
+    candidate: input.candidate,
+    deviceLabel: normalizePrototypeQaDeviceLabel(input.deviceLabel),
+    measuredAt: input.measuredAt,
+  });
+}
+
 export function updatePrototypeQaSnapshot(
   snapshot: PrototypeQaSnapshot,
   input: {
