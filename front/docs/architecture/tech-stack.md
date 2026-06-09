@@ -190,7 +190,7 @@ Day 5 final selection must be recorded through `src/audio/audioEngineDecisionRec
 
 Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
 
-Week 1 device QA uses `expo-dev-client` and the `eas.json` `development` profile because native audio modules and microphone permissions cannot be validated in Expo Go. `npm run start:dev-client` is the Metro entry point after the development client is installed on the device.
+Week 2 physical-device QA uses `expo-dev-client` and the `eas.json` `development` profile because native audio modules and microphone permissions cannot be validated in Expo Go. `npm run start:dev-client` is the Metro entry point after the development client is installed on the device.
 
 Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/expoAudioSamplerEngine.ts` and is tested through a port-injected runtime so domain, session, gesture, and prototype controller code do not depend on the concrete audio package.
 
@@ -202,7 +202,7 @@ Day 4 touch validation uses `src/interaction/touchModel.ts` as the raw-touch bou
 
 The prototype runtime host lives in `src/prototype/prototypeSamplerEngineHost.ts`. It may target `expo-audio` or `react-native-audio-api`, but it must keep the active runtime on `fake-prototype` until a complete 12-string `SampleAssetManifest` with no duplicate string indexes is available and the requested native candidate finishes preload. This prevents fake-engine counters, invalid manifests, or unpreloaded native engines from being mistaken for candidate evidence.
 
-Week 1 development samples are managed by `src/prototype/prototypeSampleManifest.ts`, `src/prototype/prototypeBundledSampleAssetUris.ts`, `scripts/generate-dev-gayageum-samples.ts`, and `assets/audio/gayageum-dev/`. Run `npm run samples:generate-dev` before device QA to regenerate the synthetic 12-string WAV fixtures. Manifest version `dev-synthetic-gayageum-2026-06-08` is valid only for technical engine validation; final release audio must use owned or licensed gayageum recordings and a new manifest version.
+Week 1 development samples are managed by `src/prototype/prototypeSampleManifest.ts`, `src/prototype/prototypeBundledSampleAssetUris.ts`, `scripts/generate-dev-gayageum-samples.ts`, and `assets/audio/gayageum-dev/`. Run `npm run samples:generate-dev` before Week 2 physical-device QA to regenerate the synthetic 12-string WAV fixtures. Manifest version `dev-synthetic-gayageum-2026-06-08` is valid only for technical engine validation; final release audio must use owned or licensed gayageum recordings and a new manifest version.
 
 Recording checks in the prototype go through `src/prototype/prototypeRecordingProbeController.ts`. Engines without `startRecordingProbe` and `stopRecordingProbe` must report `recording_probe_not_supported` instead of failing the session fallback path. `expo-audio` is currently the recording-capable candidate.
 
