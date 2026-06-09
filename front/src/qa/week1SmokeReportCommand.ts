@@ -40,6 +40,7 @@ export type Week1SmokeReportSummary = {
   missingChecks: string[];
   duplicateChecks: string[];
   deviceLabelIssues: string[];
+  timestampIssues: string[];
   blockedChecks: string[];
   failedChecks: string[];
   failedCheckNoteIssues: string[];
@@ -211,6 +212,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
   const missingChecks = collectMissingChecks(report.runs);
   const duplicateChecks = collectDuplicateChecks(report.runs);
   const deviceLabelIssues = collectDeviceLabelIssues(report.runs);
+  const timestampIssues = collectTimestampIssues(report);
   const blockedChecks = collectChecksByResult(report.runs, 'blocked');
   const failedChecks = collectChecksByResult(report.runs, 'fail');
   const failedCheckNoteIssues = collectFailedCheckNoteIssues(report.runs);
@@ -220,6 +222,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
     missingChecks.length === 0 &&
     duplicateChecks.length === 0 &&
     deviceLabelIssues.length === 0 &&
+    timestampIssues.length === 0 &&
     blockedChecks.length === 0 &&
     failedCheckNoteIssues.length === 0
       ? 'COMPLETE_FOR_DAY5_REVIEW'
@@ -232,6 +235,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
     missingChecks,
     duplicateChecks,
     deviceLabelIssues,
+    timestampIssues,
     blockedChecks,
     failedChecks,
     failedCheckNoteIssues,
@@ -295,6 +299,17 @@ function collectDeviceLabelIssues(runs: Week1SmokeRun[]): string[] {
   return [`smoke report must use one device label: ${formatList(deviceLabels)}`];
 }
 
+function collectTimestampIssues(report: Week1SmokeReport): string[] {
+  const generatedAtTimeMs = Date.parse(report.generatedAt);
+  const hasRunGeneratedLater = report.runs.some(
+    (run) => Date.parse(run.testedAt) > generatedAtTimeMs,
+  );
+
+  return hasRunGeneratedLater
+    ? ['generatedAt must be at or after every smoke run testedAt timestamp']
+    : [];
+}
+
 function collectChecksByResult(
   runs: Week1SmokeRun[],
   result: Exclude<Week1SmokeCheckResult, 'pass'>,
@@ -355,6 +370,7 @@ function formatWeek1SmokeReportSummary(summary: Week1SmokeReportSummary): string
     `- Missing checks: ${formatList(summary.missingChecks)}`,
     `- Duplicate checks: ${formatList(summary.duplicateChecks)}`,
     `- Device label issues: ${formatList(summary.deviceLabelIssues)}`,
+    `- Timestamp issues: ${formatList(summary.timestampIssues)}`,
     `- Blocked checks: ${formatList(summary.blockedChecks)}`,
     `- Failed checks: ${formatList(summary.failedChecks)}`,
     `- Failed check note issues: ${formatList(summary.failedCheckNoteIssues)}`,
