@@ -106,15 +106,24 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   async preload(): Promise<ExpoAudioPreloadResult> {
+    this.playersByString.clear();
+    this.playbackGenerationsByString.clear();
+    this.playbackQueuesByString.clear();
+    this.playbackQueueFailure = undefined;
     await this.runtime.setAudioModeAsync(PLAYBACK_MODE);
 
+    const sourcesByString: Array<{ stringIndex: number; source: { uri: string } }> = [];
     for (const asset of this.manifest.assets) {
       const source = normalizeDownloadedAudioSource(
         await this.runtime.downloadAudioSource({ uri: asset.fileUri }),
         asset.stringIndex,
       );
+      sourcesByString.push({ stringIndex: asset.stringIndex, source });
+    }
+
+    for (const { stringIndex, source } of sourcesByString) {
       const player = this.runtime.createAudioPlayer(source, PLAYER_OPTIONS);
-      this.playersByString.set(asset.stringIndex, player);
+      this.playersByString.set(stringIndex, player);
     }
 
     return {
