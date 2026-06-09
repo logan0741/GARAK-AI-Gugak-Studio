@@ -53,6 +53,7 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
   return {
     handleFrame(frame) {
       assertFiniteTouchCoordinate(frame.x, 'x');
+      assertFiniteOptionalTouchValue(frame.contactArea, 'contactArea');
       switch (frame.phase) {
         case 'start':
           return handleStart(frame);
@@ -183,6 +184,12 @@ function assertValidTouchLayout(layout: TouchStringLayout): void {
 function assertFiniteTouchCoordinate(value: number, axis: 'x' | 'y'): void {
   if (!Number.isFinite(value)) {
     throw new Error(`touch ${axis} must be finite`);
+  }
+}
+
+function assertFiniteOptionalTouchValue(value: number | undefined, fieldName: string): void {
+  if (value !== undefined && !Number.isFinite(value)) {
+    throw new Error(`touch ${fieldName} must be finite`);
   }
 }
 
