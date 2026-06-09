@@ -652,6 +652,30 @@ test('resets the prototype QA device label to the placeholder when input is clea
   });
 });
 
+test('keeps placeholder-like prototype QA device labels out of probe drafts', () => {
+  const snapshot = updatePrototypeQaDeviceLabel(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:42:00.000Z',
+    }),
+    {
+      deviceLabel: 'Device / OS',
+      measuredAt: '2026-06-08T04:42:10.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    deviceLabel: 'replace-with-physical-device-model',
+    measuredAt: '2026-06-08T04:42:10.000Z',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    probeTemplate: {
+      deviceLabel: 'replace-with-physical-device-model',
+    },
+  });
+});
+
 test('counts only non-released fake voices as audible prototype voices', () => {
   expect(
     countPrototypeAudibleVoices([
