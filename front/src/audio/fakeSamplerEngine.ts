@@ -12,7 +12,7 @@ export class FakeSamplerEngine implements SamplerEngine {
   private nextVoiceNumber = 1;
 
   constructor(input: { maxVoices?: number } = {}) {
-    this.maxVoices = input.maxVoices ?? 8;
+    this.maxVoices = normalizeMaxVoices(input.maxVoices ?? 8);
   }
 
   get commands(): string[] {
@@ -74,4 +74,12 @@ export class FakeSamplerEngine implements SamplerEngine {
       }
     }
   }
+}
+
+function normalizeMaxVoices(maxVoices: number): number {
+  if (!Number.isInteger(maxVoices) || maxVoices < 1) {
+    throw new Error('maxVoices must be a positive integer');
+  }
+
+  return maxVoices;
 }
