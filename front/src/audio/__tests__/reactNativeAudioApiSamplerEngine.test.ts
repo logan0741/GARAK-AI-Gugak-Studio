@@ -48,6 +48,14 @@ test('rejects preload when a decoded buffer is missing', async () => {
   ]);
 });
 
+test('rejects invalid voice budgets before creating native graph nodes', () => {
+  for (const maxVoices of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
+    expect(
+      () => new ReactNativeAudioApiSamplerEngine({ manifest, runtime: createRuntimePort(), maxVoices }),
+    ).toThrow('maxVoices must be a positive integer');
+  }
+});
+
 test('creates independent source nodes for at least 8 simultaneous voices', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 8 });

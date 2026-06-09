@@ -83,7 +83,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }) {
     this.manifest = input.manifest;
     this.runtime = input.runtime;
-    this.maxVoices = input.maxVoices ?? DEFAULT_MAX_VOICES;
+    this.maxVoices = normalizeMaxVoices(input.maxVoices ?? DEFAULT_MAX_VOICES);
   }
 
   async preload(): Promise<ReactNativeAudioApiPreloadResult> {
@@ -248,6 +248,14 @@ function assertFiniteControlValue(value: number, fieldName: string): void {
   if (!Number.isFinite(value)) {
     throw new Error(`${fieldName} must be finite`);
   }
+}
+
+function normalizeMaxVoices(maxVoices: number): number {
+  if (!Number.isInteger(maxVoices) || maxVoices < 1) {
+    throw new Error('maxVoices must be a positive integer');
+  }
+
+  return maxVoices;
 }
 
 function removeMatching<T>(items: T[], predicate: (item: T) => boolean): boolean {
