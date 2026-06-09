@@ -1,5 +1,6 @@
 import { SamplerEngine } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
+import { ReplaySchedule } from '../domain/replayPlanner';
 import { Session, appendPerformanceEvent } from '../domain/session';
 import {
   mapCover,
@@ -115,6 +116,23 @@ export function safelyDispatchEventsToCurrentEngine(
   events: PerformanceEvent[],
 ): EngineDispatchResult {
   return safelyDispatchEventsToEngine(engineRef.current, events);
+}
+
+export function dispatchReplayScheduleToEngine(
+  engine: SamplerEngine,
+  schedule: ReplaySchedule,
+): EngineDispatchResult {
+  return safelyDispatchEventsToEngine(
+    engine,
+    schedule.items.map((item) => item.event),
+  );
+}
+
+export function safelyDispatchReplayScheduleToCurrentEngine(
+  engineRef: { current: SamplerEngine },
+  schedule: ReplaySchedule,
+): EngineDispatchResult {
+  return dispatchReplayScheduleToEngine(engineRef.current, schedule);
 }
 
 export function appendEventsToSession(session: Session, events: PerformanceEvent[]): Session {
