@@ -67,7 +67,8 @@ Invariants:
 
 - Session의 기준 데이터는 `PerformanceEvent[]`다.
 - Recording이 없어도 Session은 저장되고 리플레이 가능해야 한다.
-- Session의 `recordingUri`는 선택 값이며, 비어 있거나 공백뿐인 URI는 Recording 산출물로 저장하지 않는다.
+- Session의 `recordings[]`는 선택적 오디오 산출물 목록이며, 비어 있거나 공백뿐인 URI는 Recording 산출물로 저장하지 않는다.
+- Session의 `recordingUri`는 MVP 프로토타입 호환용 최신 캡처 URI다. 기준 데이터는 여전히 `PerformanceEvent[]`이고, Recording만으로는 연주 맥락을 복구하지 않는다.
 - Session은 자신이 사용한 `SampleAssetManifest` 버전을 기록한다.
 - Session 밖의 독립 `PerformanceEvent`는 저장하지 않는다.
 
