@@ -1,3 +1,5 @@
+import { planSessionReplay } from '../domain/replayPlanner';
+import { validateSampleAssetManifest } from '../domain/sampleManifest';
 import {
   PrototypeSessionFallback,
   parsePrototypeSessionFallbackJson,
@@ -19,15 +21,21 @@ export type PrototypeSessionFallbackSummary = {
   sessionId: string;
   eventCount: number;
   sampleAssetManifestVersion: string;
+  replaySchedule?: {
+    durationMs: number;
+    itemCount: number;
+  };
 };
 
 export function runPrototypeSessionFallbackCommand(
   input: PrototypeSessionFallbackCommandInput,
 ): number {
-  const [sessionFallbackPath] = input.argv;
+  const [sessionFallbackPath, sampleManifestPath] = input.argv;
 
   if (!sessionFallbackPath) {
-    input.writeStderr('Usage: npm run qa:session-fallback -- <session-fallback.json>');
+    input.writeStderr(
+      'Usage: npm run qa:session-fallback -- <session-fallback.json> [sample-manifest.json]',
+    );
     return 1;
   }
 
@@ -46,13 +54,47 @@ export function runPrototypeSessionFallbackCommand(
     return 1;
   }
 
-  const summary = summarizePrototypeSessionFallback(parseResult.fallback);
+  let replaySchedule: PrototypeSessionFallbackSummary['replaySchedule'];
+  if (sampleManifestPath) {
+    let manifestText: string;
+
+    try {
+      manifestText = input.readTextFile(sampleManifestPath);
+    } catch {
+      input.writeStderr(`Could not read sample manifest: ${sampleManifestPath}`);
+      return 1;
+    }
+
+    let manifestInput: unknown;
+
+    try {
+      manifestInput = JSON.parse(stripUtf8Bom(manifestText));
+    } catch {
+      input.writeStderr(`Invalid JSON in sample manifest: ${sampleManifestPath}`);
+      return 1;
+    }
+
+    try {
+      const manifest = validateSampleAssetManifest(manifestInput);
+      const schedule = planSessionReplay(parseResult.fallback.session, manifest);
+      replaySchedule = {
+        durationMs: schedule.durationMs,
+        itemCount: schedule.items.length,
+      };
+    } catch (error) {
+      input.writeStderr(`Could not plan session fallback replay: ${getErrorMessage(error)}`);
+      return 1;
+    }
+  }
+
+  const summary = summarizePrototypeSessionFallback(parseResult.fallback, replaySchedule);
   input.writeStdout(formatPrototypeSessionFallbackSummary(summary));
   return summary.status === 'REPLAYABLE_SESSION_FALLBACK' ? 0 : 1;
 }
 
 export function summarizePrototypeSessionFallback(
   fallback: PrototypeSessionFallback,
+  replaySchedule?: PrototypeSessionFallbackSummary['replaySchedule'],
 ): PrototypeSessionFallbackSummary {
   return {
     status:
@@ -61,6 +103,7 @@ export function summarizePrototypeSessionFallback(
         : 'NOT_REPLAYABLE_SESSION_FALLBACK',
     sessionId: fallback.session.id,
     eventCount: fallback.eventCount,
+    replaySchedule,
     sampleAssetManifestVersion: fallback.session.sampleAssetManifestVersion,
   };
 }
@@ -75,5 +118,22 @@ export function formatPrototypeSessionFallbackSummary(
     `- Session: ${summary.sessionId}`,
     `- Event count: ${summary.eventCount}`,
     `- Sample manifest: ${summary.sampleAssetManifestVersion}`,
+    ...(summary.replaySchedule
+      ? [
+          `- Replay schedule: ${summary.replaySchedule.itemCount} items, ${summary.replaySchedule.durationMs} ms`,
+        ]
+      : []),
   ].join('\n');
+}
+
+function stripUtf8Bom(input: string): string {
+  return input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
 }
