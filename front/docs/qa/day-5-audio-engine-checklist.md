@@ -1,6 +1,6 @@
 # Day 5 Audio Engine Checklist
 
-Status: required before choosing the real `SamplerEngine` implementation  
+Status: Week 2 physical-device gate; required before choosing the real `SamplerEngine` implementation
 Scope: Week 1 audio and touch spike for the 12-string gayageum prototype
 
 Related candidate smoke checks:
@@ -12,7 +12,9 @@ Related candidate smoke checks:
 - Decision record: `docs/qa/day-5-audio-engine-decision-record.md`
 - Probe record example: `docs/qa/day-5-audio-engine-probes.example.json`
 
-Use this checklist on a physical Android or iOS device. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
+Use this checklist on a physical Android or iOS device during Week 2. Do not use an emulator to judge audio latency, dropout, click noise, pitch bend quality, or mute release quality.
+
+Week 1 may continue implementation work on the domain model, prototype UI, sample fixtures, recording fallback, and QA harness. Do not publish a final audio-engine selection until the Week 2 physical-device probes and smoke report pass the readiness gate.
 
 Web smoke checks are allowed only for layout, blank-screen, fake fallback interaction, and inspector-state regressions. Web runs intentionally keep active runtime on `fake-prototype`; web results must not be used as physical-device audio evidence.
 
@@ -29,6 +31,8 @@ npm run start:dev-client
 ```
 
 For cloud or local native builds, use the `development` profile in `eas.json`. Expo Go is not valid evidence for Day 5 native audio candidate selection.
+
+The `development` profile must keep `developmentClient: true` and `autoIncrement: true`, and `cli.appVersionSource` must remain `remote`. The config test above is the source-controlled guard for this build contract before physical-device QA starts.
 
 The generated `dev-synthetic-gayageum-2026-06-08` samples are Week 1 technical fixtures only. They are valid for checking whether a candidate engine can preload and play 12 local WAV files, but they are not final instrument assets and do not prove release sound quality.
 
