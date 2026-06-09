@@ -13,6 +13,19 @@ test('creates a session with manifest version and no recording requirement', () 
   expect(session.events).toEqual([]);
 });
 
+test('can reference a data reference manifest without making it required for replay', () => {
+  const session = createEmptySession({
+    id: 'session-1',
+    createdAt: '2026-06-02T00:00:00.000Z',
+    sampleAssetManifestVersion: '2026-06-02-dev',
+    dataReferenceManifestVersion: 'gukak-references-2026-06',
+  });
+
+  expect(session.sampleAssetManifestVersion).toBe('2026-06-02-dev');
+  expect(session.dataReferenceManifestVersion).toBe('gukak-references-2026-06');
+  expect(session.events).toEqual([]);
+});
+
 test('appends performance events without requiring audio capture', () => {
   const session = createEmptySession({
     id: 'session-1',
@@ -54,6 +67,26 @@ test('clears derived session projections after appending an event', () => {
   expect(next.bpmEstimate).toBeUndefined();
   expect(next.densityEstimate).toBeUndefined();
   expect(next.jangdanRecommendation).toBeUndefined();
+});
+
+test('preserves manifest references when appending performance events', () => {
+  const session = createEmptySession({
+    id: 'session-1',
+    createdAt: '2026-06-02T00:00:00.000Z',
+    sampleAssetManifestVersion: '2026-06-02-dev',
+    dataReferenceManifestVersion: 'gukak-references-2026-06',
+  });
+
+  const next = appendPerformanceEvent(session, {
+    type: 'string_pluck',
+    tsMs: 100,
+    stringIndex: 1,
+    velocity: 1,
+  });
+
+  expect(next.sampleAssetManifestVersion).toBe('2026-06-02-dev');
+  expect(next.dataReferenceManifestVersion).toBe('gukak-references-2026-06');
+  expect(next.events).toHaveLength(1);
 });
 
 test('attaches a captured recording uri without dropping event fallback data', () => {
