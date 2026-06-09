@@ -77,6 +77,10 @@ import {
   summarizePrototypeSampleManifestProvenance,
 } from './prototypeSampleManifest';
 import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
+import {
+  createPrototypeSessionReplayPreview,
+  formatPrototypeSessionReplayPreview,
+} from './prototypeSessionReplayPreview';
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
 const POLYPHONY_BURST_STRINGS = ALL_STRINGS.slice(0, 8);
@@ -385,6 +389,13 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const sessionReplayPreviewText = useMemo(
+    () =>
+      formatPrototypeSessionReplayPreview(
+        createPrototypeSessionReplayPreview(session, prototypeGayageumSampleManifest),
+      ),
+    [session],
+  );
   const jangdanPreviewText = useMemo(
     () => formatPrototypeJangdanPreview(createPrototypeJangdanPreview(session.events)),
     [session.events],
@@ -571,6 +582,7 @@ export function GayageumPrototypeScreen() {
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
         <Text style={styles.inspectorText}>Jangdan preview: {jangdanPreviewText}</Text>
+        <Text style={styles.inspectorText}>Session replay: {sessionReplayPreviewText}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
         <Text style={styles.inspectorText}>Latest: {latestEvent ? JSON.stringify(latestEvent) : 'none'}</Text>
