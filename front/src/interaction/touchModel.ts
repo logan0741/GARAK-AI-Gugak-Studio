@@ -53,6 +53,7 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
   return {
     handleFrame(frame) {
       assertFiniteTouchCoordinate(frame.x, 'x');
+      assertFiniteTouchCoordinate(frame.y, 'y');
       assertFiniteOptionalTouchValue(frame.contactArea, 'contactArea');
       switch (frame.phase) {
         case 'start':

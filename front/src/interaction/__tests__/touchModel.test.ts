@@ -217,3 +217,22 @@ test('does not clear the active pointer when release rejects a non-finite timest
     { type: 'string_release', tsMs: 180, stringIndex: 6 },
   ]);
 });
+
+test('does not clear the active pointer when release rejects a non-finite y coordinate', () => {
+  const model = createTouchModel({ layout });
+  model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 });
+
+  expect(() =>
+    model.handleFrame({
+      phase: 'end',
+      pointerId: 'p1',
+      tsMs: 180,
+      x: 42,
+      y: Number.NaN,
+    }),
+  ).toThrow('touch y must be finite');
+
+  expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 190, x: 42, y: 55 })).toEqual([
+    { type: 'string_release', tsMs: 190, stringIndex: 6 },
+  ]);
+});
