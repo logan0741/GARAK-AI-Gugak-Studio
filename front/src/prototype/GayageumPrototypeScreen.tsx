@@ -24,6 +24,7 @@ import {
   planPitchBendProbe,
   planPolyphonyBurst,
   safelyDispatchEventsToCurrentEngine,
+  formatEngineDispatchFailure,
 } from './gayageumPrototypeController';
 import {
   createPrototypeJangdanPreview,
@@ -205,7 +206,7 @@ export function GayageumPrototypeScreen() {
     const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
     const dispatchedAtMs = Date.now();
     const currentEngine = engineRef.current;
-    setAudioError(result.ok ? undefined : result.errorMessage);
+    setAudioError(result.ok ? undefined : formatEngineDispatchFailure(result));
     setQaSnapshot((current) =>
       updatePrototypeQaSnapshot(current, {
         activeVoiceCount: countPrototypeAudibleVoices(getFakeEngineSnapshot(currentEngine).activeVoices),

@@ -4,6 +4,7 @@ import { createEmptySession } from '../../domain/session';
 import {
   appendEventsToSession,
   dispatchEventsToEngine,
+  formatEngineDispatchFailure,
   safelyDispatchEventsToCurrentEngine,
   safelyDispatchEventsToEngine,
   planGlissando,
@@ -37,8 +38,9 @@ test('dispatches planned events to the sampler once outside session updates', ()
   const engine = new FakeSamplerEngine();
   const events = planStringPlay({ nowMs: 100, stringIndex: 3 });
 
-  dispatchEventsToEngine(engine, events);
+  const result = dispatchEventsToEngine(engine, events);
 
+  expect(result).toEqual({ handledEvents: 1, ok: true, totalEvents: 1 });
   expect(engine.commands).toEqual(['pluck:string=3:velocity=1']);
 });
 
@@ -53,8 +55,58 @@ test('returns an audio failure without preventing session event fallback', () =>
   const result = safelyDispatchEventsToEngine(failingEngine, events);
   const next = appendEventsToSession(createSession(), events);
 
-  expect(result).toEqual({ ok: false, errorMessage: 'native audio failed' });
+  expect(result).toEqual({
+    errorMessage: 'native audio failed',
+    failedEvent: { type: 'string_pluck', tsMs: 100, stringIndex: 3, velocity: 1 },
+    failedEventIndex: 0,
+    handledEvents: 0,
+    ok: false,
+    totalEvents: 1,
+  });
   expect(next.events).toEqual(events);
+});
+
+test('reports the failed event index when a batch dispatch fails after partial handling', () => {
+  const events = planGlissando({
+    nowMs: 200,
+    stringIndexes: [1, 2, 3],
+  });
+  const handledStringIndexes: number[] = [];
+  const partiallyFailingEngine = {
+    handleEvent: (event: (typeof events)[number]) => {
+      handledStringIndexes.push(event.stringIndex);
+      if (event.stringIndex === 2) {
+        throw new Error('voice allocation failed');
+      }
+    },
+  };
+
+  const result = safelyDispatchEventsToEngine(partiallyFailingEngine, events);
+
+  expect(result).toEqual({
+    errorMessage: 'voice allocation failed',
+    failedEvent: { type: 'glissando_step', tsMs: 216, stringIndex: 2, velocity: 1 },
+    failedEventIndex: 1,
+    handledEvents: 1,
+    ok: false,
+    totalEvents: 3,
+  });
+  expect(handledStringIndexes).toEqual([1, 2]);
+});
+
+test('formats partial dispatch failures for the prototype inspector', () => {
+  expect(
+    formatEngineDispatchFailure({
+      errorMessage: 'voice allocation failed',
+      failedEvent: { type: 'glissando_step', tsMs: 200, stringIndex: 2, velocity: 1 },
+      failedEventIndex: 1,
+      handledEvents: 1,
+      ok: false,
+      totalEvents: 3,
+    }),
+  ).toBe(
+    'failed after 1/3 events at index 1: voice allocation failed; event={"type":"glissando_step","tsMs":200,"stringIndex":2,"velocity":1}',
+  );
 });
 
 test('dispatches to the current engine reference after the engine changes', () => {
@@ -65,7 +117,11 @@ test('dispatches to the current engine reference after the engine changes', () =
 
   engineRef.current = currentEngine;
 
-  expect(safelyDispatchEventsToCurrentEngine(engineRef, events)).toEqual({ ok: true });
+  expect(safelyDispatchEventsToCurrentEngine(engineRef, events)).toEqual({
+    handledEvents: 1,
+    ok: true,
+    totalEvents: 1,
+  });
   expect(staleEngine.commands).toEqual([]);
   expect(currentEngine.commands).toEqual(['pluck:string=3:velocity=1']);
 });
@@ -77,7 +133,11 @@ test('appends planned events to session in order', () => {
     stringIndexes: [1, 2, 3],
   });
 
-  dispatchEventsToEngine(engine, events);
+  expect(dispatchEventsToEngine(engine, events)).toEqual({
+    handledEvents: 3,
+    ok: true,
+    totalEvents: 3,
+  });
   const next = appendEventsToSession(createSession(), events);
 
   expect(next.events).toHaveLength(3);
