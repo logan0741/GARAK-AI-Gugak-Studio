@@ -68,6 +68,7 @@ import {
 import {
   PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
   prototypeGayageumSampleManifest,
+  summarizePrototypeSampleManifestProvenance,
 } from './prototypeSampleManifest';
 import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
 
@@ -378,6 +379,10 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const sampleProvenance = useMemo(
+    () => summarizePrototypeSampleManifestProvenance(prototypeGayageumSampleManifest),
+    [],
+  );
   const canStartRecording = canStartRecordingProbe({
     recordingProbeState,
   });
@@ -529,6 +534,18 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorText}>
           Manifest version: {engineHost.manifestVersion ?? 'none'}
         </Text>
+        <Text style={styles.inspectorText}>
+          Sample provenance: {sampleProvenance.assetCount} assets; own_asset=
+          {sampleProvenance.sourceLayerCounts.own_asset}; public_asset=
+          {sampleProvenance.sourceLayerCounts.public_asset}
+        </Text>
+        <Text style={styles.inspectorText}>
+          Sample source: {sampleProvenance.sourceNames.join(', ') || 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>
+          Sample license: {sampleProvenance.licenseNotes.join(' | ') || 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>Sample quality: {sampleProvenance.qualityNote}</Text>
         <Text style={styles.inspectorText}>Native preload: {formatNativePreloadStatus(engineHost)}</Text>
         <Text style={styles.inspectorText}>
           Recording probe: {formatRecordingProbeState(recordingProbeState)}
