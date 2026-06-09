@@ -45,6 +45,42 @@ test('appends performance events without requiring audio capture', () => {
   expect(next.recordings).toEqual([]);
 });
 
+test('rejects invalid performance events before appending to session fallback data', () => {
+  const session = createEmptySession({
+    id: 'session-1',
+    createdAt: '2026-06-02T00:00:00.000Z',
+    sampleAssetManifestVersion: '2026-06-02-dev',
+  });
+
+  expect(() =>
+    appendPerformanceEvent(session, {
+      type: 'string_pluck',
+      tsMs: Number.NaN,
+      stringIndex: 1,
+      velocity: 1,
+    }),
+  ).toThrow('tsMs must be finite');
+
+  expect(() =>
+    appendPerformanceEvent(session, {
+      type: 'string_bend',
+      tsMs: 100,
+      stringIndex: 13,
+      cents: 20,
+    }),
+  ).toThrow('stringIndex must be an integer from 1 to 12. Received: 13');
+
+  expect(() =>
+    appendPerformanceEvent(session, {
+      type: 'string_mute',
+      tsMs: 100,
+      stringIndex: 1,
+      strength: Number.NaN,
+    }),
+  ).toThrow('strength must be finite');
+  expect(session.events).toEqual([]);
+});
+
 test('clears derived session projections after appending an event', () => {
   const session = {
     ...createEmptySession({

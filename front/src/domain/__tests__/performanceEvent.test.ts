@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import {
+  assertPerformanceEvent,
   clampBendCents,
   createStringBend,
   createStringMute,
@@ -75,4 +76,42 @@ test('rejects non-finite timestamps when creating performance events', () => {
   expect(() =>
     createStringBend({ tsMs: Number.POSITIVE_INFINITY, stringIndex: 7, cents: 60 }),
   ).toThrow('tsMs must be finite');
+});
+
+test('rejects invalid literal performance events before session storage', () => {
+  expect(() =>
+    assertPerformanceEvent({
+      type: 'string_pluck',
+      tsMs: Number.NaN,
+      stringIndex: 1,
+      velocity: 1,
+    }),
+  ).toThrow('tsMs must be finite');
+
+  expect(() =>
+    assertPerformanceEvent({
+      type: 'string_bend',
+      tsMs: 100,
+      stringIndex: 13,
+      cents: 20,
+    }),
+  ).toThrow('stringIndex must be an integer from 1 to 12. Received: 13');
+
+  expect(() =>
+    assertPerformanceEvent({
+      type: 'string_mute',
+      tsMs: 100,
+      stringIndex: 1,
+      strength: Number.NaN,
+    }),
+  ).toThrow('strength must be finite');
+
+  expect(() =>
+    assertPerformanceEvent({
+      type: 'glissando_step',
+      tsMs: 100,
+      stringIndex: 1,
+      velocity: Number.POSITIVE_INFINITY,
+    }),
+  ).toThrow('velocity must be finite');
 });
