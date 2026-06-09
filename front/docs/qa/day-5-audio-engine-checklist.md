@@ -40,6 +40,8 @@ The prototype native sampler factory must resolve each fixture sample to a non-e
 
 Candidate engines must reject non-finite playback control values before touching native player, node, or automation state. `velocity`, `cents`, and `strength` may be clamped when finite, but `NaN` or infinite values must fail at the `SamplerEngine` boundary instead of becoming device QA evidence.
 
+The `fake-prototype` fallback must mirror the same finite playback-control guard before updating command logs or active voice counters, so web smoke inspector data cannot be contaminated by `NaN` or `Infinity` values.
+
 ## Device Setup
 
 | Field | Value |
