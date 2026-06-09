@@ -23,7 +23,15 @@ export function estimateBpm(events: PerformanceEvent[]): number {
     return 80;
   }
 
-  const intervals = pluckTimes.slice(1).map((time, index) => time - pluckTimes[index]);
+  const intervals = pluckTimes
+    .slice(1)
+    .map((time, index) => time - pluckTimes[index])
+    .filter((interval) => interval > 0 && Number.isFinite(interval));
+
+  if (intervals.length === 0) {
+    return 80;
+  }
+
   const averageIntervalMs = intervals.reduce((sum, value) => sum + value, 0) / intervals.length;
   return Math.round(60000 / averageIntervalMs);
 }

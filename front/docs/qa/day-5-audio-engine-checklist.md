@@ -144,7 +144,7 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 13. Use a broad or multi-touch contact and confirm `string_mute` appears.
 14. Press `Bend` and confirm the event count increments by 4, `pitchBendObserved` becomes `true` in the probe draft, and the current engine handles a pluck, two bends, and release without audio failure.
 15. Press `Mute` and confirm the event count increments by 3, `muteObserved` becomes `true` in the probe draft, and the current engine handles a pluck, mute, and release without audio failure.
-16. Confirm `Jangdan preview` stays `waiting for event context` before at least 4 pluck-like events, then shows a local recommendation with score, BPM, density, and reason after enough tap or glissando events. This preview must not auto-start accompaniment.
+16. Confirm `Jangdan preview` stays `waiting for event context` before at least 4 pluck-like events, then shows a local recommendation with score, finite BPM, density, and reason after enough tap, glissando, or polyphony probe events. This preview must not auto-start accompaniment.
 17. Press `Glissando` and confirm the event count increments by 12.
 18. Press `8 Voice` and confirm the event count increments by 8. On device, listen for dropout or voice stealing; on web fake runtime, confirm audible fake voice count reaches at least 8 before release cleanup.
 19. While active runtime is `fake-prototype`, confirm audible fake voice count grows for plucks and does not count released voices.
