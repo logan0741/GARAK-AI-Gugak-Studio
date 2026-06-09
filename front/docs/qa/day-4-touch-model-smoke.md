@@ -12,7 +12,7 @@ Use this document when validating whether the prototype can turn raw touch movem
 
 | File | Responsibility |
 | --- | --- |
-| `src/interaction/touchModel.ts` | Converts raw touch frames into `PerformanceEvent[]` using the existing `GestureMapper` functions. The 12-string layout must have a finite top offset and positive height, and touch timestamps, x/y coordinates, pluck/glissando velocity, pitch-bend cents, and mute strength must be finite before they can become session evidence. Rejected invalid frames must not advance swipe, mute, bend, or release pointer state before the next valid frame. |
+| `src/interaction/touchModel.ts` | Converts raw touch frames into `PerformanceEvent[]` using the existing `GestureMapper` functions. The 12-string layout must have a finite top offset and positive height, and touch timestamps, x/y coordinates, contact area, pluck/glissando velocity, pitch-bend cents, and mute strength must be finite before they can become session evidence. Rejected invalid frames must not advance swipe, mute, bend, or release pointer state before the next valid frame. |
 | `src/interaction/__tests__/touchModel.test.ts` | Pure tests for tap start, forward/reverse glissando crossing, hold-drag bend threshold, ji-eum mute state, and release cleanup. |
 | `src/prototype/gayageumPrototypeController.ts` | Plans deterministic tap, glissando, bend, mute, and 8-voice probe event batches, appends them to the replayable session, and reports how many events reached the current `SamplerEngine` before any dispatch failure. |
 | `src/prototype/GayageumPrototypeScreen.tsx` | Uses a `PanResponder` instrument surface and dispatches touch-model events to the current `SamplerEngine`, including additional touch starts for ji-eum mute. Also exposes deterministic `Bend` and `Mute` probe buttons for repeated engine smoke checks; these do not replace raw touch validation. |
@@ -44,10 +44,11 @@ Expected result: all commands exit 0.
 10. Confirm `string_pluck.velocity` and `glissando_step.velocity` values are finite numeric values in the session log; non-finite velocity is invalid playback evidence.
 11. Confirm `string_bend.cents` values are finite numeric values in the session log; non-finite bend values are invalid pitch-bend evidence.
 12. Confirm `string_mute.strength` values are finite numeric values in the session log; non-finite strength is invalid mute evidence.
-13. Confirm invalid touch evidence does not corrupt the active pointer: the next valid swipe, ji-eum, or release frame should still emit the expected event.
-14. Confirm the session event log remains available even if the audio engine reports a failure.
-15. If an audio dispatch failure occurs during a batch, confirm the inspector audio status reports handled event count, total event count, failed event index, failure reason, and the failed `PerformanceEvent`.
-16. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields.
+13. Confirm non-finite `contactArea` does not silently become tap or mute evidence.
+14. Confirm invalid touch evidence does not corrupt the active pointer: the next valid swipe, ji-eum, or release frame should still emit the expected event.
+15. Confirm the session event log remains available even if the audio engine reports a failure.
+16. If an audio dispatch failure occurs during a batch, confirm the inspector audio status reports handled event count, total event count, failed event index, failure reason, and the failed `PerformanceEvent`.
+17. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields.
 
 ## Result Table
 
