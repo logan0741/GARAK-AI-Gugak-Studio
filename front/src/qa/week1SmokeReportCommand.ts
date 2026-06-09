@@ -82,6 +82,8 @@ export const REQUIRED_CHECKS_BY_AREA = {
     'ji-eum',
     'bend-button',
     'mute-button',
+    'session-replay-ready',
+    'session-replay-dispatch',
     'fallback',
   ],
 } as const satisfies Record<Week1SmokeAreaId, readonly string[]>;
