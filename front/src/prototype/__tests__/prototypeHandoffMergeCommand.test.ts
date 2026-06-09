@@ -240,6 +240,42 @@ test('rejects input handoffs with invalid generated timestamps before writing a 
   ]);
 });
 
+test('rejects input handoffs generated before their measured entries before writing a merged handoff', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writtenFiles = new Map<string, string>();
+  const inputFiles = new Map([
+    [
+      'expo-handoff.json',
+      JSON.stringify({
+        ...createPrototypeHandoffForCandidate('expo-audio'),
+        generatedAt: '2026-06-08T03:59:00.000Z',
+      }),
+    ],
+    [
+      'rn-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('react-native-audio-api')),
+    ],
+  ]);
+
+  expect(
+    runPrototypeHandoffMergeCommand({
+      argv: ['merged.json', 'expo-handoff.json', 'rn-handoff.json'],
+      getGeneratedAt: () => '2026-06-08T05:00:00.000Z',
+      readTextFile: (path) => inputFiles.get(path) ?? '',
+      writeTextFile: (path, value) => writtenFiles.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(writtenFiles.size).toBe(0);
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not merge prototype handoffs: expo-handoff.json generatedAt must be at or after every handoff measuredAt timestamp',
+  ]);
+});
+
 test('rejects handoffs copied from different physical device labels', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];

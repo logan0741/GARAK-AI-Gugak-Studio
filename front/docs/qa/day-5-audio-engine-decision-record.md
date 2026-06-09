@@ -139,7 +139,7 @@ npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> 
 ```
 
 The merge command does not promote evidence or fill manual values. It combines `entries[]`, rejects duplicate candidates, and rejects mixed physical device labels after trimming whitespace and normalizing slash spacing so the resulting file can be passed to `qa:prototype-probe-record`.
-It also rejects placeholder or blank device labels, invalid generated timestamps, and output `generatedAt` values that predate measured handoff entries before writing output, including labels still present inside the copied inspector draft.
+It also rejects placeholder or blank device labels, invalid generated timestamps, input handoffs whose `generatedAt` predates their measured entries, and output `generatedAt` values that predate measured handoff entries before writing output, including labels still present inside the copied inspector draft.
 
 Before generating the probe record, run the readiness check:
 
