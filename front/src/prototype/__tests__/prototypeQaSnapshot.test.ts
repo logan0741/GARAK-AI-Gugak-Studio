@@ -487,6 +487,34 @@ test('records prototype recording fallback reason without claiming final evidenc
   });
 });
 
+test('normalizes blank prototype recording fallback reasons before inspector handoff', () => {
+  const snapshot = recordPrototypeRecordingFallback(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:35:30.000Z',
+    }),
+    {
+      fallbackReason: '   ',
+      measuredAt: '2026-06-08T04:35:33.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    measuredAt: '2026-06-08T04:35:33.000Z',
+    recordingFallbackReason: 'recording_probe_failed',
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    observedPrototypeRecording: {
+      fallbackReason: 'recording_probe_failed',
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
+  });
+});
+
 test('clears stale recording playback confirmation when a later fallback is recorded', () => {
   const firstCapture = recordPrototypeRecordingCapture(
     createInitialPrototypeQaSnapshot({

@@ -244,7 +244,7 @@ export function recordPrototypeRecordingFallback(
     ...snapshot,
     measuredAt: input.measuredAt,
     recordingCaptureSeconds: null,
-    recordingFallbackReason: input.fallbackReason,
+    recordingFallbackReason: normalizeRecordingFallbackReason(input.fallbackReason),
     recordingPlaybackConfirmed: false,
     recordingUriAvailable: false,
   };
@@ -396,6 +396,12 @@ function getRecordingCaptureFallbackReason(input: {
   }
 
   return null;
+}
+
+function normalizeRecordingFallbackReason(fallbackReason: string): string {
+  const trimmed = fallbackReason.trim();
+
+  return trimmed.length > 0 ? trimmed : 'recording_probe_failed';
 }
 
 function updateEventDispatchLatency(
