@@ -8,6 +8,7 @@ import {
 } from '../audio/audioEngineProbeDraft';
 import { VoiceState } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
+import { isPhysicalDeviceLabel } from '../qa/physicalDeviceLabel';
 
 export type PrototypeQaSnapshot = {
   candidate: AudioEngineCandidateId;
@@ -174,11 +175,9 @@ export function updatePrototypeQaDeviceLabel(
     measuredAt: string;
   },
 ): PrototypeQaSnapshot {
-  const deviceLabel = input.deviceLabel.trim();
-
   return {
     ...snapshot,
-    deviceLabel: deviceLabel.length > 0 ? deviceLabel : PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
+    deviceLabel: normalizePrototypeQaDeviceLabel(input.deviceLabel),
     measuredAt: input.measuredAt,
   };
 }
@@ -365,6 +364,12 @@ function createEmptyPhysicalMeasurementTemplate(): PrototypeProbeHandoffMeasurem
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizePrototypeQaDeviceLabel(deviceLabel: string): string {
+  const trimmed = deviceLabel.trim();
+
+  return isPhysicalDeviceLabel(trimmed) ? trimmed : PROTOTYPE_DEVICE_LABEL_PLACEHOLDER;
 }
 
 function normalizeCapturedSeconds(capturedSeconds: number): number {
