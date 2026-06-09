@@ -1,4 +1,4 @@
-import { PerformanceEvent } from './performanceEvent';
+import { PerformanceEvent, assertPerformanceEvent } from './performanceEvent';
 
 export type Recording = {
   id: string;
@@ -36,6 +36,8 @@ export function createEmptySession(input: {
 }
 
 export function appendPerformanceEvent(session: Session, event: PerformanceEvent): Session {
+  assertPerformanceEvent(event);
+
   return {
     id: session.id,
     createdAt: session.createdAt,

@@ -29,6 +29,31 @@ export function clampBendCents(cents: number): number {
   return Math.max(-MAX_BEND_CENTS, Math.min(MAX_BEND_CENTS, cents));
 }
 
+export function assertPerformanceEvent(event: PerformanceEvent): void {
+  assertEventTimestamp(event.tsMs);
+  assertStringIndex(event.stringIndex);
+
+  if (event.type === 'string_pluck' || event.type === 'glissando_step') {
+    if (!Number.isFinite(event.velocity)) {
+      throw new Error('velocity must be finite');
+    }
+    return;
+  }
+
+  if (event.type === 'string_bend') {
+    if (!Number.isFinite(event.cents)) {
+      throw new Error('cents must be finite');
+    }
+    return;
+  }
+
+  if (event.type === 'string_mute') {
+    if (!Number.isFinite(event.strength)) {
+      throw new Error('strength must be finite');
+    }
+  }
+}
+
 function clampVelocity(velocity: number): number {
   if (!Number.isFinite(velocity)) {
     throw new Error('velocity must be finite');

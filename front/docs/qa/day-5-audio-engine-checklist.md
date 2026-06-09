@@ -42,6 +42,8 @@ Candidate engines must reject invalid `PerformanceEvent` identity values before 
 
 The `fake-prototype` fallback must mirror the same event identity and finite playback-control guards before updating command logs or active voice counters, so web smoke inspector data cannot be contaminated by invalid string indexes, `NaN`, or `Infinity` values.
 
+The `Session fallback` JSON must also be built from validated `PerformanceEvent` data only. It must reject non-finite timestamps, out-of-range string indexes, and non-finite playback-control values before events are appended to replayable fallback data.
+
 ## Device Setup
 
 | Field | Value |
