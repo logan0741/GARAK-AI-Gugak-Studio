@@ -68,7 +68,10 @@ test('rejects preload when a downloaded Expo Audio source URI is missing', async
     { uri: 'asset://gayageum/01.wav' },
     { uri: 'asset://gayageum/02.wav' },
   ]);
-  expect(runtime.createdPlayers).toHaveLength(1);
+  expect(runtime.createdPlayers).toEqual([]);
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.72 }),
+  ).toThrow('No preloaded expo-audio player for string 1');
 });
 
 test('plays a preloaded string immediately when a pluck event arrives', async () => {
