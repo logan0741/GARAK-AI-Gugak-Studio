@@ -50,6 +50,22 @@ Observed post-action state:
 | Audio status | `ok` |
 | Browser console errors | none |
 
+Follow-up stale dispatch reset check:
+
+1. Press `8 Voice` after the successful replay.
+2. Confirm the session grows and replay readiness recalculates.
+3. Confirm the previous dispatch result is cleared.
+
+Observed follow-up state:
+
+| Check | Observed |
+| --- | --- |
+| Event count | `Events: 20` |
+| Session replay | `Replay ready: 20 events, 778 ms` |
+| Session replay dispatch | `none` |
+| Audio status | `ok` |
+| Browser console errors | none |
+
 ## Limit
 
 This log proves only that the current prototype web route renders, the fake fallback path stays interactive, and the inspector state changes after replay smoke actions. It must not be used as evidence for touch-to-sound latency, polyphony quality, pitch-bend smoothness, mute release quality, recording capture, or final audio-engine selection.
