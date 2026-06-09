@@ -1,12 +1,15 @@
 import { expect, test } from 'vitest';
 import { FakeSamplerEngine } from '../../audio/fakeSamplerEngine';
+import { ReplaySchedule } from '../../domain/replayPlanner';
 import { createEmptySession } from '../../domain/session';
 import {
   appendEventsToSession,
   dispatchEventsToEngine,
+  dispatchReplayScheduleToEngine,
   formatEngineDispatchFailure,
   safelyDispatchEventsToCurrentEngine,
   safelyDispatchEventsToEngine,
+  safelyDispatchReplayScheduleToCurrentEngine,
   planGlissando,
   planMuteProbe,
   planPitchBendProbe,
@@ -126,6 +129,102 @@ test('dispatches to the current engine reference after the engine changes', () =
   expect(currentEngine.commands).toEqual(['pluck:string=3:velocity=1']);
 });
 
+test('dispatches replay schedule items to the sampler in planned order', () => {
+  const engine = new FakeSamplerEngine();
+  const schedule = createReplaySchedule([
+    {
+      delayMs: 0,
+      event: { type: 'string_bend', tsMs: 250, stringIndex: 2, cents: 40 },
+      originalIndex: 1,
+    },
+    {
+      delayMs: 50,
+      event: { type: 'string_pluck', tsMs: 300, stringIndex: 2, velocity: 0.8 },
+      originalIndex: 0,
+      sampleAssetId: 'gayageum-02',
+      sampleFileUri: 'asset://gayageum/02.wav',
+    },
+    {
+      delayMs: 50,
+      event: { type: 'glissando_step', tsMs: 300, stringIndex: 1, velocity: 1 },
+      originalIndex: 2,
+      sampleAssetId: 'gayageum-01',
+      sampleFileUri: 'asset://gayageum/01.wav',
+    },
+  ]);
+
+  expect(dispatchReplayScheduleToEngine(engine, schedule)).toEqual({
+    handledEvents: 3,
+    ok: true,
+    totalEvents: 3,
+  });
+  expect(engine.commands).toEqual([
+    'bend:string=2:cents=40',
+    'pluck:string=2:velocity=0.8',
+    'pluck:string=1:velocity=1',
+  ]);
+});
+
+test('reports replay dispatch failure without mutating the replay schedule', () => {
+  const schedule = createReplaySchedule([
+    {
+      delayMs: 0,
+      event: { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 },
+      originalIndex: 0,
+    },
+    {
+      delayMs: 80,
+      event: { type: 'string_mute', tsMs: 180, stringIndex: 1, strength: 1 },
+      originalIndex: 1,
+    },
+  ]);
+  const handledEvents: string[] = [];
+  const failingEngine = {
+    handleEvent: (event: ReplaySchedule['items'][number]['event']) => {
+      handledEvents.push(event.type);
+      if (event.type === 'string_mute') {
+        throw new Error('replay mute failed');
+      }
+    },
+  };
+
+  const result = dispatchReplayScheduleToEngine(failingEngine, schedule);
+
+  expect(result).toEqual({
+    errorMessage: 'replay mute failed',
+    failedEvent: { type: 'string_mute', tsMs: 180, stringIndex: 1, strength: 1 },
+    failedEventIndex: 1,
+    handledEvents: 1,
+    ok: false,
+    totalEvents: 2,
+  });
+  expect(handledEvents).toEqual(['string_pluck', 'string_mute']);
+  expect(schedule.items.map((item) => item.originalIndex)).toEqual([0, 1]);
+});
+
+test('replays against the current engine reference after the engine changes', () => {
+  const staleEngine = new FakeSamplerEngine();
+  const currentEngine = new FakeSamplerEngine();
+  const engineRef = { current: staleEngine };
+  const schedule = createReplaySchedule([
+    {
+      delayMs: 0,
+      event: { type: 'string_pluck', tsMs: 100, stringIndex: 3, velocity: 1 },
+      originalIndex: 0,
+    },
+  ]);
+
+  engineRef.current = currentEngine;
+
+  expect(safelyDispatchReplayScheduleToCurrentEngine(engineRef, schedule)).toEqual({
+    handledEvents: 1,
+    ok: true,
+    totalEvents: 1,
+  });
+  expect(staleEngine.commands).toEqual([]);
+  expect(currentEngine.commands).toEqual(['pluck:string=3:velocity=1']);
+});
+
 test('appends planned events to session in order', () => {
   const engine = new FakeSamplerEngine();
   const events = planGlissando({
@@ -194,3 +293,12 @@ test('plans a mute probe with an active pluck, clean mute, and release', () => {
     { type: 'string_release', tsMs: 700, stringIndex: 6 },
   ]);
 });
+
+function createReplaySchedule(items: ReplaySchedule['items']): ReplaySchedule {
+  return {
+    durationMs: items.length === 0 ? 0 : Math.max(...items.map((item) => item.delayMs)),
+    items,
+    sampleAssetManifestVersion: 'manifest-v1',
+    sessionId: 'session-1',
+  };
+}
