@@ -27,6 +27,21 @@ export function parsePrototypeHandoffFile(
       return { ok: false, error: `${sourceLabel} entries[${index}] must be an object` };
     }
 
+    const inspectorDraft = entry.inspectorDraft;
+    if (!isObject(inspectorDraft)) {
+      return {
+        ok: false,
+        error: `${sourceLabel} entries[${index}].inspectorDraft must be an object`,
+      };
+    }
+
+    if (!isObject(inspectorDraft.probeTemplate)) {
+      return {
+        ok: false,
+        error: `${sourceLabel} entries[${index}].inspectorDraft.probeTemplate must be an object`,
+      };
+    }
+
     const candidate = getEntryCandidate(entry);
     if (!isAudioEngineCandidate(candidate)) {
       return {
