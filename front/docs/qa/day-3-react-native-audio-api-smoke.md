@@ -1,6 +1,6 @@
 # Day 3 React Native Audio API Smoke Check
 
-Status: implementation harness ready; physical-device result not recorded yet
+Status: implementation harness ready; physical-device result deferred to Week 2
 Owner: Front-end spike
 Scope: Week 1 candidate B, `react-native-audio-api`
 
@@ -51,6 +51,7 @@ npm run start:dev-client
 ```
 
 For an EAS development build, use the `development` profile in `eas.json`.
+The profile must keep `developmentClient: true` and `autoIncrement: true`, with `cli.appVersionSource: "remote"`, so repeated physical-device QA builds are traceable and do not reuse stale build numbers.
 
 1. Build or launch an Expo dev build on a physical device.
 2. Preload the manifest through `ReactNativeAudioApiSamplerEngine.preload()` and confirm the inspector reaches `native_candidate_ready`.

@@ -8,7 +8,13 @@ type PackageJson = {
 };
 
 type EasJson = {
-  build?: Record<string, { developmentClient?: boolean }>;
+  cli?: {
+    appVersionSource?: string;
+  };
+  build?: Record<
+    string,
+    { autoIncrement?: boolean; developmentClient?: boolean }
+  >;
 };
 
 type AppJson = {
@@ -31,7 +37,11 @@ test('configures an Expo development client for native audio candidate QA', () =
     'start:dev-client': 'expo start --dev-client',
   });
   expect(easJson.build?.development).toMatchObject({
+    autoIncrement: true,
     developmentClient: true,
+  });
+  expect(easJson.cli).toMatchObject({
+    appVersionSource: 'remote',
   });
   expect(appJson.expo?.plugins).toEqual(
     expect.arrayContaining([
