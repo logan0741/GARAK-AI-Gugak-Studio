@@ -77,14 +77,19 @@ export function isPrototypeRecordingMeasurementBackedByPlayback(input: {
   inspectorDraft: PrototypeProbeDraftInspectorModel;
   recordingCaptureSeconds: unknown;
 }): boolean {
+  const observedRecording = input.inspectorDraft.observedPrototypeRecording as
+    | PrototypeProbeDraftInspectorModel['observedPrototypeRecording']
+    | undefined;
+
+  if (input.recordingCaptureSeconds === 0) {
+    return isNonEmptyString(observedRecording?.fallbackReason);
+  }
+
   if (!isPositiveRecordingCaptureSeconds(input.recordingCaptureSeconds)) {
     return true;
   }
 
   const recordingCaptureSeconds = input.recordingCaptureSeconds;
-  const observedRecording = input.inspectorDraft.observedPrototypeRecording as
-    | PrototypeProbeDraftInspectorModel['observedPrototypeRecording']
-    | undefined;
   const observedCapturedSeconds = observedRecording?.capturedSeconds;
 
   return (
@@ -206,6 +211,10 @@ function isPositiveRecordingCaptureSeconds(input: unknown): input is number {
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {
   return typeof input === 'number' && Number.isFinite(input) && input >= 0;
+}
+
+function isNonEmptyString(input: unknown): input is string {
+  return typeof input === 'string' && input.trim().length > 0;
 }
 
 function hasUnexpectedStringIndexesField(input: object): boolean {

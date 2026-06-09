@@ -77,7 +77,7 @@ The prototype inspector also reports `observedFakeCounters.eventDispatchLatency`
 
 The copyable prototype probe draft includes `observedRuntime` for handoff traceability. Use it to confirm whether the selected candidate actually became the active runtime on the device build, but keep all final gate fields under a separate `physical-device` probe.
 
-If a candidate cannot start, stop, or play a recording probe, copy `observedPrototypeRecording.fallbackReason` and the `Session fallback` JSON. This records the fallback decision for review, but it is not a passing 10-second capture result.
+If a candidate cannot start, stop, or play a recording probe, copy `observedPrototypeRecording.fallbackReason` and the `Session fallback` JSON. This records the fallback decision for review, but it is not a passing 10-second capture result. When the filled prototype handoff uses `recordingCaptureSeconds: 0`, the matching inspector draft must include a non-empty fallback reason or `qa:prototype-handoff-check` rejects the recording measurement.
 
 Recording probes reject non-finite, zero, or negative requested durations before touching native recording APIs, and reject non-positive or non-finite native start response durations before entering the `recording` state. The Week 1 prototype UI should use the fixed `Rec 10s` path for candidate evidence.
 
