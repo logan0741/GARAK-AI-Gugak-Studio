@@ -27,6 +27,14 @@ test('tracks voice budget with voice stealing', () => {
   expect(engine.commands).toContain('steal:voice=voice-1');
 });
 
+test('rejects invalid fake voice budgets before prototype counter setup', () => {
+  for (const maxVoices of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
+    expect(() => new FakeSamplerEngine({ maxVoices })).toThrow(
+      'maxVoices must be a positive integer',
+    );
+  }
+});
+
 test('maps mute and release events to release envelope state', () => {
   const engine = new FakeSamplerEngine();
 
