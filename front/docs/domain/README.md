@@ -102,6 +102,7 @@ Invariants:
 - MVP에서 장단은 실시간 생성 오디오가 아니라 로컬 프리셋 데이터다.
 - 추천 결과는 자동 적용되지 않는다.
 - 사용자가 미리듣고 수락한 프리셋만 `LocalSequencer`가 재생한다.
+- 같은 timestamp의 동시 발음은 밀도 근거로만 사용하고, BPM interval 근거로 사용하지 않는다.
 
 ## Domain Events And Records
 
