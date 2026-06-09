@@ -731,6 +731,57 @@ test('rejects a recording measurement backed by non-numeric inspector captured s
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
+test('rejects a zero recording measurement without inspector fallback reason', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const expoDraft = createInspectorDraftForCandidate('expo-audio');
+  const reactNativeAudioApiDraft = createInspectorDraftForCandidate('react-native-audio-api');
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['missing-recording-fallback-reason-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: {
+                ...expoDraft,
+                observedPrototypeRecording: {
+                  ...expoDraft.observedPrototypeRecording,
+                  fallbackReason: null,
+                },
+              },
+              measurements: {
+                ...measurements,
+                recordingCaptureSeconds: 0,
+              },
+            },
+            {
+              inspectorDraft: {
+                ...reactNativeAudioApiDraft,
+                observedPrototypeRecording: {
+                  ...reactNativeAudioApiDraft.observedPrototypeRecording,
+                  fallbackReason: 'recording_probe_not_supported',
+                },
+              },
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain('- Invalid measurement fields: expo-audio.recordingCaptureSeconds');
+  expect(output).toContain('- Probe record issues: none');
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
 test('rejects an under-ten recording measurement without inspector capture playback confirmation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -819,7 +870,7 @@ function createInspectorDraftForCandidate(
     },
     observedPrototypeRecording: {
       capturedSeconds: null,
-      fallbackReason: null,
+      fallbackReason: 'recording_probe_not_supported',
       playbackConfirmed: false,
       uriAvailable: false,
     },
