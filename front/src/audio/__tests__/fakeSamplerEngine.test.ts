@@ -52,6 +52,20 @@ test('rejects non-finite fake playback controls before updating prototype counte
   expect(engine.activeVoices).toEqual([]);
 });
 
+test('rejects invalid fake performance event identity before updating prototype counters', () => {
+  const engine = new FakeSamplerEngine();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: Number.NaN, stringIndex: 1, velocity: 1 }),
+  ).toThrow('tsMs must be finite');
+  expect(() =>
+    engine.handleEvent({ type: 'string_bend', tsMs: 110, stringIndex: 13, cents: 20 }),
+  ).toThrow('stringIndex must be an integer from 1 to 12. Received: 13');
+
+  expect(engine.commands).toEqual([]);
+  expect(engine.activeVoices).toEqual([]);
+});
+
 test('maps mute and release events to release envelope state', () => {
   const engine = new FakeSamplerEngine();
 

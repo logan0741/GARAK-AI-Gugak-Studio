@@ -108,6 +108,23 @@ test('rejects non-finite Expo Audio playback control values before touching nati
   expect(runtime.players[0].volume).toBe(1);
 });
 
+test('rejects invalid Expo Audio performance event identity before touching native players', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: Number.NaN, stringIndex: 1, velocity: 0.72 }),
+  ).toThrow('tsMs must be finite');
+  expect(runtime.players[0].playCalls).toBe(0);
+  expect(runtime.players[0].volume).toBe(1);
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_bend', tsMs: 120, stringIndex: 13, cents: 20 }),
+  ).toThrow('stringIndex must be an integer from 1 to 12. Received: 13');
+  expect(runtime.players[0].playbackRates).toEqual([]);
+});
+
 test('surfaces queued playback failures during idle checks', async () => {
   const runtime = createRuntimePort({ seekFails: true });
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
