@@ -135,10 +135,10 @@
 
 | 패키지 | 확인 버전 | 메모 |
 | --- | --- | --- |
-| `react-native-audio-api` | `0.12.2` | Web Audio API 유사 구조, Expo plugin 제공 |
-| `expo-audio` | `56.0.11` | Expo 공식 playback/recording 라이브러리 |
+| `react-native-audio-api` | `0.11.7` | Week 1 저지연 sampler 후보. `0.12.2`는 현재 Expo SDK의 `react-native-worklets@0.5.1` 제약 때문에 보류. |
+| `expo-audio` | `1.1.1` | Expo SDK 54 bundled playback/recording 후보. |
 | `@shopify/react-native-skia` | `2.6.4` | React Native 그래픽스 |
-| `react-native-reanimated` | `4.4.1` | UI thread 애니메이션 |
+| `react-native-reanimated` | `4.1.1` | Expo SDK 54 호환 UI thread 애니메이션 dependency. |
 | `zustand` | `5.0.14` | React 상태 관리 |
 | `react-i18next` | `17.0.8` | 정적 UI 다국어 |
 | `react-native-audio-recorder-player` | `4.5.0` | deprecated. 사용하지 않음 |
