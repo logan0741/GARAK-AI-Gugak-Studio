@@ -40,6 +40,7 @@ import {
 import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
+  createPrototypeQaSnapshotForCandidateChange,
   formatPrototypeProbeHandoffTemplateForInspector,
   formatPrototypeProbeDraftForInspector,
   PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
@@ -221,9 +222,9 @@ export function GayageumPrototypeScreen() {
   function handleProbeCandidatePress(candidate: AudioEngineCandidateId) {
     setProbeCandidate(candidate);
     setQaSnapshot(
-      createInitialPrototypeQaSnapshot({
+      createPrototypeQaSnapshotForCandidateChange({
         candidate,
-        deviceLabel: deviceLabelInput.trim() || PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
+        deviceLabel: deviceLabelInput,
         measuredAt: new Date().toISOString(),
       }),
     );

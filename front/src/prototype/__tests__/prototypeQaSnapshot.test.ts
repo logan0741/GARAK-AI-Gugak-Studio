@@ -3,6 +3,7 @@ import {
   buildPrototypeProbeDraft,
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
+  createPrototypeQaSnapshotForCandidateChange,
   formatPrototypeProbeHandoffTemplateForInspector,
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
@@ -800,6 +801,26 @@ test('keeps placeholder-like prototype QA device labels out of probe drafts', ()
   });
   expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
     probeTemplate: {
+      deviceLabel: 'replace-with-physical-device-model',
+    },
+  });
+});
+
+test('normalizes placeholder-like device labels when switching prototype candidates', () => {
+  const snapshot = createPrototypeQaSnapshotForCandidateChange({
+    candidate: 'expo-audio',
+    deviceLabel: 'Device / OS',
+    measuredAt: '2026-06-08T04:43:00.000Z',
+  });
+
+  expect(snapshot).toMatchObject({
+    candidate: 'expo-audio',
+    deviceLabel: 'replace-with-physical-device-model',
+    measuredAt: '2026-06-08T04:43:00.000Z',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    probeTemplate: {
+      candidate: 'expo-audio',
       deviceLabel: 'replace-with-physical-device-model',
     },
   });
