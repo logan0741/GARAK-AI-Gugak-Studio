@@ -12,12 +12,12 @@ Use this document when validating whether `react-native-audio-api` can support t
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns finite control-value validation before native node or automation mutation, `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, voice budget behavior, duplicate release stop suppression, and idempotent cleanup when a stolen voice later emits a native end callback. |
+| `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns finite control-value validation before native node or automation mutation, positive integer voice-budget validation, `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, voice budget behavior, duplicate release stop suppression, and idempotent cleanup when a stolen voice later emits a native end callback. |
 | `src/audio/reactNativeAudioApiRuntime.ts` | Only runtime bridge that imports `react-native-audio-api`. Keeps UI and domain code independent from the concrete package. |
 | `src/prototype/gayageumPrototypeController.ts` | Prototype event planner for tap, glissando, 8-voice polyphony burst, pitch-bend probe, and mute probe used by device QA. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that should report `recording_probe_not_supported` for engines without recording methods instead of treating playback validation as failed. |
 | `src/prototype/prototypeQaSnapshot.ts` | Inspector QA read model. Records `observedPrototypeRecording.fallbackReason` when this candidate cannot provide a recording probe, without promoting it to final physical-device evidence. |
-| `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, finite control-value guards, 8-voice polyphony, graph wiring, pitch bend, mute/release, voice stealing, and late native end cleanup. |
+| `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, finite control-value guards, valid voice-budget configuration, 8-voice polyphony, graph wiring, pitch bend, mute/release, voice stealing, and late native end cleanup. |
 | `src/audio/__tests__/reactNativeAudioApiRuntime.test.ts` | Mocked package-delegation test for the installed `react-native-audio-api` API surface. |
 
 ## Automated Verification
