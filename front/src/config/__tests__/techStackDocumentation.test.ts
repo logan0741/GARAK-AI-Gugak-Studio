@@ -33,6 +33,13 @@ test('keeps installed package version rows in the tech stack doc aligned with pa
   expect(mismatches).toEqual([]);
 });
 
+test('documents physical-device audio QA as a Week 2 gate', () => {
+  const techStackMarkdown = readText(TECH_STACK_PATH);
+
+  expect(techStackMarkdown).not.toContain('Week 1 device QA uses');
+  expect(techStackMarkdown).toContain('Week 2 physical-device QA uses');
+});
+
 function readJson<T>(path: string): T {
   return JSON.parse(readText(path)) as T;
 }
