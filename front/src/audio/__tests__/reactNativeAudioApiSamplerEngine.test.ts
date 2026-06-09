@@ -99,6 +99,22 @@ test('rejects non-finite React Native Audio API control values before touching n
   expect(runtime.context.gains[0].gain.automation).toEqual([]);
 });
 
+test('rejects invalid React Native Audio API performance event identity before touching native nodes', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: Number.NaN, stringIndex: 1, velocity: 0.8 }),
+  ).toThrow('tsMs must be finite');
+  expect(runtime.context.sources).toHaveLength(0);
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_mute', tsMs: 130, stringIndex: 13, strength: 0.8 }),
+  ).toThrow('stringIndex must be an integer from 1 to 12. Received: 13');
+  expect(runtime.context.gains).toEqual([]);
+});
+
 test('connects each voice through a lowpass filter and gain before destination', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });

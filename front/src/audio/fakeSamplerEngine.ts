@@ -1,5 +1,5 @@
 import { PerformanceEvent } from '../domain/performanceEvent';
-import { SamplerEngine, VoiceState } from './samplerEngine';
+import { SamplerEngine, VoiceState, assertSamplerEventIdentity } from './samplerEngine';
 
 function assertNever(value: never): never {
   throw new Error(`Unhandled performance event: ${JSON.stringify(value)}`);
@@ -24,6 +24,8 @@ export class FakeSamplerEngine implements SamplerEngine {
   }
 
   handleEvent(event: PerformanceEvent): void {
+    assertSamplerEventIdentity(event);
+
     switch (event.type) {
       case 'string_pluck':
       case 'glissando_step':

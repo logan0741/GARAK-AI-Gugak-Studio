@@ -38,9 +38,9 @@ The generated `dev-synthetic-gayageum-2026-06-08` samples are Week 1 technical f
 
 The prototype native sampler factory must resolve each fixture sample to a non-empty local URI before a candidate runtime is loaded. Empty resolved URIs or `http(s)` URIs are invalid for normal-play latency checks.
 
-Candidate engines must reject non-finite playback control values before touching native player, node, or automation state. `velocity`, `cents`, and `strength` may be clamped when finite, but `NaN` or infinite values must fail at the `SamplerEngine` boundary instead of becoming device QA evidence.
+Candidate engines must reject invalid `PerformanceEvent` identity values before touching native player, node, or automation state. `tsMs` must be finite and `stringIndex` must be an integer in the 1-12 prototype range. Playback controls such as `velocity`, `cents`, and `strength` may be clamped when finite, but `NaN` or infinite values must fail at the `SamplerEngine` boundary instead of becoming device QA evidence.
 
-The `fake-prototype` fallback must mirror the same finite playback-control guard before updating command logs or active voice counters, so web smoke inspector data cannot be contaminated by `NaN` or `Infinity` values.
+The `fake-prototype` fallback must mirror the same event identity and finite playback-control guards before updating command logs or active voice counters, so web smoke inspector data cannot be contaminated by invalid string indexes, `NaN`, or `Infinity` values.
 
 ## Device Setup
 
