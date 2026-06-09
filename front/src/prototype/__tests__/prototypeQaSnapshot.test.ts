@@ -604,6 +604,40 @@ test('normalizes invalid captured recording durations before inspector handoff',
   }
 });
 
+test('records zero captured recording duration as fallback context before inspector handoff', () => {
+  const captured = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:39:30.000Z',
+    }),
+    {
+      capturedSeconds: 0,
+      measuredAt: '2026-06-08T04:39:42.000Z',
+      recordingUri: 'file://empty-recording.m4a',
+    },
+  );
+  const played = recordPrototypeRecordingPlayback(captured, {
+    measuredAt: '2026-06-08T04:39:45.000Z',
+    playbackConfirmed: true,
+  });
+
+  expect(played).toMatchObject({
+    recordingCaptureSeconds: 0,
+    recordingFallbackReason: 'recording_capture_duration_invalid',
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: true,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(played))).toMatchObject({
+    observedPrototypeRecording: {
+      capturedSeconds: 0,
+      fallbackReason: 'recording_capture_duration_invalid',
+      playbackConfirmed: false,
+      uriAvailable: true,
+    },
+  });
+});
+
 test('updates the prototype QA device label used by the probe draft', () => {
   const snapshot = updatePrototypeQaDeviceLabel(
     createInitialPrototypeQaSnapshot({

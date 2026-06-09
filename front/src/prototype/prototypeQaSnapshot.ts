@@ -208,7 +208,10 @@ export function recordPrototypeRecordingCapture(
     ...snapshot,
     measuredAt: input.measuredAt,
     recordingCaptureSeconds: capturedSeconds,
-    recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
+    recordingFallbackReason: getRecordingCaptureFallbackReason({
+      capturedSeconds,
+      recordingUriAvailable,
+    }),
     recordingPlaybackConfirmed: false,
     recordingUriAvailable,
   };
@@ -378,6 +381,21 @@ function normalizeCapturedSeconds(capturedSeconds: number): number {
   }
 
   return capturedSeconds;
+}
+
+function getRecordingCaptureFallbackReason(input: {
+  capturedSeconds: number;
+  recordingUriAvailable: boolean;
+}): string | null {
+  if (input.capturedSeconds === 0) {
+    return 'recording_capture_duration_invalid';
+  }
+
+  if (!input.recordingUriAvailable) {
+    return 'recording_playback_uri_missing';
+  }
+
+  return null;
 }
 
 function updateEventDispatchLatency(
