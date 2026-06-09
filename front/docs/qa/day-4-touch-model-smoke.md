@@ -42,15 +42,17 @@ Expected result: all commands exit 0.
 6. Use a broad or multi-touch contact over a string and confirm `string_mute` is emitted even if the added contact does not move. Keep that contact down and move across nearby strings; it must not turn into `glissando_step` before release.
 7. Press `Bend` and confirm the session log appends a pluck, two `string_bend` events, and a release for the same string.
 8. Press `Mute` and confirm the session log appends a pluck, one `string_mute`, and a release for the same string.
-9. Confirm generated events show finite numeric `tsMs` values in the session log; non-finite timestamps are invalid touch evidence.
-10. Confirm `string_pluck.velocity` and `glissando_step.velocity` values are finite numeric values in the session log; non-finite velocity is invalid playback evidence.
-11. Confirm `string_bend.cents` values are finite numeric values in the session log; non-finite bend values are invalid pitch-bend evidence.
-12. Confirm `string_mute.strength` values are finite numeric values in the session log; non-finite strength is invalid mute evidence.
-13. Confirm non-finite `contactArea` does not silently become tap or mute evidence.
-14. Confirm invalid touch evidence does not corrupt the active pointer: the next valid swipe, ji-eum, or release frame should still emit the expected event.
-15. Confirm the session event log remains available even if the audio engine reports a failure.
-16. If an audio dispatch failure occurs during a batch, confirm the inspector audio status reports handled event count, total event count, failed event index, failure reason, and the failed `PerformanceEvent`.
-17. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields. If dispatch timing cannot be measured as a finite value, the debug latency counter should remain unchanged instead of recording `NaN` or `Infinity`.
+9. Confirm `Session replay` reports ready after at least one valid event has been appended.
+10. Press `Replay` and confirm `Session replay dispatch` reports the replayed event count without appending duplicate events to the saved session.
+11. Confirm generated events show finite numeric `tsMs` values in the session log; non-finite timestamps are invalid touch evidence.
+12. Confirm `string_pluck.velocity` and `glissando_step.velocity` values are finite numeric values in the session log; non-finite velocity is invalid playback evidence.
+13. Confirm `string_bend.cents` values are finite numeric values in the session log; non-finite bend values are invalid pitch-bend evidence.
+14. Confirm `string_mute.strength` values are finite numeric values in the session log; non-finite strength is invalid mute evidence.
+15. Confirm non-finite `contactArea` does not silently become tap or mute evidence.
+16. Confirm invalid touch evidence does not corrupt the active pointer: the next valid swipe, ji-eum, or release frame should still emit the expected event.
+17. Confirm the session event log remains available even if the audio engine reports a failure.
+18. If an audio dispatch failure occurs during a batch, confirm the inspector audio status reports handled event count, total event count, failed event index, failure reason, and the failed `PerformanceEvent`.
+19. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields. If dispatch timing cannot be measured as a finite value, the debug latency counter should remain unchanged instead of recording `NaN` or `Infinity`.
 
 ## Result Table
 
@@ -62,6 +64,8 @@ Expected result: all commands exit 0.
 | Ji-eum | Broad or multi-touch contact emits `string_mute` once per touched string and does not become glissando before release |  | Prototype maps multi-touch to full contact area. |
 | Bend button | `Bend` emits pluck, +120/-120 cents bend events, and release for one string |  | Convenience probe for repeated audio-engine smoke, not a substitute for raw touch hold-drag. |
 | Mute button | `Mute` emits pluck, full mute, and release for one string |  | Convenience probe for repeated audio-engine smoke, not a substitute for raw touch ji-eum. |
+| Session replay ready | `Session replay` reports ready after at least one valid event |  | Replay readiness is not physical-device latency evidence. |
+| Session replay dispatch | `Replay` dispatches the current session event count without changing saved session events |  | Replay dispatch is smoke evidence only. |
 | Fallback | Events still append to `Session` when audio dispatch fails |  |  |
 
 ## Handoff To Day 5
