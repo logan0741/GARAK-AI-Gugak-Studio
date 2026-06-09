@@ -255,10 +255,17 @@ export function recordPrototypeRecordingPlayback(
     playbackConfirmed: boolean;
   },
 ): PrototypeQaSnapshot {
+  const hasCurrentPlayableCapture =
+    snapshot.recordingCaptureSeconds !== null &&
+    snapshot.recordingUriAvailable &&
+    snapshot.recordingFallbackReason === null;
+
   return {
     ...snapshot,
     measuredAt: input.measuredAt,
-    recordingPlaybackConfirmed: snapshot.recordingPlaybackConfirmed || input.playbackConfirmed,
+    recordingPlaybackConfirmed:
+      hasCurrentPlayableCapture &&
+      (snapshot.recordingPlaybackConfirmed || input.playbackConfirmed),
   };
 }
 
