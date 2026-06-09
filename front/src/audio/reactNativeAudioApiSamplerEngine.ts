@@ -87,15 +87,23 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   async preload(): Promise<ReactNativeAudioApiPreloadResult> {
-    this.context = this.runtime.createAudioContext();
+    this.context = undefined;
+    this.buffersByString.clear();
+    const context = this.runtime.createAudioContext();
+    const buffersByString = new Map<number, unknown>();
 
     for (const asset of this.manifest.assets) {
-      const buffer = await this.context.decodeAudioData(asset.fileUri);
+      const buffer = await context.decodeAudioData(asset.fileUri);
       if (buffer === null || buffer === undefined) {
         throw new Error(`Decoded react-native-audio-api buffer missing for string ${asset.stringIndex}`);
       }
 
-      this.buffersByString.set(asset.stringIndex, buffer);
+      buffersByString.set(asset.stringIndex, buffer);
+    }
+
+    this.context = context;
+    for (const [stringIndex, buffer] of buffersByString) {
+      this.buffersByString.set(stringIndex, buffer);
     }
 
     return {

@@ -46,6 +46,10 @@ test('rejects preload when a decoded buffer is missing', async () => {
     'asset://gayageum/01.wav',
     'asset://gayageum/02.wav',
   ]);
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.8 }),
+  ).toThrow('react-native-audio-api engine must be preloaded before handling events');
+  expect(runtime.context.sources).toEqual([]);
 });
 
 test('rejects invalid voice budgets before creating native graph nodes', () => {
