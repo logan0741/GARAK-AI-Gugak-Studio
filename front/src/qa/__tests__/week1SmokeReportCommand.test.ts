@@ -48,9 +48,34 @@ test('reports complete smoke evidence without selecting a final engine', () => {
   expect(output).toContain('- Duplicate areas: none');
   expect(output).toContain('- Missing checks: none');
   expect(output).toContain('- Duplicate checks: none');
+  expect(output).toContain('- Timestamp issues: none');
   expect(output).toContain('- Blocked checks: none');
   expect(output).toContain('- Failed checks: day-3-react-native-audio-api.pitch-bend');
   expect(output).not.toContain('FINAL_ENGINE_SELECTED');
+});
+
+test('reports smoke reports generated before run timestamps as not complete', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport();
+  report.generatedAt = '2026-06-08T07:00:30.000Z';
+  report.runs[1].testedAt = '2026-06-08T07:05:00.000Z';
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['out-of-order-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_COMPLETE_FOR_DAY5_REVIEW');
+  expect(output).toContain(
+    '- Timestamp issues: generatedAt must be at or after every smoke run testedAt timestamp',
+  );
 });
 
 test('reports missing areas and missing checks as not complete', () => {
@@ -393,7 +418,7 @@ function createSmokeReport(input: {
   ];
 
   return {
-    generatedAt: '2026-06-08T07:00:00.000Z',
+    generatedAt: '2026-06-08T07:05:00.000Z',
     runs: areas.map((area, index) => ({
       area,
       testedAt: `2026-06-08T07:0${index + 1}:00.000Z`,

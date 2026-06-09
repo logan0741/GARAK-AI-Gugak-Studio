@@ -172,6 +172,10 @@ function collectSmokeReportIssues(summary: Week1SmokeReportSummary): string[] {
     issues.push(`device label issues: ${formatList(summary.deviceLabelIssues)}`);
   }
 
+  if (summary.timestampIssues.length > 0) {
+    issues.push(`timestamp issues: ${formatList(summary.timestampIssues)}`);
+  }
+
   if (summary.blockedChecks.length > 0) {
     issues.push(`blocked checks: ${formatList(summary.blockedChecks)}`);
   }

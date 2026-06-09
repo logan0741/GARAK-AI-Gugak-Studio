@@ -26,7 +26,7 @@ Validate a filled report with:
 npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 ```
 
-The command exits 0 only when all required Day 2/3/4 areas are present once, every required check appears once, every required check has a `pass` or `fail` result, all failed checks include review notes, all runs use the same physical device label, and no check is `blocked`. Failed checks are reported for review but still count as executed evidence when notes explain the observed failure; Day 5 decides whether the failures block the final engine choice.
+The command exits 0 only when all required Day 2/3/4 areas are present once, every required check appears once, every required check has a `pass` or `fail` result, all failed checks include review notes, all runs use the same physical device label, `generatedAt` is at or after every run `testedAt` timestamp, and no check is `blocked`. Failed checks are reported for review but still count as executed evidence when notes explain the observed failure; Day 5 decides whether the failures block the final engine choice.
 
 If a run exists with an empty `checks` array, every required check for that run's area is reported as missing. Empty check arrays are not accepted as executed smoke evidence.
 
@@ -38,7 +38,7 @@ After creating the Day 5 probe record, run `npm run qa:day5-readiness -- <week1-
 
 ```json
 {
-  "generatedAt": "2026-06-08T07:00:00.000Z",
+  "generatedAt": "2026-06-08T07:05:00.000Z",
   "runs": [
     {
       "area": "day-2-expo-audio",
