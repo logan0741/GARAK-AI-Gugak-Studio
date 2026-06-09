@@ -44,6 +44,8 @@ The `fake-prototype` fallback must mirror the same event identity and finite pla
 
 The `Session fallback` JSON must also be built from validated `PerformanceEvent` data only. It must reject non-finite timestamps, out-of-range string indexes, and non-finite playback-control values before events are appended to replayable fallback data.
 
+After copying `Session fallback` JSON to a file, validate it with `npm run qa:session-fallback -- <session-fallback.json>`. The command must report `REPLAYABLE_SESSION_FALLBACK` before the fallback is treated as preserved replay evidence.
+
 ## Device Setup
 
 | Field | Value |
@@ -154,7 +156,7 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 19. While active runtime is `fake-prototype`, confirm audible fake voice count grows for plucks and does not count released voices.
 20. Confirm audio status remains `ok` while the current engine handles events. If a batch fails, confirm it reports handled event count, total event count, failed event index, error message, and failed `PerformanceEvent` while the session fallback still preserves the full event batch.
 21. Confirm the probe draft exposes `observedFakeCounters.eventDispatchLatency` after at least one handled event batch, and keep `probeTemplate.touchToSoundLatencyMs` as `null` until physical-device audio latency is measured.
-22. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, preserves the full `Session.events` list even if recording is unsupported or fails, trims captured recording URIs, and omits null, empty, or whitespace-only recording URIs.
+22. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, preserves the full `Session.events` list even if recording is unsupported or fails, trims captured recording URIs, omits null, empty, or whitespace-only recording URIs, and passes `npm run qa:session-fallback -- <session-fallback.json>`.
 23. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, exposes `observedRuntime` with requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error if present, keeps unmeasured physical-device fields as `null`, exposes recording observations and fallback reason only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
 24. Confirm `Prototype handoff JSON` has `generatedAt`, one `entries[]` item for the current candidate, the same `inspectorDraft`, and `measurements` fields set to `null` until the tester replaces them with physical-device values.
 25. If candidate handoffs were copied into separate files, run `npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>`. The merge must reject duplicate candidates, placeholder or blank device labels, invalid generated timestamps, input or output `generatedAt` values that predate measured entries, and candidate entries copied from different physical device labels; slash spacing differences such as `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same label.
