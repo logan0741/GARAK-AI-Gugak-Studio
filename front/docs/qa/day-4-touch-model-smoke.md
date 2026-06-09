@@ -16,7 +16,7 @@ Use this document when validating whether the prototype can turn raw touch movem
 | `src/interaction/__tests__/touchModel.test.ts` | Pure tests for tap start, forward/reverse glissando crossing, hold-drag bend threshold, ji-eum mute state, invalid release-frame coordinate guards, and release cleanup. |
 | `src/prototype/gayageumPrototypeController.ts` | Plans deterministic tap, glissando, bend, mute, and 8-voice probe event batches, appends them to the replayable session, and reports how many events reached the current `SamplerEngine` before any dispatch failure. |
 | `src/prototype/GayageumPrototypeScreen.tsx` | Uses a `PanResponder` instrument surface and dispatches touch-model events to the current `SamplerEngine`, including additional touch starts for ji-eum mute. Also exposes deterministic `Bend` and `Mute` probe buttons for repeated engine smoke checks; these do not replace raw touch validation. |
-| `src/prototype/prototypeQaSnapshot.ts` | Tracks prototype-observable QA counters and formats an `estimate` inspector template with nullable unmeasured fields. It does not create final physical-device evidence. |
+| `src/prototype/prototypeQaSnapshot.ts` | Tracks prototype-observable QA counters and formats an `estimate` inspector template with nullable unmeasured fields. Debug dispatch latency samples are kept only when the dispatch timestamp is finite, so `NaN` or `Infinity` cannot contaminate copyable inspector JSON. It does not create final physical-device evidence. |
 
 ## Automated Verification
 
@@ -48,7 +48,7 @@ Expected result: all commands exit 0.
 14. Confirm invalid touch evidence does not corrupt the active pointer: the next valid swipe, ji-eum, or release frame should still emit the expected event.
 15. Confirm the session event log remains available even if the audio engine reports a failure.
 16. If an audio dispatch failure occurs during a batch, confirm the inspector audio status reports handled event count, total event count, failed event index, failure reason, and the failed `PerformanceEvent`.
-17. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields.
+17. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields. If dispatch timing cannot be measured as a finite value, the debug latency counter should remain unchanged instead of recording `NaN` or `Infinity`.
 
 ## Result Table
 
