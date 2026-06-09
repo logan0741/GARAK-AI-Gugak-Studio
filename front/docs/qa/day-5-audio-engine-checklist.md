@@ -79,7 +79,7 @@ The copyable prototype probe draft includes `observedRuntime` for handoff tracea
 
 If a candidate cannot start, stop, or play a recording probe, copy `observedPrototypeRecording.fallbackReason` and the `Session fallback` JSON. This records the fallback decision for review, but it is not a passing 10-second capture result.
 
-Recording probes reject non-finite, zero, or negative requested durations before touching native recording APIs. The Week 1 prototype UI should use the fixed `Rec 10s` path for candidate evidence.
+Recording probes reject non-finite, zero, or negative requested durations before touching native recording APIs, and reject non-positive or non-finite native start response durations before entering the `recording` state. The Week 1 prototype UI should use the fixed `Rec 10s` path for candidate evidence.
 
 For recording probes, a non-finite or negative native recorder duration is normalized to `0` captured seconds before it reaches the prototype inspector. Treat that as failed recording evidence unless the tester has a separate verified 10-second capture and playback result.
 

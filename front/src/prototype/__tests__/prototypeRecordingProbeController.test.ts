@@ -69,6 +69,28 @@ test('rejects invalid recording duration before calling the active engine', asyn
   expect(requestedDurations).toEqual([]);
 });
 
+test('rejects invalid native recording start durations before entering recording state', async () => {
+  for (const requestedDurationSeconds of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const engine = {
+      handleEvent: () => undefined,
+      startRecordingProbe: async () => ({
+        ok: true as const,
+        requestedDurationSeconds,
+      }),
+      stopRecordingProbe: async () => ({
+        ok: true as const,
+        capturedSeconds: 10,
+        recordingUri: 'file://recording.m4a',
+      }),
+    };
+
+    await expect(startPrototypeRecordingProbe(engine, 10)).resolves.toEqual({
+      status: 'failed',
+      errorMessage: 'recording_duration_invalid',
+    });
+  }
+});
+
 test('surfaces recording start failures without throwing away the session fallback', async () => {
   const engine = {
     handleEvent: () => undefined,
