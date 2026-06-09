@@ -16,7 +16,7 @@ Use this document when validating whether the prototype can turn raw touch movem
 | `src/interaction/__tests__/touchModel.test.ts` | Pure tests for tap start, forward/reverse glissando crossing, hold-drag bend threshold, ji-eum mute state, invalid release-frame coordinate guards, and release cleanup. |
 | `src/prototype/gayageumPrototypeController.ts` | Plans deterministic tap, glissando, bend, mute, and 8-voice probe event batches, appends them to the replayable session, and reports how many events reached the current `SamplerEngine` before any dispatch failure. |
 | `src/prototype/GayageumPrototypeScreen.tsx` | Uses a `PanResponder` instrument surface and dispatches touch-model events to the current `SamplerEngine`, including additional touch starts for ji-eum mute. Also exposes deterministic `Bend` and `Mute` probe buttons for repeated engine smoke checks; these do not replace raw touch validation. |
-| `src/prototype/prototypeQaSnapshot.ts` | Tracks prototype-observable QA counters and formats an `estimate` inspector template with nullable unmeasured fields. Debug dispatch latency samples are kept only when the dispatch timestamp is finite, so `NaN` or `Infinity` cannot contaminate copyable inspector JSON. It does not create final physical-device evidence. |
+| `src/prototype/prototypeQaSnapshot.ts` | Tracks prototype-observable QA counters and formats an `estimate` inspector template with nullable unmeasured fields. Debug dispatch latency samples are kept only when the dispatch timestamp is finite, and max active voice samples are kept only when the count is a finite non-negative integer, so `NaN` or `Infinity` cannot contaminate copyable inspector JSON. It does not create final physical-device evidence. |
 
 ## Automated Verification
 

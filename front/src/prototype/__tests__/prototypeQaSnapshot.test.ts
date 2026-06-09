@@ -61,6 +61,39 @@ test('tracks observable device QA counters without claiming audible quality', ()
   });
 });
 
+test('ignores non-finite active voice counts when tracking prototype counters', () => {
+  const snapshot = updatePrototypeQaSnapshot(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:05:00.000Z',
+    }),
+    {
+      activeVoiceCount: 4,
+      audioDispatchOk: true,
+      measuredAt: '2026-06-08T04:05:01.000Z',
+      events: [{ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 }],
+    },
+  );
+
+  const next = updatePrototypeQaSnapshot(snapshot, {
+    activeVoiceCount: Number.POSITIVE_INFINITY,
+    audioDispatchOk: true,
+    measuredAt: '2026-06-08T04:05:02.000Z',
+    events: [{ type: 'string_pluck', tsMs: 110, stringIndex: 2, velocity: 1 }],
+  });
+
+  expect(next.maxStableVoices).toBe(4);
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(next))).toMatchObject({
+    observedFakeCounters: {
+      maxActiveVoices: 4,
+    },
+    probeTemplate: {
+      maxStableVoices: null,
+    },
+  });
+});
+
 test('formats a copyable estimate probe draft for the inspector', () => {
   const snapshot = updatePrototypeQaSnapshot(
     createInitialPrototypeQaSnapshot({
