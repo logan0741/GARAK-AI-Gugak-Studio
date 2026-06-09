@@ -44,15 +44,16 @@ Expected result: all commands exit 0.
 8. Press `Mute` and confirm the session log appends a pluck, one `string_mute`, and a release for the same string.
 9. Confirm `Session replay` reports ready after at least one valid event has been appended.
 10. Press `Replay` and confirm `Session replay dispatch` reports the replayed event count without appending duplicate events to the saved session.
-11. Confirm generated events show finite numeric `tsMs` values in the session log; non-finite timestamps are invalid touch evidence.
-12. Confirm `string_pluck.velocity` and `glissando_step.velocity` values are finite numeric values in the session log; non-finite velocity is invalid playback evidence.
-13. Confirm `string_bend.cents` values are finite numeric values in the session log; non-finite bend values are invalid pitch-bend evidence.
-14. Confirm `string_mute.strength` values are finite numeric values in the session log; non-finite strength is invalid mute evidence.
-15. Confirm non-finite `contactArea` does not silently become tap or mute evidence.
-16. Confirm invalid touch evidence does not corrupt the active pointer: the next valid swipe, ji-eum, or release frame should still emit the expected event.
-17. Confirm the session event log remains available even if the audio engine reports a failure.
-18. If an audio dispatch failure occurs during a batch, confirm the inspector audio status reports handled event count, total event count, failed event index, failure reason, and the failed `PerformanceEvent`.
-19. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields. If dispatch timing cannot be measured as a finite value, the debug latency counter should remain unchanged instead of recording `NaN` or `Infinity`.
+11. Press another event-producing probe after replay and confirm `Session replay dispatch` resets to `none` while `Session replay` recalculates the current event count.
+12. Confirm generated events show finite numeric `tsMs` values in the session log; non-finite timestamps are invalid touch evidence.
+13. Confirm `string_pluck.velocity` and `glissando_step.velocity` values are finite numeric values in the session log; non-finite velocity is invalid playback evidence.
+14. Confirm `string_bend.cents` values are finite numeric values in the session log; non-finite bend values are invalid pitch-bend evidence.
+15. Confirm `string_mute.strength` values are finite numeric values in the session log; non-finite strength is invalid mute evidence.
+16. Confirm non-finite `contactArea` does not silently become tap or mute evidence.
+17. Confirm invalid touch evidence does not corrupt the active pointer: the next valid swipe, ji-eum, or release frame should still emit the expected event.
+18. Confirm the session event log remains available even if the audio engine reports a failure.
+19. If an audio dispatch failure occurs during a batch, confirm the inspector audio status reports handled event count, total event count, failed event index, failure reason, and the failed `PerformanceEvent`.
+20. Confirm the inspector probe draft keeps `evidenceSource: "estimate"` and `runtimeUnderTest: "fake-sampler-engine"` while separating fake observed counters from nullable physical-device measurement fields. If dispatch timing cannot be measured as a finite value, the debug latency counter should remain unchanged instead of recording `NaN` or `Infinity`.
 
 ## Result Table
 
@@ -65,7 +66,7 @@ Expected result: all commands exit 0.
 | Bend button | `Bend` emits pluck, +120/-120 cents bend events, and release for one string |  | Convenience probe for repeated audio-engine smoke, not a substitute for raw touch hold-drag. |
 | Mute button | `Mute` emits pluck, full mute, and release for one string |  | Convenience probe for repeated audio-engine smoke, not a substitute for raw touch ji-eum. |
 | Session replay ready | `Session replay` reports ready after at least one valid event |  | Replay readiness is not physical-device latency evidence. |
-| Session replay dispatch | `Replay` dispatches the current session event count without changing saved session events |  | Replay dispatch is smoke evidence only. |
+| Session replay dispatch | `Replay` dispatches the current session event count, and the next event-producing action resets dispatch evidence to `none` without changing saved session events |  | Replay dispatch is smoke evidence only; stale dispatch text is invalid inspector evidence. |
 | Fallback | Events still append to `Session` when audio dispatch fails |  |  |
 
 ## Handoff To Day 5

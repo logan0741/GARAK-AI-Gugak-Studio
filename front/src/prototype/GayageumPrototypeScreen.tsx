@@ -82,6 +82,12 @@ import {
   createPrototypeSessionReplayPreview,
   formatPrototypeSessionReplayPreview,
 } from './prototypeSessionReplayPreview';
+import {
+  clearPrototypeSessionReplayDispatchStatus,
+  createInitialPrototypeSessionReplayDispatchStatus,
+  createPrototypeSessionReplayDispatchStatus,
+  formatPrototypeSessionReplayDispatchStatus,
+} from './prototypeSessionReplayDispatchStatus';
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
 const POLYPHONY_BURST_STRINGS = ALL_STRINGS.slice(0, 8);
@@ -203,12 +209,15 @@ export function GayageumPrototypeScreen() {
     }),
   );
   const [audioError, setAudioError] = useState<string | undefined>();
-  const [sessionReplayDispatchText, setSessionReplayDispatchText] = useState('none');
+  const [sessionReplayDispatchStatus, setSessionReplayDispatchStatus] = useState(() =>
+    createInitialPrototypeSessionReplayDispatchStatus(),
+  );
 
   function applyPerformanceEvents(events: PerformanceEvent[]) {
     if (events.length === 0) {
       return;
     }
+    setSessionReplayDispatchStatus(clearPrototypeSessionReplayDispatchStatus());
     setSession((current) => appendEventsToSession(current, events));
     const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
     const dispatchedAtMs = Date.now();
@@ -227,6 +236,7 @@ export function GayageumPrototypeScreen() {
 
   function handleProbeCandidatePress(candidate: AudioEngineCandidateId) {
     setProbeCandidate(candidate);
+    setSessionReplayDispatchStatus(clearPrototypeSessionReplayDispatchStatus());
     setQaSnapshot(
       createPrototypeQaSnapshotForCandidateChange({
         candidate,
@@ -344,18 +354,10 @@ export function GayageumPrototypeScreen() {
       session,
     });
 
-    if (!result.ok) {
-      const errorMessage =
-        result.status === 'dispatch_failed'
-          ? formatEngineDispatchFailure(result.dispatch)
-          : result.errorMessage;
-      setAudioError(errorMessage);
-      setSessionReplayDispatchText(`Replay failed: ${errorMessage}`);
-      return;
-    }
+    const dispatchStatus = createPrototypeSessionReplayDispatchStatus(result);
 
-    setAudioError(undefined);
-    setSessionReplayDispatchText(`Replay dispatched: ${result.events.length} events`);
+    setAudioError(dispatchStatus.status === 'failed' ? dispatchStatus.errorMessage : undefined);
+    setSessionReplayDispatchStatus(dispatchStatus);
   }
 
   function recordRecordingProbeFallback(state: RecordingProbeUiState) {
@@ -417,6 +419,9 @@ export function GayageumPrototypeScreen() {
     [session],
   );
   const sessionReplayPreviewText = formatPrototypeSessionReplayPreview(sessionReplayPreview);
+  const sessionReplayDispatchText = formatPrototypeSessionReplayDispatchStatus(
+    sessionReplayDispatchStatus,
+  );
   const jangdanPreviewText = useMemo(
     () => formatPrototypeJangdanPreview(createPrototypeJangdanPreview(session.events)),
     [session.events],
