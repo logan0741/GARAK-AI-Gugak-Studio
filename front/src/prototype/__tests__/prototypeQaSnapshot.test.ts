@@ -301,6 +301,40 @@ test('tracks event batch dispatch latency as debug-only evidence', () => {
   });
 });
 
+test('ignores non-finite dispatch timestamps when tracking debug latency', () => {
+  const snapshot = updatePrototypeQaSnapshot(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:20:30.000Z',
+    }),
+    {
+      activeVoiceCount: 1,
+      audioDispatchOk: true,
+      dispatchedAtMs: Number.NaN,
+      measuredAt: '2026-06-08T04:20:31.000Z',
+      events: [{ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 }],
+    },
+  );
+
+  expect(snapshot.eventDispatchLatency).toEqual({
+    sampleCount: 0,
+    latestMs: null,
+    maxMs: null,
+    averageMs: null,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    observedFakeCounters: {
+      eventDispatchLatency: {
+        sampleCount: 0,
+        latestMs: null,
+        maxMs: null,
+        averageMs: null,
+      },
+    },
+  });
+});
+
 test('records prototype recording capture and playback observations without claiming final evidence', () => {
   const captured = recordPrototypeRecordingCapture(
     createInitialPrototypeQaSnapshot({

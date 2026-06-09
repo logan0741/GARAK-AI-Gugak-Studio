@@ -411,7 +411,11 @@ function updateEventDispatchLatency(
     dispatchedAtMs?: number;
   },
 ): PrototypeEventDispatchLatency {
-  if (input.dispatchedAtMs === undefined || input.events.length === 0) {
+  if (
+    input.dispatchedAtMs === undefined ||
+    !Number.isFinite(input.dispatchedAtMs) ||
+    input.events.length === 0
+  ) {
     return current;
   }
 
