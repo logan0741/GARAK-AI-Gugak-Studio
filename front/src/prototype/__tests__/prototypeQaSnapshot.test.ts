@@ -380,6 +380,42 @@ test('clears stale recording playback confirmation when a later capture has no p
   });
 });
 
+test('does not confirm recording playback without a current playable capture', () => {
+  const initial = createInitialPrototypeQaSnapshot({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 physical device',
+    measuredAt: '2026-06-08T04:31:45.000Z',
+  });
+
+  const noCapturePlayback = recordPrototypeRecordingPlayback(initial, {
+    measuredAt: '2026-06-08T04:31:46.000Z',
+    playbackConfirmed: true,
+  });
+
+  const missingUriCapture = recordPrototypeRecordingCapture(noCapturePlayback, {
+    capturedSeconds: 10,
+    measuredAt: '2026-06-08T04:31:50.000Z',
+    recordingUri: null,
+  });
+
+  const missingUriPlayback = recordPrototypeRecordingPlayback(missingUriCapture, {
+    measuredAt: '2026-06-08T04:31:55.000Z',
+    playbackConfirmed: true,
+  });
+
+  expect(noCapturePlayback).toMatchObject({
+    recordingCaptureSeconds: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+  expect(missingUriPlayback).toMatchObject({
+    recordingCaptureSeconds: 10,
+    recordingFallbackReason: 'recording_playback_uri_missing',
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+});
+
 test('clears stale recording observations when a new recording probe starts', () => {
   const firstCapture = recordPrototypeRecordingCapture(
     createInitialPrototypeQaSnapshot({
