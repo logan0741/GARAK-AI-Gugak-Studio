@@ -27,15 +27,8 @@ Thumbs.db
 
 # Node
 node_modules/
-.expo/
 *.log
 
-# 오디오 파일
-static/audio/
-
-# 문서 (개인 기획/설계 문서)
-기획서.md
-채은기획서.md
-back/CLAUDE.md
-back/docs/
-front/docs/
+# 개인 문서
+docs/
+CLAUDE.md
