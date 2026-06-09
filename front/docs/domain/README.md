@@ -175,6 +175,11 @@ Mapping rules:
 | `SessionRecorder` | `PerformanceEvent` | `Session` 업데이트 | 이벤트 우선 세션 기록 |
 | `ReplayPlanner` | `Session`, manifest | replay schedule | 결정론적 리플레이 준비 |
 
+ReplayPlanner implementation note:
+
+- `src/domain/replayPlanner.ts` turns `Session.events` and `SampleAssetManifest` into a deterministic `ReplaySchedule`.
+- The planner preserves original event order for equal timestamps, normalizes replay delays from the first event timestamp, and rejects manifest version mismatch, missing pluck/glissando samples, or duplicate sample assets for the same string.
+
 ## Product Invariants
 
 - 악기 정체성 최우선: 스튜디오 기능은 악기 경험 위에 얹힌다.
