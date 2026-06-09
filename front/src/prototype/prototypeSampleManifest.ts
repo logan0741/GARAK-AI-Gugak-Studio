@@ -1,4 +1,4 @@
-import { SampleAsset, SampleAssetManifest } from '../domain/sampleManifest';
+import { SampleAsset, SampleAssetManifest, SampleSourceLayer } from '../domain/sampleManifest';
 
 export const PROTOTYPE_GAYAGEUM_SAMPLE_DIRECTORY = 'assets/audio/gayageum-dev';
 export const PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION = 'dev-synthetic-gayageum-2026-06-08';
@@ -35,6 +35,60 @@ export const prototypeGayageumSampleManifest: SampleAssetManifest = {
   }),
 };
 
+export type PrototypeSampleManifestProvenanceSummary = {
+  assetCount: number;
+  licenseNotes: string[];
+  qualityNote: string;
+  releaseReady: boolean;
+  sourceLayerCounts: Record<SampleSourceLayer, number>;
+  sourceNames: string[];
+};
+
+export function summarizePrototypeSampleManifestProvenance(
+  manifest: SampleAssetManifest,
+): PrototypeSampleManifestProvenanceSummary {
+  const licenseNotes = collectUniqueStrings(
+    manifest.assets.map((asset) => asset.licenseNote),
+  );
+  const sourceNames = collectUniqueStrings(manifest.assets.map((asset) => asset.sourceName));
+  const releaseReady = !isPrototypeTechnicalFixture(manifest);
+
+  return {
+    assetCount: manifest.assets.length,
+    licenseNotes,
+    qualityNote: releaseReady
+      ? 'Candidate release asset; verify final recording quality before publish.'
+      : 'Technical fixture only; replace before release-quality sound decisions.',
+    releaseReady,
+    sourceLayerCounts: countSourceLayers(manifest.assets),
+    sourceNames,
+  };
+}
+
 export function resolvePrototypeSampleAssetPath(asset: Pick<SampleAsset, 'fileUri'>): string {
   return asset.fileUri;
+}
+
+function collectUniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter((value) => value.length > 0))];
+}
+
+function countSourceLayers(assets: SampleAsset[]): Record<SampleSourceLayer, number> {
+  return assets.reduce<Record<SampleSourceLayer, number>>(
+    (counts, asset) => ({
+      ...counts,
+      [asset.sourceLayer]: counts[asset.sourceLayer] + 1,
+    }),
+    {
+      own_asset: 0,
+      public_asset: 0,
+    },
+  );
+}
+
+function isPrototypeTechnicalFixture(manifest: SampleAssetManifest): boolean {
+  return (
+    manifest.version === PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION ||
+    manifest.assets.some((asset) => asset.licenseNote.toLowerCase().includes('replace before release'))
+  );
 }
