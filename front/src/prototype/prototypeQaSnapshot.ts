@@ -153,7 +153,7 @@ export function updatePrototypeQaSnapshot(
     measuredAt: input.measuredAt,
     eventCount: snapshot.eventCount + input.events.length,
     eventDispatchLatency: updateEventDispatchLatency(snapshot.eventDispatchLatency, input),
-    maxStableVoices: Math.max(snapshot.maxStableVoices, input.activeVoiceCount),
+    maxStableVoices: updateMaxStableVoices(snapshot.maxStableVoices, input.activeVoiceCount),
     glissandoTriggeredStrings: collectGlissandoStringIndexes(
       snapshot.glissandoTriggeredStrings,
       input.events,
@@ -435,6 +435,14 @@ function updateEventDispatchLatency(
     maxMs: current.maxMs === null ? latestMs : Math.max(current.maxMs, latestMs),
     averageMs,
   };
+}
+
+function updateMaxStableVoices(current: number, activeVoiceCount: number): number {
+  if (!Number.isInteger(activeVoiceCount) || activeVoiceCount < 0) {
+    return current;
+  }
+
+  return Math.max(current, activeVoiceCount);
 }
 
 function roundLatencyMs(value: number): number {
