@@ -20,6 +20,7 @@ import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
+  planAndDispatchSessionReplayToCurrentEngine,
   planMuteProbe,
   planPitchBendProbe,
   planPolyphonyBurst,
@@ -202,6 +203,7 @@ export function GayageumPrototypeScreen() {
     }),
   );
   const [audioError, setAudioError] = useState<string | undefined>();
+  const [sessionReplayDispatchText, setSessionReplayDispatchText] = useState('none');
 
   function applyPerformanceEvents(events: PerformanceEvent[]) {
     if (events.length === 0) {
@@ -335,6 +337,27 @@ export function GayageumPrototypeScreen() {
     );
   }
 
+  function handleReplaySessionPress() {
+    const result = planAndDispatchSessionReplayToCurrentEngine({
+      engineRef,
+      sampleAssetManifest: prototypeGayageumSampleManifest,
+      session,
+    });
+
+    if (!result.ok) {
+      const errorMessage =
+        result.status === 'dispatch_failed'
+          ? formatEngineDispatchFailure(result.dispatch)
+          : result.errorMessage;
+      setAudioError(errorMessage);
+      setSessionReplayDispatchText(`Replay failed: ${errorMessage}`);
+      return;
+    }
+
+    setAudioError(undefined);
+    setSessionReplayDispatchText(`Replay dispatched: ${result.events.length} events`);
+  }
+
   function recordRecordingProbeFallback(state: RecordingProbeUiState) {
     const fallbackReason = getRecordingProbeFallbackReason(state);
     if (fallbackReason === null) {
@@ -389,13 +412,11 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
-  const sessionReplayPreviewText = useMemo(
-    () =>
-      formatPrototypeSessionReplayPreview(
-        createPrototypeSessionReplayPreview(session, prototypeGayageumSampleManifest),
-      ),
+  const sessionReplayPreview = useMemo(
+    () => createPrototypeSessionReplayPreview(session, prototypeGayageumSampleManifest),
     [session],
   );
+  const sessionReplayPreviewText = formatPrototypeSessionReplayPreview(sessionReplayPreview);
   const jangdanPreviewText = useMemo(
     () => formatPrototypeJangdanPreview(createPrototypeJangdanPreview(session.events)),
     [session.events],
@@ -413,6 +434,7 @@ export function GayageumPrototypeScreen() {
   const playableRecordingUri = selectPlayableRecordingUri({
     recordingProbeState,
   });
+  const canReplaySession = sessionReplayPreview.status === 'ready';
 
   return (
     <View style={styles.screen}>
@@ -528,6 +550,19 @@ export function GayageumPrototypeScreen() {
         >
           <Text style={styles.recordingButtonText}>Play Rec</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Replay current session through active audio engine"
+          disabled={!canReplaySession}
+          onPress={handleReplaySessionPress}
+          style={[
+            styles.recordingButton,
+            styles.sessionReplayButton,
+            !canReplaySession ? styles.recordingDisabledButton : undefined,
+          ]}
+        >
+          <Text style={styles.recordingButtonText}>Replay</Text>
+        </Pressable>
       </View>
 
       <View
@@ -584,6 +619,7 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
         <Text style={styles.inspectorText}>Jangdan preview: {jangdanPreviewText}</Text>
         <Text style={styles.inspectorText}>Session replay: {sessionReplayPreviewText}</Text>
+        <Text style={styles.inspectorText}>Session replay dispatch: {sessionReplayDispatchText}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
         <Text style={styles.inspectorText}>Latest: {latestEvent ? JSON.stringify(latestEvent) : 'none'}</Text>
@@ -775,6 +811,9 @@ const styles = StyleSheet.create({
   },
   recordingPlaybackButton: {
     backgroundColor: '#d7b65d',
+  },
+  sessionReplayButton: {
+    backgroundColor: '#c98f65',
   },
   recordingDisabledButton: {
     opacity: 0.45,

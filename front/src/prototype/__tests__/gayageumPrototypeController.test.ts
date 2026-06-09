@@ -1,12 +1,14 @@
 import { expect, test } from 'vitest';
 import { FakeSamplerEngine } from '../../audio/fakeSamplerEngine';
+import { SampleAssetManifest } from '../../domain/sampleManifest';
 import { ReplaySchedule } from '../../domain/replayPlanner';
-import { createEmptySession } from '../../domain/session';
+import { appendPerformanceEvent, createEmptySession } from '../../domain/session';
 import {
   appendEventsToSession,
   dispatchEventsToEngine,
   dispatchReplayScheduleToEngine,
   formatEngineDispatchFailure,
+  planAndDispatchSessionReplayToCurrentEngine,
   safelyDispatchEventsToCurrentEngine,
   safelyDispatchEventsToEngine,
   safelyDispatchReplayScheduleToCurrentEngine,
@@ -225,6 +227,82 @@ test('replays against the current engine reference after the engine changes', ()
   expect(currentEngine.commands).toEqual(['pluck:string=3:velocity=1']);
 });
 
+test('plans the current session replay and dispatches it to the current engine', () => {
+  const staleEngine = new FakeSamplerEngine();
+  const currentEngine = new FakeSamplerEngine();
+  const engineRef = { current: staleEngine };
+  const session = appendPerformanceEvent(
+    createEmptySession({
+      id: 'session-1',
+      createdAt: '2026-06-08T00:00:00.000Z',
+      sampleAssetManifestVersion: 'manifest-v1',
+    }),
+    { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 },
+  );
+
+  engineRef.current = currentEngine;
+
+  const result = planAndDispatchSessionReplayToCurrentEngine({
+    engineRef,
+    sampleAssetManifest: createSampleManifest(),
+    session,
+  });
+
+  expect(result).toEqual({
+    dispatch: {
+      handledEvents: 1,
+      ok: true,
+      totalEvents: 1,
+    },
+    events: [{ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 }],
+    ok: true,
+    schedule: {
+      durationMs: 0,
+      items: [
+        {
+          delayMs: 0,
+          event: { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 },
+          originalIndex: 0,
+          sampleAssetId: 'gayageum-01',
+          sampleFileUri: 'asset://gayageum/01.wav',
+        },
+      ],
+      sampleAssetManifestVersion: 'manifest-v1',
+      sessionId: 'session-1',
+    },
+    status: 'dispatched',
+  });
+  expect(staleEngine.commands).toEqual([]);
+  expect(currentEngine.commands).toEqual(['pluck:string=1:velocity=1']);
+});
+
+test('reports session replay planning failure before dispatching audio', () => {
+  const engine = new FakeSamplerEngine();
+  const session = appendPerformanceEvent(
+    createEmptySession({
+      id: 'session-1',
+      createdAt: '2026-06-08T00:00:00.000Z',
+      sampleAssetManifestVersion: 'manifest-v2',
+    }),
+    { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 },
+  );
+
+  const result = planAndDispatchSessionReplayToCurrentEngine({
+    engineRef: { current: engine },
+    sampleAssetManifest: createSampleManifest(),
+    session,
+  });
+
+  expect(result).toEqual({
+    errorMessage:
+      'SampleAssetManifest version manifest-v1 does not match session replay version manifest-v2',
+    events: [],
+    ok: false,
+    status: 'planning_failed',
+  });
+  expect(engine.commands).toEqual([]);
+});
+
 test('appends planned events to session in order', () => {
   const engine = new FakeSamplerEngine();
   const events = planGlissando({
@@ -300,5 +378,23 @@ function createReplaySchedule(items: ReplaySchedule['items']): ReplaySchedule {
     items,
     sampleAssetManifestVersion: 'manifest-v1',
     sessionId: 'session-1',
+  };
+}
+
+function createSampleManifest(): SampleAssetManifest {
+  return {
+    version: 'manifest-v1',
+    assets: [
+      {
+        fileUri: 'asset://gayageum/01.wav',
+        id: 'gayageum-01',
+        instrument: 'gayageum_12',
+        licenseNote: 'technical fixture',
+        pitchHz: 196,
+        sourceLayer: 'own_asset',
+        sourceName: 'dev fixture',
+        stringIndex: 1,
+      },
+    ],
   };
 }
