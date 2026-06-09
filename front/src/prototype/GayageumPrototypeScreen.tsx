@@ -26,6 +26,10 @@ import {
   safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
 import {
+  createPrototypeJangdanPreview,
+  formatPrototypeJangdanPreview,
+} from './prototypeJangdanPreview';
+import {
   getPrototypeInstrumentMinimumHeight,
   PROTOTYPE_INSTRUMENT_VERTICAL_PADDING,
   PROTOTYPE_STRING_COUNT,
@@ -379,6 +383,10 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const jangdanPreviewText = useMemo(
+    () => formatPrototypeJangdanPreview(createPrototypeJangdanPreview(session.events)),
+    [session.events],
+  );
   const sampleProvenance = useMemo(
     () => summarizePrototypeSampleManifestProvenance(prototypeGayageumSampleManifest),
     [],
@@ -561,6 +569,7 @@ export function GayageumPrototypeScreen() {
           Unexpected sample strings: {engineHost.unexpectedStringIndexes.join(', ') || 'none'}
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
+        <Text style={styles.inspectorText}>Jangdan preview: {jangdanPreviewText}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
         <Text style={styles.inspectorText}>Latest: {latestEvent ? JSON.stringify(latestEvent) : 'none'}</Text>
