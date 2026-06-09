@@ -48,3 +48,33 @@ test('marks empty sessions as not replayable yet', () => {
     eventCount: 0,
   });
 });
+
+test('does not copy whitespace recording uris into session fallback json', () => {
+  const session = {
+    ...appendPerformanceEvent(
+      createEmptySession({
+        id: 'local-prototype-session',
+        createdAt: '2026-06-08T00:00:00.000Z',
+        sampleAssetManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+      }),
+      {
+        type: 'string_pluck',
+        tsMs: 100,
+        stringIndex: 1,
+        velocity: 1,
+      },
+    ),
+    recordingUri: '   ',
+  };
+
+  expect(buildPrototypeSessionFallback(session).session).not.toHaveProperty('recordingUri');
+  expect(JSON.parse(formatPrototypeSessionFallbackForInspector(session))).toMatchObject({
+    canReplay: true,
+    session: {
+      events: [{ type: 'string_pluck', stringIndex: 1 }],
+    },
+  });
+  expect(JSON.parse(formatPrototypeSessionFallbackForInspector(session)).session).not.toHaveProperty(
+    'recordingUri',
+  );
+});
