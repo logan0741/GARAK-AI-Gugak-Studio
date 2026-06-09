@@ -78,6 +78,18 @@ test('ignores whitespace-only recording uris when selecting captured playback', 
   ).toBe('file://captured.m4a');
 });
 
+test('does not expose a playable uri when captured duration is zero', () => {
+  expect(
+    selectPlayableRecordingUri({
+      recordingProbeState: {
+        status: 'captured',
+        capturedSeconds: 0,
+        recordingUri: 'file://empty-recording.m4a',
+      },
+    }),
+  ).toBeNull();
+});
+
 test('extracts recording fallback reason for handoff observations', () => {
   expect(
     getRecordingProbeFallbackReason({
