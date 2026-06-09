@@ -27,14 +27,17 @@ export class FakeSamplerEngine implements SamplerEngine {
     switch (event.type) {
       case 'string_pluck':
       case 'glissando_step':
+        assertFiniteControlValue(event.velocity, 'velocity');
         this.allocateVoice(event.stringIndex, event.tsMs);
         this.commandLog.push(`pluck:string=${event.stringIndex}:velocity=${event.velocity}`);
         return;
       case 'string_bend':
+        assertFiniteControlValue(event.cents, 'cents');
         this.updateVoicesForString(event.stringIndex, { pitchBendCents: event.cents });
         this.commandLog.push(`bend:string=${event.stringIndex}:cents=${event.cents}`);
         return;
       case 'string_mute': {
+        assertFiniteControlValue(event.strength, 'strength');
         const gain = Number((1 - event.strength).toFixed(3));
         this.updateVoicesForString(event.stringIndex, { envelopeState: 'release', gain });
         this.commandLog.push(`mute:string=${event.stringIndex}:strength=${event.strength}`);
@@ -82,4 +85,10 @@ function normalizeMaxVoices(maxVoices: number): number {
   }
 
   return maxVoices;
+}
+
+function assertFiniteControlValue(value: number, fieldName: string): void {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${fieldName} must be finite`);
+  }
 }
