@@ -1,0 +1,111 @@
+# ──────────────────────────────────────────
+# 다른 파트 폴더 (백엔드·프론트 개발자가 별도 관리)
+# ──────────────────────────────────────────
+back/
+front/
+
+# ──────────────────────────────────────────
+# Claude Code / 내부 개발 문서
+# ──────────────────────────────────────────
+CLAUDE.md
+AI/DEV_STATUS.md
+AI/GUKAK_STUDIO_Tech_Explanation.md
+AI/data/README.md
+AI/data_ensemble/README.md
+
+# ──────────────────────────────────────────
+# Environment variables
+# ──────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ──────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ──────────────────────────────────────────
+# ML model files
+# ──────────────────────────────────────────
+*.pkl
+*.h5
+*.pt
+*.pth
+
+# ──────────────────────────────────────────
+# Node / React Native
+# ──────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# React Native build artifacts
+android/app/build/
+android/.gradle/
+ios/build/
+ios/Pods/
+ios/DerivedData/
+*.xcworkspace
+*.xcuserstate
+
+# ──────────────────────────────────────────
+# OS / IDE
+# ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ──────────────────────────────────────────
+# Training data (WAV/MP3 — 용량 크므로 제외)
+# ──────────────────────────────────────────
+AI/data_aihub/**/*.wav
+AI/data_aihub/**/*.WAV
+AI/data/**/*.wav
+AI/data/**/*.WAV
+AI/data/**/*.mp3
+AI/data/**/*.MP3
+AI/data_ensemble/**/*.wav
+AI/data_ensemble/**/*.WAV
+AI/data_ensemble/**/*.mp3
+AI/data_ensemble/**/*.MP3
+
+# AIHub 원본 세그먼트 (재생성 가능)
+AI/segments/
+
+# Demucs 임시 출력
+AI/tmp_demucs/
+
+# Trained model outputs (재학습 가능)
+AI/models/
+
+# ──────────────────────────────────────────
+# 원본 오디오 소스 (국립국악원 등 — 재다운로드 가능)
+# ──────────────────────────────────────────
+phrase/
+phrase.zip
+monotone/
+
+# ──────────────────────────────────────────
+# 서버 로그
+# ──────────────────────────────────────────
+*.log
