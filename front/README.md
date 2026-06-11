@@ -1,29 +1,25 @@
-# GUKAK STUDIO
+# GARAK
 
-GUKAK STUDIO는 국악 데이터를 단순 재생하지 않고, 모바일에서 직접 만질 수 있는 12현 가야금 악기 경험으로 바꾸는 프로젝트다.
+`AI GUGAK STUDIO`
 
-MVP는 기능 수보다 첫 30초의 악기다움에 집중한다. 사용자가 현을 뜯고, 쓸고, 흔들고, 지음으로 여운을 끊는 코어 루프가 통과해야 녹음, 장단 추천, 데이터 증명 UI가 의미를 가진다.
+GARAK은 모바일에서 국악기를 직접 연주하고, 녹음하고, 장단과 함께 나만의 국악 연주를 만들 수 있는 앱이다.
 
-## Start Here
+MVP는 가야금, 장구, 대금을 중심으로 한다. 사용자는 로그인 없이 바로 홈에 들어가 악기를 고르고, 자유연주나 따라하기를 시작하고, 만든 연주를 보관함에 저장하거나 공유 준비로 이어갈 수 있다.
 
-에이전트와 개발자는 아래 순서로 읽는다.
+## Core Experience
 
-1. `AGENTS.md`: 작업 규칙과 안전 가드레일
-2. `CONTEXT.md`: 프로젝트 핵심 원칙 요약
-3. `docs/README.md`: 문서 구조와 책임
-4. `docs/domain/README.md`: DDD 도메인 모델과 용어
-5. `docs/architecture/tech-stack.md`: MVP 확정 기술 스택
+- 가야금, 장구, 대금 중 오늘 연주할 악기 선택
+- 악기별 터치 입력과 샘플 기반 실시간 연주
+- `Session` 기반 녹음, 저장, 리플레이
+- 장단 추천과 로컬 반주 트랙 추가
+- 민요 따라하기와 정확도 피드백
+- 게스트 보관함, 이후 선택 로그인과 동기화
 
-## Current MVP Stack
+## Current Prototype
 
-- App: Expo, React Native, TypeScript
-- Interaction/UI: React Native Gesture Handler, Reanimated, React Native Skia
-- Audio: `SamplerEngine` boundary, `react-native-audio-api` first, `expo-audio` fallback
-- State: Zustand
-- Tests: Vitest for pure domain modules, physical-device QA for audio
-- Data: local `Session` JSON, `SampleAssetManifest`, `DataReferenceManifest`
+현재 저장소의 Expo 프로토타입은 가야금 연주와 오디오 엔진 검증에서 출발한다. 제품 기준의 MVP 범위는 가야금에 한정되지 않고 장구, 대금까지 포함한다.
 
-## Documentation
+## Developer Docs
 
-문서별 책임은 `docs/README.md`에 고정한다. 새 문서를 만들거나 기존 내용을 옮길 때는 그 문서의 책임 범위와 맞는지 먼저 확인한다.
+내부 문서의 기준 경로는 `docs/document-authority-index.md`에서 확인한다.
 

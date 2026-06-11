@@ -1,9 +1,9 @@
-# Runtime Architecture
+# GARAK Runtime Architecture
 
 상태: MVP 기준 canonical architecture document  
 관련 문서: `../domain/README.md`, `tech-stack.md`, `gukak-studio-erd.md`
 
-이 문서는 GUKAK STUDIO MVP의 런타임 경계와 데이터 흐름을 정의한다. 구현자는 오디오, 제스처, 세션, 장단 추천 작업 전에 이 문서를 확인한다.
+이 문서는 GARAK MVP의 런타임 경계와 데이터 흐름을 정의한다. 구현자는 오디오, 제스처, 세션, 장단 추천 작업 전에 이 문서를 확인한다.
 
 ## Runtime Principle
 

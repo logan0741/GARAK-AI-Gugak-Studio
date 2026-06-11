@@ -1,14 +1,14 @@
-# GUKAK STUDIO Domain Model
+# GARAK Domain Model
 
 상태: MVP 기준 canonical domain document  
-범위: 12현 가야금 MVP, 로컬 세션, 장단 추천 데모  
+범위: 가야금, 장구, 대금 MVP의 공통 세션/이벤트 모델과 현재 가야금 프로토타입 상세
 관련 문서: `../architecture/gukak-studio-erd.md`, `../architecture/runtime-architecture.md`
 
-이 문서는 GUKAK STUDIO의 DDD 기준 도메인 언어를 정의한다. 코드 타입, UI 라벨, ERD 이름은 이 문서의 용어를 따른다.
+이 문서는 GARAK의 DDD 기준 도메인 언어를 정의한다. 코드 타입, UI 라벨, ERD 이름은 이 문서의 용어를 따른다.
 
 ## Core Domain
 
-GUKAK STUDIO의 core domain은 `Instrument Performance`다. 사용자가 모바일 화면에서 국악기를 악기답게 연주하고, 그 연주를 재현 가능한 이벤트로 보존하는 것이 핵심 가치다.
+GARAK의 core domain은 `Instrument Performance`다. 사용자가 모바일 화면에서 국악기를 악기답게 연주하고, 그 연주를 재현 가능한 이벤트로 보존하는 것이 핵심 가치다.
 
 Supporting domains:
 
@@ -38,19 +38,21 @@ flowchart LR
 
 ### Instrument
 
-`Instrument`는 사용자가 연주하는 악기 정의다. MVP에서는 `12_string_gayageum` 하나로 시작한다.
+`Instrument`는 사용자가 연주하는 악기 정의다. MVP 제품 범위는 `12_string_gayageum`, `janggu`, `daegeum`이다. 현재 구현 검증과 상세 이벤트 모델은 `12_string_gayageum`에서 출발한다.
 
 Aggregate boundary:
 
 - `Instrument`
-- `InstrumentString`
-- 현별 기준 음고와 터치 영역
+- 악기별 입력면
+- 가야금 전용 `InstrumentString`
+- 악기별 기준 음고, 타격면, 터치 영역
 
 Invariants:
 
+- 악기는 단순 버튼 묶음이 아니라 악기별 입력면과 발음 규칙을 가진다.
 - 가야금은 12개의 버튼 배열이 아니라 12개의 독립 현 객체다.
 - 각 현은 독립 발음과 잔향 중첩이 가능해야 한다.
-- 현의 기준 음고와 샘플 매핑은 데이터로 교체 가능해야 한다.
+- 악기별 기준 음고, 타격 샘플, 발음 샘플 매핑은 데이터로 교체 가능해야 한다.
 
 ### Session
 
@@ -69,7 +71,7 @@ Invariants:
 - Recording이 없어도 Session은 저장되고 리플레이 가능해야 한다.
 - Session의 `recordings[]`는 선택적 오디오 산출물 목록이며, 비어 있거나 공백뿐인 URI는 Recording 산출물로 저장하지 않는다.
 - Session의 `recordingUri`는 MVP 프로토타입 호환용 최신 캡처 URI다. 기준 데이터는 여전히 `PerformanceEvent[]`이고, Recording만으로는 연주 맥락을 복구하지 않는다.
-- Session에 저장되는 `PerformanceEvent`는 finite `tsMs`, 1-12 범위의 `stringIndex`, finite control value를 통과해야 한다.
+- Session에 저장되는 `PerformanceEvent`는 finite `tsMs`, 악기별 필수 식별자, finite control value를 통과해야 한다.
 - Session은 자신이 사용한 `SampleAssetManifest` 버전을 기록한다.
 - Session은 데모 인스펙터나 심사용 근거 표시가 필요할 때 `DataReferenceManifest` 버전을 선택적으로 기록할 수 있다. 일반 연주 리플레이에는 필수 값이 아니다.
 - Session 밖의 독립 `PerformanceEvent`는 저장하지 않는다.
@@ -127,7 +129,7 @@ Gesture는 저장소에 직접 기록하지 않는다.
 
 `PerformanceEvent`는 `GestureMapper`가 raw gesture를 악기 도메인의 의미로 정규화한 이벤트다. 리플레이와 장단 추천의 최소 입력 단위다.
 
-Allowed event types:
+현재 구현된 가야금 event types:
 
 - `string_pluck`: 특정 현이 발음된다.
 - `glissando_step`: 스와이프 중 지나간 현이 순차 발음된다.
@@ -150,7 +152,10 @@ Mapping rules:
 | 용어 | 정의 | 구현/문서에서의 사용 |
 | --- | --- | --- |
 | Gayageum | 12현 가야금 MVP 악기 | `Instrument.type = 12_string_gayageum` |
-| String | 독립 입력과 발음을 가진 현 | `InstrumentString`, `stringIndex` |
+| Janggu | 장단 연주와 반주 트랙의 중심이 되는 MVP 타악기 | `Instrument.type = janggu` |
+| Daegeum | 선율 연주와 따라하기 확장 대상인 MVP 관악기 | `Instrument.type = daegeum` |
+| Instrument Control Surface | 악기별 입력면 | 가야금 현, 장구 타격면, 대금 운지/호흡 입력을 포괄 |
+| String | 가야금에서 독립 입력과 발음을 가진 현 | `InstrumentString`, `stringIndex` |
 | Voice | 현재 재생 중인 단일 발음 인스턴스 | 오디오 런타임 상태 |
 | Voice Budget | 동시에 유지할 수 있는 최대 voice 수 | voice stealing 기준 |
 | Envelope | attack, natural decay, release decay 곡선 | 지음/잔향 제어 |
@@ -195,7 +200,8 @@ ReplayPlanner implementation note:
 | 피할 표현 | 대신 쓸 표현 | 이유 |
 | --- | --- | --- |
 | 가야금 버튼 | 현, 현 중심 악기 엔진 | 악기 정체성을 훼손한다. |
-| 완벽한 실악기 대체 | 모바일 가야금 시뮬레이터 | MVP의 현실적 포지션을 지킨다. |
+| 가야금 앱 | 국악 창작 앱, 가야금/장구/대금 MVP | 제품 범위를 가야금으로 축소해 오해하게 만든다. |
+| 완벽한 실악기 대체 | 모바일 국악 창작 경험 | MVP의 현실적 포지션을 지킨다. |
 | 공명 | 잔향 중첩 | 물리 공명 모델 구현으로 오해될 수 있다. |
 | AI 반주 생성 | 장단 추천, 로컬 장단 시퀀싱 | 생성형 오디오로 오해될 수 있다. |
 | 공공데이터 원본 탑재 | 공공데이터 기반 에셋, 분석 참조, 검증 기준 | 권리/품질 레이어를 명확히 한다. |
