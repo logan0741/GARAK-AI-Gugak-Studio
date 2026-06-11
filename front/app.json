@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "GUKAK STUDIO",
+    "slug": "gukak-studio",
+    "scheme": "gukakstudio",
+    "orientation": "landscape",
+    "plugins": ["expo-router"],
+    "android": {
+      "package": "com.gukakstudio.prototype"
+    },
+    "ios": {
+      "bundleIdentifier": "com.gukakstudio.prototype"
+    }
+  }
+}
