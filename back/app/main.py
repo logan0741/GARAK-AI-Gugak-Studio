@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.db.session import async_session_factory
+from app.api.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -17,6 +18,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="GUKAK STUDIO API", version="1.0.0", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+app.include_router(auth_router)
 
 
 @app.get("/")

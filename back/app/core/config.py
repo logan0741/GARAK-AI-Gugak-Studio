@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     server_base_url: str = "http://localhost:8000"
     ai_module_path: str = "../ai"
     bypass_auth: bool = False
+    jwt_secret_key: str = "dev-secret-key"
+    jwt_expire_minutes: int = 60
+    jwt_refresh_expire_days: int = 30
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
