@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -9,11 +9,13 @@ from app.models.session_model import Session
 async def create_session(
     db: AsyncSession,
     session: Session,
-    events: list[PerformanceEvent],
+    event_dicts: list[dict],
 ) -> Session:
     try:
         db.add(session)
-        db.add_all(events)
+        await db.flush()  # session.id FK 참조를 위해 먼저 flush
+        if event_dicts:
+            await db.execute(insert(PerformanceEvent).values(event_dicts))
         await db.commit()
         await db.refresh(session)
     except Exception:

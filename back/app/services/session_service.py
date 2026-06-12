@@ -2,7 +2,6 @@ from time import time_ns
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.performance_event import PerformanceEvent
 from app.models.session_model import Session
 from app.repositories import session_repo
 from app.schemas.session import SessionCreate
@@ -32,21 +31,21 @@ async def save_session(
         updated_at_ms=now,
         replay_settings=body.replay_settings,
     )
-    events = [
-        PerformanceEvent(
-            id=e.id,
-            session_id=body.id,
-            occurred_at_ms=e.ts_ms,
-            event_type=e.type,
-            unit_index=e.unit_index,
-            pitch_bend_cents=e.cents,
-            velocity=e.velocity,
-            strength=e.strength,
-            payload=e.payload,
-        )
+    event_dicts = [
+        {
+            "id": e.id,
+            "session_id": body.id,
+            "occurred_at_ms": e.ts_ms,
+            "event_type": e.type,
+            "unit_index": e.unit_index,
+            "pitch_bend_cents": e.cents,
+            "velocity": e.velocity,
+            "strength": e.strength,
+            "payload": e.payload,
+        }
         for e in body.events
     ]
-    return await session_repo.create_session(db, session, events)
+    return await session_repo.create_session(db, session, event_dicts)
 
 
 async def get_sessions(db: AsyncSession, user_id: str) -> list[Session]:

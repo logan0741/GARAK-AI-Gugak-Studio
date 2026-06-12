@@ -23,8 +23,13 @@ async def create_session(
 ):
     try:
         session = await session_service.save_session(db, body, user_id)
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session ID already exists")
+    except IntegrityError as exc:
+        orig_str = str(exc.orig) if exc.orig else ""
+        if "1062" in orig_str or "Duplicate entry" in orig_str:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session ID already exists")
+        if "1452" in orig_str or "foreign key constraint" in orig_str.lower():
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid reference: instrument or folk_song not found")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Database constraint violation")
     return SessionCreateResponse(id=session.id, created_at_ms=session.created_at_ms)
 
 
