@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
@@ -20,7 +21,10 @@ async def create_session(
     user_id: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    session = await session_service.save_session(db, body, user_id)
+    try:
+        session = await session_service.save_session(db, body, user_id)
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session ID already exists")
     return SessionCreateResponse(id=session.id, created_at_ms=session.created_at_ms)
 
 

@@ -11,14 +11,19 @@ async def create_session(
     session: Session,
     events: list[PerformanceEvent],
 ) -> Session:
-    db.add(session)
-    db.add_all(events)
-    await db.commit()
-    await db.refresh(session)
+    try:
+        db.add(session)
+        db.add_all(events)
+        await db.commit()
+        await db.refresh(session)
+    except Exception:
+        await db.rollback()
+        raise
     return session
 
 
 async def list_sessions(db: AsyncSession, user_id: str) -> list[Session]:
+    # TODO: 세션이 많아지면 cursor 기반 페이지네이션으로 교체 필요
     result = await db.execute(
         select(Session)
         .where(Session.user_id == user_id)

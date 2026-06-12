@@ -9,7 +9,7 @@ class PerformanceEventIn(BaseModel):
     """FE → 서버. FE camelCase 필드를 DB 컬럼으로 매핑."""
     id: str
     # FE: tsMs → DB: occurred_at_ms
-    ts_ms: int = Field(alias="tsMs")
+    ts_ms: int = Field(alias="tsMs", ge=0)
     # FE: type → DB: event_type
     type: EventType
     # FE에서만 사용하는 포인터 ID — 서버에서 저장하지 않음
