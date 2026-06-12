@@ -15,9 +15,13 @@ MIN_IOI_MS = 50.0
 def _estimate_tempo(y: np.ndarray, sr: int) -> float:
     onset_env = librosa.onset.onset_strength(y=y, sr=sr)
     try:
-        tempo = librosa.feature.rhythm.tempo(onset_envelope=onset_env, sr=sr)
-    except AttributeError:
-        tempo = librosa.beat.tempo(onset_envelope=onset_env, sr=sr)
+        import librosa.feature.rhythm as _lf_rhythm
+        tempo = _lf_rhythm.tempo(onset_envelope=onset_env, sr=sr)
+    except (AttributeError, ImportError):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", FutureWarning)
+            tempo = librosa.beat.tempo(onset_envelope=onset_env, sr=sr)
     bpm = float(np.atleast_1d(tempo)[0])
     if not np.isfinite(bpm) or bpm <= 0:
         return 120.0
