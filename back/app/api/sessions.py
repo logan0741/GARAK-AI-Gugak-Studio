@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.db.session import get_db
+from app.repositories import recording_repo
+from app.schemas.recording import RecordingOut, RecordingPatch
 from app.schemas.session import (
     SessionCreate,
     SessionCreateResponse,
@@ -46,3 +48,43 @@ async def get_session(
     if session is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     return session
+
+
+@router.patch("/sessions/{session_id}/recordings/{rec_id}", response_model=RecordingOut)
+async def patch_recording(
+    session_id: str,
+    rec_id: str,
+    body: RecordingPatch,
+    user_id: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """볼륨·음소거·순서 변경. None 필드는 무시."""
+    session = await session_service.get_session(db, session_id, user_id)
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
+    recording = await recording_repo.get_recording(db, rec_id, session_id)
+    if recording is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found")
+
+    updates = body.model_dump(exclude_none=True)
+    return await recording_repo.patch_recording(db, recording, updates)
+
+
+@router.delete("/sessions/{session_id}/recordings/{rec_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_recording(
+    session_id: str,
+    rec_id: str,
+    user_id: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """트랙 삭제 (DB 행만 삭제, 파일은 서버에 유지)."""
+    session = await session_service.get_session(db, session_id, user_id)
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
+    recording = await recording_repo.get_recording(db, rec_id, session_id)
+    if recording is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recording not found")
+
+    await recording_repo.delete_recording(db, recording)
