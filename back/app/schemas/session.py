@@ -36,6 +36,7 @@ class SessionSummary(BaseModel):
     instrument_id: str
     title: str
     mode: str
+    folk_song_id: str | None
     duration_ms: int
     created_at_ms: int
     updated_at_ms: int
