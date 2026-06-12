@@ -1,4 +1,4 @@
-from sqlalchemy import VARCHAR, ForeignKey, Index
+from sqlalchemy import VARCHAR, ForeignKey, Index, Enum
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,6 +15,16 @@ class Session(Base):
         VARCHAR(64), ForeignKey("sample_asset_manifest.id"), nullable=False
     )
     title: Mapped[str] = mapped_column(VARCHAR(256), nullable=False)
+    # creative: 자유창작모드, practice: 따라하기모드
+    mode: Mapped[str] = mapped_column(
+        Enum("creative", "practice"),
+        nullable=False,
+        server_default="creative",
+    )
+    # 따라하기모드 전용. 어떤 민요를 연습했는지 (creative 모드에서는 NULL)
+    folk_song_id: Mapped[str | None] = mapped_column(
+        VARCHAR(64), ForeignKey("folk_song.id", ondelete="SET NULL"), nullable=True
+    )
     schema_version: Mapped[str] = mapped_column(VARCHAR(32), nullable=False, server_default="2026.06.mvp")
     duration_ms: Mapped[int] = mapped_column(INTEGER(unsigned=True), nullable=False, server_default="0")
     replay_settings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -23,6 +33,7 @@ class Session(Base):
 
     instrument: Mapped["Instrument"] = relationship(back_populates="sessions")
     sample_manifest: Mapped["SampleAssetManifest"] = relationship(back_populates="sessions")
+    folk_song: Mapped["FolkSong | None"] = relationship(back_populates="sessions")
     events: Mapped[list["PerformanceEvent"]] = relationship(back_populates="session")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="session")
     jangdan_recommendations: Mapped[list["JangdanRecommendation"]] = relationship(back_populates="session")

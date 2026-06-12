@@ -1,5 +1,5 @@
 from sqlalchemy import VARCHAR, ForeignKey, Enum, Index
-from sqlalchemy.dialects.mysql import BIGINT, INTEGER
+from sqlalchemy.dialects.mysql import BIGINT, INTEGER, FLOAT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -10,6 +10,7 @@ class Recording(Base):
 
     id: Mapped[str] = mapped_column(VARCHAR(64), primary_key=True)
     session_id: Mapped[str] = mapped_column(VARCHAR(64), ForeignKey("session.id", ondelete="CASCADE"), nullable=False)
+    instrument_id: Mapped[str | None] = mapped_column(VARCHAR(64), ForeignKey("instrument.id", ondelete="SET NULL"), nullable=True)
     file_uri: Mapped[str] = mapped_column(VARCHAR(512), nullable=False)
     format: Mapped[str] = mapped_column(VARCHAR(16), nullable=False, server_default="aac")
     duration_ms: Mapped[int] = mapped_column(INTEGER(unsigned=True), nullable=False, server_default="0")
@@ -18,9 +19,13 @@ class Recording(Base):
         nullable=False,
         server_default="pending",
     )
+    volume: Mapped[float] = mapped_column(FLOAT, nullable=False, server_default="1.0")
+    is_muted: Mapped[bool] = mapped_column(nullable=False, server_default="0")
+    track_order: Mapped[int] = mapped_column(INTEGER(unsigned=True), nullable=False, server_default="0")
     created_at_ms: Mapped[int] = mapped_column(BIGINT(unsigned=True), nullable=False)
 
     session: Mapped["Session"] = relationship(back_populates="recordings")
+    instrument: Mapped["Instrument | None"] = relationship()
     share_links: Mapped[list["ShareLink"]] = relationship(back_populates="recording")
 
     __table_args__ = (
