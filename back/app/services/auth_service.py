@@ -14,9 +14,9 @@ def create_access_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=ALGORITHM)
 
 
-def create_refresh_token(user_id: str) -> str:
+def create_refresh_token(user_id: str, email: str = "") -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_expire_days)
-    payload = {"sub": user_id, "type": "refresh", "exp": expire}
+    payload = {"sub": user_id, "email": email, "type": "refresh", "exp": expire}
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=ALGORITHM)
 
 
@@ -34,13 +34,13 @@ def verify_access_token(token: str) -> dict:
         ) from exc
 
 
-def verify_refresh_token(token: str) -> str:
-    """refresh token 검증. 성공 시 user_id 반환."""
+def verify_refresh_token(token: str) -> tuple[str, str]:
+    """refresh token 검증. 성공 시 (user_id, email) 반환."""
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[ALGORITHM])
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
-        return payload["sub"]
+        return payload["sub"], payload.get("email", "")
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

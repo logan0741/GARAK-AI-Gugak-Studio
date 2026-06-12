@@ -1,8 +1,10 @@
-import warnings
+import logging
 from functools import lru_cache
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -22,18 +24,14 @@ class Settings(BaseSettings):
     def warn_insecure_defaults(self) -> "Settings":
         if not self.bypass_auth:
             if self.jwt_secret_key == "dev-secret-key":
-                warnings.warn(
+                logger.warning(
                     "JWT_SECRET_KEY is using the default dev value. "
-                    "Set a strong secret in .env before deploying.",
-                    UserWarning,
-                    stacklevel=2,
+                    "Set a strong secret in .env before deploying."
                 )
             if not self.google_client_id:
-                warnings.warn(
+                logger.warning(
                     "GOOGLE_CLIENT_ID is not set. "
-                    "Google authentication will fail unless BYPASS_AUTH=true.",
-                    UserWarning,
-                    stacklevel=2,
+                    "Google authentication will fail unless BYPASS_AUTH=true."
                 )
         return self
 

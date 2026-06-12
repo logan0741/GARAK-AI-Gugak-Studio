@@ -53,4 +53,10 @@ async def get_current_user(
     payload: dict = Depends(get_current_user_payload),
 ) -> str:
     """백엔드 JWT 검증 후 user_id만 반환 (대부분의 보호 경로용)."""
-    return payload["sub"]
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing subject",
+        )
+    return user_id
