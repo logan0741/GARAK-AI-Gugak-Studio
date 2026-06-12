@@ -97,6 +97,18 @@ async def test_upload_track_no_auth(client: AsyncClient):
     assert response.status_code == 401
 
 
+@pytest.mark.asyncio
+async def test_upload_track_path_traversal(client: AsyncClient):
+    """session_id에 경로 구분자 포함 → 422 (path traversal 방지)."""
+    response = await client.post(
+        "/api/tracks/upload",
+        data={"session_id": "../../../etc", "duration_ms": "5000"},
+        files={"file": ("test.aac", io.BytesIO(b"fake_audio"), "audio/aac")},
+        headers=AUTH,
+    )
+    assert response.status_code == 422
+
+
 # ── PATCH /api/sessions/{id}/recordings/{rec_id} ──────────────────────────────
 
 @pytest.mark.asyncio

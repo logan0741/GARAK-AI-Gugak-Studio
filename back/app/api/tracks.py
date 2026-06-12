@@ -1,3 +1,4 @@
+import re
 import uuid
 from pathlib import Path
 from time import time_ns
@@ -16,6 +17,8 @@ router = APIRouter(prefix="/api", tags=["tracks"])
 
 ALLOWED_CONTENT_TYPES = {"audio/aac", "audio/x-m4a", "audio/mp4", "audio/mpeg"}
 MAX_FILE_BYTES = 50 * 1024 * 1024  # 50MB
+# session_id를 경로로 사용하므로 영숫자·하이픈·언더스코어만 허용 (path traversal 방지)
+_SAFE_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]{1,64}$')
 
 
 def _now_ms() -> int:
@@ -32,6 +35,10 @@ async def upload_track(
     db: AsyncSession = Depends(get_db),
 ):
     """AAC 녹음 파일 업로드 후 Recording 행 생성."""
+    # session_id path traversal 방지
+    if not _SAFE_ID_RE.match(session_id):
+        raise HTTPException(status_code=422, detail="Invalid session_id format")
+
     # 세션 소유권 확인
     session = await session_repo.get_session_detail(db, session_id, user_id)
     if session is None:
@@ -40,16 +47,13 @@ async def upload_track(
     # 파일 타입 검사
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=f"Unsupported file type: {file.content_type}. Allowed: aac, m4a, mp4",
         )
 
     contents = await file.read()
     if len(contents) > MAX_FILE_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="File too large (max 50MB)",
-        )
+        raise HTTPException(status_code=422, detail="File too large (max 50MB)")
 
     # static/audio/{session_id}/{uuid}.aac 에 저장
     rec_id = str(uuid.uuid4())
