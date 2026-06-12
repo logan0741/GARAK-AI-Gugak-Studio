@@ -1,5 +1,7 @@
+import warnings
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -15,6 +17,25 @@ class Settings(BaseSettings):
     jwt_refresh_expire_days: int = 30
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @model_validator(mode="after")
+    def warn_insecure_defaults(self) -> "Settings":
+        if not self.bypass_auth:
+            if self.jwt_secret_key == "dev-secret-key":
+                warnings.warn(
+                    "JWT_SECRET_KEY is using the default dev value. "
+                    "Set a strong secret in .env before deploying.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            if not self.google_client_id:
+                warnings.warn(
+                    "GOOGLE_CLIENT_ID is not set. "
+                    "Google authentication will fail unless BYPASS_AUTH=true.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+        return self
 
 
 @lru_cache
