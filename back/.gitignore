@@ -29,6 +29,9 @@ Thumbs.db
 node_modules/
 *.log
 
+# 업로드 파일
+static/audio/
+
 # 개인 문서
 docs/
 CLAUDE.md
