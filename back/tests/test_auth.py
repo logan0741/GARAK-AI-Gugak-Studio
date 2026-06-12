@@ -60,21 +60,25 @@ async def test_me_bypass(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_me_with_valid_jwt(client: AsyncClient):
-    """BYPASS_AUTH=false 환경 시뮬레이션: 유효한 JWT → user_id + email 반환."""
-    import os
-    os.environ["BYPASS_AUTH"] = "false"
-
-    # lru_cache 때문에 settings 재생성
-    from app.core import config as cfg
-    cfg.get_settings.cache_clear()
-    cfg.settings = cfg.get_settings()
-
-    # auth 모듈도 갱신된 settings 사용하도록
+async def test_me_with_valid_jwt(client: AsyncClient, monkeypatch):
+    """BYPASS_AUTH=false 시뮬레이션: 유효한 JWT → user_id + email 반환."""
     import app.core.auth as auth_mod
+    import app.api.auth as api_auth_mod
+
+    # monkeypatch로 각 모듈의 settings만 교체 (전역 상태 오염 없음)
+    class FakeSettings:
+        bypass_auth = False
+        jwt_secret_key = "dev-secret-key"
+        jwt_expire_minutes = 60
+        jwt_refresh_expire_days = 30
+        google_client_id = "test-client-id"
+
+    fake = FakeSettings()
+    monkeypatch.setattr(auth_mod, "settings", fake)
+    monkeypatch.setattr(api_auth_mod, "settings", fake)
+
     import app.services.auth_service as svc_mod
-    auth_mod.settings = cfg.settings
-    svc_mod.settings = cfg.settings
+    monkeypatch.setattr(svc_mod, "settings", fake)
 
     token = create_access_token("google_uid_999", "user@example.com")
     response = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
@@ -83,16 +87,9 @@ async def test_me_with_valid_jwt(client: AsyncClient):
     assert data["user_id"] == "google_uid_999"
     assert data["email"] == "user@example.com"
 
-    # 복원
-    os.environ["BYPASS_AUTH"] = "true"
-    cfg.get_settings.cache_clear()
-    cfg.settings = cfg.get_settings()
-    auth_mod.settings = cfg.settings
-    svc_mod.settings = cfg.settings
-
 
 @pytest.mark.asyncio
 async def test_me_no_token(client: AsyncClient):
-    """토큰 없이 요청 → 401 (HTTPBearer 미제공)."""
+    """Authorization 헤더 없이 요청 → 401 (HTTPBearer auto_error=True)."""
     response = await client.get("/api/auth/me")
-    assert response.status_code == 403 or response.status_code == 401
+    assert response.status_code == 401

@@ -60,11 +60,13 @@ async def google_login(body: GoogleLoginRequest):
 
 @router.post("/refresh", response_model=AccessTokenResponse)
 async def refresh_token(body: RefreshRequest):
-    """Refresh token → 새 access token 발급."""
+    """Refresh token → 새 access token 발급.
+
+    MVP: refresh token에 email이 없으므로 email은 빈 문자열로 발급.
+    /me 엔드포인트에서 email이 필요하다면 재로그인 필요.
+    """
     user_id = verify_refresh_token(body.refresh_token)
-    # refresh token에는 email이 없으므로 access token에 빈 email로 갱신
-    # 실제 운영 시 DB에서 email 조회 필요 (MVP는 생략)
-    return AccessTokenResponse(access_token=create_access_token(user_id, ""))
+    return AccessTokenResponse(access_token=create_access_token(user_id, email=""))
 
 
 @router.get("/me", response_model=MeResponse)

@@ -36,28 +36,21 @@ async def verify_google_id_token(id_token_str: str) -> dict:
         ) from exc
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> str:
-    """백엔드 JWT 검증 후 user_id 반환.
-
-    BYPASS_AUTH=true 이면 검증 없이 dev_user 반환 (로컬 개발용).
-    """
-    if settings.bypass_auth:
-        return "dev_user"
-
-    payload = verify_access_token(credentials.credentials)
-    return payload["sub"]
-
-
 async def get_current_user_payload(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
-    """백엔드 JWT 검증 후 payload 전체 반환 (email 등 추가 정보가 필요한 엔드포인트용).
+    """백엔드 JWT 검증 후 payload 전체 반환.
 
-    BYPASS_AUTH=true 이면 dev_user payload 반환.
+    BYPASS_AUTH=true 이면 dev_user payload 반환 (로컬 개발용).
     """
     if settings.bypass_auth:
         return {"sub": "dev_user", "email": "dev@example.com"}
 
     return verify_access_token(credentials.credentials)
+
+
+async def get_current_user(
+    payload: dict = Depends(get_current_user_payload),
+) -> str:
+    """백엔드 JWT 검증 후 user_id만 반환 (대부분의 보호 경로용)."""
+    return payload["sub"]
