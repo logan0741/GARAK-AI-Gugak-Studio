@@ -88,6 +88,8 @@ AI/data_ensemble/**/*.wav
 AI/data_ensemble/**/*.WAV
 AI/data_ensemble/**/*.mp3
 AI/data_ensemble/**/*.MP3
+AI/data_instruments/**/*.wav
+AI/data_instruments/**/*.WAV
 
 # AIHub 원본 세그먼트 (재생성 가능)
 AI/segments/
