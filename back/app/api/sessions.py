@@ -10,6 +10,7 @@ from app.schemas.session import (
     SessionDetail,
     SessionSummary,
 )
+from app.repositories import session_repo
 from app.services import session_service
 
 router = APIRouter(prefix="/api", tags=["sessions"])
@@ -47,7 +48,10 @@ async def get_session(
     user_id: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    session = await session_service.get_session(db, session_id, user_id)
-    if session is None:
+    exists = await session_repo.get_session_by_id(db, session_id)
+    if exists is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    if exists.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    session = await session_service.get_session(db, session_id, user_id)
     return session

@@ -34,6 +34,12 @@ async def list_sessions(db: AsyncSession, user_id: str) -> list[Session]:
     return list(result.scalars().all())
 
 
+async def get_session_by_id(db: AsyncSession, session_id: str) -> Session | None:
+    """소유권 무관하게 session_id로만 조회 (존재 여부 확인용)."""
+    result = await db.execute(select(Session).where(Session.id == session_id))
+    return result.scalar_one_or_none()
+
+
 async def get_session_detail(
     db: AsyncSession,
     session_id: str,

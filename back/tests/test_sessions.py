@@ -94,13 +94,27 @@ async def test_list_sessions_no_auth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_session_not_found(client: AsyncClient):
     """존재하지 않는 세션 → 404."""
-    with patch("app.api.sessions.session_service.get_session", new_callable=AsyncMock) as mock:
-        mock.return_value = None
+    with patch("app.api.sessions.session_repo.get_session_by_id", new_callable=AsyncMock) as mock_exists:
+        mock_exists.return_value = None
         response = await client.get(
             "/api/sessions/nonexistent",
             headers={"Authorization": "Bearer any"},
         )
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_session_forbidden(client: AsyncClient):
+    """다른 사용자 세션 조회 → 403."""
+    other_session = MagicMock()
+    other_session.user_id = "other_user"
+    with patch("app.api.sessions.session_repo.get_session_by_id", new_callable=AsyncMock) as mock_exists:
+        mock_exists.return_value = other_session
+        response = await client.get(
+            "/api/sessions/session_001",
+            headers={"Authorization": "Bearer any"},
+        )
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -116,6 +130,7 @@ async def test_get_session_success(client: AsyncClient):
     )
     mock_session = MagicMock(spec=Session)
     mock_session.id = "session_001"
+    mock_session.user_id = "dev_user"  # BYPASS_AUTH=true 시 user_id
     mock_session.instrument_id = "gayageum_12"
     mock_session.sample_asset_manifest_id = "manifest_001"
     mock_session.title = "테스트 연주"
@@ -128,8 +143,10 @@ async def test_get_session_success(client: AsyncClient):
     mock_session.replay_settings = None
     mock_session.events = [event]
 
-    with patch("app.api.sessions.session_service.get_session", new_callable=AsyncMock) as mock:
-        mock.return_value = mock_session
+    with patch("app.api.sessions.session_repo.get_session_by_id", new_callable=AsyncMock) as mock_exists, \
+         patch("app.api.sessions.session_service.get_session", new_callable=AsyncMock) as mock_get:
+        mock_exists.return_value = mock_session
+        mock_get.return_value = mock_session
         response = await client.get(
             "/api/sessions/session_001",
             headers={"Authorization": "Bearer any"},

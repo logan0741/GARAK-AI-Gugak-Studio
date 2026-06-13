@@ -1,8 +1,17 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 EventType = Literal["string_pluck", "string_bend", "string_mute", "glissando_step", "string_release"]
+
+# 타입별 필수 필드 정의
+_REQUIRED_FIELDS: dict[str, list[str]] = {
+    "string_pluck":   ["unit_index"],
+    "string_bend":    ["unit_index", "cents"],
+    "string_mute":    ["unit_index"],
+    "glissando_step": ["unit_index", "velocity"],
+    "string_release": ["unit_index"],
+}
 
 
 class PerformanceEventIn(BaseModel):
@@ -23,6 +32,18 @@ class PerformanceEventIn(BaseModel):
     payload: dict | None = None
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="after")
+    def check_required_fields_by_type(self) -> "PerformanceEventIn":
+        missing = [
+            f for f in _REQUIRED_FIELDS.get(self.type, [])
+            if getattr(self, f) is None
+        ]
+        if missing:
+            raise ValueError(
+                f"Event type '{self.type}' requires: {', '.join(missing)}"
+            )
+        return self
 
 
 class PerformanceEventOut(BaseModel):
