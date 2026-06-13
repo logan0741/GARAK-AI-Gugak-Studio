@@ -51,18 +51,24 @@ async def upload_track(
             detail=f"Unsupported file type: {file.content_type}. Allowed: aac, m4a, mp4",
         )
 
-    contents = await file.read()
-    if len(contents) > MAX_FILE_BYTES:
-        raise HTTPException(status_code=422, detail="File too large (max 50MB)")
-
-    # static/audio/{session_id}/{uuid}.aac 에 저장
+    # static/audio/{session_id}/{uuid}.aac 에 청크 스트리밍으로 저장
     rec_id = str(uuid.uuid4())
     save_dir = Path("static/audio") / session_id
     save_dir.mkdir(parents=True, exist_ok=True)
     save_path = save_dir / f"{rec_id}.aac"
 
-    async with aiofiles.open(save_path, "wb") as f:
-        await f.write(contents)
+    written = 0
+    chunk_size = 64 * 1024  # 64KB
+    try:
+        async with aiofiles.open(save_path, "wb") as f:
+            while chunk := await file.read(chunk_size):
+                written += len(chunk)
+                if written > MAX_FILE_BYTES:
+                    raise HTTPException(status_code=422, detail="File too large (max 50MB)")
+                await f.write(chunk)
+    except HTTPException:
+        save_path.unlink(missing_ok=True)
+        raise
 
     recording = Recording(
         id=rec_id,
@@ -77,4 +83,8 @@ async def upload_track(
         track_order=0,
         created_at_ms=_now_ms(),
     )
-    return await recording_repo.create_recording(db, recording)
+    try:
+        return await recording_repo.create_recording(db, recording)
+    except Exception:
+        save_path.unlink(missing_ok=True)
+        raise
