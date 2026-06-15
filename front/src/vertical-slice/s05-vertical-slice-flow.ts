@@ -74,6 +74,7 @@ export type GarakFlowState = {
   appliedSettings?: InstrumentSettings;
   recordingStatus: RecordingStatus;
   currentTake?: TakeDraft;
+  latestInputLabel?: string;
   notice?: string;
   jangdanPanelOpen: boolean;
   processingOverlay?: string;
@@ -85,6 +86,7 @@ export type GarakFlowAction =
   | { type: 'select_instrument'; instrumentId: InstrumentId }
   | { type: 'press_locked_instrument'; slotId: 'future-1' | 'future-2' }
   | { type: 'start_with_defaults' }
+  | { type: 'play_surface_input'; label: string }
   | { type: 'press_record'; nowMs: number }
   | { type: 'press_done'; nowMs: number }
   | { type: 'complete_processing' }
@@ -225,6 +227,8 @@ export function advanceGarakFlow(state: GarakFlowState, action: GarakFlowAction)
       };
     case 'start_with_defaults':
       return startWithDefaults(state);
+    case 'play_surface_input':
+      return recordSurfaceInput(state, action.label);
     case 'press_record':
       return toggleRecording(state, action.nowMs);
     case 'press_done':
@@ -268,6 +272,26 @@ export function advanceGarakFlow(state: GarakFlowState, action: GarakFlowAction)
         notice: undefined,
       };
   }
+}
+
+function recordSurfaceInput(state: GarakFlowState, label: string): GarakFlowState {
+  if (state.recordingStatus !== 'recording' || state.currentTake === undefined) {
+    return {
+      ...state,
+      latestInputLabel: label,
+      notice: undefined,
+    };
+  }
+
+  return {
+    ...state,
+    currentTake: {
+      ...state.currentTake,
+      eventCount: state.currentTake.eventCount + 1,
+    },
+    latestInputLabel: label,
+    notice: undefined,
+  };
 }
 
 function advanceNext(state: GarakFlowState): GarakFlowState {

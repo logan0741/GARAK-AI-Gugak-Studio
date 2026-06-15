@@ -109,6 +109,30 @@ describe('GARAK S01-S05 vertical slice flow', () => {
     expect(takeReady.currentTake?.durationMs).toBe(200);
   });
 
+  test('allows live playing without recording and counts events only inside the current take', () => {
+    const play = {
+      ...createInitialGarakFlowState(),
+      screen: 'free-play' as const,
+      selectedInstrumentId: '12_string_gayageum' as const,
+      appliedSettings: getDefaultInstrumentSettings('12_string_gayageum'),
+    };
+
+    const liveOnly = advanceGarakFlow(play, {
+      type: 'play_surface_input',
+      label: '3현',
+    });
+    const recording = advanceGarakFlow(liveOnly, { type: 'press_record', nowMs: 1000 });
+    const recorded = advanceGarakFlow(recording, {
+      type: 'play_surface_input',
+      label: '5현',
+    });
+
+    expect(liveOnly.currentTake).toBeUndefined();
+    expect(liveOnly.latestInputLabel).toBe('3현');
+    expect(recorded.currentTake?.eventCount).toBe(1);
+    expect(recorded.latestInputLabel).toBe('5현');
+  });
+
   test('does not leave S05 when done is pressed without a take', () => {
     const play = {
       ...createInitialGarakFlowState(),
