@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "GUKAK STUDIO",
+    "name": "GARAK",
     "slug": "gukak-studio",
     "scheme": "gukakstudio",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "plugins": ["expo-router"],
     "android": {
       "package": "com.gukakstudio.prototype"
