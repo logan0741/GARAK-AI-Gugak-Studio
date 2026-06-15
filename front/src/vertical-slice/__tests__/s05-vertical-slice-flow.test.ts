@@ -188,4 +188,20 @@ describe('GARAK S01-S05 vertical slice flow', () => {
     expect(blockedLayer.notice).toBe('먼저 녹음한 뒤 레이어 편집을 할 수 있어요.');
     expect(layerPlaceholder.screen).toBe('layer-edit-placeholder');
   });
+
+  test('does not open layer editing while a take is still recording', () => {
+    const play = {
+      ...createInitialGarakFlowState(),
+      screen: 'free-play' as const,
+      selectedInstrumentId: 'janggu' as const,
+      appliedSettings: getDefaultInstrumentSettings('janggu'),
+    };
+
+    const recording = advanceGarakFlow(play, { type: 'press_record', nowMs: 1000 });
+    const blockedLayer = advanceGarakFlow(recording, { type: 'open_layer_edit' });
+
+    expect(blockedLayer.screen).toBe('free-play');
+    expect(blockedLayer.recordingStatus).toBe('recording');
+    expect(blockedLayer.notice).toBe('녹음을 중지한 뒤 레이어 편집을 할 수 있어요.');
+  });
 });

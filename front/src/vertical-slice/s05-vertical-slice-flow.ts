@@ -261,6 +261,18 @@ export function advanceGarakFlow(state: GarakFlowState, action: GarakFlowAction)
           notice: '먼저 녹음한 뒤 레이어 편집을 할 수 있어요.',
         };
       }
+      if (state.recordingStatus === 'recording') {
+        return {
+          ...state,
+          notice: '녹음을 중지한 뒤 레이어 편집을 할 수 있어요.',
+        };
+      }
+      if (state.recordingStatus !== 'take-ready') {
+        return {
+          ...state,
+          notice: '테이크 정리 후 레이어 편집을 할 수 있어요.',
+        };
+      }
       return {
         ...state,
         screen: 'layer-edit-placeholder',

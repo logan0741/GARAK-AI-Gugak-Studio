@@ -404,12 +404,18 @@ function InstrumentSlotButton({
   onPress: () => void;
 }) {
   const label = slot.status === 'available' ? slot.label : '🔒';
+  const accessibilityLabel =
+    slot.status === 'available'
+      ? slot.label
+      : slot.slotId === 'future-1'
+        ? '잠금 악기 1'
+        : '잠금 악기 2';
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={slot.status === 'available' ? slot.label : '잠금 악기'}
-      accessibilityState={{ selected, disabled: slot.status === 'locked' }}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected }}
       onPress={onPress}
       style={[
         styles.instrumentSlot,
