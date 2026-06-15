@@ -1,5 +1,5 @@
-import { GayageumPrototypeScreen } from '../src/prototype/GayageumPrototypeScreen';
+import { GarakS05VerticalSliceScreen } from '../src/vertical-slice/garak-s05-vertical-slice-screen';
 
 export default function Index() {
-  return <GayageumPrototypeScreen />;
+  return <GarakS05VerticalSliceScreen />;
 }
