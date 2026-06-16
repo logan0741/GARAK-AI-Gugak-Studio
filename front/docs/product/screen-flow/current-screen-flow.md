@@ -888,6 +888,10 @@ Session.events
 - UI에서는 `표준 BPM`이라는 표현을 쓰지 않는다.
 - 사용자는 장단별 조정 범위 안에서 빠르기를 바꿀 수 있다.
 - 기본값은 첫 진입 시 바로 미리듣기 가능한 값으로 둔다.
+- 참고 출처:
+  - 국립국악원 국악사전 `세마치장단`: https://www.gugak.go.kr/ency/topic/view/1320
+  - 국립국악원 국악사전 `중모리장단`: https://www.gugak.go.kr/ency/topic/view/1322
+  - 국립국악원 국악사전 `자진모리장단`: https://www.gugak.go.kr/ency/topic/view/1318
 
 #### 10. 다음 화면 연결
 
@@ -941,6 +945,10 @@ Session.events
 - S10B의 프리셋 값은 S10A와 동일하게 시작한다.
 - 사용자가 작업 맥락에 맞춰 BPM을 조정하면 생성되는 반주 트랙에 해당 BPM을 저장한다.
 - AI 추천 장단이 도입되더라도 MVP 기본 프리셋과 BPM 범위는 유지한다.
+- 참고 출처:
+  - 국립국악원 국악사전 `세마치장단`: https://www.gugak.go.kr/ency/topic/view/1320
+  - 국립국악원 국악사전 `중모리장단`: https://www.gugak.go.kr/ency/topic/view/1322
+  - 국립국악원 국악사전 `자진모리장단`: https://www.gugak.go.kr/ency/topic/view/1318
 
 #### 7. 쓰는 데이터
 
