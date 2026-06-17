@@ -18,3 +18,10 @@ async def get_all_jangdan_presets(db: AsyncSession) -> list[JangdanPreset]:
         select(JangdanPreset).options(selectinload(JangdanPreset.pattern_events))
     )
     return list(result.scalars().all())
+
+
+async def get_jangdan_by_id(db: AsyncSession, jangdan_id: str) -> JangdanPreset | None:
+    result = await db.execute(
+        select(JangdanPreset).where(JangdanPreset.id == jangdan_id)
+    )
+    return result.scalar_one_or_none()
