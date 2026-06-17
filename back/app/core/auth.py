@@ -8,7 +8,7 @@ from google.auth.transport import requests as google_requests
 from app.core.config import settings
 from app.services.auth_service import verify_access_token
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def _verify_google_token(token: str) -> dict:
@@ -37,7 +37,7 @@ async def verify_google_id_token(id_token_str: str) -> dict:
 
 
 async def get_current_user_payload(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> dict:
     """백엔드 JWT 검증 후 payload 전체 반환.
 
@@ -46,6 +46,11 @@ async def get_current_user_payload(
     if settings.bypass_auth:
         return {"sub": "dev_user", "email": "dev@example.com"}
 
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+        )
     return verify_access_token(credentials.credentials)
 
 

@@ -89,7 +89,17 @@ async def test_me_with_valid_jwt(client: AsyncClient, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_me_no_token(client: AsyncClient):
-    """Authorization 헤더 없이 요청 → 401 (HTTPBearer auto_error=True)."""
+async def test_me_no_token(client: AsyncClient, monkeypatch):
+    """Authorization 헤더 없이 요청 → 401 (BYPASS_AUTH=false 환경)."""
+    import app.core.auth as auth_mod
+
+    class FakeSettings:
+        bypass_auth = False
+        jwt_secret_key = "dev-secret-key"
+        jwt_expire_minutes = 60
+        jwt_refresh_expire_days = 30
+        google_client_id = "test-client-id"
+
+    monkeypatch.setattr(auth_mod, "settings", FakeSettings())
     response = await client.get("/api/auth/me")
     assert response.status_code == 401
