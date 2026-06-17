@@ -10,6 +10,7 @@ from app.api.auth import router as auth_router
 from app.api.instruments import router as instruments_router
 from app.api.jangdan_presets import router as jangdan_presets_router
 from app.api.sessions import router as sessions_router
+from app.api.tracks import router as tracks_router
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ app.include_router(auth_router)
 app.include_router(instruments_router)
 app.include_router(jangdan_presets_router)
 app.include_router(sessions_router)
+app.include_router(tracks_router)
 
 
 @app.get("/")
