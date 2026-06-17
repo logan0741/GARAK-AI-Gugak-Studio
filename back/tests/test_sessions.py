@@ -83,8 +83,18 @@ async def test_list_sessions_empty(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_list_sessions_no_auth(client: AsyncClient):
-    """인증 없이 요청 → 401."""
+async def test_list_sessions_no_auth(client: AsyncClient, monkeypatch):
+    """인증 없이 요청 → 401 (BYPASS_AUTH=false 환경)."""
+    import app.core.auth as auth_mod
+
+    class FakeSettings:
+        bypass_auth = False
+        jwt_secret_key = "dev-secret-key"
+        jwt_expire_minutes = 60
+        jwt_refresh_expire_days = 30
+        google_client_id = "test-client-id"
+
+    monkeypatch.setattr(auth_mod, "settings", FakeSettings())
     response = await client.get("/api/sessions")
     assert response.status_code == 401
 

@@ -10,6 +10,7 @@ python-multipart==0.0.17
 aiofiles==24.1.0
 cryptography==43.0.3
 requests==2.34.2
+python-jose[cryptography]==3.5.0
 
 # test
 pytest==8.3.4
