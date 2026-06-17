@@ -28,6 +28,7 @@
 | 되돌리기 어려운 결정 | `docs/adr/` |
 | 실행 가능한 구현 순서 | `docs/plans/` |
 | 리뷰 결과 | `docs/reviews/` |
+| 팀 공유용 구현 결과 보고 | `docs/reports/` |
 | 실패/중단/handoff 로그 | `docs/logs/` |
 | 수동 QA 체크리스트 | `docs/qa/` |
 

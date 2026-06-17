@@ -34,6 +34,7 @@
 | 문서를 새로 만들거나 옮길 때의 규칙은 무엇인가? | `docs/system/documentation-standard.md` | 이 문서 |
 | 수동 QA와 오디오/기기 검증 기준은 무엇인가? | `docs/qa/` | `docs/architecture/runtime-architecture.md` |
 | 과거 리뷰의 판단 근거는 어디에서 확인하는가? | `docs/reviews/` | 담당 기준 문서 |
+| 구현 결과를 팀에 공유하는 보고서는 어디에 두는가? | `docs/reports/` | 담당 기준 문서, `docs/plans/` |
 | 작업 중단, 실패, handoff 기록은 어디에 남기는가? | `docs/logs/` | `docs/system/conventions.md` |
 
 ## 현재 제품 기준
