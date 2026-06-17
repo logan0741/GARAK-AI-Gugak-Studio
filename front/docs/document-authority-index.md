@@ -22,6 +22,7 @@
 | 작업 시작 전에 무엇을 먼저 읽어야 하는가? | `AGENTS.md` | `CONTEXT.md` |
 | 제품 핵심 원칙과 MVP 경계는 무엇인가? | `CONTEXT.md` | `docs/product/garak-product-brief.md` |
 | 화면 목록, CTA, 연결, 데이터 흐름은 무엇인가? | `docs/product/screen-flow/current-screen-flow.md` | `docs/product/screen-flow/changes/` |
+| 화면 구성의 정보 위계, 상태, 접근성 기준은 무엇인가? | `docs/product/screen-flow/screen-composition-standards.md` | `docs/reviews/` |
 | 화면 변경 이력은 어디에 남기는가? | `docs/product/screen-flow/changes/` | `docs/product/screen-flow/current-screen-flow.md` |
 | 도메인 용어, aggregate, invariant는 무엇인가? | `docs/domain/README.md` | `docs/architecture/gukak-studio-erd.md` |
 | 세션 저장 구조와 엔티티 관계는 무엇인가? | `docs/architecture/gukak-studio-erd.md` | `docs/domain/README.md` |
