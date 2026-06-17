@@ -23,12 +23,12 @@ class PerformanceEventIn(BaseModel):
     type: EventType
     # FE에서만 사용하는 포인터 ID — 서버에서 저장하지 않음
     pointer_id: str | None = Field(None, alias="pointerId", exclude=True)
-    # FE: stringIndex → DB: unit_index
-    unit_index: int | None = Field(None, alias="stringIndex")
-    # FE: cents → DB: pitch_bend_cents
-    cents: int | None = None
-    velocity: float | None = None
-    strength: float | None = None
+    # FE: stringIndex → DB: unit_index (1~12)
+    unit_index: int | None = Field(None, alias="stringIndex", ge=1, le=12)
+    # FE: cents → DB: pitch_bend_cents (-120~120)
+    cents: int | None = Field(None, ge=-120, le=120)
+    velocity: float | None = Field(None, ge=0.0, le=1.0)
+    strength: float | None = Field(None, ge=0.0, le=1.0)
     payload: dict | None = None
 
     model_config = ConfigDict(populate_by_name=True)
