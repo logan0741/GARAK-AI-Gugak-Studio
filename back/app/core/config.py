@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     db_url: str
     google_client_id: str = ""
     claude_api_key: str = ""
+    google_translate_api_key: str = ""
     server_base_url: str = "http://localhost:8000"
     ai_module_path: str = "../ai"
     bypass_auth: bool = False
