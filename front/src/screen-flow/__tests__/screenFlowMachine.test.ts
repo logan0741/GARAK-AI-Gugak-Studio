@@ -9,7 +9,7 @@ import {
 import { createInitialScreenFlowState, transitionScreenFlow } from '../screenFlowMachine';
 
 test('defines the S01-S23 implementation boundary without standalone excluded screens', () => {
-  expect(IMPLEMENTED_SCREEN_IDS).toEqual([
+  const expectedImplementedScreens = new Set([
     'S01',
     'S02',
     'S03',
@@ -33,8 +33,10 @@ test('defines the S01-S23 implementation boundary without standalone excluded sc
     'S22',
     'S23',
   ]);
-  expect(EXCLUDED_SCREEN_IDS).toEqual(['S06', 'S11', 'S12']);
-  expect(Object.keys(implementedScreenDefinitions)).toEqual([...IMPLEMENTED_SCREEN_IDS]);
+
+  expect(new Set(IMPLEMENTED_SCREEN_IDS)).toEqual(expectedImplementedScreens);
+  expect(new Set(EXCLUDED_SCREEN_IDS)).toEqual(new Set(['S06', 'S11', 'S12']));
+  expect(new Set(Object.keys(implementedScreenDefinitions))).toEqual(expectedImplementedScreens);
 });
 
 test('keeps excluded screens out of direct navigation targets', () => {
@@ -45,6 +47,32 @@ test('keeps excluded screens out of direct navigation targets', () => {
   expect(isDirectNavigationTarget('S06')).toBe(false);
   expect(isDirectNavigationTarget('S11')).toBe(false);
   expect(isDirectNavigationTarget('S12')).toBe(false);
+});
+
+test('defines documented cancel and disable transitions for track and jangdan flows', () => {
+  expect(implementedScreenDefinitions.S09.primaryCtas).toEqual(
+    expect.arrayContaining(['record', 'apply', 'recordAgain', 'cancel']),
+  );
+  expect(implementedScreenDefinitions.S09.transitions).toContainEqual({
+    action: 'cancel',
+    target: 'S07',
+  });
+
+  expect(implementedScreenDefinitions.S10A.primaryCtas).toEqual(
+    expect.arrayContaining(['preview', 'applyAndReturnToPerformance', 'turnOff']),
+  );
+  expect(implementedScreenDefinitions.S10A.transitions).toContainEqual({
+    action: 'turnOff',
+    target: 'S05',
+  });
+
+  expect(implementedScreenDefinitions.S10B.primaryCtas).toEqual(
+    expect.arrayContaining(['preview', 'addAccompanimentTrack', 'cancel']),
+  );
+  expect(implementedScreenDefinitions.S10B.transitions).toContainEqual({
+    action: 'cancel',
+    target: 'S07',
+  });
 });
 
 test('routes S01 Next to S04 when free creation mode is selected', () => {
@@ -69,6 +97,21 @@ test('routes S01 Next to S13 when practice mode is selected', () => {
 
   expect(next.currentScreen).toBe('S13');
   expect(next.history).toEqual(['S01']);
+});
+
+test('rejects S01 mode selection from other screens', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S13',
+    history: ['S01'],
+    mode: 'practice',
+  });
+
+  expect(() =>
+    transitionScreenFlow(state, {
+      type: 'selectMode',
+      mode: 'freeCreation',
+    }),
+  ).toThrow('selectMode is only available from S01');
 });
 
 test('routes S05 completion directly to S07 without entering S06', () => {
@@ -123,6 +166,29 @@ test('supports a push history stack and back transition', () => {
   expect(backToLibrary.history).toEqual(['S01']);
   expect(backToHome.currentScreen).toBe('S01');
   expect(backToHome.history).toEqual([]);
+});
+
+test('allows direct navigate only through current screen transitions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S08',
+    history: ['S07'],
+  });
+
+  const next = transitionScreenFlow(state, { type: 'navigate', target: 'S10B' });
+
+  expect(next.currentScreen).toBe('S10B');
+  expect(next.history).toEqual(['S07', 'S08']);
+});
+
+test('rejects direct navigate to implemented screens that are not reachable from the current screen', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S04',
+    history: ['S01'],
+  });
+
+  expect(() => transitionScreenFlow(state, { type: 'navigate', target: 'S21' })).toThrow(
+    'S21 is not reachable from S04',
+  );
 });
 
 test('rejects direct navigation attempts to excluded screens', () => {

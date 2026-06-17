@@ -138,21 +138,30 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     name: 'Record Extra Instrument',
     mvpStatus: 'required',
     primaryCtas: ['record', 'apply', 'recordAgain', 'cancel'],
-    transitions: [{ action: 'apply', target: 'S07' }],
+    transitions: [
+      { action: 'apply', target: 'S07' },
+      { action: 'cancel', target: 'S07' },
+    ],
   },
   S10A: {
     id: 'S10A',
     name: 'Live Jangdan Guide',
     mvpStatus: 'required',
-    primaryCtas: ['preview', 'applyAndReturnToPerformance'],
-    transitions: [{ action: 'applyAndReturnToPerformance', target: 'S05' }],
+    primaryCtas: ['preview', 'applyAndReturnToPerformance', 'turnOff'],
+    transitions: [
+      { action: 'applyAndReturnToPerformance', target: 'S05' },
+      { action: 'turnOff', target: 'S05' },
+    ],
   },
   S10B: {
     id: 'S10B',
     name: 'Create Accompaniment Track',
     mvpStatus: 'required',
-    primaryCtas: ['preview', 'addAccompanimentTrack'],
-    transitions: [{ action: 'addAccompanimentTrack', target: 'S07' }],
+    primaryCtas: ['preview', 'addAccompanimentTrack', 'cancel'],
+    transitions: [
+      { action: 'addAccompanimentTrack', target: 'S07' },
+      { action: 'cancel', target: 'S07' },
+    ],
   },
   S13: {
     id: 'S13',

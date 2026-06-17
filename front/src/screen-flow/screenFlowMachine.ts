@@ -1,6 +1,7 @@
 import {
   ImplementedScreenId,
   ScreenFlowMode,
+  implementedScreenDefinitions,
   isExcludedScreenId,
   isImplementedScreenId,
 } from './screenDefinitions';
@@ -37,10 +38,7 @@ export function createInitialScreenFlowState(input: Partial<ScreenFlowState> = {
 export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEvent): ScreenFlowState {
   switch (event.type) {
     case 'selectMode':
-      return {
-        ...state,
-        mode: event.mode,
-      };
+      return selectMode(state, event.mode);
     case 'next':
       return routeNext(state);
     case 'completePerformance':
@@ -50,10 +48,21 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
     case 'loginCta':
       return routeFromScreen(state, 'S22', 'S23', event.type);
     case 'navigate':
-      return pushScreen(state, resolveStandaloneNavigationTarget(event.target));
+      return pushScreen(state, resolveNavigationTarget(state, event.target));
     case 'back':
       return popScreen(state);
   }
+}
+
+function selectMode(state: ScreenFlowState, mode: ScreenFlowMode): ScreenFlowState {
+  if (state.currentScreen !== 'S01') {
+    throw new Error('selectMode is only available from S01');
+  }
+
+  return {
+    ...state,
+    mode,
+  };
 }
 
 function routeNext(state: ScreenFlowState): ScreenFlowState {
@@ -110,13 +119,27 @@ function popScreen(state: ScreenFlowState): ScreenFlowState {
   };
 }
 
-function resolveStandaloneNavigationTarget(screenId: string): ImplementedScreenId {
+function resolveNavigationTarget(state: ScreenFlowState, screenId: string): ImplementedScreenId {
   if (isExcludedScreenId(screenId)) {
     throw new Error(`${screenId} is excluded from standalone navigation`);
   }
 
   assertImplementedScreenId(screenId);
+
+  if (!hasTransitionToTarget(state.currentScreen, screenId)) {
+    throw new Error(`${screenId} is not reachable from ${state.currentScreen}`);
+  }
+
   return screenId;
+}
+
+function hasTransitionToTarget(
+  currentScreen: ImplementedScreenId,
+  target: ImplementedScreenId,
+): boolean {
+  return implementedScreenDefinitions[currentScreen].transitions.some(
+    (transition) => transition.target === target,
+  );
 }
 
 function assertImplementedScreenId(screenId: string): asserts screenId is ImplementedScreenId {
