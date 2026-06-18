@@ -1,11 +1,5 @@
 <svg width="2400" height="1660" viewBox="0 0 2400 1660" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <marker id="arrowPrimary" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
-      <path d="M2 2L10 6L2 10V2Z" fill="#1F1F1F"/>
-    </marker>
-    <marker id="arrowSecondary" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
-      <path d="M2 2L10 6L2 10V2Z" fill="#A0A0A0"/>
-    </marker>
     <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%">
       <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.08"/>
     </filter>
@@ -16,8 +10,8 @@
       .card { fill: #FFFFFF; stroke: #D7D7D2; stroke-width: 2; filter: url(#softShadow); }
       .card-soft { fill: #FAFAF8; stroke: #D7D7D2; stroke-width: 2; }
       .excluded { fill: #FFFDF8; stroke: #D8C9B8; stroke-width: 2; }
-      .primary { stroke: #1F1F1F; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrowPrimary); }
-      .secondary { stroke: #A0A0A0; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrowSecondary); }
+      .primary { stroke: #1F1F1F; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      .secondary { stroke: #A8A8A8; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
       .bus { stroke: #A0A0A0; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
       .title { font: 700 44px Inter, Arial, sans-serif; fill: #1F1F1F; }
       .subtitle { font: 400 22px Inter, Arial, sans-serif; fill: #6D6D6D; }
@@ -102,10 +96,10 @@
   <line x1="1535" y1="334" x2="1570" y2="334" class="secondary"/>
   <line x1="1775" y1="334" x2="1810" y2="334" class="secondary"/>
   <text class="small" x="970" y="314">홈 상단/홈 액션은 한 묶음으로 표시해 교차선을 줄임</text>
-  <path d="M245 382 V530 H230 V570" class="secondary"/>
-  <path d="M300 382 H86 V1099 H120" class="secondary"/>
-  <text class="tag" x="154" y="448">자유창작 선택</text>
-  <text class="tag" x="94" y="936">따라하기 선택</text>
+  <path d="M242 382 V430 H230 V570" class="secondary"/>
+  <path d="M120 334 H40 V1099 H120" class="secondary"/>
+  <text class="tag" x="150" y="438">자유창작 선택</text>
+  <text class="tag" x="52" y="928">따라하기 선택</text>
 
   <!-- Free creation lane -->
   <g id="S04">
@@ -144,7 +138,6 @@
     <text class="screen-body" x="702" y="812">S05 안에서 열리는 가이드</text>
   </g>
   <path d="M803 676 V724" class="secondary"/>
-  <path d="M925 776 H1015 V650 H1090" class="secondary"/>
 
   <g id="S08">
     <rect class="card" x="1090" y="760" width="255" height="106" rx="18"/>
@@ -167,7 +160,7 @@
     <text class="screen-body" x="1457" y="850">새 AccompanimentTrack</text>
   </g>
   <path d="M1345 813 H1435" class="primary"/>
-  <path d="M1345 813 V623 H1435" class="secondary"/>
+  <path d="M1345 813 H1388 V623 H1435" class="primary"/>
   <path d="M1690 623 H1770 V520 H1218 V570" class="secondary"/>
   <path d="M1690 813 H1770 V700 H1218 V676" class="secondary"/>
   <text class="tag" x="1700" y="604">추가 후 S07 복귀</text>
