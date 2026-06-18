@@ -51,3 +51,27 @@ async def test_accompaniment_invalid_bpm(client: AsyncClient):
     """bpm 0 이하 → 422."""
     response = await client.post("/api/accompaniment", json={**VALID_BODY, "bpm": 0})
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_accompaniment_saves_recommendation(client: AsyncClient):
+    """session_id 포함 시 JangdanRecommendation DB 저장 호출."""
+    mock_preset = MagicMock()
+    with patch("app.api.accompaniment.jangdan_repo.get_jangdan_by_id", new_callable=AsyncMock) as mock_get, \
+         patch("app.api.accompaniment.jangdan_repo.create_recommendation", new_callable=AsyncMock) as mock_save:
+        mock_get.return_value = mock_preset
+        response = await client.post("/api/accompaniment", json={**VALID_BODY, "session_id": "session_001"})
+    assert response.status_code == 200
+    mock_save.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_accompaniment_no_session_skips_save(client: AsyncClient):
+    """session_id 없으면 DB 저장 안 함."""
+    mock_preset = MagicMock()
+    with patch("app.api.accompaniment.jangdan_repo.get_jangdan_by_id", new_callable=AsyncMock) as mock_get, \
+         patch("app.api.accompaniment.jangdan_repo.create_recommendation", new_callable=AsyncMock) as mock_save:
+        mock_get.return_value = mock_preset
+        response = await client.post("/api/accompaniment", json=VALID_BODY)
+    assert response.status_code == 200
+    mock_save.assert_not_called()

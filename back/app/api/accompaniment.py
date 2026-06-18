@@ -1,7 +1,11 @@
+import uuid
+from time import time_ns
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.models.jangdan import JangdanRecommendation
 from app.repositories import jangdan_repo
 from app.schemas.accompaniment import AccompanimentRequest, AccompanimentResponse
 from app.services import ai_client
@@ -33,6 +37,21 @@ async def accompaniment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Accompaniment generation failed",
         ) from exc
+
+    if body.session_id:
+        rec = JangdanRecommendation(
+            id=str(uuid.uuid4()),
+            session_id=body.session_id,
+            jangdan_preset_id=body.jangdan,
+            score=result.get("score", 0.0),
+            estimated_bpm=int(body.bpm),
+            density=result.get("density", 0.0),
+            beat_stability=result.get("beatStability", 0.0),
+            decision_status="proposed",
+            reason={"key": body.key, "temperature": body.temperature},
+            created_at_ms=time_ns() // 1_000_000,
+        )
+        await jangdan_repo.create_recommendation(db, rec)
 
     return AccompanimentResponse(
         pattern_sequence=result["patternSequence"],
