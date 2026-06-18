@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.repositories import folk_song_repo
 from app.schemas.folk_song import FolkSongOut, ScoreRequest, ScoreResponse
-from app.services.translate_service import translate_to_locale
+from app.services.translate_service import translate_batch_to_locale
 
 router = APIRouter(prefix="/api", tags=["folk-songs"])
 
@@ -18,13 +18,11 @@ async def list_folk_songs(
 ):
     songs = await folk_song_repo.get_all_folk_songs(db)
     if locale == "en":
-        result = []
-        for song in songs:
-            translated_title = await translate_to_locale(song.title, "en")
-            out = FolkSongOut.model_validate(song)
-            out.title = translated_title
-            result.append(out)
-        return result
+        titles = await translate_batch_to_locale([s.title for s in songs], "en")
+        return [
+            FolkSongOut.model_validate(song).model_copy(update={"title": title})
+            for song, title in zip(songs, titles)
+        ]
     return songs
 
 
@@ -46,15 +44,14 @@ async def score_folk_song(
         return ScoreResponse(accuracy=0.0, correct_count=0, total_count=0)
 
     correct = 0
+    remaining = list(user_events)  # 이미 매칭된 이벤트는 제거해 중복 매칭 방지
     for ref in reference:
         ref_ts = ref["ts_ms"]
-        # 기준 이벤트와 ±200ms 이내의 사용자 이벤트가 있으면 정확
-        matched = any(
-            abs(e["ts_ms"] - ref_ts) <= _TIMING_TOLERANCE_MS
-            for e in user_events
-        )
-        if matched:
-            correct += 1
+        for i, e in enumerate(remaining):
+            if abs(e["ts_ms"] - ref_ts) <= _TIMING_TOLERANCE_MS:
+                correct += 1
+                remaining.pop(i)
+                break
 
     accuracy = round(correct / total * 100, 1)
     return ScoreResponse(accuracy=accuracy, correct_count=correct, total_count=total)

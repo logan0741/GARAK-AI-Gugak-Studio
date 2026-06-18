@@ -44,6 +44,34 @@ async def test_share_forbidden(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_get_share_success(client: AsyncClient):
+    """공유 링크 조회 → 200, share 정보 반환."""
+    mock_link = MagicMock()
+    mock_link.id = "share_abc"
+    mock_link.session_id = "session_001"
+    mock_link.recording_id = None
+    mock_link.visibility = "public"
+    mock_link.created_at_ms = 1700000000000
+
+    with patch("app.api.share.share_repo.get_share_link", new_callable=AsyncMock, return_value=mock_link):
+        response = await client.get("/api/share/share_abc")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["share_id"] == "share_abc"
+    assert data["session_id"] == "session_001"
+    assert "/s/share_abc" in data["share_url"]
+
+
+@pytest.mark.asyncio
+async def test_get_share_not_found(client: AsyncClient):
+    """존재하지 않는 공유 링크 → 404."""
+    with patch("app.api.share.share_repo.get_share_link", new_callable=AsyncMock, return_value=None):
+        response = await client.get("/api/share/nonexistent")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_share_no_auth(client: AsyncClient, monkeypatch):
     """인증 없이 요청 → 401."""
     import app.core.auth as auth_mod

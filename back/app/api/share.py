@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.models.share_link import ShareLink
 from app.repositories import session_repo, share_repo
-from app.schemas.share import ShareRequest, ShareResponse
+from app.schemas.share import ShareLinkOut, ShareRequest, ShareResponse
 
 router = APIRouter(prefix="/api", tags=["share"])
 
@@ -39,4 +39,24 @@ async def create_share(
     return ShareResponse(
         share_id=share_id,
         share_url=f"{settings.server_base_url}/s/{share_id}",
+    )
+
+
+@router.get("/share/{share_id}", response_model=ShareLinkOut)
+async def get_share(
+    share_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """공유 링크 조회. 인증 불필요 — 링크를 받은 누구나 접근 가능."""
+    link = await share_repo.get_share_link(db, share_id)
+    if link is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Share link not found")
+
+    return ShareLinkOut(
+        share_id=link.id,
+        share_url=f"{settings.server_base_url}/s/{link.id}",
+        session_id=link.session_id,
+        recording_id=link.recording_id,
+        visibility=link.visibility,
+        created_at_ms=link.created_at_ms,
     )

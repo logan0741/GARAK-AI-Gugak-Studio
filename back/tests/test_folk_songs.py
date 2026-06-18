@@ -41,7 +41,7 @@ async def test_list_folk_songs(client: AsyncClient):
 async def test_list_folk_songs_en(client: AsyncClient):
     """locale=en → 번역된 title 반환."""
     with patch("app.api.folk_songs.folk_song_repo.get_all_folk_songs", new_callable=AsyncMock, return_value=[_make_song()]), \
-         patch("app.api.folk_songs.translate_to_locale", new_callable=AsyncMock, return_value="Arirang"):
+         patch("app.api.folk_songs.translate_batch_to_locale", new_callable=AsyncMock, return_value=["Arirang"]):
         response = await client.get("/api/folk-songs?locale=en")
     assert response.status_code == 200
     assert response.json()[0]["title"] == "Arirang"
