@@ -10,9 +10,10 @@ S01-S23 화면 구조를 팀이 더 쉽게 검토할 수 있도록 Figma 이관�
 
 ## 산출물
 
+- 편집 가능한 Figma 파일: [GARAK S01-S23 화면 흐름 와이어프레임](https://www.figma.com/design/VWHZyO6pYcPmzk12TsRJdB)
 - SVG: `assets/s01-s23-screen-flow-wireframe.svg`
 - PNG 미리보기: `assets/s01-s23-screen-flow-wireframe.png`
-- 용도: Figma에 가져가거나, 문서/PR 리뷰에서 화면 구조를 빠르게 확인하는 자료
+- 용도: Figma에서는 카드, 텍스트, 선, 화살표를 개별 노드로 편집하고, 문서/PR에서는 PNG로 빠르게 구조를 확인한다.
 
 ![S01-S23 화면 흐름 와이어프레임](assets/s01-s23-screen-flow-wireframe.png)
 
@@ -26,11 +27,19 @@ S01-S23 화면 구조를 팀이 더 쉽게 검토할 수 있도록 Figma 이관�
 
 ## Figma 반영 상태
 
-현재 Figma 커넥터가 대상 파일을 `read-only mode`로 열고 있어 `createPage`, `createFrame`이 차단되었다. 따라서 직접 Figma 노드 생성은 보류하고, 동일 구조를 SVG로 먼저 기록한다.
+기존 `2026 솔챌` Figma 파일은 커넥터가 `read-only mode`로 열고 있어 `createPage`, `createFrame`이 차단되었다. 현재 인증 계정 기준으로 해당 파일은 View 권한으로 보인다.
 
-Figma 쓰기 권한이 열리면 다음 순서로 이관한다.
+따라서 편집 가능한 새 Figma design 파일을 만들고, 동일 구조를 실제 Figma 노드로 생성했다.
+
+- 파일명: `GARAK S01-S23 화면 흐름 와이어프레임`
+- URL: https://www.figma.com/design/VWHZyO6pYcPmzk12TsRJdB
+- 구성: `Frame`, `Text`, `Line`, `Polygon` 노드
+- 폰트: `Noto Sans KR`
+- 편집 단위: 레인, 화면 카드, 화면명, 설명, 연결선, 화살표 모두 개별 편집 가능
+
+기존 `2026 솔챌` 파일에 직접 합쳐야 한다면 다음 순서로 진행한다.
 
 1. 기존 `Idea` 페이지 오른쪽에 `S01-S23 화면 흐름 와이어프레임` 프레임을 추가한다.
-2. SVG의 레인 구조와 카드 배치를 그대로 Figma 노드로 재구성한다.
+2. 새 편집 가능 Figma 파일의 프레임을 복사해 기존 파일에 붙여넣는다.
 3. 기존 `6/10` 섹션의 카드 감각과 디자인 시스템 색/버튼 규칙을 적용한다.
 4. Mermaid 지도는 상세 참조용으로 유지하고, Figma 지도는 팀 리뷰용 요약 지도 역할로 둔다.
