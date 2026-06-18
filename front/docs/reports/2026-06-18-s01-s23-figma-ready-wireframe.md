@@ -13,7 +13,7 @@ S01-S23 화면 구조를 팀이 더 쉽게 검토할 수 있도록 Figma 이관�
 - 편집 가능한 Figma 파일: [GARAK S01-S23 화면 흐름 와이어프레임](https://www.figma.com/design/VWHZyO6pYcPmzk12TsRJdB)
 - SVG: `assets/s01-s23-screen-flow-wireframe.svg`
 - PNG 미리보기: `assets/s01-s23-screen-flow-wireframe.png`
-- 용도: Figma에서는 카드, 텍스트, 선, 화살표를 개별 노드로 편집하고, 문서/PR에서는 PNG로 빠르게 구조를 확인한다.
+- 용도: Figma에서는 카드, 텍스트, 연결선을 개별 노드로 편집하고, 문서/PR에서는 PNG로 빠르게 구조를 확인한다.
 
 ![S01-S23 화면 흐름 와이어프레임](assets/s01-s23-screen-flow-wireframe.png)
 
@@ -34,10 +34,11 @@ S01-S23 화면 구조를 팀이 더 쉽게 검토할 수 있도록 Figma 이관�
 
 - 파일명: `GARAK S01-S23 화면 흐름 와이어프레임`
 - URL: https://www.figma.com/design/VWHZyO6pYcPmzk12TsRJdB
-- 구성: `Frame`, `Text`, `Line`, `Polygon` 노드
+- 구성: `Frame`, `Text`, `Rectangle` 노드
 - 폰트: `Noto Sans KR`
-- 편집 단위: 레인, 화면 카드, 화면명, 설명, 연결선, 화살표 모두 개별 편집 가능
+- 편집 단위: 레인, 화면 카드, 화면명, 설명, 연결선 모두 개별 편집 가능
 - 2026-06-18 수정: 화살표 머리 삼각형을 제거하고, S01 모드 분기와 S10A 라이브 장단 연결선을 재배치했다.
+- 2026-06-18 추가 수정: Figma의 회전된 `Line` 노드가 프레임 밖으로 길게 튀는 문제를 막기 위해 모든 연결선을 회전값 없는 `Rectangle` 막대 노드로 교체했다. S01에서 따라하기 레인으로 내려가던 긴 보조선은 제거하고, 따라하기 레인 입구에는 짧은 로컬 보조선만 남겼다.
 
 기존 `2026 솔챌` 파일에 직접 합쳐야 한다면 다음 순서로 진행한다.
 

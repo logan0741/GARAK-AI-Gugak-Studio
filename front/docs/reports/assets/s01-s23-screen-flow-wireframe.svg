@@ -91,13 +91,12 @@
     <text class="screen-body" x="1832" y="374">설정/로그인</text>
   </g>
   <line x1="365" y1="334" x2="438" y2="334" class="secondary"/>
-  <line x1="915" y1="334" x2="1296" y2="334" class="bus"/>
-  <line x1="1296" y1="334" x2="1330" y2="334" class="secondary"/>
+  <line x1="915" y1="334" x2="1330" y2="334" class="secondary"/>
   <line x1="1535" y1="334" x2="1570" y2="334" class="secondary"/>
   <line x1="1775" y1="334" x2="1810" y2="334" class="secondary"/>
   <text class="small" x="970" y="314">홈 상단/홈 액션은 한 묶음으로 표시해 교차선을 줄임</text>
   <path d="M242 382 V430 H230 V570" class="secondary"/>
-  <path d="M120 334 H40 V1099 H120" class="secondary"/>
+  <line x1="84" y1="1099" x2="120" y2="1099" class="secondary"/>
   <text class="tag" x="150" y="438">자유창작 선택</text>
   <text class="tag" x="52" y="928">따라하기 선택</text>
 
@@ -128,7 +127,7 @@
   </g>
   <line x1="340" y1="623" x2="400" y2="623" class="primary"/>
   <line x1="620" y1="623" x2="680" y2="623" class="primary"/>
-  <line x1="925" y1="623" x2="1090" y2="623" class="primary"/>
+  <line x1="925" y1="623" x2="1090" y2="623" class="secondary"/>
   <text class="tag" x="958" y="605">완료 시 Work 자동 저장</text>
 
   <g id="S10A">
@@ -145,7 +144,7 @@
     <text class="screen-title" x="1112" y="824">트랙 추가</text>
     <text class="screen-body" x="1112" y="850">악기 / 반주 분기</text>
   </g>
-  <path d="M1218 676 V760" class="primary"/>
+  <path d="M1218 676 V760" class="secondary"/>
 
   <g id="S09">
     <rect class="card-soft" x="1435" y="570" width="255" height="106" rx="18"/>
@@ -161,8 +160,8 @@
   </g>
   <path d="M1345 813 H1435" class="primary"/>
   <path d="M1345 813 H1388 V623 H1435" class="primary"/>
-  <path d="M1690 623 H1770 V520 H1218 V570" class="secondary"/>
-  <path d="M1690 813 H1770 V700 H1218 V676" class="secondary"/>
+  <path d="M1690 623 H1760 V520 H1218 V570" class="secondary"/>
+  <path d="M1690 813 H1760 V700 H1218 V676" class="secondary"/>
   <text class="tag" x="1700" y="604">추가 후 S07 복귀</text>
   <text class="tag" x="1700" y="795">추가 후 S07 복귀</text>
 
@@ -216,8 +215,8 @@
   <line x1="620" y1="1099" x2="680" y2="1099" class="primary"/>
   <line x1="925" y1="1099" x2="985" y2="1099" class="primary"/>
   <line x1="1240" y1="1099" x2="1300" y2="1099" class="primary"/>
-  <path d="M1240 1099 H1280 V1180 H1690 V1152" class="secondary"/>
-  <path d="M1112 1046 V1018 H804 V1046" class="secondary"/>
+  <line x1="1520" y1="1099" x2="1580" y2="1099" class="secondary"/>
+  <path d="M1100 1046 V1018 H800 V1046" class="secondary"/>
   <text class="tag" x="908" y="1010">다시 연주</text>
 
   <!-- Library/share/settings lane -->
@@ -255,6 +254,7 @@
   <line x1="620" y1="1393" x2="680" y2="1393" class="primary"/>
   <line x1="900" y1="1393" x2="960" y2="1393" class="primary"/>
   <line x1="1180" y1="1393" x2="1240" y2="1393" class="primary"/>
+  <line x1="1460" y1="1393" x2="1560" y2="1393" class="secondary"/>
 
   <g id="S22">
     <rect class="card" x="1560" y="1340" width="220" height="106" rx="18"/>
@@ -268,8 +268,9 @@
     <text class="screen-title" x="1862" y="1404">로그인 / 동기화</text>
     <text class="screen-body" x="1862" y="1430">계정 보관함 병합</text>
   </g>
-  <line x1="1780" y1="1393" x2="1840" y2="1393" class="primary"/>
-  <path d="M1962 1446 V1472 H230 V1446" class="secondary"/>
+  <line x1="1780" y1="1393" x2="1840" y2="1393" class="secondary"/>
+  <path d="M510 1446 V1510 H230 V1446" class="secondary"/>
+  <path d="M1718 1488 V1460 H1410 V1446" class="secondary"/>
   <text class="tag" x="1492" y="1484">동기화 후 보관함으로</text>
 
   <g id="bottom-note">
