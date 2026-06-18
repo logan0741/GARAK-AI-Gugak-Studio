@@ -27,6 +27,7 @@
 | 도메인 용어, aggregate, invariant는 무엇인가? | `docs/domain/README.md` | `docs/architecture/gukak-studio-erd.md` |
 | 세션 저장 구조와 엔티티 관계는 무엇인가? | `docs/architecture/gukak-studio-erd.md` | `docs/domain/README.md` |
 | 런타임 경계와 데이터 흐름은 무엇인가? | `docs/architecture/runtime-architecture.md` | `docs/architecture/tech-stack.md` |
+| AI 모델 서버에 어떤 입력을 보내고 어떤 출력을 받는가? | `docs/architecture/ai-model-pipeline-contract.md` | `docs/architecture/runtime-architecture.md`, `docs/product/screen-flow/current-screen-flow.md` |
 | 기술 스택과 dependency 판단은 무엇인가? | `docs/architecture/tech-stack.md` | `docs/adr/` |
 | 되돌리기 어려운 기술 결정의 이유는 무엇인가? | `docs/adr/` | `docs/architecture/tech-stack.md` |
 | 구현 순서, 파일 경로, 검증 명령은 어디에 있는가? | `docs/plans/implementation/` | `docs/system/conventions.md` |
