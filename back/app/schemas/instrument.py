@@ -12,6 +12,13 @@ class InstrumentUnitOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SampleEntryOut(BaseModel):
+    unit_index: int
+    label: str
+    articulation: str
+    file_url: str
+
+
 class InstrumentOut(BaseModel):
     id: str
     type: str
