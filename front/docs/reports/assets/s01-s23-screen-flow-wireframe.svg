@@ -1,0 +1,286 @@
+<svg width="2400" height="1660" viewBox="0 0 2400 1660" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrowPrimary" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2L10 6L2 10V2Z" fill="#1F1F1F"/>
+    </marker>
+    <marker id="arrowSecondary" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2L10 6L2 10V2Z" fill="#A0A0A0"/>
+    </marker>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <style>
+      .bg { fill: #F5F5F3; }
+      .lane-a { fill: #ECECEA; stroke: #DEDEDA; stroke-width: 2; }
+      .lane-b { fill: #F0F0EE; stroke: #DEDEDA; stroke-width: 2; }
+      .card { fill: #FFFFFF; stroke: #D7D7D2; stroke-width: 2; filter: url(#softShadow); }
+      .card-soft { fill: #FAFAF8; stroke: #D7D7D2; stroke-width: 2; }
+      .excluded { fill: #FFFDF8; stroke: #D8C9B8; stroke-width: 2; }
+      .primary { stroke: #1F1F1F; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrowPrimary); }
+      .secondary { stroke: #A0A0A0; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrowSecondary); }
+      .bus { stroke: #A0A0A0; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .title { font: 700 44px Inter, Arial, sans-serif; fill: #1F1F1F; }
+      .subtitle { font: 400 22px Inter, Arial, sans-serif; fill: #6D6D6D; }
+      .meta { font: 500 18px Inter, Arial, sans-serif; fill: #8C8C8C; }
+      .lane-title { font: 700 24px Inter, Arial, sans-serif; fill: #363636; }
+      .screen-id { font: 700 18px Inter, Arial, sans-serif; fill: #222222; }
+      .screen-title { font: 700 22px Inter, Arial, sans-serif; fill: #222222; }
+      .screen-body { font: 400 15px Inter, Arial, sans-serif; fill: #626262; }
+      .label { font: 600 14px Inter, Arial, sans-serif; fill: #6F6F6F; }
+      .tag { font: 700 12px Inter, Arial, sans-serif; fill: #5E5E5E; }
+      .small { font: 400 13px Inter, Arial, sans-serif; fill: #7A7A7A; }
+      .note-title { font: 700 22px Inter, Arial, sans-serif; fill: #5C4A35; }
+      .note-body { font: 400 16px Inter, Arial, sans-serif; fill: #6F6254; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="2400" height="1660" rx="0"/>
+
+  <text class="title" x="80" y="92">GARAK S01-S23 화면 구조 지도</text>
+  <text class="subtitle" x="82" y="142">복잡한 화살표를 레인별 흐름으로 분리했습니다. 굵은 선은 기본 사용자 흐름, 얇은 선은 보조 진입/복귀 흐름입니다.</text>
+  <text class="meta" x="82" y="178">서비스명: GARAK · 부제: AI GUGAK STUDIO · 범위: S01-S23 · 팀 리뷰용 와이어프레임</text>
+
+  <line x1="1680" y1="76" x2="1764" y2="76" class="primary"/>
+  <text class="label" x="1782" y="82">주 흐름</text>
+  <line x1="1680" y1="118" x2="1764" y2="118" class="secondary"/>
+  <text class="label" x="1782" y="124">보조/복귀</text>
+  <rect class="excluded" x="1680" y="146" width="84" height="10" rx="5"/>
+  <text class="label" x="1782" y="158">독립 화면 제외 / 내부 상태</text>
+
+  <rect class="lane-a" x="60" y="210" width="2280" height="210" rx="28"/>
+  <text class="lane-title" x="88" y="262">진입 / 홈 허브</text>
+
+  <rect class="lane-b" x="60" y="460" width="2280" height="450" rx="28"/>
+  <text class="lane-title" x="88" y="512">자유창작 흐름</text>
+
+  <rect class="lane-a" x="60" y="950" width="2280" height="260" rx="28"/>
+  <text class="lane-title" x="88" y="1002">따라하기 흐름</text>
+
+  <rect class="lane-b" x="60" y="1250" width="2280" height="310" rx="28"/>
+  <text class="lane-title" x="88" y="1302">보관함 / 공유 / 설정</text>
+
+  <!-- Entry lane -->
+  <g id="S01">
+    <rect class="card" x="120" y="286" width="245" height="96" rx="18"/>
+    <text class="screen-id" x="142" y="320">S01</text>
+    <text class="screen-title" x="142" y="350">홈</text>
+    <text class="screen-body" x="142" y="374">모드 토글 중심</text>
+  </g>
+  <g id="S02">
+    <rect class="card-soft" x="470" y="286" width="205" height="96" rx="18"/>
+    <text class="screen-id" x="492" y="320">S02</text>
+    <text class="screen-title" x="492" y="350">언어</text>
+    <text class="screen-body" x="492" y="374">KO / EN</text>
+  </g>
+  <g id="S03">
+    <rect class="card-soft" x="710" y="286" width="205" height="96" rx="18"/>
+    <text class="screen-id" x="732" y="320">S03</text>
+    <text class="screen-title" x="732" y="350">입문 가이드</text>
+    <text class="screen-body" x="732" y="374">초기 설명</text>
+  </g>
+  <g id="S18-home">
+    <rect class="card-soft" x="1330" y="286" width="205" height="96" rx="18"/>
+    <text class="screen-id" x="1352" y="320">S18</text>
+    <text class="screen-title" x="1352" y="350">보관함</text>
+    <text class="screen-body" x="1352" y="374">작업/결과</text>
+  </g>
+  <g id="S20-home">
+    <rect class="card-soft" x="1570" y="286" width="205" height="96" rx="18"/>
+    <text class="screen-id" x="1592" y="320">S20</text>
+    <text class="screen-title" x="1592" y="350">쉐어</text>
+    <text class="screen-body" x="1592" y="374">둘러보기</text>
+  </g>
+  <g id="S22-home">
+    <rect class="card-soft" x="1810" y="286" width="205" height="96" rx="18"/>
+    <text class="screen-id" x="1832" y="320">S22</text>
+    <text class="screen-title" x="1832" y="350">마이</text>
+    <text class="screen-body" x="1832" y="374">설정/로그인</text>
+  </g>
+  <line x1="365" y1="334" x2="438" y2="334" class="secondary"/>
+  <line x1="915" y1="334" x2="1296" y2="334" class="bus"/>
+  <line x1="1296" y1="334" x2="1330" y2="334" class="secondary"/>
+  <line x1="1535" y1="334" x2="1570" y2="334" class="secondary"/>
+  <line x1="1775" y1="334" x2="1810" y2="334" class="secondary"/>
+  <text class="small" x="970" y="314">홈 상단/홈 액션은 한 묶음으로 표시해 교차선을 줄임</text>
+  <path d="M245 382 V530 H230 V570" class="secondary"/>
+  <path d="M300 382 H86 V1099 H120" class="secondary"/>
+  <text class="tag" x="154" y="448">자유창작 선택</text>
+  <text class="tag" x="94" y="936">따라하기 선택</text>
+
+  <!-- Free creation lane -->
+  <g id="S04">
+    <rect class="card" x="120" y="570" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="142" y="604">S04</text>
+    <text class="screen-title" x="142" y="634">악기 선택</text>
+    <text class="screen-body" x="142" y="660">가야금 · 장구 · 대금</text>
+  </g>
+  <g id="S04A">
+    <rect class="card" x="400" y="570" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="422" y="604">S04A</text>
+    <text class="screen-title" x="422" y="634">기본 설정</text>
+    <text class="screen-body" x="422" y="660">악기별 옵션</text>
+  </g>
+  <g id="S05">
+    <rect class="card" x="680" y="570" width="245" height="106" rx="18"/>
+    <text class="screen-id" x="702" y="604">S05</text>
+    <text class="screen-title" x="702" y="634">자유연주</text>
+    <text class="screen-body" x="702" y="660">녹음 · 장단 · 완료</text>
+  </g>
+  <g id="S07">
+    <rect class="card" x="1090" y="570" width="255" height="106" rx="18"/>
+    <text class="screen-id" x="1112" y="604">S07</text>
+    <text class="screen-title" x="1112" y="634">레이어 편집</text>
+    <text class="screen-body" x="1112" y="660">박자 단위 트랙 편집</text>
+  </g>
+  <line x1="340" y1="623" x2="400" y2="623" class="primary"/>
+  <line x1="620" y1="623" x2="680" y2="623" class="primary"/>
+  <line x1="925" y1="623" x2="1090" y2="623" class="primary"/>
+  <text class="tag" x="958" y="605">완료 시 Work 자동 저장</text>
+
+  <g id="S10A">
+    <rect class="card-soft" x="680" y="724" width="245" height="104" rx="18"/>
+    <text class="screen-id" x="702" y="758">S10A</text>
+    <text class="screen-title" x="702" y="788">라이브 장단</text>
+    <text class="screen-body" x="702" y="812">S05 안에서 열리는 가이드</text>
+  </g>
+  <path d="M803 676 V724" class="secondary"/>
+  <path d="M925 776 H1015 V650 H1090" class="secondary"/>
+
+  <g id="S08">
+    <rect class="card" x="1090" y="760" width="255" height="106" rx="18"/>
+    <text class="screen-id" x="1112" y="794">S08</text>
+    <text class="screen-title" x="1112" y="824">트랙 추가</text>
+    <text class="screen-body" x="1112" y="850">악기 / 반주 분기</text>
+  </g>
+  <path d="M1218 676 V760" class="primary"/>
+
+  <g id="S09">
+    <rect class="card-soft" x="1435" y="570" width="255" height="106" rx="18"/>
+    <text class="screen-id" x="1457" y="604">S09</text>
+    <text class="screen-title" x="1457" y="634">악기 추가 녹음</text>
+    <text class="screen-body" x="1457" y="660">새 InstrumentTrack</text>
+  </g>
+  <g id="S10B">
+    <rect class="card-soft" x="1435" y="760" width="255" height="106" rx="18"/>
+    <text class="screen-id" x="1457" y="794">S10B</text>
+    <text class="screen-title" x="1457" y="824">반주 트랙</text>
+    <text class="screen-body" x="1457" y="850">새 AccompanimentTrack</text>
+  </g>
+  <path d="M1345 813 H1435" class="primary"/>
+  <path d="M1345 813 V623 H1435" class="secondary"/>
+  <path d="M1690 623 H1770 V520 H1218 V570" class="secondary"/>
+  <path d="M1690 813 H1770 V700 H1218 V676" class="secondary"/>
+  <text class="tag" x="1700" y="604">추가 후 S07 복귀</text>
+  <text class="tag" x="1700" y="795">추가 후 S07 복귀</text>
+
+  <g id="excluded">
+    <rect class="excluded" x="1855" y="530" width="390" height="206" rx="20"/>
+    <text class="note-title" x="1884" y="568">분리하지 않는 화면</text>
+    <text class="note-body" x="1884" y="606">S06 완료 화면: 제거</text>
+    <text class="note-body" x="1884" y="634">S11/S12: 독립 화면 아님</text>
+    <text class="note-body" x="1884" y="662">S05/S07 내부 상태로 흡수</text>
+    <text class="small" x="1884" y="704">결정 누락 방지용 메모입니다.</text>
+  </g>
+
+  <!-- Practice lane -->
+  <g id="S13">
+    <rect class="card" x="120" y="1046" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="142" y="1080">S13</text>
+    <text class="screen-title" x="142" y="1110">민요 선택</text>
+    <text class="screen-body" x="142" y="1136">아리랑 등</text>
+  </g>
+  <g id="S14">
+    <rect class="card" x="400" y="1046" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="422" y="1080">S14</text>
+    <text class="screen-title" x="422" y="1110">악기 선택</text>
+    <text class="screen-body" x="422" y="1136">추천/자유 선택</text>
+  </g>
+  <g id="S15">
+    <rect class="card" x="680" y="1046" width="245" height="106" rx="18"/>
+    <text class="screen-id" x="702" y="1080">S15</text>
+    <text class="screen-title" x="702" y="1110">따라하기 연주</text>
+    <text class="screen-body" x="702" y="1136">가이드 하이라이트</text>
+  </g>
+  <g id="S16">
+    <rect class="card" x="985" y="1046" width="255" height="106" rx="18"/>
+    <text class="screen-id" x="1007" y="1080">S16</text>
+    <text class="screen-title" x="1007" y="1110">결과 / AI 피드백</text>
+    <text class="screen-body" x="1007" y="1136">정확도 · 로컬 fallback</text>
+  </g>
+  <g id="S17-practice">
+    <rect class="card-soft" x="1300" y="1046" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="1322" y="1080">S17</text>
+    <text class="screen-title" x="1322" y="1110">공유 준비</text>
+    <text class="screen-body" x="1322" y="1136">PracticeResult</text>
+  </g>
+  <g id="S18-practice">
+    <rect class="card-soft" x="1580" y="1046" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="1602" y="1080">S18</text>
+    <text class="screen-title" x="1602" y="1110">보관함</text>
+    <text class="screen-body" x="1602" y="1136">결과 저장</text>
+  </g>
+  <line x1="340" y1="1099" x2="400" y2="1099" class="primary"/>
+  <line x1="620" y1="1099" x2="680" y2="1099" class="primary"/>
+  <line x1="925" y1="1099" x2="985" y2="1099" class="primary"/>
+  <line x1="1240" y1="1099" x2="1300" y2="1099" class="primary"/>
+  <path d="M1240 1099 H1280 V1180 H1690 V1152" class="secondary"/>
+  <path d="M1112 1046 V1018 H804 V1046" class="secondary"/>
+  <text class="tag" x="908" y="1010">다시 연주</text>
+
+  <!-- Library/share/settings lane -->
+  <g id="S18">
+    <rect class="card" x="120" y="1340" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="142" y="1374">S18</text>
+    <text class="screen-title" x="142" y="1404">보관함</text>
+    <text class="screen-body" x="142" y="1430">Work / Export / Result</text>
+  </g>
+  <g id="S19">
+    <rect class="card" x="400" y="1340" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="422" y="1374">S19</text>
+    <text class="screen-title" x="422" y="1404">연주 상세</text>
+    <text class="screen-body" x="422" y="1430">플레이어 / 메타</text>
+  </g>
+  <g id="S17">
+    <rect class="card" x="680" y="1340" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="702" y="1374">S17</text>
+    <text class="screen-title" x="702" y="1404">공유 준비</text>
+    <text class="screen-body" x="702" y="1430">카드 / 링크 / SNS</text>
+  </g>
+  <g id="S20">
+    <rect class="card" x="960" y="1340" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="982" y="1374">S20</text>
+    <text class="screen-title" x="982" y="1404">쉐어 피드</text>
+    <text class="screen-body" x="982" y="1430">둘러보기</text>
+  </g>
+  <g id="S21">
+    <rect class="card-soft" x="1240" y="1340" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="1262" y="1374">S21</text>
+    <text class="screen-title" x="1262" y="1404">공유곡 상세</text>
+    <text class="screen-body" x="1262" y="1430">듣기 / 열기</text>
+  </g>
+  <line x1="340" y1="1393" x2="400" y2="1393" class="primary"/>
+  <line x1="620" y1="1393" x2="680" y2="1393" class="primary"/>
+  <line x1="900" y1="1393" x2="960" y2="1393" class="primary"/>
+  <line x1="1180" y1="1393" x2="1240" y2="1393" class="primary"/>
+
+  <g id="S22">
+    <rect class="card" x="1560" y="1340" width="220" height="106" rx="18"/>
+    <text class="screen-id" x="1582" y="1374">S22</text>
+    <text class="screen-title" x="1582" y="1404">마이 / 설정</text>
+    <text class="screen-body" x="1582" y="1430">로그인 이유 제공</text>
+  </g>
+  <g id="S23">
+    <rect class="card-soft" x="1840" y="1340" width="245" height="106" rx="18"/>
+    <text class="screen-id" x="1862" y="1374">S23</text>
+    <text class="screen-title" x="1862" y="1404">로그인 / 동기화</text>
+    <text class="screen-body" x="1862" y="1430">계정 보관함 병합</text>
+  </g>
+  <line x1="1780" y1="1393" x2="1840" y2="1393" class="primary"/>
+  <path d="M1962 1446 V1472 H230 V1446" class="secondary"/>
+  <text class="tag" x="1492" y="1484">동기화 후 보관함으로</text>
+
+  <g id="bottom-note">
+    <rect class="excluded" x="1560" y="1488" width="525" height="48" rx="16"/>
+    <text class="note-body" x="1584" y="1518">공통 화면(S17/S18)은 교차선 감소를 위해 필요한 레인에 반복 표시했습니다.</text>
+  </g>
+</svg>
