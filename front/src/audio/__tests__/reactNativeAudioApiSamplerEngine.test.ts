@@ -97,6 +97,18 @@ test('maps mute and release onto gain envelope and source stop', async () => {
   expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
 });
 
+test('removes released voices from active tracking to avoid duplicate stops', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+  await engine.preload();
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 4, velocity: 0.8 });
+
+  engine.handleEvent({ type: 'string_release', tsMs: 180, stringIndex: 4 });
+  engine.handleEvent({ type: 'string_release', tsMs: 190, stringIndex: 4 });
+
+  expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
+});
+
 test('steals the oldest voice only after the configured voice budget is exceeded', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 2 });
@@ -107,6 +119,7 @@ test('steals the oldest voice only after the configured voice budget is exceeded
   engine.handleEvent({ type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 });
 
   expect(runtime.context.sources[0].stopCalls).toEqual([12.5]);
+  expect(runtime.context.sources[0].onEnded).toBeNull();
   expect(runtime.context.sources[1].stopCalls).toEqual([]);
   expect(runtime.context.sources[2].stopCalls).toEqual([]);
 });
@@ -209,7 +222,7 @@ class FakeAudioBufferSourceNode extends FakeAudioNode {
   buffer: FakeAudioBuffer | null = null;
   detune = new FakeAudioParam();
   playbackRate = new FakeAudioParam();
-  onEnded: ((event: never) => void) | undefined;
+  onEnded: ((event: never) => void) | null | undefined;
   startedAt: number | undefined;
   stopCalls: number[] = [];
 

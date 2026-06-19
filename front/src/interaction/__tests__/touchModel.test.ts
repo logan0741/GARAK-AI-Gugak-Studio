@@ -77,6 +77,20 @@ test('maps a broad contact area to ji-eum mute', () => {
   ]);
 });
 
+test('falls back to the first string before layout height is measured', () => {
+  const model = createTouchModel({
+    layout: {
+      topY: 0,
+      height: 0,
+      stringCount: 12,
+    },
+  });
+
+  expect(model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 })).toEqual([
+    { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 },
+  ]);
+});
+
 test('emits release on touch end and ignores later frames for that pointer', () => {
   const model = createTouchModel({ layout });
   model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 });

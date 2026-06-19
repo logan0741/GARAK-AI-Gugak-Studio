@@ -168,10 +168,12 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   private releaseString(stringIndex: number): void {
     const currentTime = this.requireContext().currentTime;
     const stopAt = Number((currentTime + RELEASE_STOP_DELAY_SECONDS).toFixed(3));
+    const voicesToRelease = this.activeVoicesForString(stringIndex);
 
-    for (const voice of this.activeVoicesForString(stringIndex)) {
+    for (const voice of voicesToRelease) {
       voice.gain.gain.setTargetAtTime(0, currentTime, RELEASE_TIME_CONSTANT_SECONDS);
       voice.source.stop(stopAt);
+      removeMatching(this.activeVoices, (candidate) => candidate === voice);
     }
   }
 
@@ -179,6 +181,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
     while (this.activeVoices.length > this.maxVoices) {
       const stolen = this.activeVoices.shift();
       if (stolen) {
+        stolen.source.onEnded = null;
         stolen.source.stop(this.requireContext().currentTime);
         this.disconnectVoice(stolen);
       }

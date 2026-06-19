@@ -151,6 +151,9 @@ function stringIndexForY(layout: TouchStringLayout, y: number): number {
   if (!Number.isFinite(y)) {
     throw new Error('touch y must be finite');
   }
+  if (!Number.isFinite(layout.height) || layout.height <= 0) {
+    return 1;
+  }
 
   const rowHeight = layout.height / layout.stringCount;
   const rawIndex = Math.floor((y - layout.topY) / rowHeight) + 1;
