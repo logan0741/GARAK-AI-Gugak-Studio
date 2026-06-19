@@ -94,6 +94,24 @@ test('maps bend, mute, and release events onto Expo Audio player controls', asyn
   expect(runtime.players[1].pauseCalls).toBe(1);
 });
 
+test('queues release behind pending Expo Audio seek and play work', async () => {
+  const runtime = createRuntimePort({ deferSeek: true });
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.72 });
+  engine.handleEvent({ type: 'string_release', tsMs: 105, stringIndex: 1 });
+
+  await Promise.resolve();
+  expect(runtime.players[0].pauseCalls).toBe(0);
+  runtime.players[0].resolveNextSeek();
+  await engine.waitForIdle();
+
+  expect(runtime.players[0].seekCalls).toEqual([0]);
+  expect(runtime.players[0].playCalls).toBe(1);
+  expect(runtime.players[0].pauseCalls).toBe(1);
+});
+
 test('prepares a 10 second recording probe when permission is granted', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -105,6 +123,22 @@ test('prepares a 10 second recording probe when permission is granted', async ()
   expect(runtime.modeCalls[0]).toMatchObject({ allowsRecording: true });
   expect(runtime.recorders[0].prepared).toBe(true);
   expect(runtime.recorders[0].recordCalls).toEqual([{ forDuration: 10 }]);
+});
+
+test('rejects invalid recording probe duration before touching native recording APIs', async () => {
+  for (const durationSeconds of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const runtime = createRuntimePort();
+    const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+    await expect(engine.startRecordingProbe(durationSeconds)).resolves.toEqual({
+      ok: false,
+      reason: 'recording_duration_invalid',
+    });
+
+    expect(runtime.permissionRequests).toBe(0);
+    expect(runtime.modeCalls).toEqual([]);
+    expect(runtime.recorders).toEqual([]);
+  }
 });
 
 test('does not overwrite an active recording probe', async () => {
@@ -133,6 +167,45 @@ test('stops a recording probe and reports captured duration and uri', async () =
   expect(runtime.modeCalls.at(-1)).toMatchObject({ allowsRecording: false });
 });
 
+test('normalizes whitespace recording uri to null when stopping a probe', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.startRecordingProbe(10);
+  runtime.recorders[0].uri = '   ';
+
+  await expect(engine.stopRecordingProbe()).resolves.toEqual({
+    ok: true,
+    capturedSeconds: 10,
+    recordingUri: null,
+  });
+});
+
+test('trims captured recording uri when stopping a probe', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.startRecordingProbe(10);
+  runtime.recorders[0].uri = '  file://recording.m4a  ';
+
+  await expect(engine.stopRecordingProbe()).resolves.toEqual({
+    ok: true,
+    capturedSeconds: 10,
+    recordingUri: 'file://recording.m4a',
+  });
+});
+
+test('normalizes invalid recorder duration to zero when stopping a probe', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.startRecordingProbe(10);
+  runtime.recorders[0].durationMillis = Number.NaN;
+
+  await expect(engine.stopRecordingProbe()).resolves.toEqual({
+    ok: true,
+    capturedSeconds: 0,
+    recordingUri: 'file://recording.m4a',
+  });
+});
+
 test('plays back a captured recording probe from its uri', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -149,6 +222,33 @@ test('plays back a captured recording probe from its uri', async () => {
   expect(runtime.players.at(-1)?.seekCalls).toEqual([0]);
   expect(runtime.players.at(-1)?.playCalls).toBe(1);
   expect(runtime.modeCalls.at(-1)).toMatchObject({ allowsRecording: false });
+});
+
+test('trims captured recording uri before creating a playback player', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+  await expect(engine.playRecordingProbe('  file://recording.m4a  ')).resolves.toEqual({
+    ok: true,
+    recordingUri: 'file://recording.m4a',
+  });
+
+  expect(runtime.createdPlayers.at(-1)).toEqual({
+    source: { uri: 'file://recording.m4a' },
+    options: { downloadFirst: false, keepAudioSessionActive: true, updateInterval: 50 },
+  });
+});
+
+test('rejects whitespace captured recording uri before creating a playback player', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+
+  await expect(engine.playRecordingProbe('   ')).resolves.toEqual({
+    ok: false,
+    reason: 'recording_playback_uri_missing',
+  });
+
+  expect(runtime.createdPlayers).toEqual([]);
 });
 
 test('reports recording playback probe failure without throwing', async () => {
@@ -181,7 +281,12 @@ test('returns a recording fallback result when permission is denied', async () =
   expect(runtime.recorders).toHaveLength(0);
 });
 
-function createRuntimePort(input: { permissionGranted?: boolean; seekFails?: boolean; stopFails?: boolean } = {}) {
+function createRuntimePort(input: {
+  deferSeek?: boolean;
+  permissionGranted?: boolean;
+  seekFails?: boolean;
+  stopFails?: boolean;
+} = {}) {
   const players: FakeExpoAudioPlayer[] = [];
   const recorders: FakeExpoAudioRecorder[] = [];
   const runtime = {
@@ -196,7 +301,10 @@ function createRuntimePort(input: { permissionGranted?: boolean; seekFails?: boo
     },
     createAudioPlayer(source: unknown, options: unknown) {
       this.createdPlayers.push({ source, options });
-      const player = new FakeExpoAudioPlayer({ seekFails: input.seekFails ?? false });
+      const player = new FakeExpoAudioPlayer({
+        deferSeek: input.deferSeek ?? false,
+        seekFails: input.seekFails ?? false,
+      });
       this.players.push(player);
       return player;
     },
@@ -231,8 +339,14 @@ class FakeExpoAudioPlayer {
   playCalls = 0;
   pauseCalls = 0;
   playbackRates: number[] = [];
+  private readonly pendingSeekResolvers: Array<() => void> = [];
 
-  constructor(private readonly input: { seekFails: boolean } = { seekFails: false }) {}
+  constructor(
+    private readonly input: { deferSeek: boolean; seekFails: boolean } = {
+      deferSeek: false,
+      seekFails: false,
+    },
+  ) {}
 
   play(): void {
     this.playCalls += 1;
@@ -247,10 +361,20 @@ class FakeExpoAudioPlayer {
     if (this.input.seekFails) {
       throw new Error('seek failed');
     }
+
+    if (this.input.deferSeek) {
+      await new Promise<void>((resolve) => {
+        this.pendingSeekResolvers.push(resolve);
+      });
+    }
   }
 
   setPlaybackRate(rate: number): void {
     this.playbackRates.push(rate);
+  }
+
+  resolveNextSeek(): void {
+    this.pendingSeekResolvers.shift()?.();
   }
 }
 
@@ -258,6 +382,7 @@ class FakeExpoAudioRecorder {
   prepared = false;
   recordCalls: Array<{ forDuration: number }> = [];
   stopCalls = 0;
+  durationMillis = 10_000;
   uri = 'file://recording.m4a';
 
   constructor(private readonly input: { stopFails: boolean } = { stopFails: false }) {}
@@ -280,7 +405,7 @@ class FakeExpoAudioRecorder {
   getStatus() {
     return {
       canRecord: false,
-      durationMillis: 10_000,
+      durationMillis: this.durationMillis,
       isRecording: false,
       mediaServicesDidReset: false,
       url: this.uri,

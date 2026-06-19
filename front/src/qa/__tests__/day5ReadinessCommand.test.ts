@@ -89,6 +89,46 @@ test('keeps failed smoke checks visible without blocking readiness', () => {
   );
 });
 
+test('blocks readiness when failed smoke checks do not include review notes', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const smokeReport = createSmokeReport({
+    overrides: {
+      'day-3-react-native-audio-api': {
+        'pitch-bend': 'fail',
+      },
+    },
+  });
+  const rnRun = smokeReport.runs.find((run) => run.area === 'day-3-react-native-audio-api');
+  const pitchBendCheck = rnRun?.checks.find((check) => check.id === 'pitch-bend');
+  if (!pitchBendCheck) {
+    throw new Error('test fixture must include day-3 pitch-bend check');
+  }
+  pitchBendCheck.notes = '';
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(smokeReport);
+        }
+
+        return JSON.stringify(createProbeRecord());
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_DAY5_DECISION');
+  expect(output).toContain(
+    '- Smoke report issues: smoke report is not complete for Day 5 review, failed checks require notes: day-3-react-native-audio-api.pitch-bend',
+  );
+});
+
 test('blocks Day 5 readiness when Week 1 smoke report still has blocked checks', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -220,6 +260,43 @@ test('blocks readiness when probe device labels differ from the smoke report dev
   );
 });
 
+test('reports mixed physical-device labels inside the probe record', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(createSmokeReport());
+        }
+
+        return JSON.stringify(
+          createProbeRecord({
+            deviceLabelsByCandidate: {
+              'expo-audio': 'Pixel 8 / Android 15',
+              'react-native-audio-api': 'Galaxy S24 / Android 15',
+            },
+          }),
+        );
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_DAY5_DECISION');
+  expect(output).toContain(
+    '- Probe record issues: physical-device probes must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+  );
+  expect(output).toContain(
+    '- Device alignment issues: probe device labels must match smoke report device label Pixel 8 / Android 15',
+  );
+});
+
 test('treats surrounding whitespace in device labels as the same physical device', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -233,6 +310,42 @@ test('treats surrounding whitespace in device labels as the same physical device
             createSmokeReport({
               deviceLabels: {
                 'day-2-expo-audio': ' Pixel 8 / Android 15 ',
+              },
+            }),
+          );
+        }
+
+        return JSON.stringify(
+          createProbeRecord({
+            deviceLabel: 'Pixel 8 / Android 15',
+          }),
+        );
+      },
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: READY_FOR_DAY5_DECISION');
+  expect(output).toContain('- Device alignment issues: none');
+});
+
+test('treats slash spacing differences as the same Day 5 physical device label', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5ReadinessCommand({
+      argv: ['week1-smoke.json', 'day5-probes.json'],
+      readTextFile: (path) => {
+        if (path === 'week1-smoke.json') {
+          return JSON.stringify(
+            createSmokeReport({
+              deviceLabels: {
+                'day-2-expo-audio': 'Pixel 8/Android 15',
+                'day-3-react-native-audio-api': 'Pixel 8 /Android 15',
               },
             }),
           );
@@ -291,11 +404,14 @@ function createSmokeReport(input: {
       testedAt: `2026-06-08T07:0${index + 1}:00.000Z`,
       tester: 'CJH',
       deviceLabel: input.deviceLabels?.[area] ?? 'Pixel 8 / Android 15',
-      checks: REQUIRED_CHECKS_BY_AREA[area].map((id) => ({
-        id,
-        result: input.overrides?.[area]?.[id] ?? 'pass',
-        notes: '',
-      })),
+      checks: REQUIRED_CHECKS_BY_AREA[area].map((id) => {
+        const result = input.overrides?.[area]?.[id] ?? 'pass';
+        return {
+          id,
+          result,
+          notes: result === 'fail' ? 'Observed failure during physical-device smoke run.' : '',
+        };
+      }),
     })),
   };
 }
@@ -303,6 +419,7 @@ function createSmokeReport(input: {
 function createProbeRecord(input: {
   candidates?: ProbeCandidate[];
   deviceLabel?: string;
+  deviceLabelsByCandidate?: Partial<Record<ProbeCandidate, string>>;
 } = {}) {
   const candidates = input.candidates ?? ['expo-audio', 'react-native-audio-api'];
   return {
@@ -310,7 +427,10 @@ function createProbeRecord(input: {
     probes: candidates.map((candidate, index) => ({
       candidate,
       evidenceSource: 'physical-device',
-      deviceLabel: input.deviceLabel ?? 'Pixel 8 / Android 15',
+      deviceLabel:
+        input.deviceLabelsByCandidate?.[candidate] ??
+        input.deviceLabel ??
+        'Pixel 8 / Android 15',
       measuredAt: `2026-06-08T08:0${index + 1}:00.000Z`,
       touchToSoundLatencyMs: 38,
       maxStableVoices: 9,

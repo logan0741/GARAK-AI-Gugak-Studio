@@ -12,9 +12,9 @@ Use this document when validating whether `expo-audio` can cover basic playback 
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, pluck playback, queued playback failure reporting through `waitForIdle()`, bend approximation, mute/release mapping, recording probe lifecycle, and captured recording URI playback. |
+| `src/audio/expoAudioSamplerEngine.ts` | Candidate A `SamplerEngine` implementation. Owns source resolution before preload, pluck playback, queued playback failure reporting through `waitForIdle()`, release ordering behind pending seek/play work, bend approximation, mute/release mapping, recording probe lifecycle, non-empty captured recording URI validation, and captured recording URI playback. |
 | `src/audio/expoAudioRuntime.ts` | Only runtime bridge that imports `expo-audio`. Keeps UI and domain code independent from the concrete library and reuses the SDK source resolver and recording option normalizer. |
-| `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods and reports unsupported, failed, recording, captured, or playback states without breaking session fallback. |
+| `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods, normalizes empty captured URIs to `null`, and reports unsupported, failed, recording, captured, missing-URI, or playback states without breaking session fallback. |
 | `src/audio/__tests__/expoAudioSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, playback controls, bend/mute/release mapping, and recording probe lifecycle. |
 | `src/prototype/prototypeQaSnapshot.ts` | Inspector QA read model. Records prototype capture seconds, URI availability, playback confirmation, and fallback reason under `observedPrototypeRecording` without promoting it to final physical-device evidence. |
 | `src/audio/__tests__/expoAudioRuntime.test.ts` | Mocked package-delegation test for the installed `expo-audio` API surface. |
@@ -41,7 +41,7 @@ Prerequisite: run `npm run samples:generate-dev` from `front/` before building t
 
 The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, and recording plumbing, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
 
-Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes; the native sampler factory also rejects incomplete manifests before creating a candidate runtime. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
+Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks. The native sampler factory rejects empty resolved URIs and `http(s)` URIs before loading the candidate runtime. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes; the native sampler factory also rejects missing or duplicate string indexes before creating a candidate runtime. If the manifest is complete and has exactly one asset for each string but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
 
 Use a development client, not Expo Go, because this candidate uses native audio modules and microphone permissions:
 
@@ -58,8 +58,10 @@ For an EAS development build, use the `development` profile in `eas.json`.
 5. Press `Rec 10s`, perform a short interaction, then press `Stop Rec`.
 6. Record the returned `capturedSeconds` and `recordingUri`.
 7. Confirm `Probe draft (estimate only, fake engine counters)` includes `observedPrototypeRecording.capturedSeconds` and `uriAvailable`. If recording fails, confirm `observedPrototypeRecording.fallbackReason` records the native failure reason.
-8. Press `Play Rec` and confirm the captured performance plays back from the returned URI.
+8. Press `Play Rec` and confirm the captured performance plays back from the returned URI. `Play Rec` must stay unavailable while the current candidate has no captured or playing recording probe state, even if a previous session fallback contains an older recording URI.
 9. Confirm `observedPrototypeRecording.playbackConfirmed` becomes `true`.
+
+Treat a `null`, empty, or whitespace-only `recordingUri` as missing playback context. The Expo Audio stop result must normalize it to `null`; the inspector must keep `uriAvailable: false` and record `fallbackReason: "recording_playback_uri_missing"` instead of enabling captured playback. A new capture or recording fallback must also clear any previous `playbackConfirmed: true`; replay the current captured URI before copying playback evidence.
 
 ## Result Table
 
@@ -67,12 +69,12 @@ For an EAS development build, use the `development` profile in `eas.json`.
 | --- | --- | --- | --- |
 | Preload | All manifest strings resolve/download to playable URIs before players are created |  | Players are created with `downloadFirst: false` after explicit source resolution. |
 | Tap playback | One pluck event plays the matching preloaded string |  |  |
-| Playback queue failure | Automated smoke fails if `waitForIdle()` reports queued `seekTo()` or play errors |  | Do not treat a silent queue failure as successful playback. |
+| Playback queue failure | Automated smoke fails if `waitForIdle()` reports queued `seekTo()` or play errors |  | Do not treat a silent queue failure as successful playback; a fast release must not allow delayed `play()` to sound after release. |
 | Glissando playback | 12 sequential steps trigger 12 audible attacks |  |  |
 | Bend approximation | `string_bend` changes playback rate without crash |  | `expo-audio` rate change is an approximation, not true instrument pitch bend. |
 | Mute/release | Mute lowers volume; release pauses player without pop noise |  |  |
 | Recording permission | Permission request succeeds on device |  |  |
-| 10-second capture | `stopRecordingProbe()` returns about 10 seconds and a non-empty URI |  |  |
+| 10-second capture | `stopRecordingProbe()` returns about 10 seconds and a non-empty, non-whitespace URI |  |  |
 | Captured playback | `Play Rec` plays the captured recording URI without throwing |  | Confirms self-playback feasibility, not final sound quality. |
 | Inspector recording observation | `observedPrototypeRecording` records capture seconds, URI availability, playback confirmation, and any fallback reason |  | Still copy values into a physical-device probe record manually before Day 5. |
 

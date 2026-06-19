@@ -12,20 +12,21 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria. |
-| `src/audio/audioEngineProbeDraft.ts` | Creates `estimate` probe drafts from observed QA values and promotes a draft to `physical-device` only when every manual measurement field is supplied explicitly as a non-null value. Draft output is not final-selection evidence. |
+| `src/audio/audioEngineEvaluation.ts` | Evaluates one physical-device probe against Day 5 pass/fail criteria and treats non-finite, out-of-range, or non-boolean manual measurements as failed criteria. |
+| `src/audio/audioEngineProbeDraft.ts` | Creates `estimate` probe drafts from observed QA values and promotes a draft to `physical-device` only when every manual measurement field is supplied explicitly as a non-null, correctly typed, in-range value. Draft output is not final-selection evidence. |
 | `src/audio/audioEngineProbeRecord.ts` | Validates a manual QA probe record before building the Day 5 decision record. |
-| `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing. |
+| `src/audio/audioEngineDecisionRecord.ts` | Builds the Day 5 record across required candidates and prevents final selection while required physical-device probes are missing, duplicated, still using placeholder labels, or copied from different physical device labels. |
 | `src/audio/audioEngineDecisionSummary.ts` | Formats the Day 5 decision record as a stable Markdown summary for QA handoff and review. |
 | `src/audio/audioEngineProbeHandoff.ts` | One-call handoff boundary that either reports probe-record parse errors or returns the formatted Day 5 decision summary. |
+| `src/qa/physicalDeviceLabel.ts` | Shared physical-device label predicate and slash/whitespace normalization used by Week 1 smoke, Day 5 probe, readiness, and prototype handoff gates. |
 | `src/qa/week1SmokeReportCommand.ts` | CLI command boundary that validates Day 2, Day 3, and Day 4 physical-device smoke report completeness and same-device evidence before Day 5 review. |
 | `src/qa/week1SmokeTemplateCommand.ts` | CLI command boundary that generates a blocked Week 1 smoke report template with every required Day 2/3/4 check ID. |
 | `src/qa/day5ReadinessCommand.ts` | CLI command boundary that confirms the completed Week 1 smoke report and Day 5 probe record are aligned before the final decision command. |
 | `src/prototype/prototypeQaSnapshot.ts` | Prototype-only read model that tracks observable fake counters and renders estimate probe and prototype handoff templates with nullable physical-device measurement fields. |
-| `src/prototype/prototypeProbeHandoff.ts` | Converts prototype inspector drafts into physical-device probes or a Day 5 probe record only when observed runtime context proves each requested native candidate is ready and uses the Week 1 fixture sample manifest. |
+| `src/prototype/prototypeProbeHandoff.ts` | Converts prototype inspector drafts into physical-device probes or a Day 5 probe record only when estimate-only inspector guard fields are intact, device labels name the same physical device, and observed runtime context proves each requested native candidate is ready and uses the Week 1 fixture sample manifest. |
 | `src/prototype/prototypeHandoffFile.ts` | Shared parser for prototype handoff JSON files used by merge, readiness, and probe-record commands. |
-| `src/prototype/prototypeHandoffMergeCommand.ts` | CLI command boundary that combines separately copied prototype handoff files and rejects duplicate candidate entries without promoting measurements. |
-| `src/prototype/prototypeHandoffCheckCommand.ts` | CLI command boundary that checks a filled prototype handoff for required candidates, duplicate candidates, physical device label consistency, UTC ISO timestamps, expected sample manifest version, missing manual measurements, runtime readiness, and generated probe-record parser validity before probe-record generation. |
+| `src/prototype/prototypeHandoffMergeCommand.ts` | CLI command boundary that combines separately copied prototype handoff files and rejects duplicate candidate entries or mixed physical device labels without promoting measurements. |
+| `src/prototype/prototypeHandoffCheckCommand.ts` | CLI command boundary that checks a filled prototype handoff for required candidates, duplicate candidates, physical device label consistency, UTC ISO timestamps, expected sample manifest version, missing or invalid manual measurements, runtime readiness, and generated probe-record parser validity before probe-record generation. |
 | `src/prototype/prototypeProbeHandoffCommand.ts` | CLI command boundary that reads a prototype handoff JSON, validates its handoff shape, enforces runtime and sample-manifest promotion guards, validates the generated Day 5 probe record, and writes it without selecting the final engine. |
 | `scripts/day5-audio-engine-handoff.ts` | Node-only QA command entry point used by `npm run qa:day5-audio -- <probe-record.json>`. |
 | `scripts/week1-smoke-report.ts` | Node-only QA command entry point used by `npm run qa:week1-smoke-report -- <week1-smoke-report.json>`. |
@@ -35,13 +36,14 @@ Use this document after Day 2, Day 3, and Day 4 smoke checks have been run on a 
 | `scripts/day5-prototype-handoff-check.ts` | Node-only QA command entry point used by `npm run qa:prototype-handoff-check -- <prototype-handoff.json>`. |
 | `scripts/day5-prototype-probe-record.ts` | Node-only QA command entry point used by `npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>`. |
 | `src/audio/__tests__/audioEngineProbeDraft.test.ts` | Verifies draft probes stay `estimate`, count triggered glissando strings, can be wrapped in a probe record, and require explicit measurements before physical-device promotion. |
+| `src/qa/__tests__/physicalDeviceLabel.test.ts` | Verifies placeholder rejection and physical-device label normalization stay consistent across QA gates. |
 | `src/qa/__tests__/week1SmokeReportCommand.test.ts` | Verifies the Week 1 smoke report command rejects missing, duplicate, blocked, mixed-device, or malformed Day 2/3/4 smoke evidence while preserving final engine selection for Day 5. |
 | `src/qa/__tests__/week1SmokeTemplateCommand.test.ts` | Verifies the Week 1 smoke template command writes every required check as blocked and rejects placeholder device labels before file output. |
 | `src/qa/__tests__/day5ReadinessCommand.test.ts` | Verifies Week 1 smoke evidence and Day 5 probe records are ready only when both required candidates are measured on the same physical device. |
 | `src/prototype/__tests__/prototypeQaSnapshot.test.ts` | Verifies the prototype inspector draft does not claim audible-quality or physical-device evidence automatically. |
-| `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects fake, preloading, mismatched sample-manifest, or missing runtime observation before physical-device probe or record creation. |
+| `src/prototype/__tests__/prototypeProbeHandoff.test.ts` | Verifies prototype inspector promotion rejects edited guard fields, fake fallback, preloading, mismatched sample-manifest, or missing runtime observation before physical-device probe or record creation. |
 | `src/prototype/__tests__/prototypeHandoffMergeCommand.test.ts` | Verifies separately copied prototype handoff files can be merged and duplicate candidates are rejected. |
-| `src/prototype/__tests__/prototypeHandoffCheckCommand.test.ts` | Verifies filled prototype handoff files are reported as ready only when both required candidates, physical device labels, UTC ISO timestamps, all manual measurements, and ready native runtime observations are present. |
+| `src/prototype/__tests__/prototypeHandoffCheckCommand.test.ts` | Verifies filled prototype handoff files are reported as ready only when both required candidates, physical device labels, UTC ISO timestamps, valid manual measurements, and ready native runtime observations are present. |
 | `src/prototype/__tests__/prototypeProbeHandoffCommand.test.ts` | Verifies the prototype handoff CLI command emits usage, readable errors, and parseable Day 5 probe record JSON. |
 | `src/audio/__tests__/audioEngineProbeRecord.test.ts` | Verifies probe-record parsing, invalid field errors, and estimate records staying incomplete. |
 | `src/audio/__tests__/audioEngineDecisionRecord.test.ts` | Verifies incomplete evidence, final selection, and no-final-engine outcomes. |
@@ -83,11 +85,15 @@ Only probes with `evidenceSource: 'physical-device'` count as measured for this 
 
 When a draft is promoted to `physical-device`, `deviceLabel` must be replaced with the tested physical model, for example `Galaxy S24 / Android 15` or `iPhone 15 / iOS 18`. The parser rejects estimate placeholders such as `replace-with-physical-device-model`, `Device / OS`, or `physical device` for physical-device evidence.
 
-Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026` or slash-separated dates are rejected by the parser.
+Use UTC ISO timestamps for both `generatedAt` and `measuredAt`, for example `2026-06-08T01:00:00.000Z`. Localized strings such as `June 8, 2026`, slash-separated dates, or impossible calendar dates such as `2026-02-31T10:00:00.000Z` are rejected by the parser.
 
 `glissandoTriggeredStrings` is the count of unique strings triggered during a 12-string swipe. It must be an integer from 0 to 12; values above 12 are treated as handoff input errors, not better results.
 
+The decision evaluator is also conservative if a caller bypasses the parser: negative or non-finite duration values, fractional voice/string counts, values above the 12-string glissando range, or non-boolean audible-quality fields are counted as failed Day 5 criteria rather than passing by JavaScript truthiness.
+
 If a required candidate has more than one physical-device probe in a single record, the record reports it in `duplicateCandidates` and does not select a final engine. Consolidate repeated measurements into one candidate probe before publishing the Day 5 decision.
+
+All physical-device probes in the final decision record must name a real tested device and must use one tested device label after trimming whitespace and normalizing slash spacing. If a caller bypasses the parser with blank or placeholder labels, or if candidate probes come from different physical devices, the decision record reports `deviceLabelIssues`, keeps `status: 'INCOMPLETE_DEVICE_EVIDENCE'`, and does not select a final engine.
 
 Touch model evidence comes from `docs/qa/day-4-touch-model-smoke.md` and should be reflected in the glissando, pitch bend, mute, and session fallback fields.
 
@@ -98,7 +104,7 @@ npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-l
 npm run qa:week1-smoke-report -- <week1-smoke-report.json>
 ```
 
-The template command starts every required check as `blocked`; fill each result from physical-device QA before validation. The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded on one physical device label. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, mixed device labels, or blocked checks must be resolved before relying on the Day 5 record.
+The template command starts every required check as `blocked`; fill each result from physical-device QA before validation. The smoke report proves Day 2, Day 3, and Day 4 physical-device smoke procedures were actually recorded on one physical device label. It may include failed checks for Day 5 review, but missing areas, duplicate areas, missing checks, duplicate checks, mixed device labels, blocked checks, or failed checks without notes must be resolved before relying on the Day 5 record.
 
 After a physical-device probe record exists, run the readiness gate before the final decision command:
 
@@ -112,9 +118,9 @@ The readiness gate requires `READY_FOR_DAY5_DECISION`. It checks that the Week 1
 
 Use `docs/qa/day-5-audio-engine-probes.example.json` as the starting shape for a manual QA handoff. Keep `evidenceSource: 'estimate'` until the values have been measured on a physical Android or iOS device. After physical-device measurement, each required candidate should appear once with `evidenceSource: 'physical-device'`.
 
-If a device smoke harness collects partial observations first, it may use `createAudioEngineProbeDraft()` to format those observations into the same shape. Drafts always use `evidenceSource: 'estimate'`; promote a draft to `physical-device` only after the tester has confirmed every value on the physical device and checked audible quality fields such as pitch-bend smoothness and mute release cleanliness. `promoteAudioEngineProbeDraftToPhysicalDevice()` requires all Day 5 measurement fields to be non-null before changing `evidenceSource`, but the resulting probe still must pass `parseAudioEngineProbeRecord()` and the `npm run qa:day5-audio -- <probe-record.json>` handoff.
+If a device smoke harness collects partial observations first, it may use `createAudioEngineProbeDraft()` to format those observations into the same shape. Drafts always use `evidenceSource: 'estimate'`; promote a draft to `physical-device` only after the tester has confirmed every value on the physical device and checked audible quality fields such as pitch-bend smoothness and mute release cleanliness. `promoteAudioEngineProbeDraftToPhysicalDevice()` requires all Day 5 measurement fields to be non-null, correctly typed, and in range before changing `evidenceSource`, but the resulting probe still must pass `parseAudioEngineProbeRecord()` and the `npm run qa:day5-audio -- <probe-record.json>` handoff.
 
-The prototype inspector may show a copyable `Probe draft (estimate only, fake engine counters)` JSON block and a `Prototype handoff JSON` block. Treat both as rehearsal artifacts until the tester replaces every nullable `measurements` field with measured values from the real candidate runtime. The inspector JSON includes `runtimeUnderTest: "fake-sampler-engine"` and `measuredCandidateEvidence: false` to prevent confusing fake-engine counters with candidate-engine measurements. Before using `prototypeProbeHandoff.ts`, confirm `observedRuntime.activeRuntime` matches the candidate, both runtime status and native preload status are ready, and `observedRuntime.sampleManifestVersion` is `dev-synthetic-gayageum-2026-06-08`; fake fallback, preloading states, and mismatched sample fixtures must not be promoted.
+The prototype inspector may show a copyable `Probe draft (estimate only, fake engine counters)` JSON block and a `Prototype handoff JSON` block. Treat both as rehearsal artifacts until the tester replaces every nullable `measurements` field with measured values from the real candidate runtime. The inspector JSON includes `runtimeUnderTest: "fake-sampler-engine"` and `measuredCandidateEvidence: false` to prevent confusing fake-engine counters with candidate-engine measurements. Before using `prototypeProbeHandoff.ts`, confirm the copied inspector guard fields still match the estimate-only prototype shape, draft and handoff device labels name the same physical device, `observedRuntime.activeRuntime` matches the candidate, both runtime status and native preload status are ready, and `observedRuntime.sampleManifestVersion` is `dev-synthetic-gayageum-2026-06-08`; edited guard fields, placeholder or mismatched device labels, fake fallback, preloading states, and mismatched sample fixtures must not be promoted.
 
 When starting from prototype inspector drafts, copy the inspector's `Prototype handoff JSON`, replace every `measurements` null with manual physical-device values, combine one filled entry per required candidate, and run:
 
@@ -128,7 +134,8 @@ If the two candidate handoffs are saved as separate files, merge them first:
 npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>
 ```
 
-The merge command does not promote evidence or fill manual values. It only combines `entries[]` and rejects duplicate candidates so the resulting file can be passed to `qa:prototype-probe-record`.
+The merge command does not promote evidence or fill manual values. It combines `entries[]`, rejects duplicate candidates, and rejects mixed physical device labels after trimming whitespace and normalizing slash spacing so the resulting file can be passed to `qa:prototype-probe-record`.
+It also rejects placeholder or blank device labels and invalid generated timestamps before writing output, including labels still present inside the copied inspector draft.
 
 Before generating the probe record, run the readiness check:
 
@@ -136,9 +143,15 @@ Before generating the probe record, run the readiness check:
 npm run qa:prototype-handoff-check -- <merged-handoff.json>
 ```
 
-The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps, unexpected sample manifest versions, nullable manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`.
+The check must report `READY_FOR_PROBE_RECORD`. It does not write a probe record or select an engine; it only catches missing candidates, duplicate candidates, placeholder or mismatched device labels, candidate entries from different physical device labels, invalid timestamps including impossible calendar dates, unexpected sample manifest versions, nullable or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues before `qa:prototype-probe-record`. The `qa:prototype-probe-record` command reuses the same readiness report and refuses to write output if the handoff is not ready.
+
+`qa:prototype-handoff-check` compares handoff `deviceLabel` values and inspector draft `probeTemplate.deviceLabel` values after trimming whitespace and normalizing slash spacing. For example, `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same physical device; different model names still fail the handoff check.
+
+`qa:prototype-handoff-check` also rejects inspector drafts whose guard fields were edited away from the prototype shape: `measuredCandidateEvidence` must stay `false`, `runtimeUnderTest` must stay `fake-sampler-engine`, and `probeTemplate.evidenceSource` must stay `estimate` until physical-device measurements are promoted into a separate probe record.
 
 The `qa:prototype-probe-record` command first validates the handoff JSON shape, then enforces runtime readiness and the expected sample manifest, then produces and parser-validates the probe record JSON. It does not replace the final `qa:day5-audio` decision check.
+
+`qa:day5-readiness` compares the Week 1 smoke report and probe record device labels after trimming whitespace and normalizing slash spacing. For example, `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same physical device; different model names still fail readiness.
 
 Before publishing the Day 5 record, run the QA command entry point:
 
@@ -153,7 +166,7 @@ Use the filled physical-device probe record when publishing a real Day 5 handoff
 
 | Status | Rule |
 | --- | --- |
-| `INCOMPLETE_DEVICE_EVIDENCE` | At least one required candidate has no physical-device probe, or a required candidate has duplicate physical-device probes. Do not select an engine. |
+| `INCOMPLETE_DEVICE_EVIDENCE` | At least one required candidate has no physical-device probe, a required candidate has duplicate physical-device probes, or physical-device probes have placeholder, blank, or mixed device labels. Do not select an engine. |
 | `FINAL_ENGINE_SELECTED` | Required candidates are measured and the strongest evaluation is `PASS` or `PASS_WITH_LIMITS`. |
 | `NO_FINAL_ENGINE` | Required candidates are measured, but no candidate passes the Day 5 gate. Pause Week 2 feature work. |
 
@@ -190,4 +203,5 @@ Expected result: all commands exit 0.
 | Status | `INCOMPLETE_DEVICE_EVIDENCE` |
 | Reason | Physical-device probes for both required candidates have not been recorded yet. |
 | Duplicate candidates | none |
+| Device label issues | none |
 | Selected engine | none |

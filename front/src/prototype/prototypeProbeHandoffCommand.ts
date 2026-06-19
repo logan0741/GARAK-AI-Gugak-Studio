@@ -1,4 +1,8 @@
 import { parseAudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
+import {
+  buildPrototypeHandoffReadinessReport,
+  type PrototypeHandoffReadinessReport,
+} from './prototypeHandoffCheckCommand';
 import { parsePrototypeHandoffFile } from './prototypeHandoffFile';
 import { buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts } from './prototypeProbeHandoff';
 
@@ -43,6 +47,14 @@ export function runPrototypeProbeHandoffCommand(
   const parseHandoffResult = parsePrototypeHandoffFile(handoffInput);
   if (!parseHandoffResult.ok) {
     input.writeStderr(`Could not build prototype probe record: ${parseHandoffResult.error}`);
+    return 1;
+  }
+
+  const readinessReport = buildPrototypeHandoffReadinessReport(parseHandoffResult.handoff);
+  if (readinessReport.status !== 'READY_FOR_PROBE_RECORD') {
+    input.writeStderr(
+      `Could not build prototype probe record: prototype handoff is not ready for probe record: ${formatReadinessIssues(readinessReport)}`,
+    );
     return 1;
   }
 
@@ -93,4 +105,24 @@ function getErrorMessage(error: unknown): string {
   }
 
   return String(error);
+}
+
+function formatReadinessIssues(report: PrototypeHandoffReadinessReport): string {
+  const issueGroups: Array<[string, string[]]> = [
+    ['missing candidates', report.missingCandidates],
+    ['duplicate candidates', report.duplicateCandidates],
+    ['device label issues', report.deviceLabelIssues],
+    ['timestamp issues', report.timestampIssues],
+    ['manifest issues', report.manifestIssues],
+    ['inspector draft issues', report.inspectorDraftIssues],
+    ['missing measurement fields', report.missingMeasurementFields],
+    ['invalid measurement fields', report.invalidMeasurementFields],
+    ['runtime issues', report.runtimeIssues],
+    ['probe record issues', report.probeRecordIssues],
+  ];
+  const formattedIssues = issueGroups
+    .filter(([, issues]) => issues.length > 0)
+    .map(([label, issues]) => `${label}: ${issues.join(', ')}`);
+
+  return formattedIssues.length > 0 ? formattedIssues.join('; ') : 'unknown readiness issue';
 }

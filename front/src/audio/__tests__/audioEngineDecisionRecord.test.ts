@@ -34,6 +34,7 @@ test('does not select an engine until all required candidates have physical-devi
     status: 'INCOMPLETE_DEVICE_EVIDENCE',
     missingCandidates: ['expo-audio'],
     duplicateCandidates: [],
+    deviceLabelIssues: [],
     evaluations: [
       {
         candidate: 'react-native-audio-api',
@@ -115,6 +116,66 @@ test('does not select an engine when a required candidate has duplicate physical
     selection: {
       decision: 'NO_GO',
       reason: 'duplicate physical-device probes for candidates: expo-audio',
+    },
+  });
+});
+
+test('does not select an engine when physical-device probes use different device labels', () => {
+  const record = buildDay5AudioEngineDecisionRecord({
+    generatedAt: '2026-06-08T01:00:00.000Z',
+    probes: [
+      {
+        ...passingExpoProbe,
+        deviceLabel: 'Pixel 8 / Android 15',
+      },
+      {
+        ...passingAudioApiProbe,
+        deviceLabel: 'Galaxy S24 / Android 15',
+      },
+    ],
+  });
+
+  expect(record).toMatchObject({
+    status: 'INCOMPLETE_DEVICE_EVIDENCE',
+    missingCandidates: [],
+    duplicateCandidates: [],
+    deviceLabelIssues: [
+      'physical-device probes must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+    ],
+    selection: {
+      decision: 'NO_GO',
+      reason:
+        'physical-device probes must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+    },
+  });
+});
+
+test('does not select an engine when physical-device probes still use placeholder labels', () => {
+  const record = buildDay5AudioEngineDecisionRecord({
+    generatedAt: '2026-06-08T01:00:00.000Z',
+    probes: [
+      {
+        ...passingExpoProbe,
+        deviceLabel: 'replace-with-physical-device-model',
+      },
+      {
+        ...passingAudioApiProbe,
+        deviceLabel: 'replace-with-physical-device-model',
+      },
+    ],
+  });
+
+  expect(record).toMatchObject({
+    status: 'INCOMPLETE_DEVICE_EVIDENCE',
+    missingCandidates: [],
+    duplicateCandidates: [],
+    deviceLabelIssues: [
+      'expo-audio.deviceLabel must name the physical device',
+      'react-native-audio-api.deviceLabel must name the physical device',
+    ],
+    selection: {
+      decision: 'NO_GO',
+      reason: 'expo-audio.deviceLabel must name the physical device',
     },
   });
 });

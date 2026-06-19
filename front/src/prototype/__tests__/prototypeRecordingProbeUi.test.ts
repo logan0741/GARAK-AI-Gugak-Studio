@@ -30,6 +30,37 @@ test('selects a captured recording uri that the prototype can play back', () => 
   expect(selectPlayableRecordingUri({ recordingProbeState: { status: 'idle' } })).toBeNull();
 });
 
+test('does not expose a stale session recording uri while the recording probe is idle', () => {
+  expect(
+    selectPlayableRecordingUri({
+      recordingProbeState: { status: 'idle' },
+      sessionRecordingUri: 'file://previous-candidate.m4a',
+    }),
+  ).toBeNull();
+});
+
+test('ignores whitespace-only recording uris when selecting captured playback', () => {
+  expect(
+    selectPlayableRecordingUri({
+      recordingProbeState: {
+        status: 'captured',
+        capturedSeconds: 10,
+        recordingUri: '   ',
+      },
+    }),
+  ).toBeNull();
+  expect(
+    selectPlayableRecordingUri({
+      recordingProbeState: {
+        status: 'captured',
+        capturedSeconds: 10,
+        recordingUri: 'file://captured.m4a',
+      },
+      sessionRecordingUri: '   ',
+    }),
+  ).toBe('file://captured.m4a');
+});
+
 test('extracts recording fallback reason for handoff observations', () => {
   expect(
     getRecordingProbeFallbackReason({

@@ -42,6 +42,10 @@ export async function startPrototypeRecordingProbe(
   engine: SamplerEngine,
   durationSeconds: number,
 ): Promise<PrototypeRecordingProbeStartResult> {
+  if (!isPositiveFiniteNumber(durationSeconds)) {
+    return { status: 'failed', errorMessage: 'recording_duration_invalid' };
+  }
+
   if (!isRecordingProbeCapableEngine(engine)) {
     return { status: 'unsupported', reason: 'recording_probe_not_supported' };
   }
@@ -74,8 +78,8 @@ export async function stopPrototypeRecordingProbe(
 
     return {
       status: 'captured',
-      capturedSeconds: result.capturedSeconds,
-      recordingUri: result.recordingUri,
+      capturedSeconds: normalizeCapturedSeconds(result.capturedSeconds),
+      recordingUri: normalizeRecordingUri(result.recordingUri),
     };
   } catch (error: unknown) {
     return { status: 'failed', errorMessage: getErrorMessage(error) };
@@ -86,12 +90,17 @@ export async function playCapturedPrototypeRecordingProbe(
   engine: SamplerEngine,
   recordingUri: string,
 ): Promise<PrototypeRecordingProbePlaybackResult> {
+  const normalizedRecordingUri = normalizeRecordingUri(recordingUri);
+  if (normalizedRecordingUri === null) {
+    return { status: 'failed', errorMessage: 'recording_playback_uri_missing' };
+  }
+
   if (!isRecordingProbePlaybackCapableEngine(engine)) {
     return { status: 'unsupported', reason: 'recording_playback_probe_not_supported' };
   }
 
   try {
-    const result = await engine.playRecordingProbe(recordingUri);
+    const result = await engine.playRecordingProbe(normalizedRecordingUri);
 
     if (!result.ok) {
       return { status: 'failed', errorMessage: result.reason };
@@ -99,7 +108,7 @@ export async function playCapturedPrototypeRecordingProbe(
 
     return {
       status: 'playing',
-      recordingUri: result.recordingUri,
+      recordingUri: normalizeRecordingUri(result.recordingUri) ?? normalizedRecordingUri,
     };
   } catch (error: unknown) {
     return { status: 'failed', errorMessage: getErrorMessage(error) };
@@ -123,4 +132,25 @@ function isRecordingProbePlaybackCapableEngine(
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function normalizeRecordingUri(recordingUri: string | null): string | null {
+  const normalizedRecordingUri = recordingUri?.trim() ?? '';
+  if (normalizedRecordingUri.length === 0) {
+    return null;
+  }
+
+  return normalizedRecordingUri;
+}
+
+function normalizeCapturedSeconds(capturedSeconds: number): number {
+  if (!Number.isFinite(capturedSeconds) || capturedSeconds < 0) {
+    return 0;
+  }
+
+  return capturedSeconds;
+}
+
+function isPositiveFiniteNumber(input: number): boolean {
+  return Number.isFinite(input) && input > 0;
 }

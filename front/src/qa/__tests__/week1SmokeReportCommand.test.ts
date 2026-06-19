@@ -137,6 +137,40 @@ test('reports duplicate checks as not complete', () => {
   expect(output).toContain('- Duplicate checks: day-4-touch-model.tap');
 });
 
+test('requires notes for failed smoke checks before Day 5 review', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport({
+    overrides: {
+      'day-3-react-native-audio-api': {
+        'pitch-bend': 'fail',
+      },
+    },
+  });
+  const rnRun = report.runs.find((run) => run.area === 'day-3-react-native-audio-api');
+  const pitchBendCheck = rnRun?.checks.find((check) => check.id === 'pitch-bend');
+  if (!pitchBendCheck) {
+    throw new Error('test fixture must include day-3 pitch-bend check');
+  }
+  pitchBendCheck.notes = '   ';
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['failed-without-notes-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_COMPLETE_FOR_DAY5_REVIEW');
+  expect(output).toContain(
+    '- Failed check note issues: day-3-react-native-audio-api.pitch-bend',
+  );
+});
+
 test('returns parse errors for invalid smoke report check results', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -194,6 +228,34 @@ test('rejects placeholder device labels for physical-device smoke evidence', () 
   ]);
 });
 
+test('rejects placeholder-like device labels for physical-device smoke evidence', () => {
+  for (const deviceLabel of [
+    'Device/OS',
+    'Device /OS',
+    'Device/ OS',
+    'replace with physical device model',
+  ]) {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const report = createSmokeReport();
+    report.runs[0].deviceLabel = deviceLabel;
+
+    expect(
+      runWeek1SmokeReportCommand({
+        argv: ['placeholder-like-device-smoke.json'],
+        readTextFile: () => JSON.stringify(report),
+        writeStdout: (value) => stdout.push(value),
+        writeStderr: (value) => stderr.push(value),
+      }),
+    ).toBe(1);
+
+    expect(stdout).toEqual([]);
+    expect(stderr).toEqual([
+      'Could not parse Week 1 smoke report: runs[0].deviceLabel must name the physical device',
+    ]);
+  }
+});
+
 test('reports different smoke run device labels as not complete', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -215,6 +277,28 @@ test('reports different smoke run device labels as not complete', () => {
   expect(output).toContain(
     '- Device label issues: smoke report must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
   );
+});
+
+test('treats slash spacing differences as the same smoke report device label', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport();
+  report.runs[1].deviceLabel = 'Pixel 8/Android 15';
+  report.runs[2].deviceLabel = 'Pixel 8 /Android 15';
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['slash-spacing-device-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: COMPLETE_FOR_DAY5_REVIEW');
+  expect(output).toContain('- Device label issues: none');
 });
 
 test('returns invalid json errors without exposing a stack trace', () => {
@@ -259,7 +343,15 @@ const requiredChecksByArea = {
     'mute-release',
     'recording-fallback',
   ],
-  'day-4-touch-model': ['tap', 'glissando', 'hold-drag', 'ji-eum', 'fallback'],
+  'day-4-touch-model': [
+    'tap',
+    'glissando',
+    'hold-drag',
+    'ji-eum',
+    'bend-button',
+    'mute-button',
+    'fallback',
+  ],
 } as const satisfies Record<SmokeAreaId, readonly string[]>;
 
 function createSmokeReport(input: {
@@ -282,11 +374,14 @@ function createSmokeReport(input: {
       deviceLabel: 'Pixel 8 / Android 15',
       checks: requiredChecksByArea[area]
         .filter((id) => !(input.omitChecks?.[area] ?? []).includes(id))
-        .map((id) => ({
-          id,
-          result: input.overrides?.[area]?.[id] ?? 'pass',
-          notes: '',
-        })),
+        .map((id) => {
+          const result = input.overrides?.[area]?.[id] ?? 'pass';
+          return {
+            id,
+            result,
+            notes: result === 'fail' ? 'Observed failure during physical-device smoke run.' : '',
+          };
+        }),
     })),
   };
 }

@@ -57,6 +57,7 @@ type ActiveVoice = {
   filter: ReactNativeAudioApiFilterPort;
   destination: ReactNativeAudioApiNodePort;
   stringIndex: number;
+  releaseScheduled: boolean;
 };
 
 const DEFAULT_MAX_VOICES = 8;
@@ -145,6 +146,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
       filter,
       destination: context.destination,
       stringIndex,
+      releaseScheduled: false,
     };
     source.onEnded = () => this.cleanupVoice(voice);
     this.activeVoices.push(voice);
@@ -171,6 +173,11 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
     const voicesToRelease = this.activeVoicesForString(stringIndex);
 
     for (const voice of voicesToRelease) {
+      if (voice.releaseScheduled) {
+        continue;
+      }
+
+      voice.releaseScheduled = true;
       voice.gain.gain.setTargetAtTime(0, currentTime, RELEASE_TIME_CONSTANT_SECONDS);
       voice.source.stop(stopAt);
       removeMatching(this.activeVoices, (candidate) => candidate === voice);
@@ -210,8 +217,9 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   private cleanupVoice(voice: ActiveVoice): void {
-    removeMatching(this.activeVoices, (candidate) => candidate === voice);
-    this.disconnectVoice(voice);
+    if (removeMatching(this.activeVoices, (candidate) => candidate === voice)) {
+      this.disconnectVoice(voice);
+    }
   }
 
   private disconnectVoice(voice: ActiveVoice): void {
@@ -225,12 +233,17 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function removeMatching<T>(items: T[], predicate: (item: T) => boolean): void {
+function removeMatching<T>(items: T[], predicate: (item: T) => boolean): boolean {
+  let removed = false;
+
   for (let index = items.length - 1; index >= 0; index -= 1) {
     if (predicate(items[index])) {
       items.splice(index, 1);
+      removed = true;
     }
   }
+
+  return removed;
 }
 
 function assertNever(value: never): never {

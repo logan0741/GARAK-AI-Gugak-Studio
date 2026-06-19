@@ -106,6 +106,140 @@ test('rejects duplicate candidate entries across handoff files', () => {
   ]);
 });
 
+test('allows slash spacing differences for the same physical device label', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writtenFiles = new Map<string, string>();
+  const inputFiles = new Map([
+    [
+      'expo-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('expo-audio', 'Pixel 8/Android 15')),
+    ],
+    [
+      'rn-handoff.json',
+      JSON.stringify(
+        createPrototypeHandoffForCandidate('react-native-audio-api', 'Pixel 8 /Android 15'),
+      ),
+    ],
+  ]);
+
+  expect(
+    runPrototypeHandoffMergeCommand({
+      argv: ['merged.json', 'expo-handoff.json', 'rn-handoff.json'],
+      getGeneratedAt: () => '2026-06-08T05:00:00.000Z',
+      readTextFile: (path) => inputFiles.get(path) ?? '',
+      writeTextFile: (path, value) => writtenFiles.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  expect(stdout).toEqual(['Wrote merged prototype handoff: merged.json (2 entries)']);
+});
+
+test('rejects invalid generated timestamps before writing a merged handoff', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writtenFiles = new Map<string, string>();
+  const inputFiles = new Map([
+    [
+      'expo-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('expo-audio')),
+    ],
+    [
+      'rn-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('react-native-audio-api')),
+    ],
+  ]);
+
+  expect(
+    runPrototypeHandoffMergeCommand({
+      argv: ['merged.json', 'expo-handoff.json', 'rn-handoff.json'],
+      getGeneratedAt: () => 'June 8, 2026 15:00',
+      readTextFile: (path) => inputFiles.get(path) ?? '',
+      writeTextFile: (path, value) => writtenFiles.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(writtenFiles.size).toBe(0);
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not merge prototype handoffs: generatedAt must be a UTC ISO timestamp',
+  ]);
+});
+
+test('rejects handoffs copied from different physical device labels', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const inputFiles = new Map([
+    [
+      'expo-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('expo-audio', 'Pixel 8 / Android 15')),
+    ],
+    [
+      'rn-handoff.json',
+      JSON.stringify(
+        createPrototypeHandoffForCandidate(
+          'react-native-audio-api',
+          'Galaxy S24 / Android 15',
+        ),
+      ),
+    ],
+  ]);
+
+  expect(
+    runPrototypeHandoffMergeCommand({
+      argv: ['merged.json', 'expo-handoff.json', 'rn-handoff.json'],
+      getGeneratedAt: () => '2026-06-08T05:00:00.000Z',
+      readTextFile: (path) => inputFiles.get(path) ?? '',
+      writeTextFile: () => undefined,
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not merge prototype handoffs: device labels must match: Pixel 8 / Android 15, Galaxy S24 / Android 15',
+  ]);
+});
+
+test('rejects placeholder physical device labels before writing a merged handoff', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const inputFiles = new Map([
+    [
+      'expo-handoff.json',
+      JSON.stringify(createPrototypeHandoffForCandidate('expo-audio', 'Device / OS')),
+    ],
+    [
+      'rn-handoff.json',
+      JSON.stringify(
+        createPrototypeHandoffForCandidate('react-native-audio-api', 'Device / OS'),
+      ),
+    ],
+  ]);
+
+  expect(
+    runPrototypeHandoffMergeCommand({
+      argv: ['merged.json', 'expo-handoff.json', 'rn-handoff.json'],
+      getGeneratedAt: () => '2026-06-08T05:00:00.000Z',
+      readTextFile: (path) => inputFiles.get(path) ?? '',
+      writeTextFile: () => undefined,
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not merge prototype handoffs: device labels must name the physical device: expo-audio.deviceLabel, expo-audio.inspectorDraft.probeTemplate.deviceLabel, react-native-audio-api.deviceLabel, react-native-audio-api.inspectorDraft.probeTemplate.deviceLabel',
+  ]);
+});
+
 test('returns invalid json errors without exposing a stack trace', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -177,14 +311,15 @@ test('rejects handoff entries without a measurements object', () => {
 
 function createPrototypeHandoffForCandidate(
   candidate: 'expo-audio' | 'react-native-audio-api',
+  deviceLabel = 'Pixel 8 / Android 15',
 ) {
   return {
     generatedAt: '2026-06-08T04:00:00.000Z',
     entries: [
       {
-        inspectorDraft: createInspectorDraftForCandidate(candidate),
+        inspectorDraft: createInspectorDraftForCandidate(candidate, deviceLabel),
         measuredAt: '2026-06-08T04:00:00.000Z',
-        deviceLabel: 'Pixel 8 / Android 15',
+        deviceLabel,
         measurements: nullMeasurements,
       },
     ],
@@ -193,6 +328,7 @@ function createPrototypeHandoffForCandidate(
 
 function createInspectorDraftForCandidate(
   candidate: 'expo-audio' | 'react-native-audio-api',
+  deviceLabel = 'Pixel 8 / Android 15',
 ): PrototypeProbeDraftInspectorModel {
   return {
     note: 'Estimate draft from fake prototype engine counters. Replace with physical-device candidate measurements before Day 5 handoff.',
@@ -228,7 +364,7 @@ function createInspectorDraftForCandidate(
     },
     probeTemplate: {
       candidate,
-      deviceLabel: 'Pixel 8 / Android 15',
+      deviceLabel,
       evidenceSource: 'estimate',
       glissandoTriggeredStrings: null,
       maxStableVoices: null,

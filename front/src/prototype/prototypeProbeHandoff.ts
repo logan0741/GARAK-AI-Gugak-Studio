@@ -4,6 +4,10 @@ import {
   promoteAudioEngineProbeDraftToPhysicalDevice,
 } from '../audio/audioEngineProbeDraft';
 import { AudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from '../qa/physicalDeviceLabel';
 import { PrototypeProbeDraftInspectorModel } from './prototypeQaSnapshot';
 import { PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION } from './prototypeSampleManifest';
 
@@ -27,7 +31,9 @@ export function buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts(input
 export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
   input: PhysicalDevicePrototypeProbeHandoffInput,
 ): AudioEngineProbe {
+  assertInspectorDraftEstimateGuard(input.inspectorDraft);
   assertObservedRuntimeReady(input.inspectorDraft);
+  assertPrototypeHandoffDeviceLabel(input);
 
   const draft = input.inspectorDraft.probeTemplate;
 
@@ -64,6 +70,67 @@ export function isPrototypeObservedRuntimeReady(
     observedRuntime.runtimeStatus === 'native_candidate_ready' &&
     observedRuntime.nativePreloadStatus === 'ready'
   );
+}
+
+function assertInspectorDraftEstimateGuard(
+  inspectorDraft: PrototypeProbeDraftInspectorModel,
+): void {
+  const draft = inspectorDraft as {
+    measuredCandidateEvidence?: unknown;
+    runtimeUnderTest?: unknown;
+    probeTemplate?: {
+      evidenceSource?: unknown;
+    };
+  };
+
+  if (draft.measuredCandidateEvidence !== false) {
+    throw new Error(
+      'prototype inspector draft measuredCandidateEvidence must be false before physical-device promotion',
+    );
+  }
+
+  if (draft.runtimeUnderTest !== 'fake-sampler-engine') {
+    throw new Error(
+      'prototype inspector draft runtimeUnderTest must be fake-sampler-engine before physical-device promotion',
+    );
+  }
+
+  if (draft.probeTemplate?.evidenceSource !== 'estimate') {
+    throw new Error(
+      'prototype inspector draft probeTemplate.evidenceSource must be estimate before physical-device promotion',
+    );
+  }
+}
+
+function assertPrototypeHandoffDeviceLabel(
+  input: PhysicalDevicePrototypeProbeHandoffInput,
+): void {
+  const draftDeviceLabel = input.inspectorDraft.probeTemplate.deviceLabel;
+
+  if (!isPhysicalDeviceLabel(draftDeviceLabel)) {
+    throw new Error(
+      'prototype inspector draft deviceLabel must name the physical device before physical-device promotion',
+    );
+  }
+
+  if (input.deviceLabel === undefined) {
+    return;
+  }
+
+  if (!isPhysicalDeviceLabel(input.deviceLabel)) {
+    throw new Error(
+      'prototype handoff deviceLabel must name the physical device before physical-device promotion',
+    );
+  }
+
+  if (
+    normalizePhysicalDeviceLabelForReport(input.deviceLabel) !==
+    normalizePhysicalDeviceLabelForReport(draftDeviceLabel)
+  ) {
+    throw new Error(
+      `prototype handoff deviceLabel must match inspector draft device label ${draftDeviceLabel}`,
+    );
+  }
 }
 
 function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {

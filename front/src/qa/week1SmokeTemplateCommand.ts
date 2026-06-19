@@ -1,9 +1,10 @@
 import {
-  isPhysicalDeviceLabel,
   REQUIRED_AREAS,
   REQUIRED_CHECKS_BY_AREA,
+  isIsoTimestamp,
   type Week1SmokeReport,
 } from './week1SmokeReportCommand';
+import { isPhysicalDeviceLabel } from './physicalDeviceLabel';
 
 export type Week1SmokeTemplateCommandInput = {
   argv: string[];
@@ -25,7 +26,16 @@ export function runWeek1SmokeTemplateCommand(
     return 1;
   }
 
-  if (!isPhysicalDeviceLabel(deviceLabel)) {
+  const normalizedTester = tester.trim();
+  if (normalizedTester.length === 0) {
+    input.writeStderr(
+      'Could not write Week 1 smoke report template: tester must be a non-empty name',
+    );
+    return 1;
+  }
+
+  const normalizedDeviceLabel = deviceLabel.trim();
+  if (!isPhysicalDeviceLabel(normalizedDeviceLabel)) {
     input.writeStderr(
       'Could not write Week 1 smoke report template: device label must name the physical device',
     );
@@ -33,11 +43,18 @@ export function runWeek1SmokeTemplateCommand(
   }
 
   const generatedAt = input.getGeneratedAt();
+  if (!isIsoTimestamp(generatedAt)) {
+    input.writeStderr(
+      'Could not write Week 1 smoke report template: generatedAt must be an ISO timestamp',
+    );
+    return 1;
+  }
+
   const report = createWeek1SmokeReportTemplate({
     generatedAt,
     testedAt: generatedAt,
-    tester,
-    deviceLabel,
+    tester: normalizedTester,
+    deviceLabel: normalizedDeviceLabel,
   });
 
   try {

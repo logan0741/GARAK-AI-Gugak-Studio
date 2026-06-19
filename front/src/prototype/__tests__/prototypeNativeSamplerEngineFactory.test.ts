@@ -190,6 +190,35 @@ test('rejects incomplete sample manifests before creating a native candidate', a
   expect(resolvedUris).toEqual([]);
 });
 
+test('rejects duplicate sample string indexes before creating a native candidate', async () => {
+  const resolvedUris: string[] = [];
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'react-native-audio-api',
+      manifest: {
+        version: 'duplicate-manifest',
+        assets: [...manifest.assets, { ...manifest.assets[0], id: 'duplicate-string-1' }],
+      },
+      assetResolver: {
+        resolveFileUri: async (fileUri) => {
+          resolvedUris.push(fileUri);
+          return fileUri;
+        },
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow('Prototype native sampler requires exactly one sample for each string; duplicate strings: 1');
+  expect(resolvedUris).toEqual([]);
+});
+
 test.each(['expo-audio', 'react-native-audio-api'] as const)(
   'rejects incomplete sample manifests before loading default native dependencies for %s',
   async (candidate) => {
@@ -204,6 +233,31 @@ test.each(['expo-audio', 'react-native-audio-api'] as const)(
         },
       }),
     ).rejects.toThrow('Prototype native sampler requires all 12 sample strings before preload; missing strings: 12');
+
+    expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+    expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+  },
+);
+
+test.each([
+  ['blank uri', '   '],
+  ['remote uri', 'https://cdn.example.com/gayageum/string-01.wav'],
+] as const)(
+  'rejects %s from sample asset resolution before loading default native dependencies',
+  async (_label, resolvedUri) => {
+    clearDefaultDependencyLoadMocks();
+
+    await expect(
+      createAndPreloadPrototypeNativeSamplerEngine({
+        candidate: 'expo-audio',
+        manifest,
+        assetResolver: {
+          resolveFileUri: async () => resolvedUri,
+        },
+      }),
+    ).rejects.toThrow('Prototype native sampler requires resolved local sample URIs');
 
     expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
     expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();

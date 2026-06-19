@@ -6,6 +6,10 @@ import {
   evaluateAudioEngineProbe,
   selectAudioEngineCandidate,
 } from './audioEngineEvaluation';
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from '../qa/physicalDeviceLabel';
 
 export type Day5AudioEngineDecisionStatus =
   | 'INCOMPLETE_DEVICE_EVIDENCE'
@@ -17,6 +21,7 @@ export type Day5AudioEngineDecisionRecord = {
   status: Day5AudioEngineDecisionStatus;
   missingCandidates: AudioEngineCandidateId[];
   duplicateCandidates: AudioEngineCandidateId[];
+  deviceLabelIssues: string[];
   evaluations: AudioEngineEvaluation[];
   selection: AudioEngineSelection;
 };
@@ -42,6 +47,7 @@ export function buildDay5AudioEngineDecisionRecord(input: {
     (candidate) =>
       physicalDeviceProbes.filter((probe) => probe.candidate === candidate).length > 1,
   );
+  const deviceLabelIssues = collectDeviceLabelIssues(physicalDeviceProbes);
 
   if (missingCandidates.length > 0) {
     return {
@@ -49,6 +55,7 @@ export function buildDay5AudioEngineDecisionRecord(input: {
       status: 'INCOMPLETE_DEVICE_EVIDENCE',
       missingCandidates,
       duplicateCandidates,
+      deviceLabelIssues,
       evaluations,
       selection: {
         decision: 'NO_GO',
@@ -63,10 +70,26 @@ export function buildDay5AudioEngineDecisionRecord(input: {
       status: 'INCOMPLETE_DEVICE_EVIDENCE',
       missingCandidates: [],
       duplicateCandidates,
+      deviceLabelIssues,
       evaluations,
       selection: {
         decision: 'NO_GO',
         reason: `duplicate physical-device probes for candidates: ${duplicateCandidates.join(', ')}`,
+      },
+    };
+  }
+
+  if (deviceLabelIssues.length > 0) {
+    return {
+      generatedAt: input.generatedAt,
+      status: 'INCOMPLETE_DEVICE_EVIDENCE',
+      missingCandidates: [],
+      duplicateCandidates: [],
+      deviceLabelIssues,
+      evaluations,
+      selection: {
+        decision: 'NO_GO',
+        reason: deviceLabelIssues[0],
       },
     };
   }
@@ -78,7 +101,33 @@ export function buildDay5AudioEngineDecisionRecord(input: {
     status: selection.selectedCandidate ? 'FINAL_ENGINE_SELECTED' : 'NO_FINAL_ENGINE',
     missingCandidates: [],
     duplicateCandidates: [],
+    deviceLabelIssues: [],
     evaluations,
     selection,
   };
+}
+
+function collectDeviceLabelIssues(probes: AudioEngineProbe[]): string[] {
+  const issues: string[] = [];
+  const labels: string[] = [];
+
+  for (const probe of probes) {
+    if (!isPhysicalDeviceLabel(probe.deviceLabel)) {
+      issues.push(`${probe.candidate}.deviceLabel must name the physical device`);
+      continue;
+    }
+
+    labels.push(normalizePhysicalDeviceLabelForReport(probe.deviceLabel));
+  }
+
+  const uniqueLabels = unique(labels);
+  if (uniqueLabels.length > 1) {
+    issues.push(`physical-device probes must use one device label: ${uniqueLabels.join(', ')}`);
+  }
+
+  return issues;
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }

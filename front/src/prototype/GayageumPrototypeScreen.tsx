@@ -20,6 +20,8 @@ import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
+  planMuteProbe,
+  planPitchBendProbe,
   planPolyphonyBurst,
   safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
@@ -35,6 +37,7 @@ import {
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeHandoffTemplateForInspector,
   formatPrototypeProbeDraftForInspector,
+  PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
@@ -67,12 +70,12 @@ import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFa
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
 const POLYPHONY_BURST_STRINGS = ALL_STRINGS.slice(0, 8);
+const EXPRESSIVE_PROBE_STRING_INDEX = 6;
 const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
   stringCount: PROTOTYPE_STRING_COUNT,
 });
 const PRIMARY_POINTER_ID = 'primary-touch';
 const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api';
-const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
 const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
 const RECORDING_PROBE_SECONDS = 10;
 const CAN_START_NATIVE_AUDIO_CANDIDATE = shouldStartPrototypeNativeAudioCandidate(Platform.OS);
@@ -180,7 +183,7 @@ export function GayageumPrototypeScreen() {
   const [qaSnapshot, setQaSnapshot] = useState(() =>
     createInitialPrototypeQaSnapshot({
       candidate: DEFAULT_PROBE_CANDIDATE,
-      deviceLabel: DEFAULT_DEVICE_LABEL,
+      deviceLabel: PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
       measuredAt: new Date().toISOString(),
     }),
   );
@@ -211,7 +214,7 @@ export function GayageumPrototypeScreen() {
     setQaSnapshot(
       createInitialPrototypeQaSnapshot({
         candidate,
-        deviceLabel: deviceLabelInput.trim() || DEFAULT_DEVICE_LABEL,
+        deviceLabel: deviceLabelInput.trim() || PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
         measuredAt: new Date().toISOString(),
       }),
     );
@@ -240,6 +243,24 @@ export function GayageumPrototypeScreen() {
     const events = planPolyphonyBurst({
       nowMs: Date.now(),
       stringIndexes: POLYPHONY_BURST_STRINGS,
+    });
+
+    applyPerformanceEvents(events);
+  }
+
+  function handlePitchBendProbePress() {
+    const events = planPitchBendProbe({
+      nowMs: Date.now(),
+      stringIndex: EXPRESSIVE_PROBE_STRING_INDEX,
+    });
+
+    applyPerformanceEvents(events);
+  }
+
+  function handleMuteProbePress() {
+    const events = planMuteProbe({
+      nowMs: Date.now(),
+      stringIndex: EXPRESSIVE_PROBE_STRING_INDEX,
     });
 
     applyPerformanceEvents(events);
@@ -376,6 +397,22 @@ export function GayageumPrototypeScreen() {
         >
           <Text style={styles.glissandoButtonText}>8 Voice</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play pitch bend probe"
+          onPress={handlePitchBendProbePress}
+          style={styles.pitchBendButton}
+        >
+          <Text style={styles.glissandoButtonText}>Bend</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play mute probe"
+          onPress={handleMuteProbePress}
+          style={styles.muteProbeButton}
+        >
+          <Text style={styles.glissandoButtonText}>Mute</Text>
+        </Pressable>
       </View>
 
       <View style={styles.probeControls}>
@@ -476,6 +513,9 @@ export function GayageumPrototypeScreen() {
         </Text>
         <Text style={styles.inspectorText}>
           Missing sample strings: {engineHost.missingStringIndexes.join(', ') || 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>
+          Duplicate sample strings: {engineHost.duplicateStringIndexes.join(', ') || 'none'}
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
@@ -588,6 +628,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 44,
     minWidth: 118,
+    paddingHorizontal: 14,
+  },
+  pitchBendButton: {
+    alignItems: 'center',
+    backgroundColor: '#c98f65',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 92,
+    paddingHorizontal: 14,
+  },
+  muteProbeButton: {
+    alignItems: 'center',
+    backgroundColor: '#b55d4c',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 92,
     paddingHorizontal: 14,
   },
   glissandoButtonText: {

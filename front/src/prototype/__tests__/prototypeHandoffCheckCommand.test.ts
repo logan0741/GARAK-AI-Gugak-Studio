@@ -67,6 +67,7 @@ test('reports ready handoffs without producing a Day 5 decision', () => {
   expect(stdout.join('\n')).toContain('- Timestamp issues: none');
   expect(stdout.join('\n')).toContain('- Manifest issues: none');
   expect(stdout.join('\n')).toContain('- Missing measurement fields: none');
+  expect(stdout.join('\n')).toContain('- Invalid measurement fields: none');
   expect(stdout.join('\n')).toContain('- Runtime issues: none');
   expect(stdout.join('\n')).toContain('- Probe record issues: none');
   expect(stdout.join('\n')).not.toContain('FINAL_ENGINE_SELECTED');
@@ -219,6 +220,41 @@ test('reports mismatched device labels across candidate handoff entries', () => 
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
+test('treats slash spacing differences as the same prototype handoff device label', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['slash-spacing-device-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              deviceLabel: 'Pixel 8/Android 15',
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api', {}, {
+                deviceLabel: 'Pixel 8 /Android 15',
+              }),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: READY_FOR_PROBE_RECORD');
+  expect(output).toContain('- Device label issues: none');
+});
+
 test('reports handoff timestamp issues before probe record generation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
@@ -235,6 +271,44 @@ test('reports handoff timestamp issues before probe record generation', () => {
                 measuredAt: '2026/06/08 15:05',
               }),
               measuredAt: 'June 8, 2026 15:10',
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Timestamp issues: generatedAt must be a UTC ISO timestamp, expo-audio.measuredAt must be a UTC ISO timestamp, expo-audio.inspectorDraft.probeTemplate.measuredAt must be a UTC ISO timestamp',
+  );
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
+test('reports impossible calendar dates as handoff timestamp issues', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['impossible-date-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-02-31T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio', {}, {
+                measuredAt: '2026-04-31T06:00:00.000Z',
+              }),
+              measuredAt: '2026-06-31T06:00:00.000Z',
               measurements,
             },
             {
@@ -294,7 +368,52 @@ test('reports unexpected sample manifest versions before probe record generation
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 
-test('reports generated probe record validation issues before declaring readiness', () => {
+test('reports contaminated inspector drafts before probe record generation', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const contaminatedDraft = createInspectorDraftForCandidate('expo-audio');
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['contaminated-inspector-draft-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:00:00.000Z',
+          entries: [
+            {
+              inspectorDraft: {
+                ...contaminatedDraft,
+                measuredCandidateEvidence: true,
+                runtimeUnderTest: 'candidate-sampler-engine',
+                probeTemplate: {
+                  ...contaminatedDraft.probeTemplate,
+                  evidenceSource: 'physical-device',
+                },
+              },
+              measurements,
+            },
+            {
+              inspectorDraft: createInspectorDraftForCandidate('react-native-audio-api'),
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
+  expect(output).toContain(
+    '- Inspector draft issues: expo-audio.inspectorDraft.measuredCandidateEvidence must be false, expo-audio.inspectorDraft.runtimeUnderTest must be fake-sampler-engine, expo-audio.inspectorDraft.probeTemplate.evidenceSource must be estimate',
+  );
+  expect(output).toContain('- Probe record issues: none');
+  expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
+});
+
+test('reports invalid measurement fields before probe record generation', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
 
@@ -326,7 +445,8 @@ test('reports generated probe record validation issues before declaring readines
   expect(stderr).toEqual([]);
   const output = stdout.join('\n');
   expect(output).toContain('- Status: NOT_READY_FOR_PROBE_RECORD');
-  expect(output).toContain('- Probe record issues: generated probe record is invalid:');
+  expect(output).toContain('- Invalid measurement fields: expo-audio.touchToSoundLatencyMs');
+  expect(output).toContain('- Probe record issues: none');
   expect(output).not.toContain('- Status: READY_FOR_PROBE_RECORD');
 });
 

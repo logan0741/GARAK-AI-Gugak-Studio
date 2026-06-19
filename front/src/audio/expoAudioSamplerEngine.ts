@@ -51,7 +51,14 @@ export type ExpoAudioPreloadResult = {
 
 export type ExpoAudioRecordingProbeResult =
   | { ok: true; requestedDurationSeconds: number }
-  | { ok: false; reason: 'recording_already_active' | 'recording_permission_denied' | 'recording_start_failed' };
+  | {
+      ok: false;
+      reason:
+        | 'recording_already_active'
+        | 'recording_duration_invalid'
+        | 'recording_permission_denied'
+        | 'recording_start_failed';
+    };
 
 export type ExpoAudioRecordingStopResult = {
   ok: true;
@@ -61,7 +68,7 @@ export type ExpoAudioRecordingStopResult = {
 
 export type ExpoAudioRecordingPlaybackResult =
   | { ok: true; recordingUri: string }
-  | { ok: false; reason: 'recording_playback_failed' };
+  | { ok: false; reason: 'recording_playback_failed' | 'recording_playback_uri_missing' };
 
 const PLAYBACK_MODE: ExpoAudioMode = {
   playsInSilentMode: true,
@@ -143,6 +150,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   async startRecordingProbe(durationSeconds: number): Promise<ExpoAudioRecordingProbeResult> {
+    if (!isPositiveFiniteNumber(durationSeconds)) {
+      return { ok: false, reason: 'recording_duration_invalid' };
+    }
+
     if (this.activeRecorder) {
       return { ok: false, reason: 'recording_already_active' };
     }
@@ -189,20 +200,25 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
     return {
       ok: true,
-      capturedSeconds: status.durationMillis / 1000,
-      recordingUri: status.url,
+      capturedSeconds: normalizeCapturedSeconds(status.durationMillis),
+      recordingUri: normalizeRecordingUri(status.url),
     };
   }
 
   async playRecordingProbe(recordingUri: string): Promise<ExpoAudioRecordingPlaybackResult> {
+    const normalizedRecordingUri = normalizeRecordingUri(recordingUri);
+    if (normalizedRecordingUri === null) {
+      return { ok: false, reason: 'recording_playback_uri_missing' };
+    }
+
     try {
       await this.runtime.setAudioModeAsync(PLAYBACK_MODE);
-      const player = this.runtime.createAudioPlayer({ uri: recordingUri }, PLAYER_OPTIONS);
+      const player = this.runtime.createAudioPlayer({ uri: normalizedRecordingUri }, PLAYER_OPTIONS);
       this.recordingProbePlayer = player;
       player.volume = 1;
       await player.seekTo(0);
       player.play();
-      return { ok: true, recordingUri };
+      return { ok: true, recordingUri: normalizedRecordingUri };
     } catch {
       return { ok: false, reason: 'recording_playback_failed' };
     }
@@ -228,7 +244,15 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   private releaseString(stringIndex: number): void {
-    this.requirePlayer(stringIndex).pause();
+    const player = this.requirePlayer(stringIndex);
+    if (this.playbackQueuesByString.has(stringIndex)) {
+      this.queuePlayback(stringIndex, async () => {
+        player.pause();
+      });
+      return;
+    }
+
+    player.pause();
   }
 
   private requirePlayer(stringIndex: number): ExpoAudioPlayerPort {
@@ -242,9 +266,16 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   private queuePlayback(stringIndex: number, operation: () => Promise<void>): void {
     const previous = this.playbackQueuesByString.get(stringIndex) ?? Promise.resolve();
-    const next = previous.then(operation).catch((error: unknown) => {
-      this.playbackQueueFailure = error;
-    });
+    const next = previous
+      .then(operation)
+      .catch((error: unknown) => {
+        this.playbackQueueFailure = error;
+      })
+      .finally(() => {
+        if (this.playbackQueuesByString.get(stringIndex) === next) {
+          this.playbackQueuesByString.delete(stringIndex);
+        }
+      });
     this.playbackQueuesByString.set(stringIndex, next);
   }
 }
@@ -255,6 +286,27 @@ function clamp01(value: number): number {
 
 function clampPlaybackRate(value: number): number {
   return Math.max(0.1, Math.min(2, value));
+}
+
+function normalizeRecordingUri(recordingUri: string | null): string | null {
+  const normalizedRecordingUri = recordingUri?.trim() ?? '';
+  if (normalizedRecordingUri.length === 0) {
+    return null;
+  }
+
+  return normalizedRecordingUri;
+}
+
+function normalizeCapturedSeconds(durationMillis: number): number {
+  if (!Number.isFinite(durationMillis) || durationMillis < 0) {
+    return 0;
+  }
+
+  return durationMillis / 1000;
+}
+
+function isPositiveFiniteNumber(input: number): boolean {
+  return Number.isFinite(input) && input > 0;
 }
 
 function assertNever(value: never): never {

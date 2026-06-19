@@ -63,37 +63,54 @@ const CANDIDATE_PRIORITY: Record<AudioEngineCandidateId, number> = {
 export function evaluateAudioEngineProbe(probe: AudioEngineProbe): AudioEngineEvaluation {
   const failedCriteria: AudioEngineFailedCriterion[] = [];
 
-  if (probe.touchToSoundLatencyMs > MAX_PASSING_TOUCH_LATENCY_MS) {
+  const latencyPasses =
+    isNonNegativeFiniteNumber(probe.touchToSoundLatencyMs) &&
+    probe.touchToSoundLatencyMs <= MAX_PASSING_TOUCH_LATENCY_MS;
+  const polyphonyPasses =
+    isNonNegativeInteger(probe.maxStableVoices) &&
+    probe.maxStableVoices >= MIN_PASSING_STABLE_VOICES;
+  const pitchBendPasses = probe.pitchBendSmooth === true;
+  const glissandoPasses =
+    isNonNegativeInteger(probe.glissandoTriggeredStrings) &&
+    probe.glissandoTriggeredStrings === REQUIRED_GLISSANDO_STRINGS;
+  const mutePasses = probe.muteReleaseClean === true;
+  const preloadPasses = probe.preloadStable === true;
+  const sessionFallbackPasses = probe.sessionFallbackPreserved === true;
+  const recordingPasses =
+    isNonNegativeFiniteNumber(probe.recordingCaptureSeconds) &&
+    probe.recordingCaptureSeconds >= MIN_RECORDING_SECONDS;
+
+  if (!latencyPasses) {
     failedCriteria.push('latency');
   }
-  if (probe.maxStableVoices < MIN_PASSING_STABLE_VOICES) {
+  if (!polyphonyPasses) {
     failedCriteria.push('polyphony');
   }
-  if (!probe.pitchBendSmooth) {
+  if (!pitchBendPasses) {
     failedCriteria.push('pitch_bend');
   }
-  if (probe.glissandoTriggeredStrings < REQUIRED_GLISSANDO_STRINGS) {
+  if (!glissandoPasses) {
     failedCriteria.push('glissando');
   }
-  if (!probe.muteReleaseClean) {
+  if (!mutePasses) {
     failedCriteria.push('mute');
   }
-  if (!probe.preloadStable) {
+  if (!preloadPasses) {
     failedCriteria.push('preload');
   }
-  if (!probe.sessionFallbackPreserved) {
+  if (!sessionFallbackPasses) {
     failedCriteria.push('session_fallback');
   }
-  if (probe.recordingCaptureSeconds < MIN_RECORDING_SECONDS) {
+  if (!recordingPasses) {
     failedCriteria.push('recording');
   }
 
   const passedCoreCriteria = [
-    probe.touchToSoundLatencyMs <= MAX_PASSING_TOUCH_LATENCY_MS,
-    probe.maxStableVoices >= MIN_PASSING_STABLE_VOICES,
-    probe.pitchBendSmooth,
-    probe.glissandoTriggeredStrings >= REQUIRED_GLISSANDO_STRINGS,
-    probe.muteReleaseClean,
+    latencyPasses,
+    polyphonyPasses,
+    pitchBendPasses,
+    glissandoPasses,
+    mutePasses,
   ].filter(Boolean).length;
 
   return {
@@ -157,4 +174,12 @@ function decide(
   }
 
   return 'FAIL';
+}
+
+function isNonNegativeFiniteNumber(input: number): boolean {
+  return Number.isFinite(input) && input >= 0;
+}
+
+function isNonNegativeInteger(input: number): boolean {
+  return Number.isInteger(input) && input >= 0;
 }

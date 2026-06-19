@@ -338,6 +338,47 @@ test('records prototype recording capture and playback observations without clai
   });
 });
 
+test('clears stale recording playback confirmation when a later capture has no playable uri', () => {
+  const firstCapture = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:31:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:31:12.000Z',
+      recordingUri: 'file://first.m4a',
+    },
+  );
+  const firstPlayback = recordPrototypeRecordingPlayback(firstCapture, {
+    measuredAt: '2026-06-08T04:31:15.000Z',
+    playbackConfirmed: true,
+  });
+
+  const secondCapture = recordPrototypeRecordingCapture(firstPlayback, {
+    capturedSeconds: 10,
+    measuredAt: '2026-06-08T04:31:30.000Z',
+    recordingUri: null,
+  });
+
+  expect(secondCapture).toMatchObject({
+    measuredAt: '2026-06-08T04:31:30.000Z',
+    recordingCaptureSeconds: 10,
+    recordingFallbackReason: 'recording_playback_uri_missing',
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(secondCapture))).toMatchObject({
+    observedPrototypeRecording: {
+      capturedSeconds: 10,
+      fallbackReason: 'recording_playback_uri_missing',
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
+  });
+});
+
 test('records prototype recording fallback reason without claiming final evidence', () => {
   const snapshot = recordPrototypeRecordingFallback(
     createInitialPrototypeQaSnapshot({
@@ -366,6 +407,42 @@ test('records prototype recording fallback reason without claiming final evidenc
     probeTemplate: {
       evidenceSource: 'estimate',
       recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('clears stale recording playback confirmation when a later fallback is recorded', () => {
+  const firstCapture = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:36:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:36:12.000Z',
+      recordingUri: 'file://first.m4a',
+    },
+  );
+  const firstPlayback = recordPrototypeRecordingPlayback(firstCapture, {
+    measuredAt: '2026-06-08T04:36:15.000Z',
+    playbackConfirmed: true,
+  });
+
+  const fallback = recordPrototypeRecordingFallback(firstPlayback, {
+    fallbackReason: 'recording_permission_denied',
+    measuredAt: '2026-06-08T04:36:20.000Z',
+  });
+
+  expect(fallback).toMatchObject({
+    measuredAt: '2026-06-08T04:36:20.000Z',
+    recordingFallbackReason: 'recording_permission_denied',
+    recordingPlaybackConfirmed: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(fallback))).toMatchObject({
+    observedPrototypeRecording: {
+      fallbackReason: 'recording_permission_denied',
+      playbackConfirmed: false,
     },
   });
 });
@@ -402,6 +479,27 @@ test('records missing captured recording uri as playback fallback context', () =
   });
 });
 
+test('treats whitespace captured recording uri as missing playback context', () => {
+  const snapshot = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:38:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:38:12.000Z',
+      recordingUri: '   ',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    recordingCaptureSeconds: 10,
+    recordingFallbackReason: 'recording_playback_uri_missing',
+    recordingUriAvailable: false,
+  });
+});
+
 test('updates the prototype QA device label used by the probe draft', () => {
   const snapshot = updatePrototypeQaDeviceLabel(
     createInitialPrototypeQaSnapshot({
@@ -422,6 +520,30 @@ test('updates the prototype QA device label used by the probe draft', () => {
   expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
     probeTemplate: {
       deviceLabel: 'Pixel 8 / Android 15',
+    },
+  });
+});
+
+test('resets the prototype QA device label to the placeholder when input is cleared', () => {
+  const snapshot = updatePrototypeQaDeviceLabel(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:41:00.000Z',
+    }),
+    {
+      deviceLabel: '   ',
+      measuredAt: '2026-06-08T04:41:10.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    deviceLabel: 'replace-with-physical-device-model',
+    measuredAt: '2026-06-08T04:41:10.000Z',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    probeTemplate: {
+      deviceLabel: 'replace-with-physical-device-model',
     },
   });
 });

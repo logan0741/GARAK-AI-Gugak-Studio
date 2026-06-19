@@ -4,6 +4,11 @@ import {
   type PrototypeHandoffFile,
 } from './prototypeHandoffFile';
 import { type PhysicalDevicePrototypeProbeHandoffInput } from './prototypeProbeHandoff';
+import { isIsoTimestamp } from '../qa/week1SmokeReportCommand';
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from '../qa/physicalDeviceLabel';
 
 export type PrototypeHandoffMergeCommandInput = {
   argv: string[];
@@ -64,8 +69,32 @@ export function runPrototypeHandoffMergeCommand(
     return 1;
   }
 
+  const deviceLabelIssues = collectPhysicalDeviceLabelIssues(entries);
+  if (deviceLabelIssues.length > 0) {
+    input.writeStderr(
+      `Could not merge prototype handoffs: device labels must name the physical device: ${deviceLabelIssues.join(', ')}`,
+    );
+    return 1;
+  }
+
+  const deviceLabels = collectDeviceLabels(entries);
+  if (deviceLabels.length > 1) {
+    input.writeStderr(
+      `Could not merge prototype handoffs: device labels must match: ${deviceLabels.join(', ')}`,
+    );
+    return 1;
+  }
+
+  const generatedAt = input.getGeneratedAt();
+  if (!isIsoTimestamp(generatedAt)) {
+    input.writeStderr(
+      'Could not merge prototype handoffs: generatedAt must be a UTC ISO timestamp',
+    );
+    return 1;
+  }
+
   const mergedHandoff: PrototypeHandoffFile = {
-    generatedAt: input.getGeneratedAt(),
+    generatedAt,
     entries,
   };
 
@@ -95,4 +124,43 @@ function findDuplicateCandidates(
   }
 
   return [...duplicates].sort();
+}
+
+function collectPhysicalDeviceLabelIssues(
+  entries: PhysicalDevicePrototypeProbeHandoffInput[],
+): string[] {
+  const issues: string[] = [];
+
+  for (const entry of entries) {
+    const candidate = entry.inspectorDraft.probeTemplate.candidate;
+
+    if (entry.deviceLabel !== undefined && !isPhysicalDeviceLabel(entry.deviceLabel)) {
+      issues.push(`${candidate}.deviceLabel`);
+    }
+
+    if (!isPhysicalDeviceLabel(entry.inspectorDraft.probeTemplate.deviceLabel)) {
+      issues.push(`${candidate}.inspectorDraft.probeTemplate.deviceLabel`);
+    }
+  }
+
+  return issues;
+}
+
+function collectDeviceLabels(
+  entries: PhysicalDevicePrototypeProbeHandoffInput[],
+): string[] {
+  const labels = entries.flatMap((entry) => [
+    entry.deviceLabel,
+    entry.inspectorDraft.probeTemplate.deviceLabel,
+  ]);
+
+  return unique(labels.filter(isString).map(normalizePhysicalDeviceLabelForReport));
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function isString(input: unknown): input is string {
+  return typeof input === 'string';
 }

@@ -83,11 +83,54 @@ test('formats a valid physical-device handoff as a Day 5 decision summary', () =
       '- Reason: react-native-audio-api has the strongest Day 5 result',
       '- Missing candidates: none',
       '- Duplicate candidates: none',
+      '- Device label issues: none',
       '',
       '| Candidate | Decision | Passed core criteria | Failed criteria |',
       '| --- | --- | --- | --- |',
       '| expo-audio | PASS_WITH_LIMITS | 5/5 | recording |',
       '| react-native-audio-api | PASS | 5/5 | none |',
     ].join('\n'),
+  );
+});
+
+test('formats mixed physical-device probe labels as incomplete evidence', () => {
+  const output = formatDay5AudioEngineProbeHandoff({
+    generatedAt: '2026-06-08T01:00:00.000Z',
+    probes: [
+      {
+        candidate: 'expo-audio',
+        evidenceSource: 'physical-device',
+        deviceLabel: 'Pixel 8 / Android 15',
+        measuredAt: '2026-06-08T00:00:00.000Z',
+        touchToSoundLatencyMs: 45,
+        maxStableVoices: 8,
+        pitchBendSmooth: true,
+        glissandoTriggeredStrings: 12,
+        muteReleaseClean: true,
+        preloadStable: true,
+        sessionFallbackPreserved: true,
+        recordingCaptureSeconds: 10,
+      },
+      {
+        candidate: 'react-native-audio-api',
+        evidenceSource: 'physical-device',
+        deviceLabel: 'Galaxy S24 / Android 15',
+        measuredAt: '2026-06-08T00:05:00.000Z',
+        touchToSoundLatencyMs: 39,
+        maxStableVoices: 10,
+        pitchBendSmooth: true,
+        glissandoTriggeredStrings: 12,
+        muteReleaseClean: true,
+        preloadStable: true,
+        sessionFallbackPreserved: true,
+        recordingCaptureSeconds: 10,
+      },
+    ],
+  });
+
+  expect(output).toContain('- Status: INCOMPLETE_DEVICE_EVIDENCE');
+  expect(output).toContain('- Selected engine: none');
+  expect(output).toContain(
+    '- Device label issues: physical-device probes must use one device label: Pixel 8 / Android 15, Galaxy S24 / Android 15',
   );
 });

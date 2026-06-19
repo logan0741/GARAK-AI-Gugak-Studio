@@ -16,16 +16,19 @@ type SelectPlayableRecordingUriInput = {
 };
 
 export function selectPlayableRecordingUri(input: SelectPlayableRecordingUriInput): string | null {
-  if (isNonEmptyString(input.sessionRecordingUri)) {
-    return input.sessionRecordingUri;
-  }
-
   const { recordingProbeState } = input;
   if (
     (recordingProbeState.status === 'captured' || recordingProbeState.status === 'playing') &&
     isNonEmptyString(recordingProbeState.recordingUri)
   ) {
     return recordingProbeState.recordingUri;
+  }
+
+  if (
+    (recordingProbeState.status === 'captured' || recordingProbeState.status === 'playing') &&
+    isNonEmptyString(input.sessionRecordingUri)
+  ) {
+    return input.sessionRecordingUri;
   }
 
   return null;
@@ -63,7 +66,7 @@ export function getRecordingProbeFallbackReason(state: RecordingProbeUiState): s
 }
 
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function assertNever(value: never): never {

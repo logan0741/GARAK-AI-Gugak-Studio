@@ -92,6 +92,7 @@ export type PrototypeRuntimeObservation = {
   activeRuntime: 'fake-prototype' | AudioEngineCandidateId;
   runtimeStatus:
     | 'missing_sample_manifest'
+    | 'duplicate_sample_manifest'
     | 'native_candidate_preloading'
     | 'native_candidate_failed'
     | 'native_candidate_ready';
@@ -102,6 +103,7 @@ export type PrototypeRuntimeObservation = {
 
 const PROTOTYPE_DRAFT_NOTE =
   'Estimate draft from fake prototype engine counters. Replace with physical-device candidate measurements before Day 5 handoff.';
+export const PROTOTYPE_DEVICE_LABEL_PLACEHOLDER = 'replace-with-physical-device-model';
 const EMPTY_EVENT_DISPATCH_LATENCY: PrototypeEventDispatchLatency = {
   sampleCount: 0,
   latestMs: null,
@@ -174,7 +176,7 @@ export function updatePrototypeQaDeviceLabel(
 
   return {
     ...snapshot,
-    deviceLabel: deviceLabel.length > 0 ? deviceLabel : snapshot.deviceLabel,
+    deviceLabel: deviceLabel.length > 0 ? deviceLabel : PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
     measuredAt: input.measuredAt,
   };
 }
@@ -205,6 +207,7 @@ export function recordPrototypeRecordingCapture(
     measuredAt: input.measuredAt,
     recordingCaptureSeconds: input.capturedSeconds,
     recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
+    recordingPlaybackConfirmed: false,
     recordingUriAvailable,
   };
 }
@@ -220,6 +223,7 @@ export function recordPrototypeRecordingFallback(
     ...snapshot,
     measuredAt: input.measuredAt,
     recordingFallbackReason: input.fallbackReason,
+    recordingPlaybackConfirmed: false,
   };
 }
 
@@ -332,7 +336,7 @@ function createEmptyPhysicalMeasurementTemplate(): PrototypeProbeHandoffMeasurem
 }
 
 function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function updateEventDispatchLatency(

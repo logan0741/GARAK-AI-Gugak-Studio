@@ -16,6 +16,7 @@ export type PrototypeSamplerEngineHost =
       engine: SamplerEngine;
       manifestVersion?: string;
       missingStringIndexes: number[];
+      duplicateStringIndexes: number[];
       status: 'missing_sample_manifest';
     }
   | {
@@ -24,6 +25,16 @@ export type PrototypeSamplerEngineHost =
       engine: SamplerEngine;
       manifestVersion: string;
       missingStringIndexes: [];
+      duplicateStringIndexes: number[];
+      status: 'duplicate_sample_manifest';
+    }
+  | {
+      activeRuntime: 'fake-prototype';
+      requestedCandidate: AudioEngineCandidateId;
+      engine: SamplerEngine;
+      manifestVersion: string;
+      missingStringIndexes: [];
+      duplicateStringIndexes: [];
       status: 'native_candidate_preloading';
     }
   | {
@@ -32,6 +43,7 @@ export type PrototypeSamplerEngineHost =
       engine: SamplerEngine;
       manifestVersion: string;
       missingStringIndexes: [];
+      duplicateStringIndexes: [];
       preloadErrorMessage: string;
       status: 'native_candidate_failed';
     }
@@ -41,6 +53,7 @@ export type PrototypeSamplerEngineHost =
       engine: SamplerEngine;
       manifestVersion: string;
       missingStringIndexes: [];
+      duplicateStringIndexes: [];
       status: 'native_candidate_ready';
     };
 
@@ -57,6 +70,7 @@ export function createPrototypeSamplerEngineHost(
   input: PrototypeSamplerEngineHostInput,
 ): PrototypeSamplerEngineHost {
   const missingStringIndexes = getMissingSampleStringIndexes(input.manifest);
+  const duplicateStringIndexes = getDuplicateSampleStringIndexes(input.manifest);
 
   if (!input.manifest || missingStringIndexes.length > 0) {
     return {
@@ -65,7 +79,20 @@ export function createPrototypeSamplerEngineHost(
       engine: input.createFakeEngine(),
       manifestVersion: input.manifest?.version,
       missingStringIndexes,
+      duplicateStringIndexes,
       status: 'missing_sample_manifest',
+    };
+  }
+
+  if (duplicateStringIndexes.length > 0) {
+    return {
+      activeRuntime: 'fake-prototype',
+      requestedCandidate: input.requestedCandidate,
+      engine: input.createFakeEngine(),
+      manifestVersion: input.manifest.version,
+      missingStringIndexes: [],
+      duplicateStringIndexes,
+      status: 'duplicate_sample_manifest',
     };
   }
 
@@ -76,6 +103,7 @@ export function createPrototypeSamplerEngineHost(
       engine: input.createFakeEngine(),
       manifestVersion: input.manifest.version,
       missingStringIndexes: [],
+      duplicateStringIndexes: [],
       status: 'native_candidate_preloading',
     };
   }
@@ -87,6 +115,7 @@ export function createPrototypeSamplerEngineHost(
       engine: input.createFakeEngine(),
       manifestVersion: input.manifest.version,
       missingStringIndexes: [],
+      duplicateStringIndexes: [],
       preloadErrorMessage: input.nativeCandidate.errorMessage,
       status: 'native_candidate_failed',
     };
@@ -98,6 +127,7 @@ export function createPrototypeSamplerEngineHost(
     engine: input.nativeCandidate.engine,
     manifestVersion: input.manifest.version,
     missingStringIndexes: [],
+    duplicateStringIndexes: [],
     status: 'native_candidate_ready',
   };
 }
@@ -108,4 +138,18 @@ export function getMissingSampleStringIndexes(manifest?: SampleAssetManifest): n
   );
 
   return REQUIRED_STRING_INDEXES.filter((stringIndex) => !availableStringIndexes.has(stringIndex));
+}
+
+export function getDuplicateSampleStringIndexes(manifest?: SampleAssetManifest): number[] {
+  const seenStringIndexes = new Set<number>();
+  const duplicateStringIndexes = new Set<number>();
+
+  for (const asset of manifest?.assets ?? []) {
+    if (seenStringIndexes.has(asset.stringIndex)) {
+      duplicateStringIndexes.add(asset.stringIndex);
+    }
+    seenStringIndexes.add(asset.stringIndex);
+  }
+
+  return Array.from(duplicateStringIndexes).sort((left, right) => left - right);
 }

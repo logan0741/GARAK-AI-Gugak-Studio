@@ -1,3 +1,8 @@
+import {
+  isPhysicalDeviceLabel,
+  normalizePhysicalDeviceLabelForReport,
+} from './physicalDeviceLabel';
+
 export type Week1SmokeAreaId =
   | 'day-2-expo-audio'
   | 'day-3-react-native-audio-api'
@@ -37,6 +42,7 @@ export type Week1SmokeReportSummary = {
   deviceLabelIssues: string[];
   blockedChecks: string[];
   failedChecks: string[];
+  failedCheckNoteIssues: string[];
 };
 
 export type Week1SmokeReportCommandInput = {
@@ -68,7 +74,15 @@ export const REQUIRED_CHECKS_BY_AREA = {
     'mute-release',
     'recording-fallback',
   ],
-  'day-4-touch-model': ['tap', 'glissando', 'hold-drag', 'ji-eum', 'fallback'],
+  'day-4-touch-model': [
+    'tap',
+    'glissando',
+    'hold-drag',
+    'ji-eum',
+    'bend-button',
+    'mute-button',
+    'fallback',
+  ],
 } as const satisfies Record<Week1SmokeAreaId, readonly string[]>;
 
 export const REQUIRED_AREAS = Object.keys(REQUIRED_CHECKS_BY_AREA) as Week1SmokeAreaId[];
@@ -199,13 +213,15 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
   const deviceLabelIssues = collectDeviceLabelIssues(report.runs);
   const blockedChecks = collectChecksByResult(report.runs, 'blocked');
   const failedChecks = collectChecksByResult(report.runs, 'fail');
+  const failedCheckNoteIssues = collectFailedCheckNoteIssues(report.runs);
   const status =
     missingAreas.length === 0 &&
     duplicateAreas.length === 0 &&
     missingChecks.length === 0 &&
     duplicateChecks.length === 0 &&
     deviceLabelIssues.length === 0 &&
-    blockedChecks.length === 0
+    blockedChecks.length === 0 &&
+    failedCheckNoteIssues.length === 0
       ? 'COMPLETE_FOR_DAY5_REVIEW'
       : 'NOT_COMPLETE_FOR_DAY5_REVIEW';
 
@@ -218,6 +234,7 @@ export function summarizeWeek1SmokeReport(report: Week1SmokeReport): Week1SmokeR
     deviceLabelIssues,
     blockedChecks,
     failedChecks,
+    failedCheckNoteIssues,
   };
 }
 
@@ -272,7 +289,9 @@ function collectDuplicateChecks(runs: Week1SmokeRun[]): string[] {
 }
 
 function collectDeviceLabelIssues(runs: Week1SmokeRun[]): string[] {
-  const deviceLabels = unique(runs.map((run) => run.deviceLabel.trim()));
+  const deviceLabels = unique(
+    runs.map((run) => normalizePhysicalDeviceLabelForReport(run.deviceLabel)),
+  );
   if (deviceLabels.length <= 1) {
     return [];
   }
@@ -302,6 +321,20 @@ function collectChecksByResult(
   return [...checks];
 }
 
+function collectFailedCheckNoteIssues(runs: Week1SmokeRun[]): string[] {
+  const checks = new Set<string>();
+
+  for (const run of runs) {
+    for (const check of run.checks) {
+      if (check.result === 'fail' && (!check.notes || check.notes.trim().length === 0)) {
+        checks.add(`${run.area}.${check.id}`);
+      }
+    }
+  }
+
+  return orderCheckReferences([...checks]);
+}
+
 function orderCheckReferences(checks: string[]): string[] {
   const order = new Map<string, number>();
   let index = 0;
@@ -328,6 +361,7 @@ function formatWeek1SmokeReportSummary(summary: Week1SmokeReportSummary): string
     `- Device label issues: ${formatList(summary.deviceLabelIssues)}`,
     `- Blocked checks: ${formatList(summary.blockedChecks)}`,
     `- Failed checks: ${formatList(summary.failedChecks)}`,
+    `- Failed check note issues: ${formatList(summary.failedCheckNoteIssues)}`,
   ].join('\n');
 }
 
@@ -358,7 +392,7 @@ function isWeek1SmokeCheckResult(input: unknown): input is Week1SmokeCheckResult
   return input === 'pass' || input === 'fail' || input === 'blocked';
 }
 
-function isIsoTimestamp(input: unknown): input is string {
+export function isIsoTimestamp(input: unknown): input is string {
   if (typeof input !== 'string') {
     return false;
   }
@@ -369,19 +403,6 @@ function isIsoTimestamp(input: unknown): input is string {
 
 function isNonEmptyString(input: unknown): input is string {
   return typeof input === 'string' && input.trim().length > 0;
-}
-
-export function isPhysicalDeviceLabel(input: unknown): input is string {
-  if (!isNonEmptyString(input)) {
-    return false;
-  }
-
-  const normalized = input.trim().toLowerCase();
-  return ![
-    'replace-with-physical-device-model',
-    'device / os',
-    'physical device',
-  ].includes(normalized);
 }
 
 function isObject(input: unknown): input is Record<string, unknown> {
