@@ -1,12 +1,13 @@
 # GUKAK STUDIO 개발 기획서
 
 작성일: 2026-06-02
+상태: 과거 제안서. 현재 제품명과 MVP 화면 기준은 `garak-product-brief.md`와 `screen-flow/current-screen-flow.md`를 따른다.
 
 공모전: 문화체육관광 인공지능·데이터 활용 공모전 제출용
 
 버전: v1.0
 
-문서 책임: 제품/공모전 제안, 사용자 가치, 데모 narrative, 시장/검증 계획을 설명한다. 도메인 용어의 source of truth는 `../domain/README.md`, 기술/런타임 판단의 source of truth는 `../architecture/` 문서를 따른다.
+문서 책임: 제품/공모전 제안, 사용자 가치, 데모 narrative, 시장/검증 계획을 설명한다. 도메인 용어의 기준은 `../domain/README.md`, 기술/런타임 판단의 기준은 `../architecture/` 문서를 따른다.
 
 ---
 
