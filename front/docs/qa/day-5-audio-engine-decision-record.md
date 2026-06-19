@@ -1,7 +1,7 @@
 # Day 5 Audio Engine Decision Record
 
-Status: awaiting physical-device measurements  
-Owner: Front-end spike  
+Status: awaiting physical-device measurements
+Owner: Front-end spike
 Scope: Week 1 final audio-engine gate
 
 ## Responsibility
