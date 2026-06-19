@@ -20,32 +20,6 @@ const manifest: SampleAssetManifest = {
   })),
 };
 
-const mixedInstrumentManifest: SampleAssetManifest = {
-  version: 'test-mixed-instrument-samples',
-  assets: [
-    manifest.assets[0],
-    {
-      id: 'janggu-gungpyeon',
-      instrument: 'janggu',
-      surface: 'gungpyeon',
-      fileUri: 'asset://janggu/gungpyeon.wav',
-      sourceLayer: 'public_asset',
-      sourceName: 'test fixture',
-      licenseNote: 'test only',
-    },
-    {
-      id: 'daegeum-open',
-      instrument: 'daegeum',
-      fingering: 'open',
-      pitchHz: 392,
-      fileUri: 'asset://daegeum/open.wav',
-      sourceLayer: 'public_asset',
-      sourceName: 'test fixture',
-      licenseNote: 'test only',
-    },
-  ],
-};
-
 test('preloads manifest assets into decoded audio buffers', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
@@ -100,30 +74,6 @@ test('creates independent source nodes for at least 8 simultaneous voices', asyn
   expect(runtime.context.sources.every((source, index) => source.buffer === runtime.context.buffers[index])).toBe(true);
   expect(runtime.context.gains.map((gain) => gain.gain.value)).toEqual(Array(8).fill(0.8));
   expect(runtime.context.sources.some((source) => source.stopCalls.length > 0)).toBe(false);
-});
-
-test('starts native voices for preloaded janggu and daegeum samples', async () => {
-  const runtime = createRuntimePort();
-  const engine = new ReactNativeAudioApiSamplerEngine({
-    manifest: mixedInstrumentManifest,
-    runtime,
-  });
-  const result = await engine.preload();
-
-  expect(result.loadedStringIndexes).toEqual([1]);
-
-  engine.handleEvent({ type: 'janggu_hit', tsMs: 100, surface: 'gungpyeon', velocity: 0.6 });
-  engine.handleEvent({ type: 'daegeum_note', tsMs: 120, fingering: 'open', breath: 0.9 });
-
-  expect(runtime.context.decodeInputs).toEqual([
-    'asset://gayageum/01.wav',
-    'asset://janggu/gungpyeon.wav',
-    'asset://daegeum/open.wav',
-  ]);
-  expect(runtime.context.sources).toHaveLength(2);
-  expect(runtime.context.sources[0].buffer).toBe(runtime.context.buffers[1]);
-  expect(runtime.context.sources[1].buffer).toBe(runtime.context.buffers[2]);
-  expect(runtime.context.gains.map((gain) => gain.gain.value)).toEqual([0.6, 0.9]);
 });
 
 test('rejects non-finite React Native Audio API control values before touching native nodes', async () => {
@@ -266,7 +216,6 @@ test('steals the oldest voice only after the configured voice budget is exceeded
   engine.handleEvent({ type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 });
 
   expect(runtime.context.sources[0].stopCalls).toEqual([12.5]);
-  expect(runtime.context.sources[0].onEnded).toBeNull();
   expect(runtime.context.sources[1].stopCalls).toEqual([]);
   expect(runtime.context.sources[2].stopCalls).toEqual([]);
 });
@@ -390,7 +339,7 @@ class FakeAudioBufferSourceNode extends FakeAudioNode {
   buffer: FakeAudioBuffer | null = null;
   detune = new FakeAudioParam();
   playbackRate = new FakeAudioParam();
-  onEnded: ((event: never) => void) | null | undefined;
+  onEnded: ((event: never) => void) | undefined;
   startedAt: number | undefined;
   stopCalls: number[] = [];
 

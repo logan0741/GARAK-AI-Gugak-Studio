@@ -1,13 +1,5 @@
 import { expect, test } from 'vitest';
-import {
-  mapCover,
-  mapDaegeumNote,
-  mapHoldDrag,
-  mapJangguHit,
-  mapRelease,
-  mapSwipeAcrossStrings,
-  mapTap,
-} from '../gestureMapper';
+import { mapCover, mapHoldDrag, mapRelease, mapSwipeAcrossStrings, mapTap } from '../gestureMapper';
 
 test('maps a tap to string_pluck', () => {
   expect(mapTap({ tsMs: 100, stringIndex: 3 })).toEqual({
@@ -41,24 +33,6 @@ test('maps cover to string_mute with clamped strength', () => {
     tsMs: 400,
     stringIndex: 5,
     strength: 1,
-  });
-});
-
-test('maps a janggu pad hit to janggu_hit', () => {
-  expect(mapJangguHit({ tsMs: 460, surface: 'chaepyeon', velocity: 1.2 })).toEqual({
-    type: 'janggu_hit',
-    tsMs: 460,
-    surface: 'chaepyeon',
-    velocity: 1,
-  });
-});
-
-test('maps daegeum fingering and breath input to daegeum_note', () => {
-  expect(mapDaegeumNote({ tsMs: 480, fingering: 'half_open', breath: -0.2 })).toEqual({
-    type: 'daegeum_note',
-    tsMs: 480,
-    fingering: 'half_open',
-    breath: 0,
   });
 });
 

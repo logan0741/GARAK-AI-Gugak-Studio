@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { expect, test } from 'vitest';
-import { isGayageumSampleAsset, validateSampleAssetManifest } from '../../domain/sampleManifest';
+import { validateSampleAssetManifest } from '../../domain/sampleManifest';
 import { createPrototypeSamplerEngineHost, getMissingSampleStringIndexes } from '../prototypeSamplerEngineHost';
 import { prototypeBundledSampleAssetUris } from '../prototypeBundledSampleAssetUris';
 import {
@@ -14,9 +14,7 @@ test('provides a validated 12-string synthetic dev sample manifest', () => {
 
   expect(manifest.version).toBe('dev-synthetic-gayageum-2026-06-08');
   expect(manifest.assets).toHaveLength(12);
-  expect(manifest.assets.filter(isGayageumSampleAsset).map((asset) => asset.stringIndex)).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-  ]);
+  expect(manifest.assets.map((asset) => asset.stringIndex)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   expect(manifest.assets.every((asset) => asset.sourceLayer === 'own_asset')).toBe(true);
   expect(getMissingSampleStringIndexes(manifest)).toEqual([]);
 });

@@ -60,58 +60,6 @@ test('plans an empty replay schedule for a session without events', () => {
   });
 });
 
-test('plans janggu hit replay items with surface sample assets', () => {
-  const session = appendPerformanceEvent(
-    createEmptySession({
-      id: 'janggu-session',
-      createdAt: '2026-06-19T00:00:00.000Z',
-      sampleAssetManifestVersion: 'janggu-manifest-v1',
-    }),
-    { type: 'janggu_hit', tsMs: 640, surface: 'gungpyeon', velocity: 0.75 },
-  );
-
-  expect(planSessionReplay(session, createJangguManifest())).toEqual({
-    durationMs: 0,
-    items: [
-      {
-        delayMs: 0,
-        event: { type: 'janggu_hit', tsMs: 640, surface: 'gungpyeon', velocity: 0.75 },
-        originalIndex: 0,
-        sampleAssetId: 'janggu-gungpyeon',
-        sampleFileUri: 'asset://janggu/gungpyeon.wav',
-      },
-    ],
-    sampleAssetManifestVersion: 'janggu-manifest-v1',
-    sessionId: 'janggu-session',
-  });
-});
-
-test('plans daegeum note replay items with fingering sample assets', () => {
-  const session = appendPerformanceEvent(
-    createEmptySession({
-      id: 'daegeum-session',
-      createdAt: '2026-06-19T00:00:00.000Z',
-      sampleAssetManifestVersion: 'daegeum-manifest-v1',
-    }),
-    { type: 'daegeum_note', tsMs: 720, fingering: 'open', breath: 0.9 },
-  );
-
-  expect(planSessionReplay(session, createDaegeumManifest())).toEqual({
-    durationMs: 0,
-    items: [
-      {
-        delayMs: 0,
-        event: { type: 'daegeum_note', tsMs: 720, fingering: 'open', breath: 0.9 },
-        originalIndex: 0,
-        sampleAssetId: 'daegeum-open',
-        sampleFileUri: 'asset://daegeum/open.wav',
-      },
-    ],
-    sampleAssetManifestVersion: 'daegeum-manifest-v1',
-    sessionId: 'daegeum-session',
-  });
-});
-
 test('rejects replay when the session and sample manifest versions differ', () => {
   const session = appendPerformanceEvent(
     createEmptySession({
@@ -181,40 +129,5 @@ function createManifest(input: { stringIndexes?: number[] } = {}): SampleAssetMa
         stringIndex,
       };
     }),
-  };
-}
-
-function createJangguManifest(): SampleAssetManifest {
-  return {
-    version: 'janggu-manifest-v1',
-    assets: [
-      {
-        fileUri: 'asset://janggu/gungpyeon.wav',
-        id: 'janggu-gungpyeon',
-        instrument: 'janggu',
-        licenseNote: 'technical fixture',
-        sourceLayer: 'own_asset',
-        sourceName: 'dev fixture',
-        surface: 'gungpyeon',
-      },
-    ],
-  };
-}
-
-function createDaegeumManifest(): SampleAssetManifest {
-  return {
-    version: 'daegeum-manifest-v1',
-    assets: [
-      {
-        fileUri: 'asset://daegeum/open.wav',
-        fingering: 'open',
-        id: 'daegeum-open',
-        instrument: 'daegeum',
-        licenseNote: 'technical fixture',
-        pitchHz: 392,
-        sourceLayer: 'own_asset',
-        sourceName: 'dev fixture',
-      },
-    ],
   };
 }

@@ -27,22 +27,6 @@ test('tracks voice budget with voice stealing', () => {
   expect(engine.commands).toContain('steal:voice=voice-1');
 });
 
-test('records janggu hit commands from performance events', () => {
-  const engine = new FakeSamplerEngine();
-
-  engine.handleEvent({ type: 'janggu_hit', tsMs: 100, surface: 'gungpyeon', velocity: 0.75 });
-
-  expect(engine.commands).toEqual(['hit:janggu:surface=gungpyeon:velocity=0.75']);
-});
-
-test('records daegeum note commands from performance events', () => {
-  const engine = new FakeSamplerEngine();
-
-  engine.handleEvent({ type: 'daegeum_note', tsMs: 120, fingering: 'open', breath: 0.9 });
-
-  expect(engine.commands).toEqual(['note:daegeum:fingering=open:breath=0.9']);
-});
-
 test('rejects invalid fake voice budgets before prototype counter setup', () => {
   for (const maxVoices of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
     expect(() => new FakeSamplerEngine({ maxVoices })).toThrow(
