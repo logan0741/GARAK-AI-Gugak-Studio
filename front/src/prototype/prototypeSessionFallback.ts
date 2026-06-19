@@ -17,10 +17,23 @@ export function buildPrototypeSessionFallback(session: Session): PrototypeSessio
     note: SESSION_FALLBACK_NOTE,
     canReplay: session.events.length > 0,
     eventCount: session.events.length,
-    session,
+    session: sanitizeSessionForFallback(session),
   };
 }
 
 export function formatPrototypeSessionFallbackForInspector(session: Session): string {
   return JSON.stringify(buildPrototypeSessionFallback(session), null, 2);
+}
+
+function sanitizeSessionForFallback(session: Session): Session {
+  const recordingUri = session.recordingUri?.trim();
+  if (!recordingUri) {
+    const { recordingUri: _recordingUri, ...sessionWithoutRecordingUri } = session;
+    return sessionWithoutRecordingUri;
+  }
+
+  return {
+    ...session,
+    recordingUri,
+  };
 }

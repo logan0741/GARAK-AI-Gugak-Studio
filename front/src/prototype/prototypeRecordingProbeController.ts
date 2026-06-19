@@ -57,6 +57,10 @@ export async function startPrototypeRecordingProbe(
       return { status: 'failed', errorMessage: result.reason };
     }
 
+    if (!isPositiveFiniteNumber(result.requestedDurationSeconds)) {
+      return { status: 'failed', errorMessage: 'recording_duration_invalid' };
+    }
+
     return {
       status: 'recording',
       requestedDurationSeconds: result.requestedDurationSeconds,

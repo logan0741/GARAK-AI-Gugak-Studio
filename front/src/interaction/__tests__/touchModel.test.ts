@@ -68,6 +68,23 @@ test('does not retain a pointer when touch start rejects a non-finite x coordina
   expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 120, x: 40, y: 25 })).toEqual([]);
 });
 
+test('does not treat non-finite contact area as a tap or mute gesture', () => {
+  const model = createTouchModel({ layout, muteAreaThreshold: 0.65 });
+
+  expect(() =>
+    model.handleFrame({
+      phase: 'start',
+      pointerId: 'p1',
+      tsMs: 100,
+      x: 40,
+      y: 55,
+      contactArea: Number.POSITIVE_INFINITY,
+    }),
+  ).toThrow('touch contactArea must be finite');
+
+  expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 120, x: 40, y: 55 })).toEqual([]);
+});
+
 test('does not advance swipe state when a crossed-string move rejects a non-finite timestamp', () => {
   const model = createTouchModel({ layout });
   model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 15 });
@@ -198,5 +215,24 @@ test('does not clear the active pointer when release rejects a non-finite timest
 
   expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 180, x: 42, y: 55 })).toEqual([
     { type: 'string_release', tsMs: 180, stringIndex: 6 },
+  ]);
+});
+
+test('does not clear the active pointer when release rejects a non-finite y coordinate', () => {
+  const model = createTouchModel({ layout });
+  model.handleFrame({ phase: 'start', pointerId: 'p1', tsMs: 100, x: 40, y: 55 });
+
+  expect(() =>
+    model.handleFrame({
+      phase: 'end',
+      pointerId: 'p1',
+      tsMs: 180,
+      x: 42,
+      y: Number.NaN,
+    }),
+  ).toThrow('touch y must be finite');
+
+  expect(model.handleFrame({ phase: 'end', pointerId: 'p1', tsMs: 190, x: 42, y: 55 })).toEqual([
+    { type: 'string_release', tsMs: 190, stringIndex: 6 },
   ]);
 });

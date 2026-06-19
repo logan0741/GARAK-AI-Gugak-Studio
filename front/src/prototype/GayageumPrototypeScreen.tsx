@@ -24,7 +24,12 @@ import {
   planPitchBendProbe,
   planPolyphonyBurst,
   safelyDispatchEventsToCurrentEngine,
+  formatEngineDispatchFailure,
 } from './gayageumPrototypeController';
+import {
+  createPrototypeJangdanPreview,
+  formatPrototypeJangdanPreview,
+} from './prototypeJangdanPreview';
 import {
   getPrototypeInstrumentMinimumHeight,
   PROTOTYPE_INSTRUMENT_VERTICAL_PADDING,
@@ -68,6 +73,7 @@ import {
 import {
   PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
   prototypeGayageumSampleManifest,
+  summarizePrototypeSampleManifestProvenance,
 } from './prototypeSampleManifest';
 import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
 
@@ -200,7 +206,7 @@ export function GayageumPrototypeScreen() {
     const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
     const dispatchedAtMs = Date.now();
     const currentEngine = engineRef.current;
-    setAudioError(result.ok ? undefined : result.errorMessage);
+    setAudioError(result.ok ? undefined : formatEngineDispatchFailure(result));
     setQaSnapshot((current) =>
       updatePrototypeQaSnapshot(current, {
         activeVoiceCount: countPrototypeAudibleVoices(getFakeEngineSnapshot(currentEngine).activeVoices),
@@ -378,6 +384,14 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const jangdanPreviewText = useMemo(
+    () => formatPrototypeJangdanPreview(createPrototypeJangdanPreview(session.events)),
+    [session.events],
+  );
+  const sampleProvenance = useMemo(
+    () => summarizePrototypeSampleManifestProvenance(prototypeGayageumSampleManifest),
+    [],
+  );
   const canStartRecording = canStartRecordingProbe({
     recordingProbeState,
   });
@@ -530,6 +544,18 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorText}>
           Manifest version: {engineHost.manifestVersion ?? 'none'}
         </Text>
+        <Text style={styles.inspectorText}>
+          Sample provenance: {sampleProvenance.assetCount} assets; own_asset=
+          {sampleProvenance.sourceLayerCounts.own_asset}; public_asset=
+          {sampleProvenance.sourceLayerCounts.public_asset}
+        </Text>
+        <Text style={styles.inspectorText}>
+          Sample source: {sampleProvenance.sourceNames.join(', ') || 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>
+          Sample license: {sampleProvenance.licenseNotes.join(' | ') || 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>Sample quality: {sampleProvenance.qualityNote}</Text>
         <Text style={styles.inspectorText}>Native preload: {formatNativePreloadStatus(engineHost)}</Text>
         <Text style={styles.inspectorText}>
           Recording probe: {formatRecordingProbeState(recordingProbeState)}
@@ -544,6 +570,7 @@ export function GayageumPrototypeScreen() {
           Unexpected sample strings: {engineHost.unexpectedStringIndexes.join(', ') || 'none'}
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
+        <Text style={styles.inspectorText}>Jangdan preview: {jangdanPreviewText}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
         <Text style={styles.inspectorText}>Latest: {latestEvent ? JSON.stringify(latestEvent) : 'none'}</Text>

@@ -12,7 +12,7 @@
 
 > Documentation source of truth: `docs/README.md`. Before executing this plan, read `CONTEXT.md`, `docs/domain/README.md`, `docs/architecture/runtime-architecture.md`, and `docs/architecture/tech-stack.md`.
 
-> Day 5 hard gate: do not expand into studio/demo work until real-device QA confirms touch-to-sound latency, 8-voice polyphony, pitch bend, glissando, mute release, and session fallback criteria.
+> Week 2 physical-device hard gate: do not publish a final audio-engine selection or expand into studio/demo work until physical-device QA confirms touch-to-sound latency, 8-voice polyphony, pitch bend, glissando, mute release, and session fallback criteria. Week 1 may continue non-device implementation work on the domain model, prototype UI, sample fixtures, recording fallback, and QA harness.
 
 ---
 

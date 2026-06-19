@@ -83,15 +83,27 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }) {
     this.manifest = input.manifest;
     this.runtime = input.runtime;
-    this.maxVoices = input.maxVoices ?? DEFAULT_MAX_VOICES;
+    this.maxVoices = normalizeMaxVoices(input.maxVoices ?? DEFAULT_MAX_VOICES);
   }
 
   async preload(): Promise<ReactNativeAudioApiPreloadResult> {
-    this.context = this.runtime.createAudioContext();
+    this.context = undefined;
+    this.buffersByString.clear();
+    const context = this.runtime.createAudioContext();
+    const buffersByString = new Map<number, unknown>();
 
     for (const asset of this.manifest.assets) {
-      const buffer = await this.context.decodeAudioData(asset.fileUri);
-      this.buffersByString.set(asset.stringIndex, buffer);
+      const buffer = await context.decodeAudioData(asset.fileUri);
+      if (buffer === null || buffer === undefined) {
+        throw new Error(`Decoded react-native-audio-api buffer missing for string ${asset.stringIndex}`);
+      }
+
+      buffersByString.set(asset.stringIndex, buffer);
+    }
+
+    this.context = context;
+    for (const [stringIndex, buffer] of buffersByString) {
+      this.buffersByString.set(stringIndex, buffer);
     }
 
     return {
@@ -244,6 +256,14 @@ function assertFiniteControlValue(value: number, fieldName: string): void {
   if (!Number.isFinite(value)) {
     throw new Error(`${fieldName} must be finite`);
   }
+}
+
+function normalizeMaxVoices(maxVoices: number): number {
+  if (!Number.isInteger(maxVoices) || maxVoices < 1) {
+    throw new Error('maxVoices must be a positive integer');
+  }
+
+  return maxVoices;
 }
 
 function removeMatching<T>(items: T[], predicate: (item: T) => boolean): boolean {

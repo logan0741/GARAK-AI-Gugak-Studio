@@ -5,6 +5,7 @@ import { createPrototypeSamplerEngineHost, getMissingSampleStringIndexes } from 
 import {
   prototypeGayageumSampleManifest,
   resolvePrototypeSampleAssetPath,
+  summarizePrototypeSampleManifestProvenance,
 } from '../prototypeSampleManifest';
 
 test('provides a validated 12-string synthetic dev sample manifest', () => {
@@ -26,6 +27,22 @@ test('points every dev sample manifest entry at a local wav fixture', () => {
     expect(header.slice(0, 4)).toBe('RIFF');
     expect(header.slice(8, 12)).toBe('WAVE');
   }
+});
+
+test('summarizes dev sample provenance for the prototype inspector', () => {
+  expect(summarizePrototypeSampleManifestProvenance(prototypeGayageumSampleManifest)).toEqual({
+    assetCount: 12,
+    licenseNotes: [
+      'Generated in-repo for Week 1 technical QA only; replace before release.',
+    ],
+    qualityNote: 'Technical fixture only; replace before release-quality sound decisions.',
+    releaseReady: false,
+    sourceLayerCounts: {
+      own_asset: 12,
+      public_asset: 0,
+    },
+    sourceNames: ['GUKAK STUDIO synthetic dev sample'],
+  });
 });
 
 test('allows the prototype host to become native-candidate-ready after dev sample preload', () => {
