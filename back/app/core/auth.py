@@ -1,0 +1,67 @@
+import asyncio
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
+from app.core.config import settings
+from app.services.auth_service import verify_access_token
+
+security = HTTPBearer(auto_error=False)
+
+
+def _verify_google_token(token: str) -> dict:
+    """동기 함수. asyncio.to_thread()로 감싸서 호출할 것."""
+    return id_token.verify_oauth2_token(
+        token,
+        google_requests.Request(),
+        settings.google_client_id,
+    )
+
+
+async def verify_google_id_token(id_token_str: str) -> dict:
+    """Google ID Token 검증. id_info(sub, email 등) 반환."""
+    try:
+        return await asyncio.to_thread(_verify_google_token, id_token_str)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Google ID token",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable",
+        ) from exc
+
+
+async def get_current_user_payload(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> dict:
+    """백엔드 JWT 검증 후 payload 전체 반환.
+
+    BYPASS_AUTH=true 이면 dev_user payload 반환 (로컬 개발용).
+    """
+    if settings.bypass_auth:
+        return {"sub": "dev_user", "email": "dev@example.com"}
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+        )
+    return verify_access_token(credentials.credentials)
+
+
+async def get_current_user(
+    payload: dict = Depends(get_current_user_payload),
+) -> str:
+    """백엔드 JWT 검증 후 user_id만 반환 (대부분의 보호 경로용)."""
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing subject",
+        )
+    return user_id

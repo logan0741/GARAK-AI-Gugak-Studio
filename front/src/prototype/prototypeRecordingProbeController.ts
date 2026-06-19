@@ -1,0 +1,160 @@
+import { SamplerEngine } from '../audio/samplerEngine';
+
+type RecordingProbeStartResponse =
+  | { ok: true; requestedDurationSeconds: number }
+  | { ok: false; reason: string };
+
+type RecordingProbeStopResponse = {
+  ok: true;
+  capturedSeconds: number;
+  recordingUri: string | null;
+};
+
+type RecordingProbePlaybackResponse =
+  | { ok: true; recordingUri: string }
+  | { ok: false; reason: string };
+
+type RecordingProbeCapableEngine = SamplerEngine & {
+  startRecordingProbe(durationSeconds: number): Promise<RecordingProbeStartResponse>;
+  stopRecordingProbe(): Promise<RecordingProbeStopResponse>;
+};
+
+type RecordingProbePlaybackCapableEngine = SamplerEngine & {
+  playRecordingProbe(recordingUri: string): Promise<RecordingProbePlaybackResponse>;
+};
+
+export type PrototypeRecordingProbeStartResult =
+  | { status: 'recording'; requestedDurationSeconds: number }
+  | { status: 'unsupported'; reason: 'recording_probe_not_supported' }
+  | { status: 'failed'; errorMessage: string };
+
+export type PrototypeRecordingProbeStopResult =
+  | { status: 'captured'; capturedSeconds: number; recordingUri: string | null }
+  | { status: 'unsupported'; reason: 'recording_probe_not_supported' }
+  | { status: 'failed'; errorMessage: string };
+
+export type PrototypeRecordingProbePlaybackResult =
+  | { status: 'playing'; recordingUri: string }
+  | { status: 'unsupported'; reason: 'recording_playback_probe_not_supported' }
+  | { status: 'failed'; errorMessage: string };
+
+export async function startPrototypeRecordingProbe(
+  engine: SamplerEngine,
+  durationSeconds: number,
+): Promise<PrototypeRecordingProbeStartResult> {
+  if (!isPositiveFiniteNumber(durationSeconds)) {
+    return { status: 'failed', errorMessage: 'recording_duration_invalid' };
+  }
+
+  if (!isRecordingProbeCapableEngine(engine)) {
+    return { status: 'unsupported', reason: 'recording_probe_not_supported' };
+  }
+
+  try {
+    const result = await engine.startRecordingProbe(durationSeconds);
+
+    if (!result.ok) {
+      return { status: 'failed', errorMessage: result.reason };
+    }
+
+    if (!isPositiveFiniteNumber(result.requestedDurationSeconds)) {
+      return { status: 'failed', errorMessage: 'recording_duration_invalid' };
+    }
+
+    return {
+      status: 'recording',
+      requestedDurationSeconds: result.requestedDurationSeconds,
+    };
+  } catch (error: unknown) {
+    return { status: 'failed', errorMessage: getErrorMessage(error) };
+  }
+}
+
+export async function stopPrototypeRecordingProbe(
+  engine: SamplerEngine,
+): Promise<PrototypeRecordingProbeStopResult> {
+  if (!isRecordingProbeCapableEngine(engine)) {
+    return { status: 'unsupported', reason: 'recording_probe_not_supported' };
+  }
+
+  try {
+    const result = await engine.stopRecordingProbe();
+
+    return {
+      status: 'captured',
+      capturedSeconds: normalizeCapturedSeconds(result.capturedSeconds),
+      recordingUri: normalizeRecordingUri(result.recordingUri),
+    };
+  } catch (error: unknown) {
+    return { status: 'failed', errorMessage: getErrorMessage(error) };
+  }
+}
+
+export async function playCapturedPrototypeRecordingProbe(
+  engine: SamplerEngine,
+  recordingUri: string,
+): Promise<PrototypeRecordingProbePlaybackResult> {
+  const normalizedRecordingUri = normalizeRecordingUri(recordingUri);
+  if (normalizedRecordingUri === null) {
+    return { status: 'failed', errorMessage: 'recording_playback_uri_missing' };
+  }
+
+  if (!isRecordingProbePlaybackCapableEngine(engine)) {
+    return { status: 'unsupported', reason: 'recording_playback_probe_not_supported' };
+  }
+
+  try {
+    const result = await engine.playRecordingProbe(normalizedRecordingUri);
+
+    if (!result.ok) {
+      return { status: 'failed', errorMessage: result.reason };
+    }
+
+    return {
+      status: 'playing',
+      recordingUri: normalizeRecordingUri(result.recordingUri) ?? normalizedRecordingUri,
+    };
+  } catch (error: unknown) {
+    return { status: 'failed', errorMessage: getErrorMessage(error) };
+  }
+}
+
+function isRecordingProbeCapableEngine(engine: SamplerEngine): engine is RecordingProbeCapableEngine {
+  const candidate = engine as Partial<RecordingProbeCapableEngine>;
+  return (
+    typeof candidate.startRecordingProbe === 'function' &&
+    typeof candidate.stopRecordingProbe === 'function'
+  );
+}
+
+function isRecordingProbePlaybackCapableEngine(
+  engine: SamplerEngine,
+): engine is RecordingProbePlaybackCapableEngine {
+  const candidate = engine as Partial<RecordingProbePlaybackCapableEngine>;
+  return typeof candidate.playRecordingProbe === 'function';
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function normalizeRecordingUri(recordingUri: string | null): string | null {
+  const normalizedRecordingUri = recordingUri?.trim() ?? '';
+  if (normalizedRecordingUri.length === 0) {
+    return null;
+  }
+
+  return normalizedRecordingUri;
+}
+
+function normalizeCapturedSeconds(capturedSeconds: number): number {
+  if (!Number.isFinite(capturedSeconds) || capturedSeconds < 0) {
+    return 0;
+  }
+
+  return capturedSeconds;
+}
+
+function isPositiveFiniteNumber(input: number): boolean {
+  return Number.isFinite(input) && input > 0;
+}
