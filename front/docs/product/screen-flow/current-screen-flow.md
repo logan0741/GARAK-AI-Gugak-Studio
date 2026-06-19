@@ -4,7 +4,7 @@
 작성일: 2026-06-11
 문서 책임: GARAK의 현재 화면 목적, CTA, 화면 연결, 데이터 흐름을 한곳에 정리한다.
 
-관련 문서: `../garak-product-brief.md`, `screen-composition-standards.md`, `../../document-authority-index.md`, `../../architecture/ai-model-pipeline-contract.md`
+관련 문서: `../garak-product-brief.md`, `screen-composition-standards.md`, `../../design/DESIGN.md`, `../../document-authority-index.md`, `../../architecture/ai-model-pipeline-contract.md`
 
 이 문서는 구현 계획이 아니다. 실제 구현 순서, 파일 경로, 테스트 명령은 이후 `docs/plans/implementation/` 문서에서 다룬다. 화면 변경 이력은 `changes/` 하위 문서에 분리한다.
 
@@ -88,6 +88,13 @@
   - `GARAK` 로고와 컬러 시안
   - 홈, 모드 선택, 악기 선택, 민요 선택, 연주 미리보기
   - 연주 완료, 트랙/레이어 편집, 마이, 쉐어 화면 와이어프레임
+- 2026-06-19 추가 확인:
+  - off-white, deep navy, red, amber 중심의 브랜드 색 후보
+  - `logo1`, `logo2`, `logo3`로 관리할 수 있는 온보딩형 `GARAK` 로고 화면 3종
+  - primary button, segmented control, home quick access, 하단 progress/action 요소
+  - 자세한 색상, 로고, UI 요소 해석은 `../../design/DESIGN.md`에서 관리한다.
+
+현재 Figma 와이어프레임은 완성본이 아니다. 더 구체화된 화면이 있어도 앱 흐름의 최종 승인안으로 보지 않으며, 기존 제품 기준과 충돌하는 항목은 `../../design/DESIGN.md`의 충돌 감지 기준에 따라 기록한다.
 
 ### HTML 와이어프레임
 

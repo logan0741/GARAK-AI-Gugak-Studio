@@ -23,6 +23,7 @@
 | 제품 핵심 원칙과 MVP 경계는 무엇인가? | `CONTEXT.md` | `docs/product/garak-product-brief.md` |
 | 화면 목록, CTA, 연결, 데이터 흐름은 무엇인가? | `docs/product/screen-flow/current-screen-flow.md` | `docs/product/screen-flow/changes/` |
 | 화면 구성의 정보 위계, 상태, 접근성 기준은 무엇인가? | `docs/product/screen-flow/screen-composition-standards.md` | `docs/reviews/` |
+| 색상, 로고 후보, 기초 UI 요소, Figma 디자인 시스템 해석 기준은 무엇인가? | `docs/design/DESIGN.md` | `docs/product/screen-flow/screen-composition-standards.md`, `docs/reviews/` |
 | 화면 변경 이력은 어디에 남기는가? | `docs/product/screen-flow/changes/` | `docs/product/screen-flow/current-screen-flow.md` |
 | 도메인 용어, aggregate, invariant는 무엇인가? | `docs/domain/README.md` | `docs/architecture/gukak-studio-erd.md` |
 | 세션 저장 구조와 엔티티 관계는 무엇인가? | `docs/architecture/gukak-studio-erd.md` | `docs/domain/README.md` |
@@ -44,10 +45,13 @@
 
 MVP 악기 범위는 가야금, 장구, 대금이다. 현재 코드의 가야금 프로토타입은 기술 검증의 출발점이지 제품 전체 범위를 제한하는 기준이 아니다.
 
+현재 Figma 디자인 시스템과 와이어프레임은 구현 참고용 기준 후보이지 최종 승인본이 아니다. 색상, 로고 후보, UI 요소 해석은 `docs/design/DESIGN.md`를 따르되, 화면 흐름이나 제품 원칙과 충돌하면 충돌을 먼저 기록하고 담당 기준 문서를 확인한다.
+
 ## 변경 반영 순서
 
 1. 제품 방향이 바뀌면 `docs/product/garak-product-brief.md`를 먼저 갱신한다.
 2. 화면 구조가 바뀌면 `docs/product/screen-flow/current-screen-flow.md`를 갱신한다.
-3. 변경 이유와 이전안 대비 차이는 `docs/product/screen-flow/changes/`에 별도 파일로 남긴다.
-4. 도메인 모델이나 저장 구조가 바뀌면 `docs/domain/README.md`와 `docs/architecture/gukak-studio-erd.md`를 함께 확인한다.
-5. 기술 선택이 바뀌면 `docs/architecture/tech-stack.md`를 갱신하고, 되돌리기 어려운 결정이면 `docs/adr/`에 남긴다.
+3. 색상, 로고, 기초 UI 요소 해석이 바뀌면 `docs/design/DESIGN.md`를 갱신한다.
+4. 변경 이유와 이전안 대비 차이는 `docs/product/screen-flow/changes/`에 별도 파일로 남긴다.
+5. 도메인 모델이나 저장 구조가 바뀌면 `docs/domain/README.md`와 `docs/architecture/gukak-studio-erd.md`를 함께 확인한다.
+6. 기술 선택이 바뀌면 `docs/architecture/tech-stack.md`를 갱신하고, 되돌리기 어려운 결정이면 `docs/adr/`에 남긴다.

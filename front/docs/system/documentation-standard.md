@@ -23,6 +23,7 @@
 | 내용 | 위치 |
 | --- | --- |
 | 제품 가치, 사용자, 심사 설득 | `docs/product/` |
+| 색상, 로고 후보, Figma 디자인 시스템 해석 | `docs/design/` |
 | DDD 용어, aggregate, invariant | `docs/domain/` |
 | 런타임 경계, ERD, 기술 스택 | `docs/architecture/` |
 | 되돌리기 어려운 결정 | `docs/adr/` |
