@@ -16,6 +16,7 @@ Use this document when validating whether `expo-audio` can cover basic playback 
 | `src/audio/expoAudioRuntime.ts` | Only runtime bridge that imports `expo-audio`. Keeps UI and domain code independent from the concrete library and reuses the SDK source resolver and recording option normalizer. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that calls optional recording probe methods and reports unsupported, failed, recording, captured, or playback states without breaking session fallback. |
 | `src/audio/__tests__/expoAudioSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, playback controls, bend/mute/release mapping, and recording probe lifecycle. |
+| `src/prototype/prototypeQaSnapshot.ts` | Inspector QA read model. Records prototype capture seconds, URI availability, playback confirmation, and fallback reason under `observedPrototypeRecording` without promoting it to final physical-device evidence. |
 | `src/audio/__tests__/expoAudioRuntime.test.ts` | Mocked package-delegation test for the installed `expo-audio` API surface. |
 
 ## Automated Verification
@@ -40,7 +41,7 @@ Prerequisite: run `npm run samples:generate-dev` from `front/` before building t
 
 The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, and recording plumbing, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
 
-Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
+Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ExpoAudioSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes; the native sampler factory also rejects incomplete manifests before creating a candidate runtime. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
 
 Use a development client, not Expo Go, because this candidate uses native audio modules and microphone permissions:
 
@@ -56,7 +57,9 @@ For an EAS development build, use the `development` profile in `eas.json`.
 4. Trigger 12 sequential `glissando_step` events and confirm every string produces a sound.
 5. Press `Rec 10s`, perform a short interaction, then press `Stop Rec`.
 6. Record the returned `capturedSeconds` and `recordingUri`.
-7. Press `Play Rec` and confirm the captured performance plays back from the returned URI.
+7. Confirm `Probe draft (estimate only, fake engine counters)` includes `observedPrototypeRecording.capturedSeconds` and `uriAvailable`. If recording fails, confirm `observedPrototypeRecording.fallbackReason` records the native failure reason.
+8. Press `Play Rec` and confirm the captured performance plays back from the returned URI.
+9. Confirm `observedPrototypeRecording.playbackConfirmed` becomes `true`.
 
 ## Result Table
 
@@ -71,6 +74,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 | Recording permission | Permission request succeeds on device |  |  |
 | 10-second capture | `stopRecordingProbe()` returns about 10 seconds and a non-empty URI |  |  |
 | Captured playback | `Play Rec` plays the captured recording URI without throwing |  | Confirms self-playback feasibility, not final sound quality. |
+| Inspector recording observation | `observedPrototypeRecording` records capture seconds, URI availability, playback confirmation, and any fallback reason |  | Still copy values into a physical-device probe record manually before Day 5. |
 
 ## Handoff To Day 5
 

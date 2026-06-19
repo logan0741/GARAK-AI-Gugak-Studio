@@ -19,6 +19,15 @@ export function planGlissando(input: { nowMs: number; stringIndexes: number[] })
   });
 }
 
+export function planPolyphonyBurst(input: { nowMs: number; stringIndexes: number[] }): PerformanceEvent[] {
+  return input.stringIndexes.map((stringIndex) =>
+    mapTap({
+      tsMs: input.nowMs,
+      stringIndex,
+    }),
+  );
+}
+
 export function dispatchEventsToEngine(engine: SamplerEngine, events: PerformanceEvent[]): void {
   for (const event of events) {
     engine.handleEvent(event);

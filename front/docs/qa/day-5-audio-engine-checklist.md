@@ -66,6 +66,10 @@ During rehearsal, `src/audio/audioEngineProbeDraft.ts` can create an `estimate` 
 
 The prototype inspector also reports `observedFakeCounters.eventDispatchLatency`. This is a debug-only measurement from the first `PerformanceEvent.tsMs` in a handled batch to the moment the current `SamplerEngine` dispatch call returns. It is useful for spotting JS event pipeline regressions, but it is not touch-to-sound latency evidence and must not be copied into `touchToSoundLatencyMs`.
 
+The copyable prototype probe draft includes `observedRuntime` for handoff traceability. Use it to confirm whether the selected candidate actually became the active runtime on the device build, but keep all final gate fields under a separate `physical-device` probe.
+
+If a candidate cannot start, stop, or play a recording probe, copy `observedPrototypeRecording.fallbackReason` and the `Session fallback` JSON. This records the fallback decision for review, but it is not a passing 10-second capture result.
+
 ```ts
 {
   candidate: 'react-native-audio-api' | 'expo-audio',
@@ -96,26 +100,28 @@ After exactly one physical-device probe per candidate is recorded, run the hando
 
 ## Current Prototype Smoke Test
 
-The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, missing sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, and a copyable `Session fallback` JSON block in the prototype inspector.
+The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, an 8-voice polyphony burst control, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, recording observation counters, missing sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, and a copyable `Session fallback` JSON block in the prototype inspector.
 
 1. Open the 12-string prototype screen on a physical device or Expo dev build.
-2. Confirm the inspector separates requested candidate from active runtime. If no complete 12-string sample manifest is passed into the host, active runtime must remain `fake-prototype`.
-3. Confirm sample manifest version is `dev-synthetic-gayageum-2026-06-08`.
-4. Confirm a complete manifest moves through `native_candidate_preloading`; active runtime must remain `fake-prototype` until native preload succeeds.
-5. If native preload fails, confirm runtime status is `native_candidate_failed` and session event logging still works through the fake fallback.
-6. If native preload succeeds, confirm runtime status is `native_candidate_ready` and active runtime matches the requested candidate.
-7. Press `Rec 10s` and confirm unsupported engines report `recording_probe_not_supported` without stopping session event logging.
-8. If active runtime is `expo-audio`, press `Rec 10s`, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector. Then press `Play Rec` and confirm the URI can be played back.
-9. Touch each string once from 1 to 12 and confirm `string_pluck` appears on touch start and `string_release` appears on touch end.
-10. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
-11. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
-12. Use a broad or multi-touch contact and confirm `string_mute` appears.
-13. Press the glissando control and confirm the event count increments by 12.
-14. While active runtime is `fake-prototype`, confirm audible fake voice count grows for plucks and does not count released voices.
-15. Confirm audio status remains `ok` while the current engine handles events.
-16. Confirm the probe draft exposes `observedFakeCounters.eventDispatchLatency` after at least one handled event batch, and keep `probeTemplate.touchToSoundLatencyMs` as `null` until physical-device audio latency is measured.
-17. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, and preserves the full `Session.events` list even if recording is unsupported or fails.
-18. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, keeps unmeasured physical-device fields as `null`, and does not show a Day 5 decision or selected engine.
+2. Enter the tested physical device and OS in `Device / OS`, for example `Pixel 8 / Android 15`, and confirm `probeTemplate.deviceLabel` no longer uses `replace-with-physical-device-model`.
+3. Confirm the inspector separates requested candidate from active runtime. If no complete 12-string sample manifest is passed into the host, active runtime must remain `fake-prototype`.
+4. Confirm sample manifest version is `dev-synthetic-gayageum-2026-06-08`.
+5. Confirm a complete manifest moves through `native_candidate_preloading`; active runtime must remain `fake-prototype` until native preload succeeds.
+6. If native preload fails, confirm runtime status is `native_candidate_failed` and session event logging still works through the fake fallback.
+7. If native preload succeeds, confirm runtime status is `native_candidate_ready` and active runtime matches the requested candidate.
+8. Press `Rec 10s` and confirm unsupported engines report `recording_probe_not_supported` without stopping session event logging.
+9. If active runtime is `expo-audio`, press `Rec 10s`, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector. Confirm `observedPrototypeRecording.capturedSeconds` and `uriAvailable` in the probe draft. Then press `Play Rec` and confirm `playbackConfirmed` becomes `true`. If recording is unsupported or fails, confirm `observedPrototypeRecording.fallbackReason` records the reason.
+10. Touch each string once from 1 to 12 and confirm `string_pluck` appears on touch start and `string_release` appears on touch end.
+11. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
+12. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
+13. Use a broad or multi-touch contact and confirm `string_mute` appears.
+14. Press `Glissando` and confirm the event count increments by 12.
+15. Press `8 Voice` and confirm the event count increments by 8. On device, listen for dropout or voice stealing; on web fake runtime, confirm audible fake voice count reaches at least 8 before release cleanup.
+16. While active runtime is `fake-prototype`, confirm audible fake voice count grows for plucks and does not count released voices.
+17. Confirm audio status remains `ok` while the current engine handles events.
+18. Confirm the probe draft exposes `observedFakeCounters.eventDispatchLatency` after at least one handled event batch, and keep `probeTemplate.touchToSoundLatencyMs` as `null` until physical-device audio latency is measured.
+19. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, and preserves the full `Session.events` list even if recording is unsupported or fails.
+20. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, exposes `observedRuntime` with requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error if present, keeps unmeasured physical-device fields as `null`, exposes recording observations and fallback reason only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
 
 ## Day 5 Full Test Script
 
@@ -123,7 +129,7 @@ Prerequisite: before running this full script, the active `SamplerEngine` candid
 
 1. Open the 12-string prototype screen on a physical device.
 2. Tap each string once from 1 to 12 and verify immediate sound response.
-3. Rapidly trigger at least 8 strings and listen for voice dropout or stealing artifacts.
+3. Press `8 Voice` and listen for voice dropout or stealing artifacts across the simultaneous 8-string burst.
 4. Hold one active string and drag to test pitch bend continuity.
 5. Swipe across all 12 strings in both directions and verify no missing string trigger.
 6. Trigger a mute or cover gesture and listen for pop noise or unnatural cutoff.

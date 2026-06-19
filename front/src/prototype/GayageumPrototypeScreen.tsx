@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
@@ -19,6 +20,7 @@ import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
+  planPolyphonyBurst,
   safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
 import {
@@ -32,8 +34,13 @@ import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
+  recordPrototypeRecordingCapture,
+  recordPrototypeRecordingFallback,
+  recordPrototypeRecordingPlayback,
+  updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
+import { createPrototypeRuntimeObservation } from './prototypeRuntimeObservation';
 import {
   playCapturedPrototypeRecordingProbe,
   startPrototypeRecordingProbe,
@@ -41,6 +48,7 @@ import {
 } from './prototypeRecordingProbeController';
 import {
   formatRecordingProbeState,
+  getRecordingProbeFallbackReason,
   selectPlayableRecordingUri,
   type RecordingProbeUiState,
 } from './prototypeRecordingProbeUi';
@@ -48,7 +56,7 @@ import { shouldStartPrototypeNativeAudioCandidate } from './prototypePlatform';
 import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
 import {
   createPrototypeSamplerEngineHost,
-  PrototypeNativeCandidateState,
+  type PrototypeNativeCandidateState,
 } from './prototypeSamplerEngineHost';
 import {
   PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
@@ -57,6 +65,7 @@ import {
 import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
+const POLYPHONY_BURST_STRINGS = ALL_STRINGS.slice(0, 8);
 const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
   stringCount: PROTOTYPE_STRING_COUNT,
 });
@@ -141,6 +150,7 @@ export function GayageumPrototypeScreen() {
   const engine = engineHost.engine;
   const engineRef = useRef(engine);
   engineRef.current = engine;
+  const [deviceLabelInput, setDeviceLabelInput] = useState('');
   const [recordingProbeState, setRecordingProbeState] = useState<RecordingProbeUiState>({
     status: 'idle',
   });
@@ -200,7 +210,17 @@ export function GayageumPrototypeScreen() {
     setQaSnapshot(
       createInitialPrototypeQaSnapshot({
         candidate,
-        deviceLabel: DEFAULT_DEVICE_LABEL,
+        deviceLabel: deviceLabelInput.trim() || DEFAULT_DEVICE_LABEL,
+        measuredAt: new Date().toISOString(),
+      }),
+    );
+  }
+
+  function handleDeviceLabelChange(deviceLabel: string) {
+    setDeviceLabelInput(deviceLabel);
+    setQaSnapshot((current) =>
+      updatePrototypeQaDeviceLabel(current, {
+        deviceLabel,
         measuredAt: new Date().toISOString(),
       }),
     );
@@ -215,9 +235,19 @@ export function GayageumPrototypeScreen() {
     applyPerformanceEvents(events);
   }
 
+  function handlePolyphonyBurstPress() {
+    const events = planPolyphonyBurst({
+      nowMs: Date.now(),
+      stringIndexes: POLYPHONY_BURST_STRINGS,
+    });
+
+    applyPerformanceEvents(events);
+  }
+
   async function handleStartRecordingProbe() {
     const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
     setRecordingProbeState(result);
+    recordRecordingProbeFallback(result);
   }
 
   async function handleStopRecordingProbe() {
@@ -225,9 +255,18 @@ export function GayageumPrototypeScreen() {
     setRecordingProbeState(result);
     if (result.status === 'captured') {
       const { recordingUri } = result;
+      setQaSnapshot((current) =>
+        recordPrototypeRecordingCapture(current, {
+          capturedSeconds: result.capturedSeconds,
+          measuredAt: new Date().toISOString(),
+          recordingUri,
+        }),
+      );
       if (typeof recordingUri === 'string') {
         setSession((current) => attachRecordingUriToSession(current, recordingUri));
       }
+    } else {
+      recordRecordingProbeFallback(result);
     }
   }
 
@@ -237,12 +276,35 @@ export function GayageumPrototypeScreen() {
       sessionRecordingUri: session.recordingUri,
     });
     if (recordingUri === null) {
-      setRecordingProbeState({ status: 'failed', errorMessage: 'recording_playback_uri_missing' });
+      const result = { status: 'failed', errorMessage: 'recording_playback_uri_missing' } as const;
+      setRecordingProbeState(result);
+      recordRecordingProbeFallback(result);
       return;
     }
 
     const result = await playCapturedPrototypeRecordingProbe(engineRef.current, recordingUri);
     setRecordingProbeState(result);
+    recordRecordingProbeFallback(result);
+    setQaSnapshot((current) =>
+      recordPrototypeRecordingPlayback(current, {
+        measuredAt: new Date().toISOString(),
+        playbackConfirmed: result.status === 'playing',
+      }),
+    );
+  }
+
+  function recordRecordingProbeFallback(state: RecordingProbeUiState) {
+    const fallbackReason = getRecordingProbeFallbackReason(state);
+    if (fallbackReason === null) {
+      return;
+    }
+
+    setQaSnapshot((current) =>
+      recordPrototypeRecordingFallback(current, {
+        fallbackReason,
+        measuredAt: new Date().toISOString(),
+      }),
+    );
   }
 
   function handleTouchFrame(phase: TouchFrame['phase'], event: GestureResponderEvent, gestureState: PanResponderGestureState) {
@@ -278,7 +340,10 @@ export function GayageumPrototypeScreen() {
   const activeVoices = fakeEngineSnapshot.activeVoices;
   const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
   const commands = fakeEngineSnapshot.commands;
-  const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
+  const probeDraftText = formatPrototypeProbeDraftForInspector(
+    qaSnapshot,
+    createPrototypeRuntimeObservation(engineHost),
+  );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
   const playableRecordingUri = selectPlayableRecordingUri({
     recordingProbeState,
@@ -299,6 +364,14 @@ export function GayageumPrototypeScreen() {
           style={styles.glissandoButton}
         >
           <Text style={styles.glissandoButtonText}>Glissando</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play eight voice polyphony burst"
+          onPress={handlePolyphonyBurstPress}
+          style={styles.polyphonyButton}
+        >
+          <Text style={styles.glissandoButtonText}>8 Voice</Text>
         </Pressable>
       </View>
 
@@ -325,6 +398,16 @@ export function GayageumPrototypeScreen() {
           </Pressable>
         ))}
       </View>
+
+      <TextInput
+        accessibilityLabel="Physical device and OS label for probe draft"
+        autoCapitalize="words"
+        onChangeText={handleDeviceLabelChange}
+        placeholder="Device / OS"
+        placeholderTextColor="#6f7b76"
+        style={styles.deviceLabelInput}
+        value={deviceLabelInput}
+      />
 
       <View style={styles.recordingControls}>
         <Pressable
@@ -491,6 +574,15 @@ const styles = StyleSheet.create({
     minWidth: 118,
     paddingHorizontal: 14,
   },
+  polyphonyButton: {
+    alignItems: 'center',
+    backgroundColor: '#80b8aa',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 118,
+    paddingHorizontal: 14,
+  },
   glissandoButtonText: {
     color: '#101418',
     fontSize: 14,
@@ -499,6 +591,19 @@ const styles = StyleSheet.create({
   probeControls: {
     flexDirection: 'row',
     gap: 8,
+  },
+  deviceLabelInput: {
+    alignSelf: 'stretch',
+    backgroundColor: '#eef3ef',
+    borderColor: '#80b8aa',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: '#101418',
+    fontSize: 12,
+    maxWidth: 340,
+    minHeight: 36,
+    minWidth: 0,
+    paddingHorizontal: 10,
   },
   recordingControls: {
     flexDirection: 'row',

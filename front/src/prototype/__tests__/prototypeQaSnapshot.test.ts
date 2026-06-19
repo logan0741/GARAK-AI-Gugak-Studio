@@ -4,6 +4,10 @@ import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
+  recordPrototypeRecordingCapture,
+  recordPrototypeRecordingFallback,
+  recordPrototypeRecordingPlayback,
+  updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from '../prototypeQaSnapshot';
 
@@ -92,6 +96,12 @@ test('formats a copyable estimate probe draft for the inspector', () => {
       pitchBendObserved: false,
       sessionFallbackPreserved: false,
     },
+    observedPrototypeRecording: {
+      capturedSeconds: null,
+      fallbackReason: null,
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
     probeTemplate: {
       candidate: 'expo-audio',
       evidenceSource: 'estimate',
@@ -105,6 +115,41 @@ test('formats a copyable estimate probe draft for the inspector', () => {
       preloadStable: null,
       sessionFallbackPreserved: null,
       recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('includes runtime observation in the copyable estimate probe draft', () => {
+  const snapshot = createInitialPrototypeQaSnapshot({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T04:15:00.000Z',
+  });
+
+  expect(
+    JSON.parse(
+      formatPrototypeProbeDraftForInspector(snapshot, {
+        activeRuntime: 'fake-prototype',
+        nativePreloadStatus: 'failed',
+        preloadErrorMessage: 'native audio candidate requires Expo dev build on iOS or Android',
+        requestedCandidate: 'expo-audio',
+        runtimeStatus: 'native_candidate_failed',
+        sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+      }),
+    ),
+  ).toMatchObject({
+    measuredCandidateEvidence: false,
+    observedRuntime: {
+      activeRuntime: 'fake-prototype',
+      nativePreloadStatus: 'failed',
+      preloadErrorMessage: 'native audio candidate requires Expo dev build on iOS or Android',
+      requestedCandidate: 'expo-audio',
+      runtimeStatus: 'native_candidate_failed',
+      sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+    },
+    probeTemplate: {
+      candidate: 'expo-audio',
+      evidenceSource: 'estimate',
     },
   });
 });
@@ -153,6 +198,132 @@ test('tracks event batch dispatch latency as debug-only evidence', () => {
     },
     probeTemplate: {
       touchToSoundLatencyMs: null,
+    },
+  });
+});
+
+test('records prototype recording capture and playback observations without claiming final evidence', () => {
+  const captured = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:30:00.000Z',
+    }),
+    {
+      capturedSeconds: 10.4,
+      measuredAt: '2026-06-08T04:30:12.000Z',
+      recordingUri: 'file://recording.m4a',
+    },
+  );
+  const played = recordPrototypeRecordingPlayback(captured, {
+    measuredAt: '2026-06-08T04:30:15.000Z',
+    playbackConfirmed: true,
+  });
+
+  expect(played).toMatchObject({
+    measuredAt: '2026-06-08T04:30:15.000Z',
+    recordingCaptureSeconds: 10.4,
+    recordingPlaybackConfirmed: true,
+    recordingUriAvailable: true,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(played))).toMatchObject({
+    measuredCandidateEvidence: false,
+    observedPrototypeRecording: {
+      capturedSeconds: 10.4,
+      playbackConfirmed: true,
+      uriAvailable: true,
+    },
+    probeTemplate: {
+      evidenceSource: 'estimate',
+      recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('records prototype recording fallback reason without claiming final evidence', () => {
+  const snapshot = recordPrototypeRecordingFallback(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:35:00.000Z',
+    }),
+    {
+      fallbackReason: 'recording_probe_not_supported',
+      measuredAt: '2026-06-08T04:35:03.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    measuredAt: '2026-06-08T04:35:03.000Z',
+    recordingFallbackReason: 'recording_probe_not_supported',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    measuredCandidateEvidence: false,
+    observedPrototypeRecording: {
+      capturedSeconds: null,
+      fallbackReason: 'recording_probe_not_supported',
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
+    probeTemplate: {
+      evidenceSource: 'estimate',
+      recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('records missing captured recording uri as playback fallback context', () => {
+  const snapshot = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:37:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:37:12.000Z',
+      recordingUri: null,
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    recordingCaptureSeconds: 10,
+    recordingFallbackReason: 'recording_playback_uri_missing',
+    recordingUriAvailable: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    observedPrototypeRecording: {
+      capturedSeconds: 10,
+      fallbackReason: 'recording_playback_uri_missing',
+      uriAvailable: false,
+    },
+    probeTemplate: {
+      evidenceSource: 'estimate',
+      recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('updates the prototype QA device label used by the probe draft', () => {
+  const snapshot = updatePrototypeQaDeviceLabel(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'replace-with-physical-device-model',
+      measuredAt: '2026-06-08T04:40:00.000Z',
+    }),
+    {
+      deviceLabel: '  Pixel 8 / Android 15  ',
+      measuredAt: '2026-06-08T04:40:10.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T04:40:10.000Z',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    probeTemplate: {
+      deviceLabel: 'Pixel 8 / Android 15',
     },
   });
 });

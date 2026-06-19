@@ -16,6 +16,10 @@ export type PrototypeQaSnapshot = {
   muteObserved: boolean;
   audioDispatchFailures: number;
   sessionFallbackPreserved: boolean;
+  recordingCaptureSeconds: number | null;
+  recordingFallbackReason: string | null;
+  recordingPlaybackConfirmed: boolean;
+  recordingUriAvailable: boolean;
 };
 
 export type PrototypeEventDispatchLatency = {
@@ -29,6 +33,7 @@ export type PrototypeProbeDraftInspectorModel = {
   note: string;
   measuredCandidateEvidence: false;
   runtimeUnderTest: 'fake-sampler-engine';
+  observedRuntime?: PrototypeRuntimeObservation;
   observedFakeCounters: {
     audioDispatchFailures: number;
     eventDispatchLatency: PrototypeEventDispatchLatency;
@@ -38,6 +43,12 @@ export type PrototypeProbeDraftInspectorModel = {
     muteObserved: boolean;
     pitchBendObserved: boolean;
     sessionFallbackPreserved: boolean;
+  };
+  observedPrototypeRecording: {
+    capturedSeconds: number | null;
+    fallbackReason: string | null;
+    playbackConfirmed: boolean;
+    uriAvailable: boolean;
   };
   probeTemplate: {
     candidate: AudioEngineCandidateId;
@@ -53,6 +64,19 @@ export type PrototypeProbeDraftInspectorModel = {
     sessionFallbackPreserved: null;
     recordingCaptureSeconds: null;
   };
+};
+
+export type PrototypeRuntimeObservation = {
+  requestedCandidate: AudioEngineCandidateId;
+  activeRuntime: 'fake-prototype' | AudioEngineCandidateId;
+  runtimeStatus:
+    | 'missing_sample_manifest'
+    | 'native_candidate_preloading'
+    | 'native_candidate_failed'
+    | 'native_candidate_ready';
+  nativePreloadStatus: 'not_started' | 'preloading' | 'failed' | 'ready';
+  sampleManifestVersion: string | null;
+  preloadErrorMessage?: string;
 };
 
 const PROTOTYPE_DRAFT_NOTE =
@@ -81,6 +105,10 @@ export function createInitialPrototypeQaSnapshot(input: {
     muteObserved: false,
     audioDispatchFailures: 0,
     sessionFallbackPreserved: false,
+    recordingCaptureSeconds: null,
+    recordingFallbackReason: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
   };
 }
 
@@ -114,6 +142,22 @@ export function updatePrototypeQaSnapshot(
   };
 }
 
+export function updatePrototypeQaDeviceLabel(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    deviceLabel: string;
+    measuredAt: string;
+  },
+): PrototypeQaSnapshot {
+  const deviceLabel = input.deviceLabel.trim();
+
+  return {
+    ...snapshot,
+    deviceLabel: deviceLabel.length > 0 ? deviceLabel : snapshot.deviceLabel,
+    measuredAt: input.measuredAt,
+  };
+}
+
 export function buildPrototypeProbeDraft(snapshot: PrototypeQaSnapshot): AudioEngineProbe {
   return createAudioEngineProbeDraft({
     candidate: snapshot.candidate,
@@ -125,8 +169,58 @@ export function buildPrototypeProbeDraft(snapshot: PrototypeQaSnapshot): AudioEn
   });
 }
 
-export function formatPrototypeProbeDraftForInspector(snapshot: PrototypeQaSnapshot): string {
-  return JSON.stringify(createPrototypeProbeDraftInspectorModel(snapshot), null, 2);
+export function recordPrototypeRecordingCapture(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    capturedSeconds: number;
+    measuredAt: string;
+    recordingUri: string | null;
+  },
+): PrototypeQaSnapshot {
+  const recordingUriAvailable = isNonEmptyString(input.recordingUri);
+
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingCaptureSeconds: input.capturedSeconds,
+    recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
+    recordingUriAvailable,
+  };
+}
+
+export function recordPrototypeRecordingFallback(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    fallbackReason: string;
+    measuredAt: string;
+  },
+): PrototypeQaSnapshot {
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingFallbackReason: input.fallbackReason,
+  };
+}
+
+export function recordPrototypeRecordingPlayback(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    measuredAt: string;
+    playbackConfirmed: boolean;
+  },
+): PrototypeQaSnapshot {
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingPlaybackConfirmed: snapshot.recordingPlaybackConfirmed || input.playbackConfirmed,
+  };
+}
+
+export function formatPrototypeProbeDraftForInspector(
+  snapshot: PrototypeQaSnapshot,
+  runtimeObservation?: PrototypeRuntimeObservation,
+): string {
+  return JSON.stringify(createPrototypeProbeDraftInspectorModel(snapshot, runtimeObservation), null, 2);
 }
 
 export function countPrototypeAudibleVoices(voices: VoiceState[]): number {
@@ -135,11 +229,13 @@ export function countPrototypeAudibleVoices(voices: VoiceState[]): number {
 
 function createPrototypeProbeDraftInspectorModel(
   snapshot: PrototypeQaSnapshot,
+  runtimeObservation?: PrototypeRuntimeObservation,
 ): PrototypeProbeDraftInspectorModel {
   return {
     note: PROTOTYPE_DRAFT_NOTE,
     measuredCandidateEvidence: false,
     runtimeUnderTest: 'fake-sampler-engine',
+    ...(runtimeObservation ? { observedRuntime: runtimeObservation } : {}),
     observedFakeCounters: {
       audioDispatchFailures: snapshot.audioDispatchFailures,
       eventDispatchLatency: snapshot.eventDispatchLatency,
@@ -149,6 +245,12 @@ function createPrototypeProbeDraftInspectorModel(
       muteObserved: snapshot.muteObserved,
       pitchBendObserved: snapshot.pitchBendObserved,
       sessionFallbackPreserved: snapshot.sessionFallbackPreserved,
+    },
+    observedPrototypeRecording: {
+      capturedSeconds: snapshot.recordingCaptureSeconds,
+      fallbackReason: snapshot.recordingFallbackReason,
+      playbackConfirmed: snapshot.recordingPlaybackConfirmed,
+      uriAvailable: snapshot.recordingUriAvailable,
     },
     probeTemplate: {
       candidate: snapshot.candidate,
@@ -165,6 +267,10 @@ function createPrototypeProbeDraftInspectorModel(
       recordingCaptureSeconds: null,
     },
   };
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
 }
 
 function updateEventDispatchLatency(

@@ -27,6 +27,11 @@ const EVIDENCE_SOURCES: AudioEngineEvidenceSource[] = [
 ];
 const PHYSICAL_DEVICE_LABEL_PLACEHOLDERS = new Set([
   'replace-with-physical-device-model',
+  'replace with physical device model',
+  'device os',
+  'device / os',
+  'device/os',
+  'physical device',
 ]);
 const UTC_ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
@@ -188,7 +193,11 @@ function isNonEmptyString(input: unknown): input is string {
 }
 
 function normalizeLabel(input: string): string {
-  return input.trim().toLowerCase();
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\s+/g, ' ');
 }
 
 function isUtcIsoTimestamp(input: string): boolean {

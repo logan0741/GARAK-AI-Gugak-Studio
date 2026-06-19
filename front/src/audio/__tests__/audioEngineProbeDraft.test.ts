@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import {
   createAudioEngineProbeDraft,
   createAudioEngineProbeRecordDraft,
+  promoteAudioEngineProbeDraftToPhysicalDevice,
 } from '../audioEngineProbeDraft';
 import {
   buildDay5AudioEngineDecisionRecordFromProbeRecord,
@@ -99,4 +100,126 @@ test('wraps candidate drafts in a parseable probe record without satisfying the 
   expect(buildDay5AudioEngineDecisionRecordFromProbeRecord(parseResult.record).status).toBe(
     'INCOMPLETE_DEVICE_EVIDENCE',
   );
+});
+
+test('promotes an estimate draft only with explicit physical-device measurements', () => {
+  const draft = createAudioEngineProbeDraft({
+    candidate: 'react-native-audio-api',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T02:20:00.000Z',
+  });
+
+  const physicalProbe = promoteAudioEngineProbeDraftToPhysicalDevice({
+    draft,
+    measuredAt: '2026-06-08T02:30:00.000Z',
+    measurements: {
+      touchToSoundLatencyMs: 38,
+      maxStableVoices: 9,
+      pitchBendSmooth: true,
+      glissandoTriggeredStrings: 12,
+      muteReleaseClean: true,
+      preloadStable: true,
+      sessionFallbackPreserved: true,
+      recordingCaptureSeconds: 0,
+    },
+  });
+
+  expect(physicalProbe).toEqual({
+    candidate: 'react-native-audio-api',
+    evidenceSource: 'physical-device',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T02:30:00.000Z',
+    touchToSoundLatencyMs: 38,
+    maxStableVoices: 9,
+    pitchBendSmooth: true,
+    glissandoTriggeredStrings: 12,
+    muteReleaseClean: true,
+    preloadStable: true,
+    sessionFallbackPreserved: true,
+    recordingCaptureSeconds: 0,
+  });
+
+  expect(
+    parseAudioEngineProbeRecord({
+      generatedAt: '2026-06-08T02:40:00.000Z',
+      probes: [physicalProbe],
+    }),
+  ).toEqual({
+    ok: true,
+    record: {
+      generatedAt: '2026-06-08T02:40:00.000Z',
+      probes: [physicalProbe],
+    },
+  });
+});
+
+test('rejects physical promotion when required manual measurements are missing', () => {
+  const draft = createAudioEngineProbeDraft({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T02:10:00.000Z',
+  });
+
+  expect(() =>
+    promoteAudioEngineProbeDraftToPhysicalDevice({
+      draft,
+      measurements: {
+        touchToSoundLatencyMs: 45,
+        maxStableVoices: 8,
+      } as never,
+    }),
+  ).toThrow(
+    'physical-device measurements missing: pitchBendSmooth, glissandoTriggeredStrings, muteReleaseClean, preloadStable, sessionFallbackPreserved, recordingCaptureSeconds',
+  );
+});
+
+test('rejects physical promotion when required manual measurements are still null', () => {
+  const draft = createAudioEngineProbeDraft({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T02:10:00.000Z',
+  });
+
+  expect(() =>
+    promoteAudioEngineProbeDraftToPhysicalDevice({
+      draft,
+      measurements: {
+        touchToSoundLatencyMs: 45,
+        maxStableVoices: 8,
+        pitchBendSmooth: null,
+        glissandoTriggeredStrings: 12,
+        muteReleaseClean: null,
+        preloadStable: true,
+        sessionFallbackPreserved: true,
+        recordingCaptureSeconds: 10,
+      } as never,
+    }),
+  ).toThrow('physical-device measurements missing: pitchBendSmooth, muteReleaseClean');
+});
+
+test('rejects promotion from non-estimate probe evidence', () => {
+  const draft = createAudioEngineProbeDraft({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 / Android 15',
+    measuredAt: '2026-06-08T02:10:00.000Z',
+  });
+
+  expect(() =>
+    promoteAudioEngineProbeDraftToPhysicalDevice({
+      draft: {
+        ...draft,
+        evidenceSource: 'unit-test',
+      },
+      measurements: {
+        touchToSoundLatencyMs: 45,
+        maxStableVoices: 8,
+        pitchBendSmooth: true,
+        glissandoTriggeredStrings: 12,
+        muteReleaseClean: true,
+        preloadStable: true,
+        sessionFallbackPreserved: true,
+        recordingCaptureSeconds: 10,
+      },
+    }),
+  ).toThrow('only estimate probe drafts can be promoted to physical-device evidence');
 });

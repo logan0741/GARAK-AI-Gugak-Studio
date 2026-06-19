@@ -10,9 +10,23 @@ Day 5 audio-engine values must be moved into a candidate probe record that follo
 npm run qa:day5-audio -- <probe-record.json>
 ```
 
-`src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine.
+`src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null values.
 
-When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The Day 5 parser rejects that placeholder for final-selection evidence.
+When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The prototype screen has a `Device / OS` input that updates the copyable probe draft before handoff. The Day 5 parser rejects that placeholder and placeholder-like labels such as `Device / OS` for final-selection evidence.
+
+The prototype probe draft also includes `observedRuntime` so the handoff records the requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error when present. Treat that field as QA context only; it does not replace any `physical-device` probe value.
+
+`src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate and the runtime/preload status is ready. This prevents fake fallback or preloading states from being promoted.
+
+To produce a Day 5 probe record from prototype inspector drafts, save a prototype handoff JSON with `generatedAt` and `entries`. Each entry must contain the copied `inspectorDraft`, explicit physical-device `measurements`, and optional `measuredAt` or `deviceLabel` overrides. Then run:
+
+```bash
+npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
+```
+
+The command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Validate that output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+
+For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 
 Use UTC ISO timestamps such as `2026-06-08T01:00:00.000Z` for `generatedAt` and `measuredAt` in probe records.
 

@@ -14,7 +14,9 @@ Use this document when validating whether `react-native-audio-api` can support t
 | --- | --- |
 | `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, and voice budget behavior. |
 | `src/audio/reactNativeAudioApiRuntime.ts` | Only runtime bridge that imports `react-native-audio-api`. Keeps UI and domain code independent from the concrete package. |
+| `src/prototype/gayageumPrototypeController.ts` | Prototype event planner for tap, glissando, and the 8-voice polyphony burst used by device QA. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that should report `recording_probe_not_supported` for engines without recording methods instead of treating playback validation as failed. |
+| `src/prototype/prototypeQaSnapshot.ts` | Inspector QA read model. Records `observedPrototypeRecording.fallbackReason` when this candidate cannot provide a recording probe, without promoting it to final physical-device evidence. |
 | `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, 8-voice polyphony, graph wiring, pitch bend, mute/release, and voice stealing. |
 | `src/audio/__tests__/reactNativeAudioApiRuntime.test.ts` | Mocked package-delegation test for the installed `react-native-audio-api` API surface. |
 
@@ -40,7 +42,7 @@ Prerequisite: run `npm run samples:generate-dev` from `front/` before building t
 
 The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, pitch-bend plumbing, filter/gain graph behavior, and mute/release envelopes, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
 
-Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
+Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes; the native sampler factory also rejects incomplete manifests before creating a candidate runtime. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
 
 Use a development client, not Expo Go, because this candidate depends on native audio graph APIs:
 
@@ -53,12 +55,13 @@ For an EAS development build, use the `development` profile in `eas.json`.
 1. Build or launch an Expo dev build on a physical device.
 2. Preload the manifest through `ReactNativeAudioApiSamplerEngine.preload()` and confirm the inspector reaches `native_candidate_ready`.
 3. Tap one string and confirm the graph plays from a decoded buffer without runtime file loading.
-4. Trigger at least 8 different strings rapidly and listen for dropout, clipping, or unwanted voice stealing.
+4. Press `8 Voice` and listen for dropout, clipping, or unwanted voice stealing across the simultaneous 8-string burst.
 5. Hold one active string and send `string_bend` values across a practical range such as -120 to +120 cents.
 6. Confirm bend changes are continuous and do not create click noise.
 7. Confirm each voice routes `source -> lowpass filter -> gain -> destination`.
 8. Trigger `string_mute` and `string_release` and listen for release pops or abrupt cutoff.
 9. Press `Rec 10s` and confirm the recording probe reports `recording_probe_not_supported` unless a recording-capable implementation has been explicitly added for this candidate.
+10. Confirm the probe draft records `observedPrototypeRecording.fallbackReason: "recording_probe_not_supported"` and keep the `Session fallback (copyable)` JSON for Day 5 review.
 
 ## Result Table
 
@@ -70,6 +73,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 | Pitch bend | `string_bend` applies detune automation to active voices smoothly |  |  |
 | Filter path | Each voice routes through a lowpass `BiquadFilterNode` and `GainNode` |  |  |
 | Mute/release | Mute lowers gain envelope; release ramps to silence and stops source without pop noise |  |  |
+| Recording fallback | Unsupported recording is captured as `observedPrototypeRecording.fallbackReason` while session replay remains available |  |  |
 
 ## Handoff To Day 5
 
