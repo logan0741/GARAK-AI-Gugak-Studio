@@ -1,5 +1,7 @@
 import { SamplerEngine } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
+import { SampleAssetManifest } from '../domain/sampleManifest';
+import { ReplaySchedule, planSessionReplay } from '../domain/replayPlanner';
 import { Session, appendPerformanceEvent } from '../domain/session';
 import {
   mapCover,
@@ -83,6 +85,29 @@ export type EngineDispatchFailure = {
 
 export type EngineDispatchResult = EngineDispatchSuccess | EngineDispatchFailure;
 
+export type SessionReplayDispatchResult =
+  | {
+      dispatch: EngineDispatchSuccess;
+      events: PerformanceEvent[];
+      ok: true;
+      schedule: ReplaySchedule;
+      status: 'dispatched';
+    }
+  | {
+      dispatch: EngineDispatchFailure;
+      errorMessage: string;
+      events: PerformanceEvent[];
+      ok: false;
+      schedule: ReplaySchedule;
+      status: 'dispatch_failed';
+    }
+  | {
+      errorMessage: string;
+      events: [];
+      ok: false;
+      status: 'planning_failed';
+    };
+
 export function safelyDispatchEventsToEngine(engine: SamplerEngine, events: PerformanceEvent[]): EngineDispatchResult {
   let handledEvents = 0;
 
@@ -115,6 +140,64 @@ export function safelyDispatchEventsToCurrentEngine(
   events: PerformanceEvent[],
 ): EngineDispatchResult {
   return safelyDispatchEventsToEngine(engineRef.current, events);
+}
+
+export function dispatchReplayScheduleToEngine(
+  engine: SamplerEngine,
+  schedule: ReplaySchedule,
+): EngineDispatchResult {
+  return safelyDispatchEventsToEngine(
+    engine,
+    schedule.items.map((item) => item.event),
+  );
+}
+
+export function safelyDispatchReplayScheduleToCurrentEngine(
+  engineRef: { current: SamplerEngine },
+  schedule: ReplaySchedule,
+): EngineDispatchResult {
+  return dispatchReplayScheduleToEngine(engineRef.current, schedule);
+}
+
+export function planAndDispatchSessionReplayToCurrentEngine(input: {
+  engineRef: { current: SamplerEngine };
+  sampleAssetManifest: SampleAssetManifest;
+  session: Session;
+}): SessionReplayDispatchResult {
+  let schedule: ReplaySchedule;
+
+  try {
+    schedule = planSessionReplay(input.session, input.sampleAssetManifest);
+  } catch (error: unknown) {
+    return {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      events: [],
+      ok: false,
+      status: 'planning_failed',
+    };
+  }
+
+  const events = schedule.items.map((item) => item.event);
+  const dispatch = safelyDispatchReplayScheduleToCurrentEngine(input.engineRef, schedule);
+
+  if (!dispatch.ok) {
+    return {
+      dispatch,
+      errorMessage: dispatch.errorMessage,
+      events,
+      ok: false,
+      schedule,
+      status: 'dispatch_failed',
+    };
+  }
+
+  return {
+    dispatch,
+    events,
+    ok: true,
+    schedule,
+    status: 'dispatched',
+  };
 }
 
 export function appendEventsToSession(session: Session, events: PerformanceEvent[]): Session {

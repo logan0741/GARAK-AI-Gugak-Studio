@@ -73,6 +73,7 @@ Audio output                           Preview / accept
 | --- | --- |
 | Sample missing | Disable affected string or use explicit fallback sample; do not perform runtime file search. |
 | Audio capture fails | Preserve `PerformanceEvent[]` session; Recording remains absent or failed. |
+| Session replay requested | Build a deterministic `ReplaySchedule` from `Session.events` and the matching `SampleAssetManifest`, preview readiness in the prototype inspector, then dispatch replay events through the current `SamplerEngine` boundary without changing the saved session. |
 | Audio engine fails Day 5 criteria | Keep domain/UI boundary and swap `SamplerEngine` implementation. |
 | Jangdan recommendation uncertain | Show manual selection or low-confidence recommendation; do not auto-start accompaniment. |
 | Network unavailable | Normal instrument play still works. Demo inspector uses bundled manifest metadata. |

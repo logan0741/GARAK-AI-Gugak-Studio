@@ -129,7 +129,7 @@ test('reports every required check as missing when a smoke run has an empty chec
   const output = stdout.join('\n');
   expect(output).toContain('- Status: NOT_COMPLETE_FOR_DAY5_REVIEW');
   expect(output).toContain(
-    '- Missing checks: day-4-touch-model.tap, day-4-touch-model.glissando, day-4-touch-model.hold-drag, day-4-touch-model.ji-eum, day-4-touch-model.bend-button, day-4-touch-model.mute-button, day-4-touch-model.fallback',
+    '- Missing checks: day-4-touch-model.tap, day-4-touch-model.glissando, day-4-touch-model.hold-drag, day-4-touch-model.ji-eum, day-4-touch-model.bend-button, day-4-touch-model.mute-button, day-4-touch-model.session-replay-ready, day-4-touch-model.session-replay-dispatch, day-4-touch-model.session-replay-dispatch-reset, day-4-touch-model.fallback',
   );
 });
 
@@ -402,6 +402,9 @@ const requiredChecksByArea = {
     'ji-eum',
     'bend-button',
     'mute-button',
+    'session-replay-ready',
+    'session-replay-dispatch',
+    'session-replay-dispatch-reset',
     'fallback',
   ],
 } as const satisfies Record<SmokeAreaId, readonly string[]>;

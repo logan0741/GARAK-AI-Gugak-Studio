@@ -69,6 +69,7 @@ Invariants:
 - Recording이 없어도 Session은 저장되고 리플레이 가능해야 한다.
 - Session의 `recordings[]`는 선택적 오디오 산출물 목록이며, 비어 있거나 공백뿐인 URI는 Recording 산출물로 저장하지 않는다.
 - Session의 `recordingUri`는 MVP 프로토타입 호환용 최신 캡처 URI다. 기준 데이터는 여전히 `PerformanceEvent[]`이고, Recording만으로는 연주 맥락을 복구하지 않는다.
+- Session에 저장되는 `PerformanceEvent`는 finite `tsMs`, 1-12 범위의 `stringIndex`, finite control value를 통과해야 한다.
 - Session은 자신이 사용한 `SampleAssetManifest` 버전을 기록한다.
 - Session은 데모 인스펙터나 심사용 근거 표시가 필요할 때 `DataReferenceManifest` 버전을 선택적으로 기록할 수 있다. 일반 연주 리플레이에는 필수 값이 아니다.
 - Session 밖의 독립 `PerformanceEvent`는 저장하지 않는다.
@@ -173,6 +174,11 @@ Mapping rules:
 | `JangdanMatcher` | `PerformanceEvent[]` | `JangdanRecommendation` | BPM, 밀도, 박자 안정성 기반 장단 추천 |
 | `SessionRecorder` | `PerformanceEvent` | `Session` 업데이트 | 이벤트 우선 세션 기록 |
 | `ReplayPlanner` | `Session`, manifest | replay schedule | 결정론적 리플레이 준비 |
+
+ReplayPlanner implementation note:
+
+- `src/domain/replayPlanner.ts` turns `Session.events` and `SampleAssetManifest` into a deterministic `ReplaySchedule`.
+- The planner preserves original event order for equal timestamps, normalizes replay delays from the first event timestamp, and rejects manifest version mismatch, missing pluck/glissando samples, or duplicate sample assets for the same string.
 
 ## Product Invariants
 

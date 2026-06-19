@@ -20,6 +20,7 @@ import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
+  planAndDispatchSessionReplayToCurrentEngine,
   planMuteProbe,
   planPitchBendProbe,
   planPolyphonyBurst,
@@ -77,6 +78,16 @@ import {
   summarizePrototypeSampleManifestProvenance,
 } from './prototypeSampleManifest';
 import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
+import {
+  createPrototypeSessionReplayPreview,
+  formatPrototypeSessionReplayPreview,
+} from './prototypeSessionReplayPreview';
+import {
+  clearPrototypeSessionReplayDispatchStatus,
+  createInitialPrototypeSessionReplayDispatchStatus,
+  createPrototypeSessionReplayDispatchStatus,
+  formatPrototypeSessionReplayDispatchStatus,
+} from './prototypeSessionReplayDispatchStatus';
 
 const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
 const POLYPHONY_BURST_STRINGS = ALL_STRINGS.slice(0, 8);
@@ -198,11 +209,15 @@ export function GayageumPrototypeScreen() {
     }),
   );
   const [audioError, setAudioError] = useState<string | undefined>();
+  const [sessionReplayDispatchStatus, setSessionReplayDispatchStatus] = useState(() =>
+    createInitialPrototypeSessionReplayDispatchStatus(),
+  );
 
   function applyPerformanceEvents(events: PerformanceEvent[]) {
     if (events.length === 0) {
       return;
     }
+    setSessionReplayDispatchStatus(clearPrototypeSessionReplayDispatchStatus());
     setSession((current) => appendEventsToSession(current, events));
     const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
     const dispatchedAtMs = Date.now();
@@ -221,6 +236,7 @@ export function GayageumPrototypeScreen() {
 
   function handleProbeCandidatePress(candidate: AudioEngineCandidateId) {
     setProbeCandidate(candidate);
+    setSessionReplayDispatchStatus(clearPrototypeSessionReplayDispatchStatus());
     setQaSnapshot(
       createPrototypeQaSnapshotForCandidateChange({
         candidate,
@@ -331,6 +347,19 @@ export function GayageumPrototypeScreen() {
     );
   }
 
+  function handleReplaySessionPress() {
+    const result = planAndDispatchSessionReplayToCurrentEngine({
+      engineRef,
+      sampleAssetManifest: prototypeGayageumSampleManifest,
+      session,
+    });
+
+    const dispatchStatus = createPrototypeSessionReplayDispatchStatus(result);
+
+    setAudioError(dispatchStatus.status === 'failed' ? dispatchStatus.errorMessage : undefined);
+    setSessionReplayDispatchStatus(dispatchStatus);
+  }
+
   function recordRecordingProbeFallback(state: RecordingProbeUiState) {
     const fallbackReason = getRecordingProbeFallbackReason(state);
     if (fallbackReason === null) {
@@ -385,6 +414,14 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const sessionReplayPreview = useMemo(
+    () => createPrototypeSessionReplayPreview(session, prototypeGayageumSampleManifest),
+    [session],
+  );
+  const sessionReplayPreviewText = formatPrototypeSessionReplayPreview(sessionReplayPreview);
+  const sessionReplayDispatchText = formatPrototypeSessionReplayDispatchStatus(
+    sessionReplayDispatchStatus,
+  );
   const jangdanPreviewText = useMemo(
     () => formatPrototypeJangdanPreview(createPrototypeJangdanPreview(session.events)),
     [session.events],
@@ -402,6 +439,7 @@ export function GayageumPrototypeScreen() {
   const playableRecordingUri = selectPlayableRecordingUri({
     recordingProbeState,
   });
+  const canReplaySession = sessionReplayPreview.status === 'ready';
 
   return (
     <View style={styles.screen}>
@@ -517,6 +555,19 @@ export function GayageumPrototypeScreen() {
         >
           <Text style={styles.recordingButtonText}>Play Rec</Text>
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Replay current session through active audio engine"
+          disabled={!canReplaySession}
+          onPress={handleReplaySessionPress}
+          style={[
+            styles.recordingButton,
+            styles.sessionReplayButton,
+            !canReplaySession ? styles.recordingDisabledButton : undefined,
+          ]}
+        >
+          <Text style={styles.recordingButtonText}>Replay</Text>
+        </Pressable>
       </View>
 
       <View
@@ -572,6 +623,8 @@ export function GayageumPrototypeScreen() {
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
         <Text style={styles.inspectorText}>Jangdan preview: {jangdanPreviewText}</Text>
+        <Text style={styles.inspectorText}>Session replay: {sessionReplayPreviewText}</Text>
+        <Text style={styles.inspectorText}>Session replay dispatch: {sessionReplayDispatchText}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
         <Text style={styles.inspectorText}>Latest: {latestEvent ? JSON.stringify(latestEvent) : 'none'}</Text>
@@ -763,6 +816,9 @@ const styles = StyleSheet.create({
   },
   recordingPlaybackButton: {
     backgroundColor: '#d7b65d',
+  },
+  sessionReplayButton: {
+    backgroundColor: '#c98f65',
   },
   recordingDisabledButton: {
     opacity: 0.45,

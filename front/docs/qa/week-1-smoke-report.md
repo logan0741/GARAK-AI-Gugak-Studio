@@ -106,4 +106,7 @@ For `fail`, `notes` must include the observed symptom or condition. Blank failur
 | `ji-eum` | Ji-eum |
 | `bend-button` | Bend button |
 | `mute-button` | Mute button |
+| `session-replay-ready` | Session replay ready |
+| `session-replay-dispatch` | Session replay dispatch |
+| `session-replay-dispatch-reset` | Session replay dispatch reset after new events |
 | `fallback` | Fallback |
