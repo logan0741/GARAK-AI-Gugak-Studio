@@ -1,5 +1,10 @@
 import { PerformanceEvent } from '../domain/performanceEvent';
-import { SampleAssetManifest } from '../domain/sampleManifest';
+import {
+  SampleAssetManifest,
+  describeSampleAssetPlaybackTarget,
+  getSampleAssetPlaybackKey,
+  isGayageumSampleAsset,
+} from '../domain/sampleManifest';
 import { SamplerEngine, assertSamplerEventIdentity } from './samplerEngine';
 
 export type ReactNativeAudioApiParamPort = {
@@ -56,7 +61,7 @@ type ActiveVoice = {
   gain: ReactNativeAudioApiGainPort;
   filter: ReactNativeAudioApiFilterPort;
   destination: ReactNativeAudioApiNodePort;
-  stringIndex: number;
+  stringIndex?: number;
   releaseScheduled: boolean;
 };
 
@@ -72,7 +77,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   private readonly manifest: SampleAssetManifest;
   private readonly runtime: ReactNativeAudioApiRuntimePort;
   private readonly maxVoices: number;
-  private readonly buffersByString = new Map<number, unknown>();
+  private readonly buffersByPlaybackKey = new Map<string, unknown>();
   private readonly activeVoices: ActiveVoice[] = [];
   private context: ReactNativeAudioApiContextPort | undefined;
 
@@ -88,28 +93,31 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
 
   async preload(): Promise<ReactNativeAudioApiPreloadResult> {
     this.context = undefined;
-    this.buffersByString.clear();
+    this.buffersByPlaybackKey.clear();
     const context = this.runtime.createAudioContext();
-    const buffersByString = new Map<number, unknown>();
+    const buffersByPlaybackKey = new Map<string, unknown>();
 
     for (const asset of this.manifest.assets) {
+      const playbackKey = getSampleAssetPlaybackKey(asset);
       const buffer = await context.decodeAudioData(asset.fileUri);
       if (buffer === null || buffer === undefined) {
-        throw new Error(`Decoded react-native-audio-api buffer missing for string ${asset.stringIndex}`);
+        throw new Error(`Decoded react-native-audio-api buffer missing for ${describeSampleAssetPlaybackTarget(asset)}`);
       }
 
-      buffersByString.set(asset.stringIndex, buffer);
+      buffersByPlaybackKey.set(playbackKey, buffer);
     }
 
     this.context = context;
-    for (const [stringIndex, buffer] of buffersByString) {
-      this.buffersByString.set(stringIndex, buffer);
+    for (const [playbackKey, buffer] of buffersByPlaybackKey) {
+      this.buffersByPlaybackKey.set(playbackKey, buffer);
     }
 
     return {
       candidate: 'react-native-audio-api',
       filterEnabled: true,
-      loadedStringIndexes: this.manifest.assets.map((asset) => asset.stringIndex),
+      loadedStringIndexes: this.manifest.assets
+        .filter(isGayageumSampleAsset)
+        .map((asset) => asset.stringIndex),
       preloadStable: true,
     };
   }
@@ -131,15 +139,25 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
       case 'string_release':
         this.releaseString(event.stringIndex);
         return;
+      case 'janggu_hit':
+        this.startSampleVoice(`janggu:surface:${event.surface}`, event.velocity);
+        return;
+      case 'daegeum_note':
+        this.startSampleVoice(`daegeum:fingering:${event.fingering}`, event.breath);
+        return;
       default:
         assertNever(event);
     }
   }
 
   private startVoice(stringIndex: number, velocity: number): void {
-    const clampedVelocity = clamp01(velocity, 'velocity');
+    this.startSampleVoice(`gayageum_12:string:${stringIndex}`, velocity, stringIndex);
+  }
+
+  private startSampleVoice(playbackKey: string, gainValue: number, stringIndex?: number): void {
+    const clampedGain = clamp01(gainValue, 'gain');
     const context = this.requireContext();
-    const buffer = this.requireBuffer(stringIndex);
+    const buffer = this.requireBuffer(playbackKey);
     const source = context.createBufferSource({ pitchCorrection: true });
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
@@ -148,7 +166,7 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
     filter.type = 'lowpass';
     filter.frequency.value = DEFAULT_FILTER_FREQUENCY_HZ;
     filter.Q.value = DEFAULT_FILTER_Q;
-    gain.gain.value = clampedVelocity;
+    gain.gain.value = clampedGain;
 
     source.connect(filter);
     filter.connect(gain);
@@ -227,10 +245,10 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
     return this.context;
   }
 
-  private requireBuffer(stringIndex: number): unknown {
-    const buffer = this.buffersByString.get(stringIndex);
+  private requireBuffer(playbackKey: string): unknown {
+    const buffer = this.buffersByPlaybackKey.get(playbackKey);
     if (!buffer) {
-      throw new Error(`No decoded react-native-audio-api buffer for string ${stringIndex}`);
+      throw new Error(`No decoded react-native-audio-api buffer for ${playbackKey}`);
     }
 
     return buffer;

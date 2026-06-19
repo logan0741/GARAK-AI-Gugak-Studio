@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { FakeSamplerEngine } from '../../audio/fakeSamplerEngine';
 import { SamplerEngine } from '../../audio/samplerEngine';
-import { SampleAssetManifest } from '../../domain/sampleManifest';
+import { GayageumSampleAsset, SampleAssetManifest } from '../../domain/sampleManifest';
 import {
   createPrototypeSamplerEngineHost,
   getMissingSampleStringIndexes,
@@ -81,7 +81,7 @@ test('keeps the fake prototype engine when a manifest has sample strings outside
       assets: [
         ...completeManifest.assets,
         {
-          ...completeManifest.assets[0],
+          ...(completeManifest.assets[0] as GayageumSampleAsset),
           id: 'string-13',
           stringIndex: 13,
         },

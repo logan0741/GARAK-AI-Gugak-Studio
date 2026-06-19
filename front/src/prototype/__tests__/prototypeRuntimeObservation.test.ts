@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { FakeSamplerEngine } from '../../audio/fakeSamplerEngine';
 import { SamplerEngine } from '../../audio/samplerEngine';
-import { SampleAssetManifest } from '../../domain/sampleManifest';
+import { GayageumSampleAsset, SampleAssetManifest } from '../../domain/sampleManifest';
 import { createPrototypeRuntimeObservation } from '../prototypeRuntimeObservation';
 import { createPrototypeSamplerEngineHost } from '../prototypeSamplerEngineHost';
 
@@ -107,7 +107,7 @@ test('includes unexpected sample string indexes in runtime observations', () => 
           assets: [
             ...completeManifest.assets,
             {
-              ...completeManifest.assets[0],
+              ...(completeManifest.assets[0] as GayageumSampleAsset),
               id: 'string-13',
               stringIndex: 13,
             },

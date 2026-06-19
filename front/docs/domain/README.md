@@ -76,6 +76,31 @@ Invariants:
 - Session은 데모 인스펙터나 심사용 근거 표시가 필요할 때 `DataReferenceManifest` 버전을 선택적으로 기록할 수 있다. 일반 연주 리플레이에는 필수 값이 아니다.
 - Session 밖의 독립 `PerformanceEvent`는 저장하지 않는다.
 
+### Work
+
+`Work`는 자유창작에서 사용자가 만든 여러 트랙/레이어를 보존하는 편집 가능한 작업 단위다. 사용자에게는 "작업" 또는 완성 단계의 "곡"으로 보일 수 있다.
+
+Aggregate boundary:
+
+- `Work`
+- `Track[]`
+- `Take[]`
+- `AccompanimentTrack`
+- 선택적 `ExportedAudio[]`
+
+Invariants:
+
+- Work는 하나 이상의 Track을 가질 수 있다.
+- Instrument Track은 하나 이상의 Take를 가질 수 있고, 각 Take는 `PerformanceEvent[]`와 녹음 직전 BPM/박자/장단 맥락을 보존한다.
+- Instrument Track의 기준 데이터는 레이어별 렌더링 오디오 파일이 아니라 `PerformanceEvent[]`, 악기 ID, 샘플 manifest 버전, 트랙 믹싱 설정이다.
+- 같은 샘플 manifest로 재현 가능한 악기 레이어는 저장공간 절감을 위해 긴 WAV/M4A 파일을 기본 산출물로 저장하지 않는다.
+- Accompaniment Track은 사용자가 직접 고르거나 추천을 수락한 `JangdanPreset`, BPM, 볼륨, 시작 박자를 보존한다.
+- Work의 `syncState`는 로컬 보존과 서버 동기화 상태를 분리해 표현한다.
+- 단일 Session 녹음이 끝났다는 이유만으로 Work가 서버에 저장되었다고 보지 않는다.
+- 서버 저장의 1차 후보는 원시 Session이 아니라 여러 트랙/레이어를 가진 Work 또는 Work에서 파생된 ExportedAudio다.
+- ExportedAudio는 공유/재생용 산출물이며, Work의 편집 가능한 기준 데이터를 대체하지 않는다.
+- ExportedAudio는 로컬 보관함에서 캐시로 관리할 수 있으며, 서버 전송 또는 동기화 후에도 Work를 재편집할 수 있어야 한다.
+
 ### SampleAssetManifest
 
 `SampleAssetManifest`는 앱이 실제 재생할 수 있는 샘플 에셋 목록과 버전을 정의한다.
@@ -191,6 +216,8 @@ ReplayPlanner implementation note:
 - 현 중심 엔진: 각 현은 독립 울림과 제스처 반응성을 가진다.
 - 로컬 구동: 정상 연주와 장단 재생은 로컬 샘플러/시퀀서 안에서 끝난다.
 - 이벤트 중심 데이터 모델: Session의 원천 데이터는 `PerformanceEvent[]`다.
+- 작업 중심 편집 모델: 여러 Session/Take를 합친 사용자 곡 편집 단위는 `Work`다.
+- 저장공간 절감: 악기별 레이어는 이벤트 로그와 샘플 참조로 보존하고, 공유/재생용 오디오는 `ExportedAudio`로 명시적으로 파생한다.
 - 데이터 레이어 격리: 재생 에셋과 분석/검증 참조를 분리한다.
 - 설명 가능한 보조 AI: 추천 근거는 BPM, 밀도, 박자 안정성 같은 지표로 설명 가능해야 한다.
 - 사용자 제어권: AI 추천은 강제 실행이 아니라 제안, 미리듣기, 수락 흐름을 따른다.

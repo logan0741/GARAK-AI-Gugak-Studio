@@ -49,6 +49,14 @@ export class FakeSamplerEngine implements SamplerEngine {
         this.updateVoicesForString(event.stringIndex, { envelopeState: 'release' });
         this.commandLog.push(`release:string=${event.stringIndex}`);
         return;
+      case 'janggu_hit':
+        assertFiniteControlValue(event.velocity, 'velocity');
+        this.commandLog.push(`hit:janggu:surface=${event.surface}:velocity=${event.velocity}`);
+        return;
+      case 'daegeum_note':
+        assertFiniteControlValue(event.breath, 'breath');
+        this.commandLog.push(`note:daegeum:fingering=${event.fingering}:breath=${event.breath}`);
+        return;
       default:
         assertNever(event);
     }

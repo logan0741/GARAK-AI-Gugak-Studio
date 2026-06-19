@@ -1,7 +1,6 @@
 import {
   PerformanceEvent,
-  assertEventTimestamp,
-  assertStringIndex,
+  assertPerformanceEvent,
 } from '../domain/performanceEvent';
 
 export type EnvelopeState = 'attack' | 'sustain' | 'release' | 'ended';
@@ -20,6 +19,5 @@ export interface SamplerEngine {
 }
 
 export function assertSamplerEventIdentity(event: PerformanceEvent): void {
-  assertEventTimestamp(event.tsMs);
-  assertStringIndex(event.stringIndex);
+  assertPerformanceEvent(event);
 }
