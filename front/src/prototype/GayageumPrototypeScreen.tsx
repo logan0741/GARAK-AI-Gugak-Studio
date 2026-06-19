@@ -1,43 +1,20 @@
 import { useMemo, useState } from 'react';
-import {
-  GestureResponderEvent,
-  PanResponder,
-  PanResponderGestureState,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FakeSamplerEngine } from '../audio/fakeSamplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
 import { createEmptySession } from '../domain/session';
-import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
+  planStringPlay,
   safelyDispatchEventsToEngine,
 } from './gayageumPrototypeController';
 
 const STRING_COUNT = 12;
 const ALL_STRINGS = Array.from({ length: STRING_COUNT }, (_, index) => index + 1);
-const FALLBACK_INSTRUMENT_HEIGHT = 312;
-const PRIMARY_POINTER_ID = 'primary-touch';
 
 export function GayageumPrototypeScreen() {
   const engine = useMemo(() => new FakeSamplerEngine(), []);
-  const [instrumentHeight, setInstrumentHeight] = useState(FALLBACK_INSTRUMENT_HEIGHT);
-  const touchModel = useMemo(
-    () =>
-      createTouchModel({
-        layout: {
-          topY: 0,
-          height: instrumentHeight,
-          stringCount: STRING_COUNT,
-        },
-      }),
-    [instrumentHeight],
-  );
   const [session, setSession] = useState(() =>
     createEmptySession({
       id: 'local-prototype-session',
@@ -47,10 +24,12 @@ export function GayageumPrototypeScreen() {
   );
   const [audioError, setAudioError] = useState<string | undefined>();
 
-  function applyPerformanceEvents(events: PerformanceEvent[]) {
-    if (events.length === 0) {
-      return;
-    }
+  function handleStringPress(stringIndex: number) {
+    const events = planStringPlay({
+      nowMs: Date.now(),
+      stringIndex,
+    });
+
     setSession((current) => appendEventsToSession(current, events));
     const result = safelyDispatchEventsToEngine(engine, events);
     setAudioError(result.ok ? undefined : result.errorMessage);
@@ -62,36 +41,10 @@ export function GayageumPrototypeScreen() {
       stringIndexes: ALL_STRINGS,
     });
 
-    applyPerformanceEvents(events);
+    setSession((current) => appendEventsToSession(current, events));
+    const result = safelyDispatchEventsToEngine(engine, events);
+    setAudioError(result.ok ? undefined : result.errorMessage);
   }
-
-  function handleTouchFrame(phase: TouchFrame['phase'], event: GestureResponderEvent, gestureState: PanResponderGestureState) {
-    applyPerformanceEvents(
-      touchModel.handleFrame({
-        phase,
-        pointerId: PRIMARY_POINTER_ID,
-        tsMs: Date.now(),
-        x: event.nativeEvent.locationX,
-        y: event.nativeEvent.locationY,
-        contactArea: gestureState.numberActiveTouches >= 2 ? 1 : undefined,
-        force: getTouchForce(event),
-      }),
-    );
-  }
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (event, gestureState) => handleTouchFrame('start', event, gestureState),
-        onPanResponderStart: (event, gestureState) => handleTouchFrame('move', event, gestureState),
-        onPanResponderMove: (event, gestureState) => handleTouchFrame('move', event, gestureState),
-        onPanResponderRelease: (event, gestureState) => handleTouchFrame('end', event, gestureState),
-        onPanResponderTerminate: (event, gestureState) => handleTouchFrame('cancel', event, gestureState),
-      }),
-    [touchModel],
-  );
 
   const latestEvent: PerformanceEvent | undefined = session.events.at(-1);
   const activeVoices = engine.activeVoices;
@@ -114,20 +67,18 @@ export function GayageumPrototypeScreen() {
         </Pressable>
       </View>
 
-      <View
-        {...panResponder.panHandlers}
-        onLayout={(event) => setInstrumentHeight(event.nativeEvent.layout.height)}
-        style={styles.instrument}
-      >
+      <View style={styles.instrument}>
         {ALL_STRINGS.map((stringIndex) => (
-          <View
+          <Pressable
             key={stringIndex}
+            accessibilityRole="button"
             accessibilityLabel={`Gayageum string ${stringIndex}`}
-            style={styles.stringRow}
+            onPress={() => handleStringPress(stringIndex)}
+            style={({ pressed }) => [styles.stringRow, pressed && styles.stringRowPressed]}
           >
             <Text style={styles.stringLabel}>{stringIndex}</Text>
             <View style={styles.stringLine} />
-          </View>
+          </Pressable>
         ))}
       </View>
 
@@ -141,11 +92,6 @@ export function GayageumPrototypeScreen() {
       </ScrollView>
     </View>
   );
-}
-
-function getTouchForce(event: GestureResponderEvent): number | undefined {
-  const nativeEvent = event.nativeEvent as GestureResponderEvent['nativeEvent'] & { force?: unknown };
-  return typeof nativeEvent.force === 'number' ? nativeEvent.force : undefined;
 }
 
 const styles = StyleSheet.create({
@@ -204,6 +150,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     minHeight: 26,
+  },
+  stringRowPressed: {
+    opacity: 0.68,
   },
   stringLabel: {
     color: '#f6f1e8',
