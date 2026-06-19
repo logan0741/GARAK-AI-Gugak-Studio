@@ -8,9 +8,9 @@
 
 **Tech Stack:** Expo + React Native + TypeScript, Vitest for pure domain tests, `expo-audio` and `react-native-audio-api` as later spike candidates behind `SamplerEngine`.
 
-> Stack source of truth: `docs/architecture/tech-stack.md`. This implementation plan was written before the MVP stack was finalized; if package names, version examples, or scope notes conflict with `docs/architecture/tech-stack.md`, follow `docs/architecture/tech-stack.md`.
+> 기술 스택 기준 문서: `docs/architecture/tech-stack.md`. This implementation plan was written before the MVP stack was finalized; if package names, version examples, or scope notes conflict with `docs/architecture/tech-stack.md`, follow `docs/architecture/tech-stack.md`.
 
-> Documentation source of truth: `docs/README.md`. Before executing this plan, read `CONTEXT.md`, `docs/domain/README.md`, `docs/architecture/runtime-architecture.md`, and `docs/architecture/tech-stack.md`.
+> 문서 기준 인덱스: `docs/document-authority-index.md`. Before executing this plan, read `CONTEXT.md`, `docs/product/garak-product-brief.md`, `docs/domain/README.md`, `docs/architecture/runtime-architecture.md`, and `docs/architecture/tech-stack.md`.
 
 > Week 2 physical-device hard gate: do not publish a final audio-engine selection or expand into studio/demo work until physical-device QA confirms touch-to-sound latency, 8-voice polyphony, pitch bend, glissando, mute release, and session fallback criteria. Week 1 may continue non-device implementation work on the domain model, prototype UI, sample fixtures, recording fallback, and QA harness.
 
@@ -1296,9 +1296,9 @@ Do not start implementation without choosing an execution mode.
 
 | Review | Trigger | Why | Runs | Status | Findings |
 |--------|---------|-----|------|--------|----------|
-| Garry Tan Plan Review | `/plan-ceo-review` style | Scope, source-of-truth, execution risk | 1 | FIXED | HOLD SCOPE; documentation gates, moved source-of-truth paths, Day 5 hard gate added |
+| Garry Tan Plan Review | `/plan-ceo-review` style | Scope, 문서 기준, execution risk | 1 | FIXED | HOLD SCOPE; documentation gates, moved document-authority paths, Day 5 hard gate added |
 | Eng Review | existing review | Architecture and tests | 1 | APPLIED | Prior architecture/data model gaps were folded into proposal and canonical docs |
 | CEO Review | existing review | Product validation | 1 | APPLIED | User/market validation gates were folded into proposal |
 
 - **UNRESOLVED:** 0 known documentation-structure blockers.
-- **VERDICT:** Documentation gates added; plan is ready for implementation only after reading `docs/README.md`, `docs/domain/README.md`, and `docs/architecture/tech-stack.md`.
+- **VERDICT:** Documentation gates added; plan is ready for implementation only after reading `docs/document-authority-index.md`, `docs/domain/README.md`, and `docs/architecture/tech-stack.md`.

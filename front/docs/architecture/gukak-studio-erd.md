@@ -1,10 +1,12 @@
-# GUKAK STUDIO ERD
+# GARAK ERD
 
-이 문서는 팀원 공유를 위한 GUKAK STUDIO MVP의 도메인 데이터 모델이다.
+이 문서는 팀원 공유를 위한 GARAK MVP의 도메인 데이터 모델이다.
 
 현재 MVP에서 이 ERD는 반드시 관계형 DB를 만들겠다는 뜻이 아니다. 로컬 JSON, SQLite, IndexedDB, Supabase, Firebase 등 어떤 저장소를 쓰더라도 유지해야 하는 엔티티 관계와 직렬화 구조를 정의한다.
 
 문서 책임: 저장소 독립적인 엔티티 관계와 직렬화 구조를 정의한다. 도메인 용어와 불변조건은 `../domain/README.md`를 따르고, 구체 기술 스택은 `tech-stack.md`를 따른다.
+
+현재 ERD의 상세 입력면은 가야금 프로토타입에서 출발한다. 제품 기준의 MVP 악기 범위는 가야금, 장구, 대금이며, 세 악기는 같은 `Session`과 `PerformanceEvent` 경계를 공유한다.
 
 ## 모델링 원칙
 
@@ -20,6 +22,7 @@
 
 ```mermaid
 erDiagram
+    INSTRUMENT ||--o{ INSTRUMENT_CONTROL_SURFACE : exposes
     INSTRUMENT ||--o{ INSTRUMENT_STRING : has
     INSTRUMENT ||--o{ SESSION : selected_for
 
@@ -30,6 +33,8 @@ erDiagram
     SESSION }o--o| DATA_REFERENCE_MANIFEST : cites_for_demo
 
     SAMPLE_ASSET_MANIFEST ||--o{ SAMPLE_ASSET : includes
+    SAMPLE_ASSET ||--o{ INSTRUMENT_CONTROL_SURFACE_SAMPLE_MAP : mapped_by
+    INSTRUMENT_CONTROL_SURFACE ||--o{ INSTRUMENT_CONTROL_SURFACE_SAMPLE_MAP : uses
     SAMPLE_ASSET ||--o{ INSTRUMENT_STRING_SAMPLE_MAP : mapped_by
     INSTRUMENT_STRING ||--o{ INSTRUMENT_STRING_SAMPLE_MAP : uses
 
@@ -47,6 +52,16 @@ erDiagram
         int string_count
         string default_tuning_mode
         string version
+    }
+
+    INSTRUMENT_CONTROL_SURFACE {
+        string id PK
+        string instrument_id FK
+        string surface_type
+        string label
+        int order_index
+        string pitch_role "nullable"
+        json input_schema
     }
 
     INSTRUMENT_STRING {
@@ -77,6 +92,7 @@ erDiagram
         int occurred_at_ms
         string event_type
         int string_index "nullable"
+        string control_surface_id "nullable"
         string active_voice_id "nullable"
         int pitch_bend_cents "nullable"
         float velocity "nullable"
@@ -112,6 +128,15 @@ erDiagram
         int base_pitch_cents
         json envelope
         json quality_flags
+    }
+
+    INSTRUMENT_CONTROL_SURFACE_SAMPLE_MAP {
+        string id PK
+        string control_surface_id FK
+        string sample_asset_id FK
+        string articulation
+        int priority
+        bool is_fallback
     }
 
     INSTRUMENT_STRING_SAMPLE_MAP {
@@ -185,10 +210,11 @@ erDiagram
 
 | 엔티티 | 역할 | MVP 구현 메모 |
 | --- | --- | --- |
-| `Instrument` | 가야금 등 악기 정의 | MVP에서는 `12_string_gayageum` 하나로 시작한다. |
-| `InstrumentString` | 현별 기준 음고와 표시 정보 | 12개 현은 버튼 배열이 아니라 독립 입력/발음 객체다. |
+| `Instrument` | 가야금, 장구, 대금 등 악기 정의 | MVP 제품 범위는 `12_string_gayageum`, `janggu`, `daegeum`이다. |
+| `InstrumentControlSurface` | 악기별 입력면과 발음 제어 영역 | 가야금 현, 장구 북편/채편, 대금 지공/호흡 입력 영역을 같은 방식으로 식별한다. |
+| `InstrumentString` | 가야금 전용 현별 기준 음고와 표시 정보 | 현재 가야금 프로토타입 호환을 위한 세부 엔티티다. 범용 입력면 기준은 `InstrumentControlSurface`를 따른다. |
 | `Session` | 연주의 기준 데이터 | 로컬 저장의 최상위 JSON 문서가 될 수 있다. |
-| `PerformanceEvent` | 연주 이벤트 로그 | `string_pluck`, `glissando_step`, `string_bend`, `string_mute`, `string_release`를 기록한다. |
+| `PerformanceEvent` | 연주 이벤트 로그 | 가야금은 `string_index`, 장구와 대금은 `control_surface_id`와 `payload`로 악기별 입력을 표현한다. |
 | `Recording` | 오디오 렌더링 결과 | 실패해도 `Session` 리플레이는 보존되어야 한다. |
 | `SampleAssetManifest` | 재생 에셋 버전 목록 | 리플레이 시 같은 샘플 환경을 찾기 위해 `Session`에 버전을 남긴다. |
 | `SampleAsset` | 실제 소리 파일과 메타데이터 | `source_layer`는 `public_asset` 또는 `own_asset`만 허용한다. |
@@ -199,7 +225,7 @@ erDiagram
 
 ## Session JSON Shape
 
-MVP에서는 아래처럼 `Session`을 하나의 직렬화 가능한 문서로 저장할 수 있다.
+MVP에서는 아래 가야금 예시처럼 `Session`을 하나의 직렬화 가능한 문서로 저장할 수 있다.
 
 ```json
 {

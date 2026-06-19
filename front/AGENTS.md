@@ -11,11 +11,14 @@
 새 작업을 시작할 때는 다음 순서로 읽는다.
 
 1. `CONTEXT.md`
-2. `docs/README.md`
-3. `docs/domain/README.md`
-4. `docs/system/conventions.md`
-5. 작업 성격에 맞는 세부 문서:
-   - 제품/공모전/시장: `docs/product/gukak-studio-proposal.md`
+2. `docs/document-authority-index.md`
+3. `docs/product/garak-product-brief.md`
+4. `docs/product/screen-flow/current-screen-flow.md`
+5. `docs/domain/README.md`
+6. `docs/system/conventions.md`
+7. 작업 성격에 맞는 세부 문서:
+   - 제품/공모전/시장: `docs/product/garak-product-brief.md`, `docs/product/gukak-studio-proposal.md`
+   - 화면 흐름/CTA/데이터 흐름: `docs/product/screen-flow/current-screen-flow.md`
    - 도메인 모델/용어: `docs/domain/README.md`
    - ERD/직렬화 구조: `docs/architecture/gukak-studio-erd.md`
    - 기술 스택: `docs/architecture/tech-stack.md`
@@ -33,10 +36,12 @@
 ## Documentation Rules
 
 - 문서 하나는 하나의 책임만 가진다.
+- 어떤 질문의 최종 기준 문서가 무엇인지는 `docs/document-authority-index.md`를 따른다.
+- `README.md`는 외부에 보여줄 서비스 소개와 최소 실행 안내를 담으며, 내부 기준 문서로 쓰지 않는다.
 - 제안서는 제품/심사 설득용이다. 구현 지시는 계획 문서에 둔다.
 - ADR은 되돌리기 어렵고, 맥락 없이 보면 이상하며, 실제 대안이 있었던 결정만 기록한다.
 - 구현 계획은 에이전트가 실행할 수 있게 파일 경로, 명령, 검증 방법, fallback을 포함한다.
-- 리뷰 문서는 당시 판단의 스냅샷이다. 새로운 source of truth로 승격하려면 해당 책임 문서에 반영한다.
+- 리뷰 문서는 당시 판단의 스냅샷이다. 새로운 기준으로 승격하려면 해당 책임 문서에 반영한다.
 
 ## Git And Code Conventions
 
