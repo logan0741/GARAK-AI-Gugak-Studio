@@ -4,6 +4,8 @@
 
 MVP에서 가장 중요한 QA는 오디오 품질이다. 에뮬레이터는 터치-발음 지연과 오디오 끊김 판정에 사용하지 않는다.
 
+Day 5 오디오 엔진 판정값은 `day-5-audio-engine-probes.example.json`의 shape를 따라 후보별 probe record로 옮긴다. 최종 선택에 쓰는 probe는 `evidenceSource: 'physical-device'`여야 하며, `npm run qa:day5-audio -- <probe-record.json>` 경로로 검증과 decision summary 생성을 함께 수행한다.
+
 ## Required QA Areas
 
 | 영역 | 기준 |
@@ -14,4 +16,3 @@ MVP에서 가장 중요한 QA는 오디오 품질이다. 에뮬레이터는 터�
 | Glissando | 12현 스와이프 시 입력 누락 없음 |
 | Mute | 지음 후 자연스러운 release 감쇠 |
 | Session fallback | 녹음 실패 시에도 이벤트 세션 보존 |
-
