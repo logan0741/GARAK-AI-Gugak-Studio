@@ -33,7 +33,7 @@ export function planSessionReplay(
     );
   }
 
-  const sampleAssetsByStringIndex = indexSampleAssetsByStringIndex(manifest);
+  const sampleAssetsByReplayKey = indexSampleAssetsByReplayKey(manifest);
   const indexedEvents = session.events.map((event, originalIndex) => {
     assertPerformanceEvent(event);
     return { event, originalIndex };
@@ -60,7 +60,7 @@ export function planSessionReplay(
         manifestVersion: manifest.version,
         originalIndex,
         replayStartMs,
-        sampleAssetsByStringIndex,
+        sampleAssetsByReplayKey,
       }),
     );
 
@@ -77,7 +77,7 @@ function buildReplayScheduleItem(input: {
   manifestVersion: string;
   originalIndex: number;
   replayStartMs: number;
-  sampleAssetsByStringIndex: Map<number, SampleAsset>;
+  sampleAssetsByReplayKey: Map<string, SampleAsset>;
 }): ReplayScheduleItem {
   const baseItem = {
     delayMs: input.event.tsMs - input.replayStartMs,
@@ -89,10 +89,11 @@ function buildReplayScheduleItem(input: {
     return baseItem;
   }
 
-  const sampleAsset = input.sampleAssetsByStringIndex.get(input.event.stringIndex);
+  const sampleAssetKey = getReplaySampleAssetKey(input.event);
+  const sampleAsset = input.sampleAssetsByReplayKey.get(sampleAssetKey);
   if (!sampleAsset) {
     throw new Error(
-      `No sample asset for stringIndex ${input.event.stringIndex} in manifest version ${input.manifestVersion}`,
+      `No sample asset for ${describeEventSampleRequirement(input.event)} in manifest version ${input.manifestVersion}`,
     );
   }
 
@@ -103,22 +104,84 @@ function buildReplayScheduleItem(input: {
   };
 }
 
-function indexSampleAssetsByStringIndex(manifest: SampleAssetManifest): Map<number, SampleAsset> {
-  const sampleAssetsByStringIndex = new Map<number, SampleAsset>();
+function indexSampleAssetsByReplayKey(manifest: SampleAssetManifest): Map<string, SampleAsset> {
+  const sampleAssetsByReplayKey = new Map<string, SampleAsset>();
 
   for (const asset of manifest.assets) {
-    if (sampleAssetsByStringIndex.has(asset.stringIndex)) {
+    const key = getSampleAssetReplayKey(asset);
+    if (sampleAssetsByReplayKey.has(key)) {
       throw new Error(
-        `SampleAssetManifest contains duplicate assets for stringIndex ${asset.stringIndex}`,
+        `SampleAssetManifest contains duplicate assets for ${describeSampleAssetKey(asset)}`,
       );
     }
 
-    sampleAssetsByStringIndex.set(asset.stringIndex, asset);
+    sampleAssetsByReplayKey.set(key, asset);
   }
 
-  return sampleAssetsByStringIndex;
+  return sampleAssetsByReplayKey;
 }
 
 function requiresSampleAsset(event: PerformanceEvent): boolean {
-  return event.type === 'string_pluck' || event.type === 'glissando_step';
+  return (
+    event.type === 'string_pluck' ||
+    event.type === 'glissando_step' ||
+    event.type === 'janggu_hit' ||
+    event.type === 'daegeum_note'
+  );
+}
+
+function getReplaySampleAssetKey(event: PerformanceEvent): string {
+  if (event.type === 'string_pluck' || event.type === 'glissando_step') {
+    return `gayageum_12:string:${event.stringIndex}`;
+  }
+
+  if (event.type === 'janggu_hit') {
+    return `janggu:surface:${event.surface}`;
+  }
+
+  if (event.type === 'daegeum_note') {
+    return `daegeum:fingering:${event.fingering}`;
+  }
+
+  throw new Error(`Performance event does not require a sample asset: ${event.type}`);
+}
+
+function getSampleAssetReplayKey(asset: SampleAsset): string {
+  if (asset.instrument === 'gayageum_12') {
+    return `gayageum_12:string:${asset.stringIndex}`;
+  }
+
+  if (asset.instrument === 'janggu') {
+    return `janggu:surface:${asset.surface}`;
+  }
+
+  return `daegeum:fingering:${asset.fingering}`;
+}
+
+function describeEventSampleRequirement(event: PerformanceEvent): string {
+  if (event.type === 'string_pluck' || event.type === 'glissando_step') {
+    return `stringIndex ${event.stringIndex}`;
+  }
+
+  if (event.type === 'janggu_hit') {
+    return `janggu surface ${event.surface}`;
+  }
+
+  if (event.type === 'daegeum_note') {
+    return `daegeum fingering ${event.fingering}`;
+  }
+
+  return event.type;
+}
+
+function describeSampleAssetKey(asset: SampleAsset): string {
+  if (asset.instrument === 'gayageum_12') {
+    return `stringIndex ${asset.stringIndex}`;
+  }
+
+  if (asset.instrument === 'janggu') {
+    return `janggu surface ${asset.surface}`;
+  }
+
+  return `daegeum fingering ${asset.fingering}`;
 }

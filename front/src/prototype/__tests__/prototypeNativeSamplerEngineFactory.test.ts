@@ -4,7 +4,7 @@ import {
   ReactNativeAudioApiContextPort,
   ReactNativeAudioApiRuntimePort,
 } from '../../audio/reactNativeAudioApiSamplerEngine';
-import { SampleAssetManifest } from '../../domain/sampleManifest';
+import { GayageumSampleAsset, SampleAssetManifest } from '../../domain/sampleManifest';
 import { createAndPreloadPrototypeNativeSamplerEngine } from '../prototypeNativeSamplerEngineFactory';
 
 const defaultDependencyLoadMocks = vi.hoisted(() => ({
@@ -313,7 +313,7 @@ test('rejects sample string indexes outside the 12-string prototype range before
         assets: [
           ...manifest.assets,
           {
-            ...manifest.assets[0],
+            ...(manifest.assets[0] as GayageumSampleAsset),
             id: 'string-13',
             stringIndex: 13,
             fileUri: 'asset://gayageum/13.wav',

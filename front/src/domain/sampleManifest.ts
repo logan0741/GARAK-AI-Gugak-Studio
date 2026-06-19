@@ -1,17 +1,39 @@
-import { assertStringIndex } from './performanceEvent';
+import {
+  DaegeumFingering,
+  JangguSurface,
+  assertDaegeumFingering,
+  assertJangguSurface,
+  assertStringIndex,
+} from './performanceEvent';
 
 export type SampleSourceLayer = 'public_asset' | 'own_asset';
 
-export type SampleAsset = {
+type BaseSampleAsset = {
   id: string;
-  instrument: 'gayageum_12';
-  stringIndex: number;
-  pitchHz: number;
   fileUri: string;
   sourceLayer: SampleSourceLayer;
   sourceName: string;
   licenseNote: string;
 };
+
+export type GayageumSampleAsset = BaseSampleAsset & {
+  instrument: 'gayageum_12';
+  stringIndex: number;
+  pitchHz: number;
+};
+
+export type JangguSampleAsset = BaseSampleAsset & {
+  instrument: 'janggu';
+  surface: JangguSurface;
+};
+
+export type DaegeumSampleAsset = BaseSampleAsset & {
+  instrument: 'daegeum';
+  fingering: DaegeumFingering;
+  pitchHz: number;
+};
+
+export type SampleAsset = GayageumSampleAsset | JangguSampleAsset | DaegeumSampleAsset;
 
 export type SampleAssetManifest = {
   version: string;
@@ -40,44 +62,99 @@ function requireSourceLayer(value: unknown): SampleSourceLayer {
   return value;
 }
 
+function requirePositiveFiniteNumber(value: unknown, errorMessage: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new Error(errorMessage);
+  }
+
+  return value;
+}
+
+function validateGayageumSampleAsset(input: {
+  assetCandidate: UnknownRecord;
+  base: BaseSampleAsset;
+}): GayageumSampleAsset {
+  if (typeof input.assetCandidate.stringIndex !== 'number') {
+    throw new Error('stringIndex must be a number');
+  }
+
+  assertStringIndex(input.assetCandidate.stringIndex);
+  const pitchHz = requirePositiveFiniteNumber(
+    input.assetCandidate.pitchHz,
+    'pitchHz must be a positive finite number',
+  );
+
+  return {
+    ...input.base,
+    instrument: 'gayageum_12',
+    stringIndex: input.assetCandidate.stringIndex,
+    pitchHz,
+  };
+}
+
+function validateJangguSampleAsset(input: {
+  assetCandidate: UnknownRecord;
+  base: BaseSampleAsset;
+}): JangguSampleAsset {
+  assertJangguSurface(input.assetCandidate.surface as JangguSurface);
+
+  return {
+    ...input.base,
+    instrument: 'janggu',
+    surface: input.assetCandidate.surface as JangguSurface,
+  };
+}
+
+function validateDaegeumSampleAsset(input: {
+  assetCandidate: UnknownRecord;
+  base: BaseSampleAsset;
+}): DaegeumSampleAsset {
+  assertDaegeumFingering(input.assetCandidate.fingering as DaegeumFingering);
+  const pitchHz = requirePositiveFiniteNumber(
+    input.assetCandidate.pitchHz,
+    'pitchHz must be a positive finite number',
+  );
+
+  return {
+    ...input.base,
+    instrument: 'daegeum',
+    fingering: input.assetCandidate.fingering as DaegeumFingering,
+    pitchHz,
+  };
+}
+
 function validateSampleAsset(assetCandidate: unknown): SampleAsset {
   if (!isRecord(assetCandidate)) {
     throw new Error('SampleAsset must be an object');
   }
 
   const id = requireNonEmptyString(assetCandidate.id, 'SampleAsset.id is required');
-
-  if (assetCandidate.instrument !== 'gayageum_12') {
-    throw new Error('instrument must be gayageum_12');
-  }
-  if (typeof assetCandidate.stringIndex !== 'number') {
-    throw new Error('stringIndex must be a number');
-  }
-  if (
-    typeof assetCandidate.pitchHz !== 'number' ||
-    !Number.isFinite(assetCandidate.pitchHz) ||
-    assetCandidate.pitchHz <= 0
-  ) {
-    throw new Error('pitchHz must be a positive finite number');
-  }
-
-  assertStringIndex(assetCandidate.stringIndex);
-
   const fileUri = requireNonEmptyString(assetCandidate.fileUri, `SampleAsset ${id} must include fileUri`);
   const sourceLayer = requireSourceLayer(assetCandidate.sourceLayer);
   const sourceName = requireNonEmptyString(assetCandidate.sourceName, `SampleAsset ${id} must include sourceName and licenseNote`);
   const licenseNote = requireNonEmptyString(assetCandidate.licenseNote, `SampleAsset ${id} must include sourceName and licenseNote`);
 
-  return {
+  const base = {
     id,
-    instrument: 'gayageum_12',
-    stringIndex: assetCandidate.stringIndex,
-    pitchHz: assetCandidate.pitchHz,
     fileUri,
     sourceLayer,
     sourceName,
     licenseNote,
   };
+
+  if (assetCandidate.instrument === 'gayageum_12') {
+    return validateGayageumSampleAsset({ assetCandidate, base });
+  }
+
+  if (assetCandidate.instrument === 'janggu') {
+    return validateJangguSampleAsset({ assetCandidate, base });
+  }
+
+  if (assetCandidate.instrument === 'daegeum') {
+    return validateDaegeumSampleAsset({ assetCandidate, base });
+  }
+
+  throw new Error('instrument must be gayageum_12, janggu, or daegeum');
 }
 
 export function validateSampleAssetManifest(manifest: unknown): SampleAssetManifest {
@@ -94,4 +171,40 @@ export function validateSampleAssetManifest(manifest: unknown): SampleAssetManif
     version,
     assets: manifest.assets.map(validateSampleAsset),
   };
+}
+
+export function isGayageumSampleAsset(asset: SampleAsset): asset is GayageumSampleAsset {
+  return asset.instrument === 'gayageum_12';
+}
+
+export function isJangguSampleAsset(asset: SampleAsset): asset is JangguSampleAsset {
+  return asset.instrument === 'janggu';
+}
+
+export function isDaegeumSampleAsset(asset: SampleAsset): asset is DaegeumSampleAsset {
+  return asset.instrument === 'daegeum';
+}
+
+export function getSampleAssetPlaybackKey(asset: SampleAsset): string {
+  if (isGayageumSampleAsset(asset)) {
+    return `gayageum_12:string:${asset.stringIndex}`;
+  }
+
+  if (isJangguSampleAsset(asset)) {
+    return `janggu:surface:${asset.surface}`;
+  }
+
+  return `daegeum:fingering:${asset.fingering}`;
+}
+
+export function describeSampleAssetPlaybackTarget(asset: SampleAsset): string {
+  if (isGayageumSampleAsset(asset)) {
+    return `string ${asset.stringIndex}`;
+  }
+
+  if (isJangguSampleAsset(asset)) {
+    return `janggu surface ${asset.surface}`;
+  }
+
+  return `daegeum fingering ${asset.fingering}`;
 }

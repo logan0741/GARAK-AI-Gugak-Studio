@@ -207,6 +207,87 @@ erDiagram
     }
 ```
 
+## Studio Work / Layer Model
+
+자유창작 화면에서 사용자가 체감하는 저장 단위는 단일 `Session`보다 상위의 `Work`다. `Work`는 여러 레이어를 가진 편집 가능한 곡 후보이며, 서버 저장이 붙을 경우 1차 전송 단위의 후보가 된다.
+
+```mermaid
+erDiagram
+    WORK ||--o{ TRACK : contains
+    TRACK ||--o{ TAKE : contains
+    TAKE }o--|| SESSION : preserves
+    WORK ||--o{ EXPORTED_AUDIO : renders_to
+    JANGDAN_PRESET ||--o{ ACCOMPANIMENT_TRACK : configures
+    TRACK ||--o| ACCOMPANIMENT_TRACK : may_be
+
+    WORK {
+        string id PK
+        string title
+        string source
+        string sync_state
+        int created_at_ms
+        int updated_at_ms
+        json edit_settings
+    }
+
+    TRACK {
+        string id PK
+        string work_id FK
+        string kind
+        string instrument_id "nullable"
+        int started_at_beat
+        float volume
+        bool mute
+        bool solo
+        int created_at_ms
+    }
+
+    TAKE {
+        string id PK
+        string track_id FK
+        string session_id FK
+        int started_at_beat
+        int duration_beats
+        int bpm
+        string meter
+        string jangdan_preset_id "nullable"
+        string recording_uri "nullable"
+    }
+
+    ACCOMPANIMENT_TRACK {
+        string id PK
+        string track_id FK
+        string jangdan_preset_id FK
+        int bpm
+        float volume
+        int started_at_beat
+    }
+
+    EXPORTED_AUDIO {
+        string id PK
+        string work_id FK
+        string title
+        string file_uri
+        int duration_ms
+        string share_state
+        int created_at_ms
+    }
+```
+
+- `Work.sync_state`는 `local_only`, `synced`, `account_only`, `conflict` 같은 상태로 로컬 저장과 서버 동기화를 분리한다.
+- `Take`는 녹음 직전 확정한 BPM, 박자, 장단을 보존한다.
+- `ExportedAudio`는 공유/재생용 산출물이며, 편집 가능한 Work를 대체하지 않는다.
+- 단일 `Session`을 서버에 저장할지, `Work`와 `ExportedAudio`만 서버에 저장할지는 백엔드 API 계약에서 확정한다.
+
+### Storage Footprint Rules
+
+- Instrument Track은 레이어별 렌더링 파일 URI를 필수 필드로 갖지 않는다.
+- Instrument Track의 재생 가능성은 `Take.events`, `Track.instrument_id`, `Session.sample_asset_manifest_id`로 보장한다.
+- `Take.recording_uri`는 선택적 캡처 또는 캐시 URI이며, 없더라도 이벤트 리플레이가 가능해야 한다.
+- `ExportedAudio.file_uri`는 공유/재생용 산출물 URI다. 서버 전송 또는 동기화 후 로컬에서는 캐시로 관리할 수 있다.
+- 장기 보존의 기준은 Work와 이벤트 로그이고, 긴 오디오 파일은 사용자가 내보내거나 공유할 때만 명시적으로 만든다.
+- 앱은 샘플팩을 `SampleAssetManifest.version` 단위로 캐시하고, 사용하지 않는 고품질/확장 샘플팩은 삭제 가능해야 한다.
+
 ## Entity Notes
 
 | 엔티티 | 역할 | MVP 구현 메모 |
