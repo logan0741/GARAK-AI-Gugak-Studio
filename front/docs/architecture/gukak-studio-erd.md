@@ -23,6 +23,7 @@
 ```mermaid
 erDiagram
     INSTRUMENT ||--o{ INSTRUMENT_CONTROL_SURFACE : exposes
+    INSTRUMENT_CONTROL_SURFACE ||--o{ PERFORMANCE_EVENT : triggers
     INSTRUMENT ||--o{ INSTRUMENT_STRING : has
     INSTRUMENT ||--o{ SESSION : selected_for
 
@@ -92,7 +93,7 @@ erDiagram
         int occurred_at_ms
         string event_type
         int string_index "nullable"
-        string control_surface_id "nullable"
+        string control_surface_id FK "nullable"
         string active_voice_id "nullable"
         int pitch_bend_cents "nullable"
         float velocity "nullable"
