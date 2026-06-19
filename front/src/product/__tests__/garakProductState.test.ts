@@ -74,6 +74,16 @@ test('keeps live jangdan guide separate from accompaniment track creation', () =
   expect(state.screenFlow.currentScreen).toBe('S07');
   expect(workAfterLiveGuide.tracks).toHaveLength(1);
   expect(workAfterLiveGuide.tracks[0].kind).toBe('instrument');
+  expect(
+    workAfterLiveGuide.tracks[0].kind === 'instrument'
+      ? workAfterLiveGuide.tracks[0].takes[0].liveJangdanGuide
+      : undefined,
+  ).toEqual({
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.6,
+    startedAtBeat: 1,
+  });
 
   state = applyProductAction(state, { type: 'addTrack' });
   state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
@@ -90,6 +100,67 @@ test('keeps live jangdan guide separate from accompaniment track creation', () =
     kind: 'accompaniment',
     presetId: 'semachi',
   });
+});
+
+test('adds new tracks at the provided playhead beat', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack', playheadBeat: 5 });
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
+  state = applyProductAction(state, {
+    type: 'addAccompanimentTrack',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.7,
+    playheadBeat: 9,
+  });
+
+  const [, instrumentTrack, accompanimentTrack] = state.library.works[0].tracks;
+  expect(instrumentTrack).toMatchObject({
+    kind: 'instrument',
+    startedAtBeat: 5,
+  });
+  expect(accompanimentTrack).toMatchObject({
+    kind: 'accompaniment',
+    startedAtBeat: 9,
+  });
+});
+
+test('opens a selected library work in S07 and sets it current', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = {
+    ...state,
+    currentWorkId: undefined,
+    screenFlow: {
+      currentScreen: 'S18',
+      history: ['S01'],
+      mode: 'freeCreation',
+    },
+  };
+  state = applyProductAction(state, { type: 'openWork', workId: 'work-1' });
+
+  expect(state.currentWorkId).toBe('work-1');
+  expect(state.screenFlow.currentScreen).toBe('S07');
 });
 
 test('saves a practice result as a shareable library item without creating a work', () => {

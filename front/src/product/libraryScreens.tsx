@@ -21,7 +21,7 @@ export function LibraryContent({
           <Pressable
             accessibilityRole="button"
             key={work.id}
-            onPress={() => dispatch({ type: 'navigate', target: 'S07' })}
+            onPress={() => dispatch({ type: 'openWork', workId: work.id })}
             style={styles.listItem}
           >
             <Text style={styles.itemTitle}>{work.title}</Text>

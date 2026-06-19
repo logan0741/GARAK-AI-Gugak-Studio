@@ -157,13 +157,16 @@ export function InstrumentSettingsContent({
           </View>
         ))}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'startWithDefaults' })}
-        style={styles.primaryButton}
-      >
-        <Text style={styles.primaryButtonText}>기본값으로 시작</Text>
-      </Pressable>
+      <View style={styles.buttonRow}>
+        <SecondaryButton label="직접 조정" onPress={() => dispatch({ type: 'navigate', target: 'S04' })} />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => dispatch({ type: 'startWithDefaults' })}
+          style={[styles.primaryButton, styles.rowButton]}
+        >
+          <Text style={styles.primaryButtonText}>기본값으로 시작</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -595,6 +598,9 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  rowButton: {
+    flex: 1,
   },
   timeline: {
     backgroundColor: '#d6d6d6',

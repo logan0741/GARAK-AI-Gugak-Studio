@@ -6,6 +6,7 @@ import {
   InstrumentTrack,
   JangdanPresetId,
   LibrarySections,
+  LiveJangdanGuide,
   PracticeResult,
   Take,
   Work,
@@ -30,6 +31,7 @@ export function autoSaveTakeAsWork(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  liveJangdanGuide?: LiveJangdanGuide;
 }): Work {
   const take = createTake({
     id: input.takeId,
@@ -37,6 +39,7 @@ export function autoSaveTakeAsWork(input: {
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    liveJangdanGuide: input.liveJangdanGuide,
   });
 
   return {
@@ -208,6 +211,7 @@ function createTake(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  liveJangdanGuide?: LiveJangdanGuide;
 }): Take {
   return {
     id: input.id,
@@ -215,6 +219,7 @@ function createTake(input: {
     recordingUri: normalizeOptionalText(input.recordingUri),
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
+    liveJangdanGuide: input.liveJangdanGuide,
   };
 }
 

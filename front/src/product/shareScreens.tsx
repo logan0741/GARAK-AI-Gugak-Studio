@@ -24,8 +24,16 @@ export function SharePrepareContent({
         </Text>
       </View>
       <View style={styles.buttonRow}>
-        <SecondaryButton label="공유하기" onPress={() => dispatch({ type: 'navigate', target: 'S20' })} />
-        <SecondaryButton label="저장만 하기" onPress={() => dispatch({ type: 'navigate', target: 'S18' })} />
+        <SecondaryButton
+          disabled={!hasShareable}
+          label="공유하기"
+          onPress={() => dispatch({ type: 'navigate', target: 'S20' })}
+        />
+        <SecondaryButton
+          disabled={!hasShareable}
+          label="저장만 하기"
+          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
+        />
       </View>
     </View>
   );
@@ -64,9 +72,23 @@ export function SharedDetailContent({ dispatch }: { state: GarakProductState; di
   );
 }
 
-function SecondaryButton({ label, onPress }: { label: string; onPress: () => void }) {
+function SecondaryButton({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.secondaryButton}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled === true }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.secondaryButton, disabled ? styles.disabledButton : undefined]}
+    >
       <Text style={styles.secondaryButtonText}>{label}</Text>
     </Pressable>
   );
@@ -110,6 +132,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     minHeight: 44,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   secondaryButtonText: {
     color: '#555555',

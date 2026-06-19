@@ -69,9 +69,9 @@ export type GarakProductAction =
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
   | { type: 'addTrack' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
-  | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[] }
+  | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
   | { type: 'chooseAccompanimentTrack' }
-  | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number }
+  | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
   | { type: 'exportCurrentWork' }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeInstrument'; instrument: InstrumentId }
@@ -80,7 +80,8 @@ export type GarakProductAction =
   | { type: 'sharePracticeResult' }
   | { type: 'loginAndLoadMySongs' }
   | { type: 'navigate'; target: ImplementedScreenId }
-  | { type: 'back' };
+  | { type: 'back' }
+  | { type: 'openWork'; workId: string };
 
 export type ScreenSummary = {
   id: ImplementedScreenId;
@@ -118,6 +119,15 @@ export function applyProductAction(
   action: GarakProductAction,
 ): GarakProductState {
   switch (action.type) {
+    case 'openWork':
+      return {
+        ...state,
+        currentWorkId: action.workId,
+        screenFlow: transitionScreenFlow(state.screenFlow, {
+          type: 'navigate',
+          target: 'S07',
+        }),
+      };
     case 'selectMode':
       return {
         ...state,
@@ -171,7 +181,7 @@ export function applyProductAction(
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S09' }),
       };
     case 'applyInstrumentTrack':
-      return applyInstrumentTrack(state, action.events ?? []);
+      return applyInstrumentTrack(state, action.events ?? [], action.playheadBeat);
     case 'chooseAccompanimentTrack':
       return {
         ...state,
@@ -369,12 +379,21 @@ function completePerformance(state: GarakProductState, events: PerformanceEvent[
     createdAt: now,
     startedAtBeat: 1,
     durationBeats: 4,
+    liveJangdanGuide: state.pendingLiveJangdanGuide
+      ? {
+          presetId: state.pendingLiveJangdanGuide.presetId,
+          bpm: state.pendingLiveJangdanGuide.bpm,
+          volume: state.pendingLiveJangdanGuide.volume,
+          startedAtBeat: 1,
+        }
+      : undefined,
   });
 
   return {
     ...state,
     counters: nextCounters,
     currentWorkId: work.id,
+    pendingLiveJangdanGuide: undefined,
     library: {
       ...state.library,
       works: [...state.library.works, work],
@@ -404,7 +423,11 @@ function routeProductNext(state: GarakProductState): ScreenFlowState {
   return state.screenFlow;
 }
 
-function applyInstrumentTrack(state: GarakProductState, events: PerformanceEvent[]): GarakProductState {
+function applyInstrumentTrack(
+  state: GarakProductState,
+  events: PerformanceEvent[],
+  playheadBeat?: number,
+): GarakProductState {
   const currentWork = findCurrentWork(state);
   if (currentWork === undefined) {
     return state;
@@ -419,7 +442,7 @@ function applyInstrumentTrack(state: GarakProductState, events: PerformanceEvent
     events,
     createdAt: now,
     durationBeats: 4,
-    playheadBeat: 1,
+    playheadBeat,
   });
 
   return replaceCurrentWork(state, nextWork, nextCounters, 'S07');
@@ -441,7 +464,7 @@ function applyAccompanimentTrack(
     bpm: action.bpm,
     volume: action.volume,
     createdAt: state.now(),
-    playheadBeat: 1,
+    playheadBeat: action.playheadBeat,
   });
 
   return replaceCurrentWork(
