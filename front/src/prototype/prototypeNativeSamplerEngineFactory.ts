@@ -15,26 +15,50 @@ export type PrototypeNativeSamplerEngineRuntimePorts = {
   createReactNativeAudioApiRuntimePort(): ReactNativeAudioApiRuntimePort;
 };
 
+export type PrototypeSampleAssetResolver = {
+  resolveFileUri(fileUri: string): Promise<string>;
+};
+
 export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   candidate: AudioEngineCandidateId;
   manifest: SampleAssetManifest;
+  assetResolver?: PrototypeSampleAssetResolver;
   runtimePorts?: PrototypeNativeSamplerEngineRuntimePorts;
 }): Promise<SamplerEngine> {
   const runtimePorts = input.runtimePorts ?? await loadDefaultRuntimePorts(input.candidate);
+  const manifest = await resolveSampleAssetManifestUris({
+    manifest: input.manifest,
+    assetResolver: input.assetResolver ?? await loadDefaultSampleAssetResolver(),
+  });
   const engine =
     input.candidate === 'expo-audio'
       ? new ExpoAudioSamplerEngine({
-          manifest: input.manifest,
+          manifest,
           runtime: runtimePorts.createExpoAudioRuntimePort(),
         })
       : new ReactNativeAudioApiSamplerEngine({
-          manifest: input.manifest,
+          manifest,
           runtime: runtimePorts.createReactNativeAudioApiRuntimePort(),
         });
 
   await engine.preload();
 
   return engine;
+}
+
+export async function resolveSampleAssetManifestUris(input: {
+  manifest: SampleAssetManifest;
+  assetResolver: PrototypeSampleAssetResolver;
+}): Promise<SampleAssetManifest> {
+  return {
+    ...input.manifest,
+    assets: await Promise.all(
+      input.manifest.assets.map(async (asset) => ({
+        ...asset,
+        fileUri: await input.assetResolver.resolveFileUri(asset.fileUri),
+      })),
+    ),
+  };
 }
 
 async function loadDefaultRuntimePorts(
@@ -56,5 +80,32 @@ async function loadDefaultRuntimePorts(
       throw new Error('expo-audio runtime was not loaded for react-native-audio-api candidate');
     },
     createReactNativeAudioApiRuntimePort,
+  };
+}
+
+async function loadDefaultSampleAssetResolver(): Promise<PrototypeSampleAssetResolver> {
+  const [{ Asset }, { prototypeBundledSampleAssetModules }] = await Promise.all([
+    import('expo-asset'),
+    import('./prototypeBundledSampleAssetRegistry'),
+  ]);
+
+  return {
+    async resolveFileUri(fileUri) {
+      const moduleId = prototypeBundledSampleAssetModules[fileUri];
+
+      if (moduleId === undefined) {
+        throw new Error(`No bundled prototype sample module for ${fileUri}`);
+      }
+
+      const asset = Asset.fromModule(moduleId);
+      await asset.downloadAsync();
+
+      const resolvedUri = asset.localUri ?? asset.uri;
+      if (!resolvedUri) {
+        throw new Error(`Bundled prototype sample did not resolve to a URI: ${fileUri}`);
+      }
+
+      return resolvedUri;
+    },
   };
 }

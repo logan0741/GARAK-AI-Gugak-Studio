@@ -25,6 +25,10 @@ const EVIDENCE_SOURCES: AudioEngineEvidenceSource[] = [
   'unit-test',
   'estimate',
 ];
+const PHYSICAL_DEVICE_LABEL_PLACEHOLDERS = new Set([
+  'replace-with-physical-device-model',
+]);
+const UTC_ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 const DURATION_PROBE_FIELDS = ['touchToSoundLatencyMs', 'recordingCaptureSeconds'] as const satisfies ReadonlyArray<
   keyof AudioEngineProbe
@@ -33,6 +37,7 @@ const DURATION_PROBE_FIELDS = ['touchToSoundLatencyMs', 'recordingCaptureSeconds
 const COUNT_PROBE_FIELDS = ['maxStableVoices', 'glissandoTriggeredStrings'] as const satisfies ReadonlyArray<
   keyof AudioEngineProbe
 >;
+const MAX_GAYAGEUM_STRING_COUNT = 12;
 
 const BOOLEAN_PROBE_FIELDS = [
   'pitchBendSmooth',
@@ -53,6 +58,8 @@ export function parseAudioEngineProbeRecord(input: unknown): AudioEngineProbeRec
 
   if (!isNonEmptyString(input.generatedAt)) {
     errors.push('generatedAt must be a non-empty string');
+  } else if (!isUtcIsoTimestamp(input.generatedAt)) {
+    errors.push('generatedAt must be a UTC ISO timestamp');
   }
   if (!Array.isArray(input.probes)) {
     errors.push('probes must be an array');
@@ -112,9 +119,16 @@ function parseProbe(
   }
   if (!isNonEmptyString(probe.deviceLabel)) {
     errors.push(`${path}.deviceLabel must be a non-empty string`);
+  } else if (
+    probe.evidenceSource === 'physical-device' &&
+    PHYSICAL_DEVICE_LABEL_PLACEHOLDERS.has(normalizeLabel(probe.deviceLabel))
+  ) {
+    errors.push(`${path}.deviceLabel must name the physical device when evidenceSource is physical-device`);
   }
   if (!isNonEmptyString(probe.measuredAt)) {
     errors.push(`${path}.measuredAt must be a non-empty string`);
+  } else if (!isUtcIsoTimestamp(probe.measuredAt)) {
+    errors.push(`${path}.measuredAt must be a UTC ISO timestamp`);
   }
 
   for (const field of DURATION_PROBE_FIELDS) {
@@ -127,6 +141,13 @@ function parseProbe(
     if (!isNonNegativeInteger(probe[field])) {
       errors.push(`${path}.${field} must be an integer >= 0`);
     }
+  }
+
+  if (
+    isNonNegativeInteger(probe.glissandoTriggeredStrings) &&
+    probe.glissandoTriggeredStrings > MAX_GAYAGEUM_STRING_COUNT
+  ) {
+    errors.push(`${path}.glissandoTriggeredStrings must be an integer from 0 to 12`);
   }
 
   for (const field of BOOLEAN_PROBE_FIELDS) {
@@ -164,6 +185,14 @@ function isObject(input: unknown): input is Record<string, unknown> {
 
 function isNonEmptyString(input: unknown): input is string {
   return typeof input === 'string' && input.trim().length > 0;
+}
+
+function normalizeLabel(input: string): string {
+  return input.trim().toLowerCase();
+}
+
+function isUtcIsoTimestamp(input: string): boolean {
+  return UTC_ISO_TIMESTAMP_PATTERN.test(input) && Number.isFinite(Date.parse(input));
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {

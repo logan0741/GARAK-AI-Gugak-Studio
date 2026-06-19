@@ -136,6 +136,65 @@ test('keeps estimate records from satisfying the physical-device Day 5 gate', ()
   });
 });
 
+test('rejects physical-device probes that still use the placeholder device label', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          deviceLabel: 'replace-with-physical-device-model',
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'probes[0].deviceLabel must name the physical device when evidenceSource is physical-device',
+    ],
+  });
+});
+
+test('requires UTC ISO timestamps for generated and measured probe times', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      generatedAt: 'June 8, 2026 10:00',
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          measuredAt: '2026/06/08 10:05',
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'generatedAt must be a UTC ISO timestamp',
+      'probes[0].measuredAt must be a UTC ISO timestamp',
+    ],
+  });
+});
+
+test('rejects glissando counts above the 12 string instrument range', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          glissandoTriggeredStrings: 13,
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'probes[0].glissandoTriggeredStrings must be an integer from 0 to 12',
+    ],
+  });
+});
+
 test('parses the documented probe handoff example without satisfying the final gate', () => {
   const example = JSON.parse(
     readFileSync('docs/qa/day-5-audio-engine-probes.example.json', 'utf8'),

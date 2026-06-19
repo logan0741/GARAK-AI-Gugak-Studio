@@ -33,3 +33,10 @@ export function appendPerformanceEvent(session: Session, event: PerformanceEvent
     events: [...session.events, event],
   };
 }
+
+export function attachRecordingUriToSession(session: Session, recordingUri: string): Session {
+  return {
+    ...session,
+    recordingUri,
+  };
+}

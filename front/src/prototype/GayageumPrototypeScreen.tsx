@@ -3,6 +3,7 @@ import {
   GestureResponderEvent,
   PanResponder,
   PanResponderGestureState,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,7 @@ import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import { FakeSamplerEngine } from '../audio/fakeSamplerEngine';
 import { VoiceState } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
-import { createEmptySession } from '../domain/session';
+import { attachRecordingUriToSession, createEmptySession } from '../domain/session';
 import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
@@ -21,11 +22,29 @@ import {
   safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
 import {
+  getPrototypeInstrumentMinimumHeight,
+  PROTOTYPE_INSTRUMENT_VERTICAL_PADDING,
+  PROTOTYPE_STRING_COUNT,
+  PROTOTYPE_STRING_LINE_HEIGHT,
+  PROTOTYPE_STRING_ROW_MIN_HEIGHT,
+} from './prototypeLayout';
+import {
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
   formatPrototypeProbeDraftForInspector,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
+import {
+  playCapturedPrototypeRecordingProbe,
+  startPrototypeRecordingProbe,
+  stopPrototypeRecordingProbe,
+} from './prototypeRecordingProbeController';
+import {
+  formatRecordingProbeState,
+  selectPlayableRecordingUri,
+  type RecordingProbeUiState,
+} from './prototypeRecordingProbeUi';
+import { shouldStartPrototypeNativeAudioCandidate } from './prototypePlatform';
 import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
 import {
   createPrototypeSamplerEngineHost,
@@ -35,14 +54,19 @@ import {
   PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
   prototypeGayageumSampleManifest,
 } from './prototypeSampleManifest';
+import { formatPrototypeSessionFallbackForInspector } from './prototypeSessionFallback';
 
-const STRING_COUNT = 12;
-const ALL_STRINGS = Array.from({ length: STRING_COUNT }, (_, index) => index + 1);
-const FALLBACK_INSTRUMENT_HEIGHT = 312;
+const ALL_STRINGS = Array.from({ length: PROTOTYPE_STRING_COUNT }, (_, index) => index + 1);
+const FALLBACK_INSTRUMENT_HEIGHT = getPrototypeInstrumentMinimumHeight({
+  stringCount: PROTOTYPE_STRING_COUNT,
+});
 const PRIMARY_POINTER_ID = 'primary-touch';
 const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api';
 const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
 const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
+const RECORDING_PROBE_SECONDS = 10;
+const CAN_START_NATIVE_AUDIO_CANDIDATE = shouldStartPrototypeNativeAudioCandidate(Platform.OS);
+const NATIVE_AUDIO_UNAVAILABLE_REASON = 'native audio candidate requires Expo dev build on iOS or Android';
 
 type NativeCandidateLoadState = {
   candidate: AudioEngineCandidateId;
@@ -53,10 +77,22 @@ export function GayageumPrototypeScreen() {
   const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
   const [nativeCandidateLoadState, setNativeCandidateLoadState] = useState<NativeCandidateLoadState>(() => ({
     candidate: DEFAULT_PROBE_CANDIDATE,
-    state: { status: 'preloading' },
+    state: CAN_START_NATIVE_AUDIO_CANDIDATE
+      ? { status: 'preloading' }
+      : { status: 'failed', errorMessage: NATIVE_AUDIO_UNAVAILABLE_REASON },
   }));
   useEffect(() => {
     let cancelled = false;
+
+    if (!CAN_START_NATIVE_AUDIO_CANDIDATE) {
+      setNativeCandidateLoadState({
+        candidate: probeCandidate,
+        state: { status: 'failed', errorMessage: NATIVE_AUDIO_UNAVAILABLE_REASON },
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     setNativeCandidateLoadState({
       candidate: probeCandidate,
@@ -105,6 +141,12 @@ export function GayageumPrototypeScreen() {
   const engine = engineHost.engine;
   const engineRef = useRef(engine);
   engineRef.current = engine;
+  const [recordingProbeState, setRecordingProbeState] = useState<RecordingProbeUiState>({
+    status: 'idle',
+  });
+  useEffect(() => {
+    setRecordingProbeState({ status: 'idle' });
+  }, [engineHost.activeRuntime, engineHost.requestedCandidate, engineHost.status]);
   const [instrumentHeight, setInstrumentHeight] = useState(FALLBACK_INSTRUMENT_HEIGHT);
   const touchModel = useMemo(
     () =>
@@ -112,7 +154,7 @@ export function GayageumPrototypeScreen() {
         layout: {
           topY: 0,
           height: instrumentHeight,
-          stringCount: STRING_COUNT,
+          stringCount: PROTOTYPE_STRING_COUNT,
         },
       }),
     [instrumentHeight],
@@ -139,12 +181,14 @@ export function GayageumPrototypeScreen() {
     }
     setSession((current) => appendEventsToSession(current, events));
     const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
+    const dispatchedAtMs = Date.now();
     const currentEngine = engineRef.current;
     setAudioError(result.ok ? undefined : result.errorMessage);
     setQaSnapshot((current) =>
       updatePrototypeQaSnapshot(current, {
         activeVoiceCount: countPrototypeAudibleVoices(getFakeEngineSnapshot(currentEngine).activeVoices),
         audioDispatchOk: result.ok,
+        dispatchedAtMs,
         events,
         measuredAt: new Date().toISOString(),
       }),
@@ -169,6 +213,36 @@ export function GayageumPrototypeScreen() {
     });
 
     applyPerformanceEvents(events);
+  }
+
+  async function handleStartRecordingProbe() {
+    const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
+    setRecordingProbeState(result);
+  }
+
+  async function handleStopRecordingProbe() {
+    const result = await stopPrototypeRecordingProbe(engineRef.current);
+    setRecordingProbeState(result);
+    if (result.status === 'captured') {
+      const { recordingUri } = result;
+      if (typeof recordingUri === 'string') {
+        setSession((current) => attachRecordingUriToSession(current, recordingUri));
+      }
+    }
+  }
+
+  async function handlePlayRecordingProbe() {
+    const recordingUri = selectPlayableRecordingUri({
+      recordingProbeState,
+      sessionRecordingUri: session.recordingUri,
+    });
+    if (recordingUri === null) {
+      setRecordingProbeState({ status: 'failed', errorMessage: 'recording_playback_uri_missing' });
+      return;
+    }
+
+    const result = await playCapturedPrototypeRecordingProbe(engineRef.current, recordingUri);
+    setRecordingProbeState(result);
   }
 
   function handleTouchFrame(phase: TouchFrame['phase'], event: GestureResponderEvent, gestureState: PanResponderGestureState) {
@@ -205,6 +279,11 @@ export function GayageumPrototypeScreen() {
   const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
   const commands = fakeEngineSnapshot.commands;
   const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
+  const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const playableRecordingUri = selectPlayableRecordingUri({
+    recordingProbeState,
+    sessionRecordingUri: session.recordingUri,
+  });
 
   return (
     <View style={styles.screen}>
@@ -247,6 +326,38 @@ export function GayageumPrototypeScreen() {
         ))}
       </View>
 
+      <View style={styles.recordingControls}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Start 10 second recording probe"
+          onPress={handleStartRecordingProbe}
+          style={styles.recordingButton}
+        >
+          <Text style={styles.recordingButtonText}>Rec 10s</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Stop recording probe"
+          onPress={handleStopRecordingProbe}
+          style={[styles.recordingButton, styles.recordingStopButton]}
+        >
+          <Text style={styles.recordingButtonText}>Stop Rec</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Play captured recording probe"
+          disabled={playableRecordingUri === null}
+          onPress={handlePlayRecordingProbe}
+          style={[
+            styles.recordingButton,
+            styles.recordingPlaybackButton,
+            playableRecordingUri === null ? styles.recordingDisabledButton : undefined,
+          ]}
+        >
+          <Text style={styles.recordingButtonText}>Play Rec</Text>
+        </Pressable>
+      </View>
+
       <View
         {...panResponder.panHandlers}
         onLayout={(event) => setInstrumentHeight(event.nativeEvent.layout.height)}
@@ -275,6 +386,9 @@ export function GayageumPrototypeScreen() {
         </Text>
         <Text style={styles.inspectorText}>Native preload: {formatNativePreloadStatus(engineHost)}</Text>
         <Text style={styles.inspectorText}>
+          Recording probe: {formatRecordingProbeState(recordingProbeState)}
+        </Text>
+        <Text style={styles.inspectorText}>
           Missing sample strings: {engineHost.missingStringIndexes.join(', ') || 'none'}
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
@@ -285,6 +399,10 @@ export function GayageumPrototypeScreen() {
         <Text style={styles.inspectorTitle}>Probe draft (estimate only, fake engine counters)</Text>
         <Text selectable style={styles.probeDraftText}>
           {probeDraftText}
+        </Text>
+        <Text style={styles.inspectorTitle}>Session fallback (copyable)</Text>
+        <Text selectable style={styles.probeDraftText}>
+          {sessionFallbackText}
         </Text>
       </ScrollView>
     </View>
@@ -346,8 +464,9 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     minHeight: 56,
   },
   headerText: {
@@ -381,6 +500,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  recordingControls: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   candidateButton: {
     alignItems: 'center',
     borderColor: '#80b8aa',
@@ -402,6 +525,29 @@ const styles = StyleSheet.create({
   candidateButtonTextSelected: {
     color: '#101418',
   },
+  recordingButton: {
+    alignItems: 'center',
+    backgroundColor: '#80b8aa',
+    borderRadius: 8,
+    justifyContent: 'center',
+    minHeight: 36,
+    minWidth: 96,
+    paddingHorizontal: 12,
+  },
+  recordingStopButton: {
+    backgroundColor: '#b55d4c',
+  },
+  recordingPlaybackButton: {
+    backgroundColor: '#d7b65d',
+  },
+  recordingDisabledButton: {
+    opacity: 0.45,
+  },
+  recordingButtonText: {
+    color: '#101418',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   instrument: {
     backgroundColor: '#1c2320',
     borderColor: '#3a4a42',
@@ -410,13 +556,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingVertical: PROTOTYPE_INSTRUMENT_VERTICAL_PADDING,
   },
   stringRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
-    minHeight: 26,
+    minHeight: PROTOTYPE_STRING_ROW_MIN_HEIGHT,
   },
   stringLabel: {
     color: '#f6f1e8',
@@ -428,7 +574,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#d7b65d',
     borderRadius: 3,
     flex: 1,
-    height: 6,
+    height: PROTOTYPE_STRING_LINE_HEIGHT,
   },
   inspector: {
     backgroundColor: '#eef3ef',

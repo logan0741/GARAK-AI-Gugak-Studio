@@ -59,6 +59,10 @@ export type ExpoAudioRecordingStopResult = {
   recordingUri: string | null;
 };
 
+export type ExpoAudioRecordingPlaybackResult =
+  | { ok: true; recordingUri: string }
+  | { ok: false; reason: 'recording_playback_failed' };
+
 const PLAYBACK_MODE: ExpoAudioMode = {
   playsInSilentMode: true,
   interruptionMode: 'mixWithOthers',
@@ -84,7 +88,9 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   private readonly runtime: ExpoAudioRuntimePort;
   private readonly playersByString = new Map<number, ExpoAudioPlayerPort>();
   private readonly playbackQueuesByString = new Map<number, Promise<void>>();
+  private playbackQueueFailure: unknown;
   private activeRecorder: ExpoAudioRecorderPort | undefined;
+  private recordingProbePlayer: ExpoAudioPlayerPort | undefined;
 
   constructor(input: { manifest: SampleAssetManifest; runtime: ExpoAudioRuntimePort }) {
     this.manifest = input.manifest;
@@ -109,6 +115,11 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   async waitForIdle(): Promise<void> {
     await Promise.all(this.playbackQueuesByString.values());
+    if (this.playbackQueueFailure) {
+      const failure = this.playbackQueueFailure;
+      this.playbackQueueFailure = undefined;
+      throw failure;
+    }
   }
 
   handleEvent(event: PerformanceEvent): void {
@@ -183,6 +194,20 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
     };
   }
 
+  async playRecordingProbe(recordingUri: string): Promise<ExpoAudioRecordingPlaybackResult> {
+    try {
+      await this.runtime.setAudioModeAsync(PLAYBACK_MODE);
+      const player = this.runtime.createAudioPlayer({ uri: recordingUri }, PLAYER_OPTIONS);
+      this.recordingProbePlayer = player;
+      player.volume = 1;
+      await player.seekTo(0);
+      player.play();
+      return { ok: true, recordingUri };
+    } catch {
+      return { ok: false, reason: 'recording_playback_failed' };
+    }
+  }
+
   private playString(stringIndex: number, velocity: number): void {
     const player = this.requirePlayer(stringIndex);
     player.volume = clamp01(velocity);
@@ -217,8 +242,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   private queuePlayback(stringIndex: number, operation: () => Promise<void>): void {
     const previous = this.playbackQueuesByString.get(stringIndex) ?? Promise.resolve();
-    const next = previous.then(operation);
-    this.playbackQueuesByString.set(stringIndex, next.catch(() => undefined));
+    const next = previous.then(operation).catch((error: unknown) => {
+      this.playbackQueueFailure = error;
+    });
+    this.playbackQueuesByString.set(stringIndex, next);
   }
 }
 

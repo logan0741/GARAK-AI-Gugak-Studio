@@ -24,6 +24,7 @@ const manifest: SampleAssetManifest = {
 test('creates and preloads the expo-audio candidate through injected runtime ports', async () => {
   const downloadedUris: string[] = [];
   const createdPlayerUris: string[] = [];
+  const resolvedUris: string[] = [];
   const runtime: ExpoAudioRuntimePort = {
     setAudioModeAsync: async () => undefined,
     downloadAudioSource: async (source) => {
@@ -49,6 +50,13 @@ test('creates and preloads the expo-audio candidate through injected runtime por
   await createAndPreloadPrototypeNativeSamplerEngine({
     candidate: 'expo-audio',
     manifest,
+    assetResolver: {
+      resolveFileUri: async (fileUri) => {
+        const resolvedUri = `file://resolved/${fileUri}`;
+        resolvedUris.push(resolvedUri);
+        return resolvedUri;
+      },
+    },
     runtimePorts: {
       createExpoAudioRuntimePort: () => runtime,
       createReactNativeAudioApiRuntimePort: () => {
@@ -57,12 +65,14 @@ test('creates and preloads the expo-audio candidate through injected runtime por
     },
   });
 
-  expect(downloadedUris).toEqual(manifest.assets.map((asset) => asset.fileUri));
-  expect(createdPlayerUris).toEqual(manifest.assets.map((asset) => asset.fileUri));
+  expect(resolvedUris).toEqual(manifest.assets.map((asset) => `file://resolved/${asset.fileUri}`));
+  expect(downloadedUris).toEqual(resolvedUris);
+  expect(createdPlayerUris).toEqual(resolvedUris);
 });
 
 test('creates and preloads the react-native-audio-api candidate through injected runtime ports', async () => {
   const decodedInputs: string[] = [];
+  const resolvedUris: string[] = [];
   const context = {
     currentTime: 0,
     destination: createNode(),
@@ -87,6 +97,13 @@ test('creates and preloads the react-native-audio-api candidate through injected
   await createAndPreloadPrototypeNativeSamplerEngine({
     candidate: 'react-native-audio-api',
     manifest,
+    assetResolver: {
+      resolveFileUri: async (fileUri) => {
+        const resolvedUri = `file://decoded/${fileUri}`;
+        resolvedUris.push(resolvedUri);
+        return resolvedUri;
+      },
+    },
     runtimePorts: {
       createExpoAudioRuntimePort: () => {
         throw new Error('expo-audio runtime should not be created');
@@ -95,7 +112,8 @@ test('creates and preloads the react-native-audio-api candidate through injected
     },
   });
 
-  expect(decodedInputs).toEqual(manifest.assets.map((asset) => asset.fileUri));
+  expect(resolvedUris).toEqual(manifest.assets.map((asset) => `file://decoded/${asset.fileUri}`));
+  expect(decodedInputs).toEqual(resolvedUris);
 });
 
 function createNode(): ReactNativeAudioApiContextPort['destination'] {

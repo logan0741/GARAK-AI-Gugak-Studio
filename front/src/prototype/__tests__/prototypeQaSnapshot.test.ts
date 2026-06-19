@@ -79,6 +79,12 @@ test('formats a copyable estimate probe draft for the inspector', () => {
     runtimeUnderTest: 'fake-sampler-engine',
     observedFakeCounters: {
       audioDispatchFailures: 0,
+      eventDispatchLatency: {
+        sampleCount: 0,
+        latestMs: null,
+        maxMs: null,
+        averageMs: null,
+      },
       eventCount: 2,
       glissandoTriggeredStrings: 2,
       maxActiveVoices: 8,
@@ -99,6 +105,54 @@ test('formats a copyable estimate probe draft for the inspector', () => {
       preloadStable: null,
       sessionFallbackPreserved: null,
       recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('tracks event batch dispatch latency as debug-only evidence', () => {
+  const snapshot = updatePrototypeQaSnapshot(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:20:00.000Z',
+    }),
+    {
+      activeVoiceCount: 1,
+      audioDispatchOk: true,
+      dispatchedAtMs: 125,
+      measuredAt: '2026-06-08T04:20:01.000Z',
+      events: [
+        { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 },
+        { type: 'string_release', tsMs: 120, stringIndex: 1 },
+      ],
+    },
+  );
+
+  const next = updatePrototypeQaSnapshot(snapshot, {
+    activeVoiceCount: 1,
+    audioDispatchOk: true,
+    dispatchedAtMs: 145,
+    measuredAt: '2026-06-08T04:20:02.000Z',
+    events: [{ type: 'string_pluck', tsMs: 140, stringIndex: 2, velocity: 1 }],
+  });
+
+  expect(next.eventDispatchLatency).toEqual({
+    sampleCount: 2,
+    latestMs: 5,
+    maxMs: 25,
+    averageMs: 15,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(next))).toMatchObject({
+    observedFakeCounters: {
+      eventDispatchLatency: {
+        sampleCount: 2,
+        latestMs: 5,
+        maxMs: 25,
+        averageMs: 15,
+      },
+    },
+    probeTemplate: {
+      touchToSoundLatencyMs: null,
     },
   });
 });

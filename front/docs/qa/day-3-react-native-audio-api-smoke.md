@@ -14,6 +14,7 @@ Use this document when validating whether `react-native-audio-api` can support t
 | --- | --- |
 | `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, and voice budget behavior. |
 | `src/audio/reactNativeAudioApiRuntime.ts` | Only runtime bridge that imports `react-native-audio-api`. Keeps UI and domain code independent from the concrete package. |
+| `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that should report `recording_probe_not_supported` for engines without recording methods instead of treating playback validation as failed. |
 | `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, 8-voice polyphony, graph wiring, pitch bend, mute/release, and voice stealing. |
 | `src/audio/__tests__/reactNativeAudioApiRuntime.test.ts` | Mocked package-delegation test for the installed `react-native-audio-api` API surface. |
 
@@ -24,6 +25,7 @@ Run before opening a device build:
 ```bash
 npm run samples:generate-dev
 npm test src/config/__tests__/developmentBuildConfig.test.ts
+npm test src/prototype/__tests__/prototypeRecordingProbeController.test.ts
 npm test src/prototype/__tests__/prototypeSampleManifest.test.ts
 npm test src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts
 npm test src/audio/__tests__/reactNativeAudioApiRuntime.test.ts
@@ -38,7 +40,7 @@ Prerequisite: run `npm run samples:generate-dev` from `front/` before building t
 
 The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, pitch-bend plumbing, filter/gain graph behavior, and mute/release envelopes, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
 
-Resolve every `SampleAssetManifest.fileUri` before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
+Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes. If the manifest is complete but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
 
 Use a development client, not Expo Go, because this candidate depends on native audio graph APIs:
 
@@ -56,6 +58,7 @@ For an EAS development build, use the `development` profile in `eas.json`.
 6. Confirm bend changes are continuous and do not create click noise.
 7. Confirm each voice routes `source -> lowpass filter -> gain -> destination`.
 8. Trigger `string_mute` and `string_release` and listen for release pops or abrupt cutoff.
+9. Press `Rec 10s` and confirm the recording probe reports `recording_probe_not_supported` unless a recording-capable implementation has been explicitly added for this candidate.
 
 ## Result Table
 

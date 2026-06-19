@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { appendPerformanceEvent, createEmptySession } from '../session';
+import { appendPerformanceEvent, attachRecordingUriToSession, createEmptySession } from '../session';
 
 test('creates a session with manifest version and no recording requirement', () => {
   const session = createEmptySession({
@@ -52,4 +52,25 @@ test('clears derived session projections after appending an event', () => {
   expect(next.bpmEstimate).toBeUndefined();
   expect(next.densityEstimate).toBeUndefined();
   expect(next.jangdanRecommendation).toBeUndefined();
+});
+
+test('attaches a captured recording uri without dropping event fallback data', () => {
+  const session = appendPerformanceEvent(
+    createEmptySession({
+      id: 'session-1',
+      createdAt: '2026-06-02T00:00:00.000Z',
+      sampleAssetManifestVersion: '2026-06-02-dev',
+    }),
+    {
+      type: 'string_pluck',
+      tsMs: 100,
+      stringIndex: 1,
+      velocity: 1,
+    },
+  );
+
+  const next = attachRecordingUriToSession(session, 'file://recording.m4a');
+
+  expect(next.recordingUri).toBe('file://recording.m4a');
+  expect(next.events).toEqual(session.events);
 });
