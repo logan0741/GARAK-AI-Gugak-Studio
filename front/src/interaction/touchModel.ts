@@ -159,9 +159,6 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 
 function stringIndexForY(layout: TouchStringLayout, y: number): number {
   assertFiniteTouchCoordinate(y, 'y');
-  if (!Number.isFinite(layout.height) || layout.height <= 0) {
-    return 1;
-  }
 
   const rowHeight = layout.height / layout.stringCount;
   const rawIndex = Math.floor((y - layout.topY) / rowHeight) + 1;

@@ -2,8 +2,6 @@ import { expect, test } from 'vitest';
 import {
   assertPerformanceEvent,
   clampBendCents,
-  createDaegeumNote,
-  createJangguHit,
   createStringBend,
   createStringMute,
   createStringPluck,
@@ -62,24 +60,6 @@ test('creates string mute events with clamped strength', () => {
     tsMs: 320,
     stringIndex: 2,
     strength: 0,
-  });
-});
-
-test('creates janggu hit events with a surface and clamped velocity', () => {
-  expect(createJangguHit({ tsMs: 420, surface: 'gungpyeon', velocity: 1.4 })).toEqual({
-    type: 'janggu_hit',
-    tsMs: 420,
-    surface: 'gungpyeon',
-    velocity: 1,
-  });
-});
-
-test('creates daegeum note events with fingering and clamped breath', () => {
-  expect(createDaegeumNote({ tsMs: 520, fingering: 'open', breath: 1.2 })).toEqual({
-    type: 'daegeum_note',
-    tsMs: 520,
-    fingering: 'open',
-    breath: 1,
   });
 });
 

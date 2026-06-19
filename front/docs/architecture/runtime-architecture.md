@@ -11,56 +11,6 @@ MVP의 정상 연주 경로는 네트워크를 타지 않는다. 공공데이터
 
 2026-06-19 회의 기준으로도 이 원칙은 유지한다. 사용자가 S05에서 녹음을 끝냈다는 이유만으로 프론트가 즉시 서버에 파일을 보내지 않는다. 서버 저장은 보관함 동기화, 완성 Work 저장, 내보낸 음원 저장처럼 사용자가 만든 곡을 보존하거나 공유해야 하는 시점에 백엔드 API 계약으로 연결한다.
 
-## Storage And Audio Asset Strategy
-
-GARAK은 저장공간을 아끼기 위해 악기별 레이어를 긴 오디오 파일로 보존하지 않는다. 편집 가능한 기준 데이터는 `Work`, `Track`, `Take`, `Session`, `PerformanceEvent[]`, `SampleAssetManifest` 버전이다. 실제 소리는 재생 시점에 샘플러가 manifest의 샘플을 preload한 뒤 이벤트를 다시 dispatch해서 낸다.
-
-```text
-Instrument Track
-  -> instrument id
-  -> sample manifest version
-  -> PerformanceEvent[]
-  -> volume / mute / solo / start beat
-  -> no default rendered layer audio
-
-Export
-  -> render current Work
-  -> create compressed ExportedAudio
-  -> upload or sync when backend contract is available
-  -> keep local copy as cache, not as the editable source
-```
-
-### Storage Budget Guidelines
-
-| Data category | Preferred form | Expected local footprint |
-| --- | --- | --- |
-| Minimum bundled samples | Short WAV samples for first-play instruments | about 20-50 MB for MVP if kept conservative |
-| High-quality or extended sample packs | Downloaded cache keyed by `SampleAssetManifest.version` | opt-in cache, removable |
-| Instrument layer data | `PerformanceEvent[]` plus track metadata | usually KBs to low MBs per Work |
-| Session fallback | JSON event log | small enough to copy/debug |
-| Recording probe or optional live capture | compressed audio when available | cache only; not required for replay |
-| ExportedAudio | AAC/M4A or equivalent compressed render | about 1-1.5 MB per minute at common mobile bitrates |
-| WAV mixdown | Avoid for long user exports | about 5 MB/min mono or 10 MB/min stereo |
-
-The app should avoid this default shape:
-
-```text
-gayageum-layer.wav
-janggu-layer.wav
-daegeum-layer.wav
-accompaniment-layer.wav
-mixdown.wav
-```
-
-That shape multiplies storage by track count and makes a few short Works consume tens or hundreds of MB. It is acceptable only for temporary render caches or explicit export/debug artifacts.
-
-### Asset Source Boundary
-
-- Technical tests may use synthetic local fixture WAV files and do not require AI or backend-generated audio.
-- Release-quality samples should come from owned, licensed, or rights-cleared sources and be published through `SampleAssetManifest`.
-- AI-generated audio is not the MVP default path. If used for throwaway fixtures, it must not be confused with release-ready samples.
-- Backend responsibilities, when introduced, are asset preparation, rights/source metadata, manifest publication, and optional export upload/storage. Runtime instrument play must still work from local preload/cache.
-
 ## Runtime Flow
 
 ```text
@@ -97,6 +47,9 @@ Voice scheduler      SessionRecorder      JangdanMatcher
         |                  |                     |
         v                  v                     v
 SamplerEngine        Session JSON         JangdanRecommendation
+                           |
+                           v
+                      Work / Track / Take
         |                                        |
         v                                        v
 Audio output                           Preview / accept
@@ -117,7 +70,28 @@ Audio output                           Preview / accept
 | Domain | event vocabulary, session rules, recommendation rules | React Native APIs, network calls |
 | `SamplerEngine` | voice allocation, sample playback, gain, bend, mute | UI decisions, domain naming changes |
 | Session storage | serializable session document | audio engine internals |
+| Work storage | editable track/layer document, sync state | low-latency audio scheduling |
 | Demo inspector | source/explanation display | runtime dependency on public APIs |
+
+## Server And AI Boundary
+
+```text
+S05 recording complete
+  -> local Session / Take preserved
+  -> local Work updated
+  -> S07 edit
+  -> user saves, exports, syncs, or requests AI accompaniment
+  -> optional backend / model-server request
+```
+
+- Instrument play, touch handling, sampler scheduling, and local recording fallback must not wait for network.
+- A recording-complete event is a local persistence boundary, not a mandatory upload boundary.
+- If the backend stores library data, the preferred payload is `Work` plus `Track`/`Take` metadata, and optionally `ExportedAudio`.
+- Whether raw `Session` documents are also stored on the server is an API decision still open.
+- If an AI model server creates accompaniment or arrangement suggestions, the request should be triggered by an explicit user action such as S10B AI suggestion or S07 arrange action.
+- Model input should be a structured package of selected `Work`, `Track`, `Take`, `PerformanceEvent[]`, BPM, meter, jangdan preset, and any required audio URI; the exact contract is pending backend/AI documentation.
+- Model output should be shown as a candidate recommendation or track that the user can preview and accept. It must not mutate the saved Work automatically.
+- Model-server failure, timeout, or missing port must fall back to manual local jangdan selection and local sequencing.
 
 ## Failure And Fallback
 

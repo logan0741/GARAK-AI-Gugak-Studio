@@ -578,7 +578,6 @@ export function GayageumPrototypeScreen() {
         {ALL_STRINGS.map((stringIndex) => (
           <View
             key={stringIndex}
-            pointerEvents="none"
             accessibilityLabel={`Gayageum string ${stringIndex}`}
             style={styles.stringRow}
           >

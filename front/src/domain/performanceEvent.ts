@@ -3,12 +3,7 @@ export type PerformanceEvent =
   | { type: 'string_bend'; tsMs: number; stringIndex: number; cents: number }
   | { type: 'string_mute'; tsMs: number; stringIndex: number; strength: number }
   | { type: 'glissando_step'; tsMs: number; stringIndex: number; velocity: number }
-  | { type: 'string_release'; tsMs: number; stringIndex: number }
-  | { type: 'janggu_hit'; tsMs: number; surface: JangguSurface; velocity: number }
-  | { type: 'daegeum_note'; tsMs: number; fingering: DaegeumFingering; breath: number };
-
-export type JangguSurface = 'gungpyeon' | 'chaepyeon';
-export type DaegeumFingering = 'open' | 'half_open' | 'closed';
+  | { type: 'string_release'; tsMs: number; stringIndex: number };
 
 export const MIN_STRING_INDEX = 1;
 export const MAX_STRING_INDEX = 12;
@@ -36,9 +31,9 @@ export function clampBendCents(cents: number): number {
 
 export function assertPerformanceEvent(event: PerformanceEvent): void {
   assertEventTimestamp(event.tsMs);
+  assertStringIndex(event.stringIndex);
 
   if (event.type === 'string_pluck' || event.type === 'glissando_step') {
-    assertStringIndex(event.stringIndex);
     if (!Number.isFinite(event.velocity)) {
       throw new Error('velocity must be finite');
     }
@@ -46,7 +41,6 @@ export function assertPerformanceEvent(event: PerformanceEvent): void {
   }
 
   if (event.type === 'string_bend') {
-    assertStringIndex(event.stringIndex);
     if (!Number.isFinite(event.cents)) {
       throw new Error('cents must be finite');
     }
@@ -54,30 +48,8 @@ export function assertPerformanceEvent(event: PerformanceEvent): void {
   }
 
   if (event.type === 'string_mute') {
-    assertStringIndex(event.stringIndex);
     if (!Number.isFinite(event.strength)) {
       throw new Error('strength must be finite');
-    }
-    return;
-  }
-
-  if (event.type === 'string_release') {
-    assertStringIndex(event.stringIndex);
-    return;
-  }
-
-  if (event.type === 'janggu_hit') {
-    assertJangguSurface(event.surface);
-    if (!Number.isFinite(event.velocity)) {
-      throw new Error('velocity must be finite');
-    }
-    return;
-  }
-
-  if (event.type === 'daegeum_note') {
-    assertDaegeumFingering(event.fingering);
-    if (!Number.isFinite(event.breath)) {
-      throw new Error('breath must be finite');
     }
   }
 }
@@ -96,26 +68,6 @@ function clampMuteStrength(strength: number): number {
   }
 
   return Math.max(0, Math.min(1, strength));
-}
-
-function clampBreath(breath: number): number {
-  if (!Number.isFinite(breath)) {
-    throw new Error('breath must be finite');
-  }
-
-  return Math.max(0, Math.min(1, breath));
-}
-
-export function assertJangguSurface(surface: JangguSurface): void {
-  if (surface !== 'gungpyeon' && surface !== 'chaepyeon') {
-    throw new Error(`surface must be gungpyeon or chaepyeon. Received: ${String(surface)}`);
-  }
-}
-
-export function assertDaegeumFingering(fingering: DaegeumFingering): void {
-  if (fingering !== 'open' && fingering !== 'half_open' && fingering !== 'closed') {
-    throw new Error(`fingering must be open, half_open, or closed. Received: ${String(fingering)}`);
-  }
 }
 
 export function createStringPluck(input: {
@@ -163,37 +115,5 @@ export function createStringMute(input: {
     tsMs: input.tsMs,
     stringIndex: input.stringIndex,
     strength: clampMuteStrength(input.strength),
-  };
-}
-
-export function createJangguHit(input: {
-  tsMs: number;
-  surface: JangguSurface;
-  velocity: number;
-}): PerformanceEvent {
-  assertEventTimestamp(input.tsMs);
-  assertJangguSurface(input.surface);
-
-  return {
-    type: 'janggu_hit',
-    tsMs: input.tsMs,
-    surface: input.surface,
-    velocity: clampVelocity(input.velocity),
-  };
-}
-
-export function createDaegeumNote(input: {
-  tsMs: number;
-  fingering: DaegeumFingering;
-  breath: number;
-}): PerformanceEvent {
-  assertEventTimestamp(input.tsMs);
-  assertDaegeumFingering(input.fingering);
-
-  return {
-    type: 'daegeum_note',
-    tsMs: input.tsMs,
-    fingering: input.fingering,
-    breath: clampBreath(input.breath),
   };
 }

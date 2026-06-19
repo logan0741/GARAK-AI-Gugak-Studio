@@ -28,32 +28,6 @@ const manifest: SampleAssetManifest = {
   ],
 };
 
-const mixedInstrumentManifest: SampleAssetManifest = {
-  version: 'test-mixed-instrument-samples',
-  assets: [
-    manifest.assets[0],
-    {
-      id: 'janggu-gungpyeon',
-      instrument: 'janggu',
-      surface: 'gungpyeon',
-      fileUri: 'asset://janggu/gungpyeon.wav',
-      sourceLayer: 'public_asset',
-      sourceName: 'test fixture',
-      licenseNote: 'test only',
-    },
-    {
-      id: 'daegeum-open',
-      instrument: 'daegeum',
-      fingering: 'open',
-      pitchHz: 392,
-      fileUri: 'asset://daegeum/open.wav',
-      sourceLayer: 'public_asset',
-      sourceName: 'test fixture',
-      licenseNote: 'test only',
-    },
-  ],
-};
-
 test('preloads manifest assets with Expo Audio download-first players', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -111,28 +85,6 @@ test('plays a preloaded string immediately when a pluck event arrives', async ()
   expect(runtime.players[0].volume).toBe(0.72);
   expect(runtime.players[0].seekCalls).toEqual([0]);
   expect(runtime.players[0].playCalls).toBe(1);
-});
-
-test('plays preloaded janggu and daegeum samples through Expo Audio players', async () => {
-  const runtime = createRuntimePort();
-  const engine = new ExpoAudioSamplerEngine({ manifest: mixedInstrumentManifest, runtime });
-  const result = await engine.preload();
-
-  expect(result.loadedStringIndexes).toEqual([1]);
-
-  engine.handleEvent({ type: 'janggu_hit', tsMs: 100, surface: 'gungpyeon', velocity: 0.6 });
-  engine.handleEvent({ type: 'daegeum_note', tsMs: 120, fingering: 'open', breath: 0.9 });
-  await engine.waitForIdle();
-
-  expect(runtime.downloadedSources).toEqual([
-    { uri: 'asset://gayageum/01.wav' },
-    { uri: 'asset://janggu/gungpyeon.wav' },
-    { uri: 'asset://daegeum/open.wav' },
-  ]);
-  expect(runtime.players[1].volume).toBe(0.6);
-  expect(runtime.players[1].playCalls).toBe(1);
-  expect(runtime.players[2].volume).toBe(0.9);
-  expect(runtime.players[2].playCalls).toBe(1);
 });
 
 test('rejects non-finite Expo Audio playback control values before touching native players', async () => {

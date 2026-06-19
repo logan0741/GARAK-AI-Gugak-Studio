@@ -1,10 +1,5 @@
 import { PerformanceEvent } from '../domain/performanceEvent';
-import {
-  SampleAssetManifest,
-  describeSampleAssetPlaybackTarget,
-  getSampleAssetPlaybackKey,
-  isGayageumSampleAsset,
-} from '../domain/sampleManifest';
+import { SampleAssetManifest } from '../domain/sampleManifest';
 import { SamplerEngine, assertSamplerEventIdentity } from './samplerEngine';
 
 export type ExpoAudioMode = {
@@ -98,9 +93,9 @@ const PLAYER_OPTIONS: ExpoAudioPlayerOptions = {
 export class ExpoAudioSamplerEngine implements SamplerEngine {
   private readonly manifest: SampleAssetManifest;
   private readonly runtime: ExpoAudioRuntimePort;
-  private readonly playersByPlaybackKey = new Map<string, ExpoAudioPlayerPort>();
-  private readonly playbackGenerationsByKey = new Map<string, number>();
-  private readonly playbackQueuesByKey = new Map<string, Promise<void>>();
+  private readonly playersByString = new Map<number, ExpoAudioPlayerPort>();
+  private readonly playbackGenerationsByString = new Map<number, number>();
+  private readonly playbackQueuesByString = new Map<number, Promise<void>>();
   private playbackQueueFailure: unknown;
   private activeRecorder: ExpoAudioRecorderPort | undefined;
   private recordingProbePlayer: ExpoAudioPlayerPort | undefined;
@@ -111,38 +106,35 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   async preload(): Promise<ExpoAudioPreloadResult> {
-    this.playersByPlaybackKey.clear();
-    this.playbackGenerationsByKey.clear();
-    this.playbackQueuesByKey.clear();
+    this.playersByString.clear();
+    this.playbackGenerationsByString.clear();
+    this.playbackQueuesByString.clear();
     this.playbackQueueFailure = undefined;
     await this.runtime.setAudioModeAsync(PLAYBACK_MODE);
 
-    const sourcesByPlaybackKey: Array<{ playbackKey: string; source: { uri: string } }> = [];
+    const sourcesByString: Array<{ stringIndex: number; source: { uri: string } }> = [];
     for (const asset of this.manifest.assets) {
-      const playbackKey = getSampleAssetPlaybackKey(asset);
       const source = normalizeDownloadedAudioSource(
         await this.runtime.downloadAudioSource({ uri: asset.fileUri }),
-        describeSampleAssetPlaybackTarget(asset),
+        asset.stringIndex,
       );
-      sourcesByPlaybackKey.push({ playbackKey, source });
+      sourcesByString.push({ stringIndex: asset.stringIndex, source });
     }
 
-    for (const { playbackKey, source } of sourcesByPlaybackKey) {
+    for (const { stringIndex, source } of sourcesByString) {
       const player = this.runtime.createAudioPlayer(source, PLAYER_OPTIONS);
-      this.playersByPlaybackKey.set(playbackKey, player);
+      this.playersByString.set(stringIndex, player);
     }
 
     return {
       candidate: 'expo-audio',
-      loadedStringIndexes: this.manifest.assets
-        .filter(isGayageumSampleAsset)
-        .map((asset) => asset.stringIndex),
+      loadedStringIndexes: this.manifest.assets.map((asset) => asset.stringIndex),
       preloadStable: true,
     };
   }
 
   async waitForIdle(): Promise<void> {
-    await Promise.all(this.playbackQueuesByKey.values());
+    await Promise.all(this.playbackQueuesByString.values());
     if (this.playbackQueueFailure) {
       const failure = this.playbackQueueFailure;
       this.playbackQueueFailure = undefined;
@@ -166,12 +158,6 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
         return;
       case 'string_release':
         this.releaseString(event.stringIndex);
-        return;
-      case 'janggu_hit':
-        this.playSample(`janggu:surface:${event.surface}`, event.velocity, `janggu surface ${event.surface}`);
-        return;
-      case 'daegeum_note':
-        this.playSample(`daegeum:fingering:${event.fingering}`, event.breath, `daegeum fingering ${event.fingering}`);
         return;
       default:
         assertNever(event);
@@ -254,17 +240,13 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   private playString(stringIndex: number, velocity: number): void {
-    this.playSample(`gayageum_12:string:${stringIndex}`, velocity, `string ${stringIndex}`);
-  }
-
-  private playSample(playbackKey: string, gain: number, label: string): void {
-    const clampedGain = clamp01(gain, 'gain');
-    const player = this.requirePlayer(playbackKey, label);
-    const playbackGeneration = this.advancePlaybackGeneration(playbackKey);
-    player.volume = clampedGain;
-    this.queuePlayback(playbackKey, async () => {
+    const clampedVelocity = clamp01(velocity, 'velocity');
+    const player = this.requirePlayer(stringIndex);
+    const playbackGeneration = this.advancePlaybackGeneration(stringIndex);
+    player.volume = clampedVelocity;
+    this.queuePlayback(stringIndex, async () => {
       await player.seekTo(0);
-      if (this.playbackGenerationsByKey.get(playbackKey) !== playbackGeneration) {
+      if (this.playbackGenerationsByString.get(stringIndex) !== playbackGeneration) {
         return;
       }
       player.play();
@@ -273,22 +255,21 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
 
   private bendString(stringIndex: number, cents: number): void {
     assertFiniteControlValue(cents, 'cents');
-    const player = this.requirePlayer(`gayageum_12:string:${stringIndex}`, `string ${stringIndex}`);
+    const player = this.requirePlayer(stringIndex);
     player.setPlaybackRate(clampPlaybackRate(Math.pow(2, cents / 1200)));
   }
 
   private muteString(stringIndex: number, strength: number): void {
     const clampedStrength = clamp01(strength, 'strength');
-    const player = this.requirePlayer(`gayageum_12:string:${stringIndex}`, `string ${stringIndex}`);
+    const player = this.requirePlayer(stringIndex);
     player.volume = Number((1 - clampedStrength).toFixed(3));
   }
 
   private releaseString(stringIndex: number): void {
-    const playbackKey = `gayageum_12:string:${stringIndex}`;
-    const player = this.requirePlayer(playbackKey, `string ${stringIndex}`);
-    this.advancePlaybackGeneration(playbackKey);
-    if (this.playbackQueuesByKey.has(playbackKey)) {
-      this.queuePlayback(playbackKey, async () => {
+    const player = this.requirePlayer(stringIndex);
+    this.advancePlaybackGeneration(stringIndex);
+    if (this.playbackQueuesByString.has(stringIndex)) {
+      this.queuePlayback(stringIndex, async () => {
         player.pause();
       });
       return;
@@ -297,34 +278,34 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
     player.pause();
   }
 
-  private advancePlaybackGeneration(playbackKey: string): number {
-    const nextGeneration = (this.playbackGenerationsByKey.get(playbackKey) ?? 0) + 1;
-    this.playbackGenerationsByKey.set(playbackKey, nextGeneration);
+  private advancePlaybackGeneration(stringIndex: number): number {
+    const nextGeneration = (this.playbackGenerationsByString.get(stringIndex) ?? 0) + 1;
+    this.playbackGenerationsByString.set(stringIndex, nextGeneration);
     return nextGeneration;
   }
 
-  private requirePlayer(playbackKey: string, label: string): ExpoAudioPlayerPort {
-    const player = this.playersByPlaybackKey.get(playbackKey);
+  private requirePlayer(stringIndex: number): ExpoAudioPlayerPort {
+    const player = this.playersByString.get(stringIndex);
     if (!player) {
-      throw new Error(`No preloaded expo-audio player for ${label}`);
+      throw new Error(`No preloaded expo-audio player for string ${stringIndex}`);
     }
 
     return player;
   }
 
-  private queuePlayback(playbackKey: string, operation: () => Promise<void>): void {
-    const previous = this.playbackQueuesByKey.get(playbackKey) ?? Promise.resolve();
+  private queuePlayback(stringIndex: number, operation: () => Promise<void>): void {
+    const previous = this.playbackQueuesByString.get(stringIndex) ?? Promise.resolve();
     const next = previous
       .then(operation)
       .catch((error: unknown) => {
         this.playbackQueueFailure = error;
       })
       .finally(() => {
-        if (this.playbackQueuesByKey.get(playbackKey) === next) {
-          this.playbackQueuesByKey.delete(playbackKey);
+        if (this.playbackQueuesByString.get(stringIndex) === next) {
+          this.playbackQueuesByString.delete(stringIndex);
         }
       });
-    this.playbackQueuesByKey.set(playbackKey, next);
+    this.playbackQueuesByString.set(stringIndex, next);
   }
 }
 
@@ -354,11 +335,11 @@ function normalizeRecordingUri(recordingUri: string | null): string | null {
 
 function normalizeDownloadedAudioSource(
   source: { uri: string },
-  label: string,
+  stringIndex: number,
 ): { uri: string } {
   const uri = source.uri.trim();
   if (uri.length === 0) {
-    throw new Error(`Downloaded expo-audio source URI missing for ${label}`);
+    throw new Error(`Downloaded expo-audio source URI missing for string ${stringIndex}`);
   }
 
   return { uri };

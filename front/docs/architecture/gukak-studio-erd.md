@@ -12,18 +12,19 @@
 
 - `Session`이 사용자의 연주 데이터를 보존하는 기준 데이터다.
 - `PerformanceEvent`는 리플레이 가능한 연주의 최소 기록 단위다.
+- 자유창작의 편집 가능한 사용자 작업 단위는 `Work`다.
+- `Work`는 여러 `Track`과 `Take`를 묶어 하나의 곡 후보를 만든다.
+- 녹음 직전에 정한 BPM, 박자, 장단은 `Take` 또는 `Work` 편집 맥락에 보존한다.
 - `Recording`은 `Session`에서 렌더링된 선택적 산출물이며, 기준 데이터가 아니다.
 - `SampleAssetManifest`는 실제 재생 가능한 오디오 에셋 목록이다.
 - `DataReferenceManifest`는 분석/검증/심사용 근거 데이터 목록이며, 재생 에셋과 섞지 않는다.
 - 장단 AI는 오디오 생성 모델이 아니라 `PerformanceEvent`를 분석해 `JangdanPreset`을 추천하는 계층이다.
-- MVP에서는 사용자 계정, 클라우드 라이브러리, 커뮤니티 피드 엔티티를 제외한다. 단, `Session`은 추후 계정 기반 저장소로 이전할 수 있도록 직렬화 가능해야 한다.
+- MVP에서는 사용자 계정, 클라우드 라이브러리, 커뮤니티 피드 엔티티를 제외한다. 단, `Session`과 `Work`는 추후 계정 기반 저장소로 이전할 수 있도록 직렬화 가능해야 한다.
 
 ## Core ERD
 
 ```mermaid
 erDiagram
-    INSTRUMENT ||--o{ INSTRUMENT_CONTROL_SURFACE : exposes
-    INSTRUMENT_CONTROL_SURFACE ||--o{ PERFORMANCE_EVENT : triggers
     INSTRUMENT ||--o{ INSTRUMENT_STRING : has
     INSTRUMENT ||--o{ SESSION : selected_for
 
@@ -34,8 +35,6 @@ erDiagram
     SESSION }o--o| DATA_REFERENCE_MANIFEST : cites_for_demo
 
     SAMPLE_ASSET_MANIFEST ||--o{ SAMPLE_ASSET : includes
-    SAMPLE_ASSET ||--o{ INSTRUMENT_CONTROL_SURFACE_SAMPLE_MAP : mapped_by
-    INSTRUMENT_CONTROL_SURFACE ||--o{ INSTRUMENT_CONTROL_SURFACE_SAMPLE_MAP : uses
     SAMPLE_ASSET ||--o{ INSTRUMENT_STRING_SAMPLE_MAP : mapped_by
     INSTRUMENT_STRING ||--o{ INSTRUMENT_STRING_SAMPLE_MAP : uses
 
@@ -53,16 +52,6 @@ erDiagram
         int string_count
         string default_tuning_mode
         string version
-    }
-
-    INSTRUMENT_CONTROL_SURFACE {
-        string id PK
-        string instrument_id FK
-        string surface_type
-        string label
-        int order_index
-        string pitch_role "nullable"
-        json input_schema
     }
 
     INSTRUMENT_STRING {
@@ -93,7 +82,6 @@ erDiagram
         int occurred_at_ms
         string event_type
         int string_index "nullable"
-        string control_surface_id FK "nullable"
         string active_voice_id "nullable"
         int pitch_bend_cents "nullable"
         float velocity "nullable"
@@ -129,15 +117,6 @@ erDiagram
         int base_pitch_cents
         json envelope
         json quality_flags
-    }
-
-    INSTRUMENT_CONTROL_SURFACE_SAMPLE_MAP {
-        string id PK
-        string control_surface_id FK
-        string sample_asset_id FK
-        string articulation
-        int priority
-        bool is_fallback
     }
 
     INSTRUMENT_STRING_SAMPLE_MAP {
@@ -279,24 +258,18 @@ erDiagram
 - `ExportedAudio`는 공유/재생용 산출물이며, 편집 가능한 Work를 대체하지 않는다.
 - 단일 `Session`을 서버에 저장할지, `Work`와 `ExportedAudio`만 서버에 저장할지는 백엔드 API 계약에서 확정한다.
 
-### Storage Footprint Rules
-
-- Instrument Track은 레이어별 렌더링 파일 URI를 필수 필드로 갖지 않는다.
-- Instrument Track의 재생 가능성은 `Take.events`, `Track.instrument_id`, `Session.sample_asset_manifest_id`로 보장한다.
-- `Take.recording_uri`는 선택적 캡처 또는 캐시 URI이며, 없더라도 이벤트 리플레이가 가능해야 한다.
-- `ExportedAudio.file_uri`는 공유/재생용 산출물 URI다. 서버 전송 또는 동기화 후 로컬에서는 캐시로 관리할 수 있다.
-- 장기 보존의 기준은 Work와 이벤트 로그이고, 긴 오디오 파일은 사용자가 내보내거나 공유할 때만 명시적으로 만든다.
-- 앱은 샘플팩을 `SampleAssetManifest.version` 단위로 캐시하고, 사용하지 않는 고품질/확장 샘플팩은 삭제 가능해야 한다.
-
 ## Entity Notes
 
 | 엔티티 | 역할 | MVP 구현 메모 |
 | --- | --- | --- |
 | `Instrument` | 가야금, 장구, 대금 등 악기 정의 | MVP 제품 범위는 `12_string_gayageum`, `janggu`, `daegeum`이다. |
-| `InstrumentControlSurface` | 악기별 입력면과 발음 제어 영역 | 가야금 현, 장구 북편/채편, 대금 지공/호흡 입력 영역을 같은 방식으로 식별한다. |
-| `InstrumentString` | 가야금 전용 현별 기준 음고와 표시 정보 | 현재 가야금 프로토타입 호환을 위한 세부 엔티티다. 범용 입력면 기준은 `InstrumentControlSurface`를 따른다. |
+| `InstrumentString` | 가야금 전용 현별 기준 음고와 표시 정보 | 12개 현은 버튼 배열이 아니라 독립 입력/발음 객체다. |
 | `Session` | 연주의 기준 데이터 | 로컬 저장의 최상위 JSON 문서가 될 수 있다. |
-| `PerformanceEvent` | 연주 이벤트 로그 | 가야금은 `string_index`, 장구와 대금은 `control_surface_id`와 `payload`로 악기별 입력을 표현한다. |
+| `PerformanceEvent` | 연주 이벤트 로그 | 현재 구현된 가야금 이벤트는 `string_pluck`, `glissando_step`, `string_bend`, `string_mute`, `string_release`다. |
+| `Work` | 여러 트랙/레이어를 묶는 자유창작 작업 | 보관함의 `작업` 탭에 노출하며 서버 저장의 1차 후보가 될 수 있다. |
+| `Track` | Work 안의 악기/반주/참조 레이어 | DAW 수준 타임라인이 아니라 MVP 레이어 편집 단위다. |
+| `Take` | 녹음 한 번으로 생긴 연주 이벤트 묶음 | 녹음 직전 BPM, 박자, 장단 맥락을 함께 저장한다. |
+| `ExportedAudio` | Work에서 렌더링한 공유/재생용 산출물 | 보관함의 `내보낸 음원` 탭과 공유 준비 흐름에서 사용한다. |
 | `Recording` | 오디오 렌더링 결과 | 실패해도 `Session` 리플레이는 보존되어야 한다. |
 | `SampleAssetManifest` | 재생 에셋 버전 목록 | 리플레이 시 같은 샘플 환경을 찾기 위해 `Session`에 버전을 남긴다. |
 | `SampleAsset` | 실제 소리 파일과 메타데이터 | `source_layer`는 `public_asset` 또는 `own_asset`만 허용한다. |
@@ -381,7 +354,7 @@ MVP에서는 아래 가야금 예시처럼 `Session`을 하나의 직렬화 가�
 - `CommunityPost`, `Comment`, `Like`: 내부 커뮤니티 피드는 MVP 범위가 아니다.
 - `RemoteCollaborationRoom`: 실시간 원격 합주는 MVP 범위가 아니다.
 - `NotationScore`, `JeongganboEditor`: 정간보 편집기는 MVP 범위가 아니다.
-- `DawTrack`, `MidiNote`, `TimelineClip`: Studio는 DAW가 아니므로 MVP 데이터 모델에 두지 않는다.
+- `DawTrack`, `MidiNote`, `TimelineClip`: Studio는 DAW가 아니므로 전문 타임라인 편집 모델은 MVP 데이터 모델에 두지 않는다. 단, `Work` 안의 MVP `Track`은 레이어 편집 단위로 사용한다.
 
 ## Future Extension Points
 

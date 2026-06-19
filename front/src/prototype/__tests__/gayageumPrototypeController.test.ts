@@ -79,9 +79,6 @@ test('reports the failed event index when a batch dispatch fails after partial h
   const handledStringIndexes: number[] = [];
   const partiallyFailingEngine = {
     handleEvent: (event: (typeof events)[number]) => {
-      if (event.type !== 'glissando_step') {
-        throw new Error(`unexpected event type: ${event.type}`);
-      }
       handledStringIndexes.push(event.stringIndex);
       if (event.stringIndex === 2) {
         throw new Error('voice allocation failed');

@@ -1,9 +1,4 @@
-import {
-  GayageumSampleAsset,
-  SampleAsset,
-  SampleAssetManifest,
-  SampleSourceLayer,
-} from '../domain/sampleManifest';
+import { SampleAsset, SampleAssetManifest, SampleSourceLayer } from '../domain/sampleManifest';
 
 export const PROTOTYPE_GAYAGEUM_SAMPLE_DIRECTORY = 'assets/audio/gayageum-dev';
 export const PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION = 'dev-synthetic-gayageum-2026-06-08';
@@ -23,9 +18,7 @@ const DEV_SAMPLE_PITCHES_HZ = [
   523.25,
 ] as const;
 
-export const prototypeGayageumSampleManifest: SampleAssetManifest & {
-  assets: GayageumSampleAsset[];
-} = {
+export const prototypeGayageumSampleManifest: SampleAssetManifest = {
   version: PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
   assets: DEV_SAMPLE_PITCHES_HZ.map((pitchHz, index) => {
     const stringIndex = index + 1;

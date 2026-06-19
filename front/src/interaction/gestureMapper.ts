@@ -1,12 +1,8 @@
 import {
   PerformanceEvent,
-  DaegeumFingering,
-  JangguSurface,
   assertEventTimestamp,
   assertStringIndex,
   clampBendCents,
-  createDaegeumNote,
-  createJangguHit,
   createStringMute,
   createStringPluck,
 } from '../domain/performanceEvent';
@@ -78,30 +74,6 @@ export function mapCover(input: { tsMs: number; stringIndex: number; area: numbe
     tsMs: input.tsMs,
     stringIndex: input.stringIndex,
     strength: clampUnit(input.area, 'area'),
-  });
-}
-
-export function mapJangguHit(input: {
-  tsMs: number;
-  surface: JangguSurface;
-  velocity?: number;
-}): PerformanceEvent {
-  return createJangguHit({
-    tsMs: input.tsMs,
-    surface: input.surface,
-    velocity: clampUnit(input.velocity ?? 1, 'velocity'),
-  });
-}
-
-export function mapDaegeumNote(input: {
-  tsMs: number;
-  fingering: DaegeumFingering;
-  breath?: number;
-}): PerformanceEvent {
-  return createDaegeumNote({
-    tsMs: input.tsMs,
-    fingering: input.fingering,
-    breath: clampUnit(input.breath ?? 1, 'breath'),
   });
 }
 
