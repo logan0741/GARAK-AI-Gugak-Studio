@@ -148,6 +148,30 @@ test('rejects generated probe records that do not pass Day 5 parser validation',
   ]);
 });
 
+test('rejects malformed prototype handoff files before building a probe record', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeProbeHandoffCommand({
+      argv: ['bad-shape.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T03:10:00.000Z',
+          entries: 'not-an-array',
+        }),
+      writeTextFile: () => undefined,
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Could not build prototype probe record: handoff entries must be an array',
+  ]);
+});
+
 test('returns readable errors when the output probe record cannot be written', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];

@@ -52,3 +52,5 @@ Expected result: all commands exit 0.
 ## Handoff To Day 5
 
 Use this smoke result to fill the glissando, pitch bend, mute, and session fallback rows in `day-5-audio-engine-checklist.md`.
+
+Also add one `day-4-touch-model` run to the Week 1 smoke report and validate it with `npm run qa:week1-smoke-report -- <week1-smoke-report.json>` after Day 2, Day 3, and Day 4 runs have all been recorded. Use `docs/qa/week-1-smoke-report.md` for the required check IDs.

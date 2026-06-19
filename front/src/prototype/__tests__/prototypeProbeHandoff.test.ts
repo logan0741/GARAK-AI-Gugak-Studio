@@ -130,6 +130,25 @@ test('rejects physical-device promotion when active runtime does not match the p
   ).toThrow('prototype runtime must be ready for react-native-audio-api before physical-device promotion');
 });
 
+test('rejects physical-device promotion when observed runtime used an unexpected sample manifest', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraft({
+        observedRuntime: {
+          activeRuntime: 'react-native-audio-api',
+          nativePreloadStatus: 'ready',
+          requestedCandidate: 'react-native-audio-api',
+          runtimeStatus: 'native_candidate_ready',
+          sampleManifestVersion: 'release-gayageum-samples-v1',
+        },
+      }),
+      measurements,
+    }),
+  ).toThrow(
+    'prototype runtime must use sample manifest dev-synthetic-gayageum-2026-06-08 before physical-device promotion',
+  );
+});
+
 test('rejects physical-device promotion when runtime status is not ready even if active runtime matches', () => {
   expect(() =>
     buildPhysicalDeviceProbeFromPrototypeInspectorDraft({

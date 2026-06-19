@@ -1,6 +1,11 @@
-import { AudioEngineProbe } from '../audio/audioEngineEvaluation';
-import { createAudioEngineProbeDraft } from '../audio/audioEngineProbeDraft';
-import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
+import {
+  AudioEngineCandidateId,
+  AudioEngineProbe,
+} from '../audio/audioEngineEvaluation';
+import {
+  createAudioEngineProbeDraft,
+  type PhysicalDeviceAudioEngineProbeMeasurements,
+} from '../audio/audioEngineProbeDraft';
 import { VoiceState } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
 
@@ -64,6 +69,22 @@ export type PrototypeProbeDraftInspectorModel = {
     sessionFallbackPreserved: null;
     recordingCaptureSeconds: null;
   };
+};
+
+export type PrototypeProbeHandoffMeasurementTemplate = {
+  [Field in keyof PhysicalDeviceAudioEngineProbeMeasurements]: null;
+};
+
+export type PrototypeProbeHandoffTemplateModel = {
+  generatedAt: string;
+  entries: [
+    {
+      inspectorDraft: PrototypeProbeDraftInspectorModel;
+      measuredAt: string;
+      deviceLabel: string;
+      measurements: PrototypeProbeHandoffMeasurementTemplate;
+    },
+  ];
 };
 
 export type PrototypeRuntimeObservation = {
@@ -223,8 +244,36 @@ export function formatPrototypeProbeDraftForInspector(
   return JSON.stringify(createPrototypeProbeDraftInspectorModel(snapshot, runtimeObservation), null, 2);
 }
 
+export function formatPrototypeProbeHandoffTemplateForInspector(
+  snapshot: PrototypeQaSnapshot,
+  runtimeObservation?: PrototypeRuntimeObservation,
+): string {
+  return JSON.stringify(
+    createPrototypeProbeHandoffTemplateModel(snapshot, runtimeObservation),
+    null,
+    2,
+  );
+}
+
 export function countPrototypeAudibleVoices(voices: VoiceState[]): number {
   return voices.filter((voice) => voice.envelopeState === 'attack' || voice.envelopeState === 'sustain').length;
+}
+
+function createPrototypeProbeHandoffTemplateModel(
+  snapshot: PrototypeQaSnapshot,
+  runtimeObservation?: PrototypeRuntimeObservation,
+): PrototypeProbeHandoffTemplateModel {
+  return {
+    generatedAt: snapshot.measuredAt,
+    entries: [
+      {
+        inspectorDraft: createPrototypeProbeDraftInspectorModel(snapshot, runtimeObservation),
+        measuredAt: snapshot.measuredAt,
+        deviceLabel: snapshot.deviceLabel,
+        measurements: createEmptyPhysicalMeasurementTemplate(),
+      },
+    ],
+  };
 }
 
 function createPrototypeProbeDraftInspectorModel(
@@ -266,6 +315,19 @@ function createPrototypeProbeDraftInspectorModel(
       sessionFallbackPreserved: null,
       recordingCaptureSeconds: null,
     },
+  };
+}
+
+function createEmptyPhysicalMeasurementTemplate(): PrototypeProbeHandoffMeasurementTemplate {
+  return {
+    touchToSoundLatencyMs: null,
+    maxStableVoices: null,
+    pitchBendSmooth: null,
+    glissandoTriggeredStrings: null,
+    muteReleaseClean: null,
+    preloadStable: null,
+    sessionFallbackPreserved: null,
+    recordingCaptureSeconds: null,
   };
 }
 

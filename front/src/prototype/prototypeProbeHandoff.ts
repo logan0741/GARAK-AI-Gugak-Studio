@@ -5,6 +5,7 @@ import {
 } from '../audio/audioEngineProbeDraft';
 import { AudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
 import { PrototypeProbeDraftInspectorModel } from './prototypeQaSnapshot';
+import { PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION } from './prototypeSampleManifest';
 
 export type PhysicalDevicePrototypeProbeHandoffInput = {
   inspectorDraft: PrototypeProbeDraftInspectorModel;
@@ -51,21 +52,37 @@ export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
   });
 }
 
-function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
+export function isPrototypeObservedRuntimeReady(
+  inspectorDraft: PrototypeProbeDraftInspectorModel,
+): boolean {
   const { observedRuntime, probeTemplate } = inspectorDraft;
 
-  if (!observedRuntime) {
+  return (
+    !!observedRuntime &&
+    observedRuntime.requestedCandidate === probeTemplate.candidate &&
+    observedRuntime.activeRuntime === probeTemplate.candidate &&
+    observedRuntime.runtimeStatus === 'native_candidate_ready' &&
+    observedRuntime.nativePreloadStatus === 'ready'
+  );
+}
+
+function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
+  if (!inspectorDraft.observedRuntime) {
     throw new Error('prototype runtime observation is required before physical-device promotion');
   }
 
   if (
-    observedRuntime.requestedCandidate !== probeTemplate.candidate ||
-    observedRuntime.activeRuntime !== probeTemplate.candidate ||
-    observedRuntime.runtimeStatus !== 'native_candidate_ready' ||
-    observedRuntime.nativePreloadStatus !== 'ready'
+    inspectorDraft.observedRuntime.sampleManifestVersion !==
+    PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION
   ) {
     throw new Error(
-      `prototype runtime must be ready for ${probeTemplate.candidate} before physical-device promotion`,
+      `prototype runtime must use sample manifest ${PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION} before physical-device promotion`,
+    );
+  }
+
+  if (!isPrototypeObservedRuntimeReady(inspectorDraft)) {
+    throw new Error(
+      `prototype runtime must be ready for ${inspectorDraft.probeTemplate.candidate} before physical-device promotion`,
     );
   }
 }

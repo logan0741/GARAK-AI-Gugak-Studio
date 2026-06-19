@@ -8,6 +8,7 @@ Related candidate smoke checks:
 - Candidate A `expo-audio`: `docs/qa/day-2-expo-audio-smoke.md`
 - Candidate B `react-native-audio-api`: `docs/qa/day-3-react-native-audio-api-smoke.md`
 - Touch model: `docs/qa/day-4-touch-model-smoke.md`
+- Week 1 smoke report: `docs/qa/week-1-smoke-report.md`
 - Decision record: `docs/qa/day-5-audio-engine-decision-record.md`
 - Probe record example: `docs/qa/day-5-audio-engine-probes.example.json`
 
@@ -96,11 +97,15 @@ Decision mapping:
 | `FAIL` | At least one core criterion, preload, or session fallback fails. |
 | `NO_GO` | Fewer than two core audio criteria pass. |
 
-After exactly one physical-device probe per candidate is recorded, run the handoff object through `npm run qa:day5-audio -- <probe-record.json>`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
+After exactly one physical-device probe per candidate is recorded, run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` before the final Day 5 handoff. The readiness gate must report `READY_FOR_DAY5_DECISION`, proving that the completed Week 1 smoke report and the Day 5 probe record refer to the same physical device.
+
+Then run the handoff object through `npm run qa:day5-audio -- <probe-record.json>`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values and no candidate appears more than once.
+
+Before relying on the Day 5 record, create the Week 1 smoke report with `npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-label>"`, fill it from device QA, then validate it with `npm run qa:week1-smoke-report -- <week1-smoke-report.json>`. The smoke report must show Day 2, Day 3, and Day 4 were all recorded on one physical device label without missing areas, duplicate areas, missing checks, duplicate checks, or blocked checks.
 
 ## Current Prototype Smoke Test
 
-The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, an 8-voice polyphony burst control, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, recording observation counters, missing sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, and a copyable `Session fallback` JSON block in the prototype inspector.
+The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, an 8-voice polyphony burst control, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, recording observation counters, missing sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, a copyable `Prototype handoff JSON` block for the `qa:prototype-probe-record` command, and a copyable `Session fallback` JSON block in the prototype inspector.
 
 1. Open the 12-string prototype screen on a physical device or Expo dev build.
 2. Enter the tested physical device and OS in `Device / OS`, for example `Pixel 8 / Android 15`, and confirm `probeTemplate.deviceLabel` no longer uses `replace-with-physical-device-model`.
@@ -122,6 +127,12 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 18. Confirm the probe draft exposes `observedFakeCounters.eventDispatchLatency` after at least one handled event batch, and keep `probeTemplate.touchToSoundLatencyMs` as `null` until physical-device audio latency is measured.
 19. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, and preserves the full `Session.events` list even if recording is unsupported or fails.
 20. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, exposes `observedRuntime` with requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error if present, keeps unmeasured physical-device fields as `null`, exposes recording observations and fallback reason only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
+21. Confirm `Prototype handoff JSON` has `generatedAt`, one `entries[]` item for the current candidate, the same `inspectorDraft`, and `measurements` fields set to `null` until the tester replaces them with physical-device values.
+22. If candidate handoffs were copied into separate files, run `npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>`. The merged entries must use the same physical device label.
+23. Run `npm run qa:prototype-handoff-check -- <merged-handoff.json>` and confirm `READY_FOR_PROBE_RECORD` before generating the probe record. Resolve missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, nullable measurement fields, runtime readiness issues, or generated probe-record validation issues first.
+24. Run `npm run qa:prototype-probe-record -- <merged-handoff.json> <probe-record.json>`; the command must reject non-ready runtimes or any `sampleManifestVersion` other than `dev-synthetic-gayageum-2026-06-08`.
+25. Run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` and confirm `READY_FOR_DAY5_DECISION`.
+26. Run `npm run qa:day5-audio -- <probe-record.json>`.
 
 ## Day 5 Full Test Script
 

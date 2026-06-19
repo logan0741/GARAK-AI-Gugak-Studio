@@ -4,11 +4,23 @@ This folder owns manual validation checklists and physical-device QA handoffs.
 
 The most important MVP QA area is audio and touch validation. Unit tests can prove data shape and boundary behavior, but they cannot prove touch-to-sound latency, dropout, click noise, or pitch-bend quality.
 
+Before Day 5 review, create a Week 1 smoke report template, record the Day 2, Day 3, and Day 4 physical-device smoke runs in it, then validate it:
+
+```bash
+npm run qa:week1-smoke-template -- <week1-smoke-report.json> <tester> "<device-label>"
+npm run qa:week1-smoke-report -- <week1-smoke-report.json>
+```
+
+The template command writes all required Day 2/3/4 check IDs with `blocked` results so the tester can fill them after device QA. The report command checks whether every required smoke area and check has a completed `pass` or `fail` result, with no duplicate areas or duplicate checks, and whether all runs use one physical device label. It reports failures for review, but it does not select the final engine and does not replace the Day 5 probe record. See `week-1-smoke-report.md` for the JSON shape and required check IDs.
+
 Day 5 audio-engine values must be moved into a candidate probe record that follows `day-5-audio-engine-probes.example.json`. Final-selection probes must use `evidenceSource: 'physical-device'`, and the record must be validated with:
 
 ```bash
+npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>
 npm run qa:day5-audio -- <probe-record.json>
 ```
+
+The readiness command is the bridge between Week 1 smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files after trimming surrounding whitespace. When the smoke report is incomplete, its `Smoke report issues` line includes the concrete missing, duplicate, blocked, or device-label causes. It does not write a new record and does not select the final engine.
 
 `src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null values.
 
@@ -16,15 +28,32 @@ When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with
 
 The prototype probe draft also includes `observedRuntime` so the handoff records the requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error when present. Treat that field as QA context only; it does not replace any `physical-device` probe value.
 
-`src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate and the runtime/preload status is ready. This prevents fake fallback or preloading states from being promoted.
+`src/prototype/prototypeProbeHandoff.ts` may build physical-device probes or a Day 5 probe record from prototype inspector drafts only when `observedRuntime.activeRuntime` matches each probe candidate, the runtime/preload status is ready, and `observedRuntime.sampleManifestVersion` is `dev-synthetic-gayageum-2026-06-08`. This prevents fake fallback, preloading states, or mismatched sample fixtures from being promoted.
 
-To produce a Day 5 probe record from prototype inspector drafts, save a prototype handoff JSON with `generatedAt` and `entries`. Each entry must contain the copied `inspectorDraft`, explicit physical-device `measurements`, and optional `measuredAt` or `deviceLabel` overrides. Then run:
+To produce a Day 5 probe record from prototype inspector drafts, copy the prototype inspector's `Prototype handoff JSON` block after testing each candidate. Each entry contains the copied `inspectorDraft`, `measuredAt`, `deviceLabel`, and nullable manual `measurements`. Replace every `measurements` null with explicit physical-device values, then check readiness before generating a probe record:
 
 ```bash
+npm run qa:prototype-handoff-check -- <prototype-handoff.json>
 npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>
 ```
 
-The command writes the probe record JSON file and validates that the generated record passes the Day 5 parser. Validate that output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. The probe-record command rejects malformed handoff JSON shape, then enforces runtime readiness and the expected sample manifest before writing the probe record JSON file, then validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+
+If each candidate was tested in a separate run, merge the copied handoff files before building the probe record. The merged handoff must still represent one physical device label across all candidate entries:
+
+```bash
+npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>
+```
+
+The merge command only combines `entries[]` and rejects duplicate candidate entries. It does not fill or validate physical-device measurements; `qa:prototype-probe-record` remains responsible for turning the filled handoff into a parser-valid probe record.
+
+After merging, check that the merged handoff is ready for promotion:
+
+```bash
+npm run qa:prototype-handoff-check -- <merged-handoff.json>
+```
+
+The readiness check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, missing manual measurement fields, runtime readiness issues, and generated probe-record validation issues. It does not write a probe record or select the final engine. Device label issues include placeholder labels, entry/draft label mismatches, and candidate entries that were copied from different physical devices. Manifest issues mean the observed runtime did not use `dev-synthetic-gayageum-2026-06-08`, the Week 1 technical fixture manifest.
 
 For candidates that cannot capture audio, keep the `Session fallback` JSON and copy `observedPrototypeRecording.fallbackReason` from the prototype draft. That reason is handoff context only; final selection still depends on the manually reviewed `physical-device` probe record.
 
