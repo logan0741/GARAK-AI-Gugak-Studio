@@ -5,9 +5,11 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "start:dev-client": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "qa:day5-audio": "vite-node scripts/day5-audio-engine-handoff.ts",
+    "samples:generate-dev": "vite-node scripts/generate-dev-gayageum-samples.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:watch": "vitest"
@@ -17,6 +19,7 @@
     "expo": "^54.0.0",
     "expo-asset": "~12.0.13",
     "expo-audio": "~1.1.1",
+    "expo-dev-client": "~6.0.21",
     "expo-router": "^6.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

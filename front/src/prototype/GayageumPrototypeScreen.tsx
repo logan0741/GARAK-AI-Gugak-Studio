@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   GestureResponderEvent,
   PanResponder,
@@ -9,23 +9,102 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import { FakeSamplerEngine } from '../audio/fakeSamplerEngine';
+import { VoiceState } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
 import { createEmptySession } from '../domain/session';
 import { createTouchModel, TouchFrame } from '../interaction/touchModel';
 import {
   appendEventsToSession,
   planGlissando,
-  safelyDispatchEventsToEngine,
+  safelyDispatchEventsToCurrentEngine,
 } from './gayageumPrototypeController';
+import {
+  countPrototypeAudibleVoices,
+  createInitialPrototypeQaSnapshot,
+  formatPrototypeProbeDraftForInspector,
+  updatePrototypeQaSnapshot,
+} from './prototypeQaSnapshot';
+import { createAndPreloadPrototypeNativeSamplerEngine } from './prototypeNativeSamplerEngineFactory';
+import {
+  createPrototypeSamplerEngineHost,
+  PrototypeNativeCandidateState,
+} from './prototypeSamplerEngineHost';
+import {
+  PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
+  prototypeGayageumSampleManifest,
+} from './prototypeSampleManifest';
 
 const STRING_COUNT = 12;
 const ALL_STRINGS = Array.from({ length: STRING_COUNT }, (_, index) => index + 1);
 const FALLBACK_INSTRUMENT_HEIGHT = 312;
 const PRIMARY_POINTER_ID = 'primary-touch';
+const DEFAULT_PROBE_CANDIDATE: AudioEngineCandidateId = 'react-native-audio-api';
+const DEFAULT_DEVICE_LABEL = 'replace-with-physical-device-model';
+const PROBE_CANDIDATES: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
+
+type NativeCandidateLoadState = {
+  candidate: AudioEngineCandidateId;
+  state: PrototypeNativeCandidateState;
+};
 
 export function GayageumPrototypeScreen() {
-  const engine = useMemo(() => new FakeSamplerEngine(), []);
+  const [probeCandidate, setProbeCandidate] = useState<AudioEngineCandidateId>(DEFAULT_PROBE_CANDIDATE);
+  const [nativeCandidateLoadState, setNativeCandidateLoadState] = useState<NativeCandidateLoadState>(() => ({
+    candidate: DEFAULT_PROBE_CANDIDATE,
+    state: { status: 'preloading' },
+  }));
+  useEffect(() => {
+    let cancelled = false;
+
+    setNativeCandidateLoadState({
+      candidate: probeCandidate,
+      state: { status: 'preloading' },
+    });
+
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: probeCandidate,
+      manifest: prototypeGayageumSampleManifest,
+    })
+      .then((engine) => {
+        if (!cancelled) {
+          setNativeCandidateLoadState({
+            candidate: probeCandidate,
+            state: { status: 'ready', engine },
+          });
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setNativeCandidateLoadState({
+            candidate: probeCandidate,
+            state: { status: 'failed', errorMessage: getErrorMessage(error) },
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [probeCandidate]);
+  const nativeCandidateState =
+    nativeCandidateLoadState.candidate === probeCandidate
+      ? nativeCandidateLoadState.state
+      : ({ status: 'preloading' } satisfies PrototypeNativeCandidateState);
+  const engineHost = useMemo(
+    () =>
+      createPrototypeSamplerEngineHost({
+        requestedCandidate: probeCandidate,
+        manifest: prototypeGayageumSampleManifest,
+        nativeCandidate: nativeCandidateState,
+        createFakeEngine: () => new FakeSamplerEngine(),
+      }),
+    [nativeCandidateState, probeCandidate],
+  );
+  const engine = engineHost.engine;
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
   const [instrumentHeight, setInstrumentHeight] = useState(FALLBACK_INSTRUMENT_HEIGHT);
   const touchModel = useMemo(
     () =>
@@ -42,7 +121,14 @@ export function GayageumPrototypeScreen() {
     createEmptySession({
       id: 'local-prototype-session',
       createdAt: new Date().toISOString(),
-      sampleAssetManifestVersion: 'prototype-empty-manifest',
+      sampleAssetManifestVersion: PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION,
+    }),
+  );
+  const [qaSnapshot, setQaSnapshot] = useState(() =>
+    createInitialPrototypeQaSnapshot({
+      candidate: DEFAULT_PROBE_CANDIDATE,
+      deviceLabel: DEFAULT_DEVICE_LABEL,
+      measuredAt: new Date().toISOString(),
     }),
   );
   const [audioError, setAudioError] = useState<string | undefined>();
@@ -52,8 +138,28 @@ export function GayageumPrototypeScreen() {
       return;
     }
     setSession((current) => appendEventsToSession(current, events));
-    const result = safelyDispatchEventsToEngine(engine, events);
+    const result = safelyDispatchEventsToCurrentEngine(engineRef, events);
+    const currentEngine = engineRef.current;
     setAudioError(result.ok ? undefined : result.errorMessage);
+    setQaSnapshot((current) =>
+      updatePrototypeQaSnapshot(current, {
+        activeVoiceCount: countPrototypeAudibleVoices(getFakeEngineSnapshot(currentEngine).activeVoices),
+        audioDispatchOk: result.ok,
+        events,
+        measuredAt: new Date().toISOString(),
+      }),
+    );
+  }
+
+  function handleProbeCandidatePress(candidate: AudioEngineCandidateId) {
+    setProbeCandidate(candidate);
+    setQaSnapshot(
+      createInitialPrototypeQaSnapshot({
+        candidate,
+        deviceLabel: DEFAULT_DEVICE_LABEL,
+        measuredAt: new Date().toISOString(),
+      }),
+    );
   }
 
   function handleGlissandoPress() {
@@ -94,8 +200,11 @@ export function GayageumPrototypeScreen() {
   );
 
   const latestEvent: PerformanceEvent | undefined = session.events.at(-1);
-  const activeVoices = engine.activeVoices;
-  const commands = engine.commands;
+  const fakeEngineSnapshot = getFakeEngineSnapshot(engine);
+  const activeVoices = fakeEngineSnapshot.activeVoices;
+  const audibleVoiceCount = countPrototypeAudibleVoices(activeVoices);
+  const commands = fakeEngineSnapshot.commands;
+  const probeDraftText = formatPrototypeProbeDraftForInspector(qaSnapshot);
 
   return (
     <View style={styles.screen}>
@@ -112,6 +221,30 @@ export function GayageumPrototypeScreen() {
         >
           <Text style={styles.glissandoButtonText}>Glissando</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.probeControls}>
+        {PROBE_CANDIDATES.map((candidate) => (
+          <Pressable
+            key={candidate}
+            accessibilityRole="button"
+            accessibilityLabel={`Set probe draft candidate to ${candidate}`}
+            onPress={() => handleProbeCandidatePress(candidate)}
+            style={[
+              styles.candidateButton,
+              probeCandidate === candidate ? styles.candidateButtonSelected : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.candidateButtonText,
+                probeCandidate === candidate ? styles.candidateButtonTextSelected : undefined,
+              ]}
+            >
+              {candidate === 'react-native-audio-api' ? 'RN Audio API' : 'Expo Audio'}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       <View
@@ -134,11 +267,25 @@ export function GayageumPrototypeScreen() {
 
       <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent}>
         <Text style={styles.inspectorTitle}>Prototype Inspector</Text>
+        <Text style={styles.inspectorText}>Requested candidate: {engineHost.requestedCandidate}</Text>
+        <Text style={styles.inspectorText}>Active runtime: {engineHost.activeRuntime}</Text>
+        <Text style={styles.inspectorText}>Runtime status: {engineHost.status}</Text>
+        <Text style={styles.inspectorText}>
+          Manifest version: {engineHost.manifestVersion ?? 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>Native preload: {formatNativePreloadStatus(engineHost)}</Text>
+        <Text style={styles.inspectorText}>
+          Missing sample strings: {engineHost.missingStringIndexes.join(', ') || 'none'}
+        </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
-        <Text style={styles.inspectorText}>Active voices: {activeVoices.length}</Text>
+        <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>
         <Text style={styles.inspectorText}>Audio status: {audioError ? `failed: ${audioError}` : 'ok'}</Text>
         <Text style={styles.inspectorText}>Latest: {latestEvent ? JSON.stringify(latestEvent) : 'none'}</Text>
         <Text style={styles.inspectorText}>Commands: {commands.join(' | ') || 'none'}</Text>
+        <Text style={styles.inspectorTitle}>Probe draft (estimate only, fake engine counters)</Text>
+        <Text selectable style={styles.probeDraftText}>
+          {probeDraftText}
+        </Text>
       </ScrollView>
     </View>
   );
@@ -147,6 +294,46 @@ export function GayageumPrototypeScreen() {
 function getTouchForce(event: GestureResponderEvent): number | undefined {
   const nativeEvent = event.nativeEvent as GestureResponderEvent['nativeEvent'] & { force?: unknown };
   return typeof nativeEvent.force === 'number' ? nativeEvent.force : undefined;
+}
+
+function getFakeEngineSnapshot(engine: unknown): {
+  activeVoices: VoiceState[];
+  commands: string[];
+} {
+  if (engine instanceof FakeSamplerEngine) {
+    return {
+      activeVoices: engine.activeVoices,
+      commands: engine.commands,
+    };
+  }
+
+  return {
+    activeVoices: [],
+    commands: [],
+  };
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function formatNativePreloadStatus(host: {
+  status: string;
+  preloadErrorMessage?: string;
+}): string {
+  if (host.status === 'native_candidate_failed') {
+    return `failed: ${host.preloadErrorMessage ?? 'unknown error'}`;
+  }
+
+  if (host.status === 'native_candidate_ready') {
+    return 'ready';
+  }
+
+  if (host.status === 'native_candidate_preloading') {
+    return 'preloading';
+  }
+
+  return 'not started';
 }
 
 const styles = StyleSheet.create({
@@ -190,6 +377,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  probeControls: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  candidateButton: {
+    alignItems: 'center',
+    borderColor: '#80b8aa',
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 36,
+    minWidth: 116,
+    paddingHorizontal: 12,
+  },
+  candidateButtonSelected: {
+    backgroundColor: '#80b8aa',
+  },
+  candidateButtonText: {
+    color: '#f6f1e8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  candidateButtonTextSelected: {
+    color: '#101418',
+  },
   instrument: {
     backgroundColor: '#1c2320',
     borderColor: '#3a4a42',
@@ -222,7 +434,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#eef3ef',
     borderRadius: 8,
     flexGrow: 0,
-    maxHeight: 148,
+    maxHeight: 196,
   },
   inspectorContent: {
     gap: 4,
@@ -236,5 +448,10 @@ const styles = StyleSheet.create({
   inspectorText: {
     color: '#101418',
     fontSize: 12,
+  },
+  probeDraftText: {
+    color: '#101418',
+    fontFamily: 'monospace',
+    fontSize: 10,
   },
 });

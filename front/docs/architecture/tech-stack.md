@@ -179,6 +179,7 @@ This section supersedes the package-version rows in section 6 when they conflict
 | --- | --- | --- |
 | `expo-audio` | `1.1.1` | Expo SDK 54 bundled playback/recording candidate. Installed with `npx expo install`. |
 | `expo-asset` | `12.0.13` | Required peer for `expo-audio`; pinned to the SDK 54-compatible version. |
+| `expo-dev-client` | `6.0.21` | Required for physical-device native audio candidate QA outside Expo Go. |
 | `react-native-audio-api` | `0.11.7` | Week 1 low-latency sampler candidate. `0.12.2` is held because it asks for `react-native-worklets >= 0.6.0`, while the current Expo SDK 54 scaffold uses `react-native-worklets@0.5.1`. |
 | `react-native-worklets` | `0.5.1` | Expo SDK 54-compatible version brought by the current Expo/Reanimated setup. |
 
@@ -188,6 +189,8 @@ Day 5 final selection must be recorded through `src/audio/audioEngineDecisionRec
 
 Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
 
+Week 1 device QA uses `expo-dev-client` and the `eas.json` `development` profile because native audio modules and microphone permissions cannot be validated in Expo Go. `npm run start:dev-client` is the Metro entry point after the development client is installed on the device.
+
 Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/expoAudioSamplerEngine.ts` and is tested through a port-injected runtime so domain, session, gesture, and prototype controller code do not depend on the concrete audio package.
 
 The Week 1 `expo-audio` runtime resolves/downloads sources before creating players and normalizes recording options through the same SDK helpers used by `useAudioRecorder`. This avoids reporting preload success before a playable URI exists and keeps the 10-second recording probe closer to the native path used by Expo.
@@ -195,3 +198,7 @@ The Week 1 `expo-audio` runtime resolves/downloads sources before creating playe
 Candidate B `react-native-audio-api` imports are isolated in `src/audio/reactNativeAudioApiRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/reactNativeAudioApiSamplerEngine.ts`: it decodes `SampleAssetManifest.fileUri` values into reusable `AudioBuffer` objects, creates a fresh `AudioBufferSourceNode` per pluck/glissando step, routes each voice through `BiquadFilterNode -> GainNode -> destination`, and applies pitch bend through `detune` automation.
 
 Day 4 touch validation uses `src/interaction/touchModel.ts` as the raw-touch boundary. It maps `PanResponder` touch frames into `PerformanceEvent[]` through `GestureMapper`, keeping UI coordinates out of the domain, session, and audio engine layers.
+
+The prototype runtime host lives in `src/prototype/prototypeSamplerEngineHost.ts`. It may target `expo-audio` or `react-native-audio-api`, but it must keep the active runtime on `fake-prototype` until a complete 12-string `SampleAssetManifest` is available and the requested native candidate finishes preload. This prevents fake-engine counters or unpreloaded native engines from being mistaken for candidate evidence.
+
+Week 1 development samples are managed by `src/prototype/prototypeSampleManifest.ts`, `scripts/generate-dev-gayageum-samples.ts`, and `assets/audio/gayageum-dev/`. Run `npm run samples:generate-dev` before device QA to regenerate the synthetic 12-string WAV fixtures. Manifest version `dev-synthetic-gayageum-2026-06-08` is valid only for technical engine validation; final release audio must use owned or licensed gayageum recordings and a new manifest version.
