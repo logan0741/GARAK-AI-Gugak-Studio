@@ -38,7 +38,15 @@ test('wraps promoted prototype inspector drafts in a parseable Day 5 probe recor
     generatedAt: '2026-06-08T03:10:00.000Z',
     entries: [
       {
-        inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+        inspectorDraft: {
+          ...createInspectorDraftForCandidate('expo-audio'),
+          observedPrototypeRecording: {
+            capturedSeconds: 10,
+            fallbackReason: null,
+            playbackConfirmed: true,
+            uriAvailable: true,
+          },
+        },
         measuredAt: '2026-06-08T03:00:00.000Z',
         measurements: {
           ...measurements,
@@ -149,6 +157,46 @@ test('rejects physical-device promotion when observed runtime used an unexpected
   );
 });
 
+test('rejects physical-device promotion when observed runtime reports unexpected sample string indexes', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraft({
+        observedRuntime: {
+          activeRuntime: 'react-native-audio-api',
+          nativePreloadStatus: 'ready',
+          requestedCandidate: 'react-native-audio-api',
+          runtimeStatus: 'native_candidate_ready',
+          sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+          unexpectedStringIndexes: [13],
+        },
+      }),
+      measurements,
+    }),
+  ).toThrow(
+    'prototype runtime must not report unexpected sample string indexes before physical-device promotion',
+  );
+});
+
+test('rejects physical-device promotion when unexpected sample string index field is present', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraft({
+        observedRuntime: {
+          activeRuntime: 'react-native-audio-api',
+          nativePreloadStatus: 'ready',
+          requestedCandidate: 'react-native-audio-api',
+          runtimeStatus: 'native_candidate_ready',
+          sampleManifestVersion: 'dev-synthetic-gayageum-2026-06-08',
+          unexpectedStringIndexes: [],
+        },
+      }),
+      measurements,
+    }),
+  ).toThrow(
+    'prototype runtime must not report unexpected sample string indexes before physical-device promotion',
+  );
+});
+
 test('rejects physical-device promotion when runtime status is not ready even if active runtime matches', () => {
   expect(() =>
     buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
@@ -175,6 +223,58 @@ test('rejects physical-device promotion without runtime observation context', ()
       measurements,
     }),
   ).toThrow('prototype runtime observation is required before physical-device promotion');
+});
+
+test('rejects ten-second recording promotion without inspector playback confirmation', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+      measurements: {
+        ...measurements,
+        recordingCaptureSeconds: 10,
+      },
+    }),
+  ).toThrow(
+    'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+  );
+});
+
+test('rejects recording promotion when measurements exceed inspector captured seconds', () => {
+  const inspectorDraft = createInspectorDraftForCandidate('expo-audio');
+
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: {
+        ...inspectorDraft,
+        observedPrototypeRecording: {
+          capturedSeconds: 10,
+          fallbackReason: null,
+          playbackConfirmed: true,
+          uriAvailable: true,
+        },
+      },
+      measurements: {
+        ...measurements,
+        recordingCaptureSeconds: 12,
+      },
+    }),
+  ).toThrow(
+    'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+  );
+});
+
+test('rejects under-ten recording promotion without inspector playback confirmation', () => {
+  expect(() =>
+    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+      inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+      measurements: {
+        ...measurements,
+        recordingCaptureSeconds: 4,
+      },
+    }),
+  ).toThrow(
+    'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+  );
 });
 
 test.each([

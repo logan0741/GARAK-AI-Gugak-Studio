@@ -12,6 +12,13 @@ export function createPrototypeRuntimeObservation(
     sampleManifestVersion: host.manifestVersion ?? null,
   };
 
+  if (host.unexpectedStringIndexes.length > 0) {
+    return {
+      ...baseObservation,
+      unexpectedStringIndexes: host.unexpectedStringIndexes,
+    };
+  }
+
   if (host.status === 'native_candidate_failed') {
     return {
       ...baseObservation,

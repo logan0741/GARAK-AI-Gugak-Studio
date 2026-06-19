@@ -35,12 +35,14 @@ export function appendPerformanceEvent(session: Session, event: PerformanceEvent
 }
 
 export function attachRecordingUriToSession(session: Session, recordingUri: string): Session {
-  if (recordingUri.trim().length === 0) {
+  const normalizedRecordingUri = recordingUri.trim();
+
+  if (normalizedRecordingUri.length === 0) {
     return session;
   }
 
   return {
     ...session,
-    recordingUri,
+    recordingUri: normalizedRecordingUri,
   };
 }

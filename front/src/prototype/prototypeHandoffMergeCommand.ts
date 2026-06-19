@@ -58,6 +58,13 @@ export function runPrototypeHandoffMergeCommand(
       return 1;
     }
 
+    if (!isIsoTimestamp(parseResult.handoff.generatedAt)) {
+      input.writeStderr(
+        `Could not merge prototype handoffs: ${handoffPath} generatedAt must be a UTC ISO timestamp`,
+      );
+      return 1;
+    }
+
     entries.push(...parseResult.handoff.entries);
   }
 
@@ -89,6 +96,13 @@ export function runPrototypeHandoffMergeCommand(
   if (!isIsoTimestamp(generatedAt)) {
     input.writeStderr(
       'Could not merge prototype handoffs: generatedAt must be a UTC ISO timestamp',
+    );
+    return 1;
+  }
+
+  if (hasMeasurementAfterGeneratedAt(entries, generatedAt)) {
+    input.writeStderr(
+      'Could not merge prototype handoffs: generatedAt must be at or after every handoff measuredAt timestamp',
     );
     return 1;
   }
@@ -159,6 +173,18 @@ function collectDeviceLabels(
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function hasMeasurementAfterGeneratedAt(
+  entries: PhysicalDevicePrototypeProbeHandoffInput[],
+  generatedAt: string,
+): boolean {
+  const generatedAtMs = Date.parse(generatedAt);
+
+  return entries.some((entry) => {
+    const measuredAt = entry.measuredAt ?? entry.inspectorDraft.probeTemplate.measuredAt;
+    return isIsoTimestamp(measuredAt) && Date.parse(measuredAt) > generatedAtMs;
+  });
 }
 
 function isString(input: unknown): input is string {

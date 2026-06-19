@@ -34,6 +34,8 @@ The generated `dev-synthetic-gayageum-2026-06-08` samples are Week 1 technical f
 
 The prototype native sampler factory must resolve each fixture sample to a non-empty local URI before a candidate runtime is loaded. Empty resolved URIs or `http(s)` URIs are invalid for normal-play latency checks.
 
+Candidate engines must reject non-finite playback control values before touching native player, node, or automation state. `velocity`, `cents`, and `strength` may be clamped when finite, but `NaN` or infinite values must fail at the `SamplerEngine` boundary instead of becoming device QA evidence.
+
 ## Device Setup
 
 | Field | Value |
@@ -81,7 +83,11 @@ Captured recording URIs are trimmed before they are stored or sent to playback. 
 
 Captured playback must use the current candidate's recording probe state. After changing the requested candidate, `Play Rec` must not reuse a stale session recording URI from the previous candidate.
 
-When a new capture result or recording fallback is recorded, `observedPrototypeRecording.playbackConfirmed` must reset to `false`. Treat playback confirmation as valid only after `Play Rec` succeeds for the current captured URI.
+When a new capture result is recorded, `observedPrototypeRecording.playbackConfirmed` must reset to `false`. When a recording fallback is recorded, `capturedSeconds`, `uriAvailable`, and `playbackConfirmed` must reset so stale capture evidence is not copied. Treat playback confirmation as valid only after `Play Rec` succeeds for the current captured URI.
+
+When `Prototype handoff JSON` is filled with any positive `recordingCaptureSeconds`, the matching inspector draft must show `observedPrototypeRecording.capturedSeconds` greater than or equal to that measurement, `uriAvailable: true`, `playbackConfirmed: true`, and `fallbackReason: null`. Otherwise `qa:prototype-handoff-check` must report `recordingCaptureSeconds` as an invalid measurement field. This prevents a fallback, stale recording observation, or inflated capture duration from becoming recording evidence, including under-10-second `PASS_WITH_LIMITS` evidence.
+
+`Rec 10s` must be unavailable while a recording probe is active, and `Stop Rec` must be unavailable unless the current probe state is `recording`. Do not create fallback evidence by pressing stop while idle or by starting a second recording before the first probe is stopped.
 
 ```ts
 {
@@ -109,7 +115,7 @@ Decision mapping:
 | `FAIL` | At least one core criterion, preload, or session fallback fails. |
 | `NO_GO` | Fewer than two core audio criteria pass. |
 
-After exactly one physical-device probe per candidate is recorded, run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` before the final Day 5 handoff. The readiness gate must report `READY_FOR_DAY5_DECISION`, proving that the completed Week 1 smoke report and the Day 5 probe record refer to the same physical device.
+After exactly one physical-device probe per candidate is recorded, run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` before the final Day 5 handoff. The readiness gate must report `READY_FOR_DAY5_DECISION`, proving that the completed Week 1 smoke report and the Day 5 probe record refer to the same physical device and that probe `measuredAt` values do not predate the latest Week 1 smoke run `testedAt`.
 
 Then run the handoff object through `npm run qa:day5-audio -- <probe-record.json>`. The handoff must return parse errors for invalid records, or a formatted Day 5 decision summary for valid records. The record must remain `INCOMPLETE_DEVICE_EVIDENCE` until both `expo-audio` and `react-native-audio-api` have `evidenceSource: 'physical-device'` probe values, no candidate appears more than once, and all physical-device probes use one device label after trimming whitespace and normalizing slash spacing.
 
@@ -117,17 +123,17 @@ Before relying on the Day 5 record, create the Week 1 smoke report with `npm run
 
 ## Current Prototype Smoke Test
 
-The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, deterministic `Bend` and `Mute` probe controls, an 8-voice polyphony burst control, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, recording observation counters, missing sample string indexes, duplicate sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, a copyable `Prototype handoff JSON` block for the `qa:prototype-probe-record` command, and a copyable `Session fallback` JSON block in the prototype inspector.
+The current branch provides a `PanResponder` instrument surface for tap, swipe glissando, hold-drag bend, broad-contact ji-eum mute, release, deterministic `Bend` and `Mute` probe controls, an 8-voice polyphony burst control, requested candidate, active runtime, runtime status, sample manifest version, native preload status, recording probe controls including captured playback, recording/playback status, recording observation counters, missing sample string indexes, duplicate sample string indexes, unexpected sample string indexes, session event count, audible fake voice count, event-to-dispatch latency debug counters, command log, audio failure status, a copyable `Probe draft (estimate only, fake engine counters)` JSON block, a copyable `Prototype handoff JSON` block for the `qa:prototype-probe-record` command, and a copyable `Session fallback` JSON block in the prototype inspector.
 
 1. Open the 12-string prototype screen on a physical device or Expo dev build.
 2. Enter the tested physical device and OS in `Device / OS`, for example `Pixel 8 / Android 15`, and confirm `probeTemplate.deviceLabel` no longer uses `replace-with-physical-device-model`. If the input is cleared, confirm the copyable draft returns to `replace-with-physical-device-model` instead of keeping a stale device label.
-3. Confirm the inspector separates requested candidate from active runtime. If no complete 12-string sample manifest is passed into the host, or if any string index is duplicated, active runtime must remain `fake-prototype`.
+3. Confirm the inspector separates requested candidate from active runtime. If no complete 12-string sample manifest is passed into the host, if any string index is duplicated, or if any string index is outside the 1-12 prototype range, active runtime must remain `fake-prototype`.
 4. Confirm sample manifest version is `dev-synthetic-gayageum-2026-06-08`.
 5. Confirm a complete manifest moves through `native_candidate_preloading`; active runtime must remain `fake-prototype` until native preload succeeds.
 6. If native preload fails, confirm runtime status is `native_candidate_failed` and session event logging still works through the fake fallback.
 7. If native preload succeeds, confirm runtime status is `native_candidate_ready` and active runtime matches the requested candidate.
 8. Press `Rec 10s` and confirm unsupported engines report `recording_probe_not_supported` without stopping session event logging.
-9. If active runtime is `expo-audio`, press `Rec 10s`, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector. Confirm `observedPrototypeRecording.capturedSeconds` and `uriAvailable` in the probe draft. Then press `Play Rec` and confirm `playbackConfirmed` becomes `true` for the current candidate recording probe. If recording is unsupported or fails, confirm `observedPrototypeRecording.fallbackReason` records the reason.
+9. If active runtime is `expo-audio`, press `Rec 10s`, confirm `Rec 10s` is unavailable while recording and `Stop Rec` is available only during the active recording, interact for about 10 seconds, press `Stop Rec`, and record the captured seconds and URI shown in the inspector. Confirm `observedPrototypeRecording.capturedSeconds` and `uriAvailable` in the probe draft. Then press `Play Rec` and confirm `playbackConfirmed` becomes `true` for the current candidate recording probe. If recording is unsupported or fails, confirm `observedPrototypeRecording.fallbackReason` records the reason.
 10. Touch each string once from 1 to 12 and confirm `string_pluck` appears on touch start and `string_release` appears on touch end.
 11. Swipe across the instrument surface and confirm crossed strings emit ordered `glissando_step` events.
 12. Hold one string and drag horizontally after the hold threshold; confirm `string_bend` appears as the latest event.
@@ -142,9 +148,9 @@ The current branch provides a `PanResponder` instrument surface for tap, swipe g
 21. Confirm the `Session fallback (copyable)` JSON uses format `gukak-studio-session-fallback-v1`, has `canReplay: true` after at least one event, preserves the full `Session.events` list even if recording is unsupported or fails, and does not store a null, empty, or whitespace-only recording URI as a captured recording.
 22. Confirm the probe draft keeps `evidenceSource: "estimate"`, includes `runtimeUnderTest: "fake-sampler-engine"`, exposes `observedRuntime` with requested candidate, active runtime, runtime status, native preload status, sample manifest version, and preload error if present, keeps unmeasured physical-device fields as `null`, exposes recording observations and fallback reason only under `observedPrototypeRecording`, and does not show a Day 5 decision or selected engine.
 23. Confirm `Prototype handoff JSON` has `generatedAt`, one `entries[]` item for the current candidate, the same `inspectorDraft`, and `measurements` fields set to `null` until the tester replaces them with physical-device values.
-24. If candidate handoffs were copied into separate files, run `npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>`. The merge must reject duplicate candidates, placeholder or blank device labels, invalid generated timestamps, and candidate entries copied from different physical device labels; slash spacing differences such as `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same label.
-25. Run `npm run qa:prototype-handoff-check -- <merged-handoff.json>` and confirm `READY_FOR_PROBE_RECORD` before generating the probe record. Resolve missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, inspector draft issues, nullable or invalid measurement fields, runtime readiness issues, or generated probe-record validation issues first.
-26. Run `npm run qa:prototype-probe-record -- <merged-handoff.json> <probe-record.json>`; the command reuses the `READY_FOR_PROBE_RECORD` gate and must reject missing or duplicate candidates, device-label issues, timestamp issues, inspector draft issues, nullable or invalid measurements, non-ready runtimes, generated probe-record validation issues, or any `sampleManifestVersion` other than `dev-synthetic-gayageum-2026-06-08` before it writes output.
+24. If candidate handoffs were copied into separate files, run `npm run qa:prototype-handoff-merge -- <merged-handoff.json> <expo-handoff.json> <rn-audio-api-handoff.json>`. The merge must reject duplicate candidates, placeholder or blank device labels, invalid generated timestamps, output `generatedAt` values that predate measured entries, and candidate entries copied from different physical device labels; slash spacing differences such as `Pixel 8/Android 15` and `Pixel 8 / Android 15` are treated as the same label.
+25. Run `npm run qa:prototype-handoff-check -- <merged-handoff.json>` and confirm `READY_FOR_PROBE_RECORD` before generating the probe record. Resolve missing candidates, duplicate candidates, device label issues, timestamp issues including `generatedAt` values that predate measured handoff entries, manifest issues, inspector draft issues, nullable or invalid measurement fields, runtime readiness issues, or generated probe-record validation issues first.
+26. Run `npm run qa:prototype-probe-record -- <merged-handoff.json> <probe-record.json>`; the command reuses the `READY_FOR_PROBE_RECORD` gate and must reject missing or duplicate candidates, device-label issues, timestamp issues, inspector draft issues, nullable or invalid measurements, non-ready runtimes, generated probe-record validation issues, any `sampleManifestVersion` other than `dev-synthetic-gayageum-2026-06-08`, or any copied `unexpectedStringIndexes` field before it writes output.
 27. Run `npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>` and confirm `READY_FOR_DAY5_DECISION`.
 28. Run `npm run qa:day5-audio -- <probe-record.json>`.
 

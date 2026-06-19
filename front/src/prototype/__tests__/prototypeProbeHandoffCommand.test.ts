@@ -32,19 +32,47 @@ test('returns usage when no prototype handoff path is provided', () => {
   ]);
 });
 
-test('writes a parseable Day 5 probe record from prototype inspector drafts', () => {
+test('returns usage when no probe record output path is provided', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
 
   expect(
     runPrototypeProbeHandoffCommand({
       argv: ['prototype-handoff.json'],
+      readTextFile: () => '{}',
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stdout).toEqual([]);
+  expect(stderr).toEqual([
+    'Usage: npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>',
+  ]);
+});
+
+test('writes a parseable Day 5 probe record from prototype inspector drafts', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writtenFiles = new Map<string, string>();
+
+  expect(
+    runPrototypeProbeHandoffCommand({
+      argv: ['prototype-handoff.json', 'probe-record.json'],
       readTextFile: () =>
         JSON.stringify({
           generatedAt: '2026-06-08T03:10:00.000Z',
           entries: [
             {
-              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              inspectorDraft: {
+                ...createInspectorDraftForCandidate('expo-audio'),
+                observedPrototypeRecording: {
+                  capturedSeconds: 10,
+                  fallbackReason: null,
+                  playbackConfirmed: true,
+                  uriAvailable: true,
+                },
+              },
               measuredAt: '2026-06-08T03:00:00.000Z',
               measurements: {
                 ...measurements,
@@ -59,13 +87,15 @@ test('writes a parseable Day 5 probe record from prototype inspector drafts', ()
             },
           ],
         }),
+      writeTextFile: (path, value) => writtenFiles.set(path, value),
       writeStdout: (value) => stdout.push(value),
       writeStderr: (value) => stderr.push(value),
     }),
   ).toBe(0);
 
   expect(stderr).toEqual([]);
-  const record = JSON.parse(stdout.join('\n'));
+  expect(stdout).toEqual(['Wrote Day 5 probe record: probe-record.json']);
+  const record = JSON.parse(writtenFiles.get('probe-record.json') ?? '');
   expect(parseAudioEngineProbeRecord(record)).toEqual({ ok: true, record });
   expect(record).toMatchObject({
     generatedAt: '2026-06-08T03:10:00.000Z',
@@ -160,7 +190,7 @@ test('rejects generated probe records that do not pass Day 5 parser validation',
 
   expect(
     runPrototypeProbeHandoffCommand({
-      argv: ['prototype-handoff.json'],
+      argv: ['prototype-handoff.json', 'probe-record.json'],
       readTextFile: () =>
         JSON.stringify({
           generatedAt: 'not-an-iso-timestamp',
@@ -193,7 +223,7 @@ test('rejects malformed prototype handoff files before building a probe record',
 
   expect(
     runPrototypeProbeHandoffCommand({
-      argv: ['bad-shape.json'],
+      argv: ['bad-shape.json', 'probe-record.json'],
       readTextFile: () =>
         JSON.stringify({
           generatedAt: '2026-06-08T03:10:00.000Z',
@@ -250,7 +280,7 @@ test('returns readable errors when prototype runtime is not ready', () => {
 
   expect(
     runPrototypeProbeHandoffCommand({
-      argv: ['prototype-handoff.json'],
+      argv: ['prototype-handoff.json', 'probe-record.json'],
       readTextFile: () =>
         JSON.stringify({
           generatedAt: '2026-06-08T03:10:00.000Z',
@@ -287,7 +317,7 @@ test('returns inspector draft issues when the handoff guard fields are contamina
 
   expect(
     runPrototypeProbeHandoffCommand({
-      argv: ['prototype-handoff.json'],
+      argv: ['prototype-handoff.json', 'probe-record.json'],
       readTextFile: () =>
         JSON.stringify({
           generatedAt: '2026-06-08T03:10:00.000Z',
@@ -327,7 +357,7 @@ test('returns invalid json errors without exposing a stack trace', () => {
 
   expect(
     runPrototypeProbeHandoffCommand({
-      argv: ['bad.json'],
+      argv: ['bad.json', 'probe-record.json'],
       readTextFile: () => '{',
       writeStdout: (value) => stdout.push(value),
       writeStderr: (value) => stderr.push(value),

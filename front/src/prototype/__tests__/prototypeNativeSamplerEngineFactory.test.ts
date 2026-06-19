@@ -115,6 +115,59 @@ test('creates and preloads the expo-audio candidate through injected runtime por
   expect(createdPlayerUris).toEqual(resolvedUris);
 });
 
+test('trims local sample source URIs before asset resolution and native preload', async () => {
+  const resolverInputs: string[] = [];
+  const downloadedUris: string[] = [];
+  const manifestWithWhitespaceSource: SampleAssetManifest = {
+    ...manifest,
+    assets: [
+      {
+        ...manifest.assets[0],
+        fileUri: '  asset://gayageum/01.wav  ',
+      },
+      ...manifest.assets.slice(1),
+    ],
+  };
+  const runtime: ExpoAudioRuntimePort = {
+    setAudioModeAsync: async () => undefined,
+    downloadAudioSource: async (source) => {
+      downloadedUris.push(source.uri);
+      return source;
+    },
+    createAudioPlayer: () => ({
+      volume: 1,
+      play: () => undefined,
+      pause: () => undefined,
+      seekTo: async () => undefined,
+      setPlaybackRate: () => undefined,
+    }),
+    requestRecordingPermissionsAsync: async () => ({ granted: true }),
+    createAudioRecorder: () => {
+      throw new Error('recording is not part of preload');
+    },
+  };
+
+  await createAndPreloadPrototypeNativeSamplerEngine({
+    candidate: 'expo-audio',
+    manifest: manifestWithWhitespaceSource,
+    assetResolver: {
+      resolveFileUri: async (fileUri) => {
+        resolverInputs.push(fileUri);
+        return `file://resolved/${fileUri}`;
+      },
+    },
+    runtimePorts: {
+      createExpoAudioRuntimePort: () => runtime,
+      createReactNativeAudioApiRuntimePort: () => {
+        throw new Error('react-native-audio-api runtime should not be created');
+      },
+    },
+  });
+
+  expect(resolverInputs[0]).toBe('asset://gayageum/01.wav');
+  expect(downloadedUris[0]).toBe('file://resolved/asset://gayageum/01.wav');
+});
+
 test('creates and preloads the react-native-audio-api candidate through injected runtime ports', async () => {
   const decodedInputs: string[] = [];
   const resolvedUris: string[] = [];
@@ -159,6 +212,35 @@ test('creates and preloads the react-native-audio-api candidate through injected
 
   expect(resolvedUris).toEqual(manifest.assets.map((asset) => `file://decoded/${asset.fileUri}`));
   expect(decodedInputs).toEqual(resolvedUris);
+});
+
+test('rejects unsupported native audio candidates before sample resolution or native preload', async () => {
+  clearDefaultDependencyLoadMocks();
+  const resolveFileUri = vi.fn(async (fileUri: string) => `file://resolved/${fileUri}`);
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'unexpected-audio-engine' as never,
+      manifest,
+      assetResolver: {
+        resolveFileUri,
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow('Unsupported prototype native audio candidate: unexpected-audio-engine');
+
+  expect(resolveFileUri).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
 });
 
 test('rejects incomplete sample manifests before creating a native candidate', async () => {
@@ -219,6 +301,48 @@ test('rejects duplicate sample string indexes before creating a native candidate
   expect(resolvedUris).toEqual([]);
 });
 
+test('rejects sample string indexes outside the 12-string prototype range before native preload', async () => {
+  clearDefaultDependencyLoadMocks();
+  const resolveFileUri = vi.fn(async () => 'file://resolved/string-13.wav');
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'react-native-audio-api',
+      manifest: {
+        version: 'unexpected-string-manifest',
+        assets: [
+          ...manifest.assets,
+          {
+            ...manifest.assets[0],
+            id: 'string-13',
+            stringIndex: 13,
+            fileUri: 'asset://gayageum/13.wav',
+          },
+        ],
+      },
+      assetResolver: {
+        resolveFileUri,
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow(
+    'Prototype native sampler requires only 12-string sample indexes; unexpected strings: 13',
+  );
+
+  expect(resolveFileUri).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+});
+
 test.each(['expo-audio', 'react-native-audio-api'] as const)(
   'rejects incomplete sample manifests before loading default native dependencies for %s',
   async (candidate) => {
@@ -265,6 +389,44 @@ test.each([
     expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
   },
 );
+
+test('rejects remote sample source URIs before asset resolution or native preload', async () => {
+  clearDefaultDependencyLoadMocks();
+  const resolveFileUri = vi.fn(async () => 'file://resolved/string-01.wav');
+
+  await expect(
+    createAndPreloadPrototypeNativeSamplerEngine({
+      candidate: 'expo-audio',
+      manifest: {
+        ...manifest,
+        assets: [
+          {
+            ...manifest.assets[0],
+            fileUri: 'https://cdn.example.com/gayageum/string-01.wav',
+          },
+          ...manifest.assets.slice(1),
+        ],
+      },
+      assetResolver: {
+        resolveFileUri,
+      },
+      runtimePorts: {
+        createExpoAudioRuntimePort: () => {
+          throw new Error('expo-audio runtime should not be created');
+        },
+        createReactNativeAudioApiRuntimePort: () => {
+          throw new Error('react-native-audio-api runtime should not be created');
+        },
+      },
+    }),
+  ).rejects.toThrow('Prototype native sampler requires local sample source URIs');
+
+  expect(resolveFileUri).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.reactNativeAudioApiRuntimeModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.expoAssetModuleLoaded).not.toHaveBeenCalled();
+  expect(defaultDependencyLoadMocks.bundledSampleRegistryModuleLoaded).not.toHaveBeenCalled();
+});
 
 function clearDefaultDependencyLoadMocks(): void {
   defaultDependencyLoadMocks.expoAudioRuntimeModuleLoaded.mockClear();

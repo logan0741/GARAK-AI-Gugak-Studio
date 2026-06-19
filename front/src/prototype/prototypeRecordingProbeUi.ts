@@ -12,8 +12,15 @@ export type RecordingProbeUiState =
 
 type SelectPlayableRecordingUriInput = {
   recordingProbeState: RecordingProbeUiState;
-  sessionRecordingUri?: string;
 };
+
+export function canStartRecordingProbe(input: SelectPlayableRecordingUriInput): boolean {
+  return input.recordingProbeState.status !== 'recording';
+}
+
+export function canStopRecordingProbe(input: SelectPlayableRecordingUriInput): boolean {
+  return input.recordingProbeState.status === 'recording';
+}
 
 export function selectPlayableRecordingUri(input: SelectPlayableRecordingUriInput): string | null {
   const { recordingProbeState } = input;
@@ -21,14 +28,7 @@ export function selectPlayableRecordingUri(input: SelectPlayableRecordingUriInpu
     (recordingProbeState.status === 'captured' || recordingProbeState.status === 'playing') &&
     isNonEmptyString(recordingProbeState.recordingUri)
   ) {
-    return recordingProbeState.recordingUri;
-  }
-
-  if (
-    (recordingProbeState.status === 'captured' || recordingProbeState.status === 'playing') &&
-    isNonEmptyString(input.sessionRecordingUri)
-  ) {
-    return input.sessionRecordingUri;
+    return recordingProbeState.recordingUri.trim();
   }
 
   return null;

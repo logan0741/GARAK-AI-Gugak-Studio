@@ -17,6 +17,7 @@ export type PrototypeSamplerEngineHost =
       manifestVersion?: string;
       missingStringIndexes: number[];
       duplicateStringIndexes: number[];
+      unexpectedStringIndexes: number[];
       status: 'missing_sample_manifest';
     }
   | {
@@ -26,6 +27,7 @@ export type PrototypeSamplerEngineHost =
       manifestVersion: string;
       missingStringIndexes: [];
       duplicateStringIndexes: number[];
+      unexpectedStringIndexes: number[];
       status: 'duplicate_sample_manifest';
     }
   | {
@@ -35,6 +37,17 @@ export type PrototypeSamplerEngineHost =
       manifestVersion: string;
       missingStringIndexes: [];
       duplicateStringIndexes: [];
+      unexpectedStringIndexes: number[];
+      status: 'invalid_sample_manifest';
+    }
+  | {
+      activeRuntime: 'fake-prototype';
+      requestedCandidate: AudioEngineCandidateId;
+      engine: SamplerEngine;
+      manifestVersion: string;
+      missingStringIndexes: [];
+      duplicateStringIndexes: [];
+      unexpectedStringIndexes: [];
       status: 'native_candidate_preloading';
     }
   | {
@@ -44,6 +57,7 @@ export type PrototypeSamplerEngineHost =
       manifestVersion: string;
       missingStringIndexes: [];
       duplicateStringIndexes: [];
+      unexpectedStringIndexes: [];
       preloadErrorMessage: string;
       status: 'native_candidate_failed';
     }
@@ -54,6 +68,7 @@ export type PrototypeSamplerEngineHost =
       manifestVersion: string;
       missingStringIndexes: [];
       duplicateStringIndexes: [];
+      unexpectedStringIndexes: [];
       status: 'native_candidate_ready';
     };
 
@@ -71,6 +86,7 @@ export function createPrototypeSamplerEngineHost(
 ): PrototypeSamplerEngineHost {
   const missingStringIndexes = getMissingSampleStringIndexes(input.manifest);
   const duplicateStringIndexes = getDuplicateSampleStringIndexes(input.manifest);
+  const unexpectedStringIndexes = getUnexpectedSampleStringIndexes(input.manifest);
 
   if (!input.manifest || missingStringIndexes.length > 0) {
     return {
@@ -80,6 +96,7 @@ export function createPrototypeSamplerEngineHost(
       manifestVersion: input.manifest?.version,
       missingStringIndexes,
       duplicateStringIndexes,
+      unexpectedStringIndexes,
       status: 'missing_sample_manifest',
     };
   }
@@ -92,7 +109,21 @@ export function createPrototypeSamplerEngineHost(
       manifestVersion: input.manifest.version,
       missingStringIndexes: [],
       duplicateStringIndexes,
+      unexpectedStringIndexes,
       status: 'duplicate_sample_manifest',
+    };
+  }
+
+  if (unexpectedStringIndexes.length > 0) {
+    return {
+      activeRuntime: 'fake-prototype',
+      requestedCandidate: input.requestedCandidate,
+      engine: input.createFakeEngine(),
+      manifestVersion: input.manifest.version,
+      missingStringIndexes: [],
+      duplicateStringIndexes: [],
+      unexpectedStringIndexes,
+      status: 'invalid_sample_manifest',
     };
   }
 
@@ -104,6 +135,7 @@ export function createPrototypeSamplerEngineHost(
       manifestVersion: input.manifest.version,
       missingStringIndexes: [],
       duplicateStringIndexes: [],
+      unexpectedStringIndexes: [],
       status: 'native_candidate_preloading',
     };
   }
@@ -116,6 +148,7 @@ export function createPrototypeSamplerEngineHost(
       manifestVersion: input.manifest.version,
       missingStringIndexes: [],
       duplicateStringIndexes: [],
+      unexpectedStringIndexes: [],
       preloadErrorMessage: input.nativeCandidate.errorMessage,
       status: 'native_candidate_failed',
     };
@@ -128,6 +161,7 @@ export function createPrototypeSamplerEngineHost(
     manifestVersion: input.manifest.version,
     missingStringIndexes: [],
     duplicateStringIndexes: [],
+    unexpectedStringIndexes: [],
     status: 'native_candidate_ready',
   };
 }
@@ -152,4 +186,17 @@ export function getDuplicateSampleStringIndexes(manifest?: SampleAssetManifest):
   }
 
   return Array.from(duplicateStringIndexes).sort((left, right) => left - right);
+}
+
+export function getUnexpectedSampleStringIndexes(manifest?: SampleAssetManifest): number[] {
+  const requiredStringIndexes = new Set(REQUIRED_STRING_INDEXES);
+  const unexpectedStringIndexes = new Set<number>();
+
+  for (const asset of manifest?.assets ?? []) {
+    if (!requiredStringIndexes.has(asset.stringIndex)) {
+      unexpectedStringIndexes.add(asset.stringIndex);
+    }
+  }
+
+  return Array.from(unexpectedStringIndexes).sort((left, right) => left - right);
 }

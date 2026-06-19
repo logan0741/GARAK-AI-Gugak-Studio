@@ -8,6 +8,7 @@ import {
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
+  recordPrototypeRecordingStart,
   updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from '../prototypeQaSnapshot';
@@ -379,6 +380,45 @@ test('clears stale recording playback confirmation when a later capture has no p
   });
 });
 
+test('clears stale recording observations when a new recording probe starts', () => {
+  const firstCapture = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:32:00.000Z',
+    }),
+    {
+      capturedSeconds: 10,
+      measuredAt: '2026-06-08T04:32:12.000Z',
+      recordingUri: 'file://first.m4a',
+    },
+  );
+  const firstPlayback = recordPrototypeRecordingPlayback(firstCapture, {
+    measuredAt: '2026-06-08T04:32:15.000Z',
+    playbackConfirmed: true,
+  });
+
+  const recordingStarted = recordPrototypeRecordingStart(firstPlayback, {
+    measuredAt: '2026-06-08T04:32:30.000Z',
+  });
+
+  expect(recordingStarted).toMatchObject({
+    measuredAt: '2026-06-08T04:32:30.000Z',
+    recordingCaptureSeconds: null,
+    recordingFallbackReason: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(recordingStarted))).toMatchObject({
+    observedPrototypeRecording: {
+      capturedSeconds: null,
+      fallbackReason: null,
+      playbackConfirmed: false,
+      uriAvailable: false,
+    },
+  });
+});
+
 test('records prototype recording fallback reason without claiming final evidence', () => {
   const snapshot = recordPrototypeRecordingFallback(
     createInitialPrototypeQaSnapshot({
@@ -436,13 +476,17 @@ test('clears stale recording playback confirmation when a later fallback is reco
 
   expect(fallback).toMatchObject({
     measuredAt: '2026-06-08T04:36:20.000Z',
+    recordingCaptureSeconds: null,
     recordingFallbackReason: 'recording_permission_denied',
     recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
   });
   expect(JSON.parse(formatPrototypeProbeDraftForInspector(fallback))).toMatchObject({
     observedPrototypeRecording: {
+      capturedSeconds: null,
       fallbackReason: 'recording_permission_denied',
       playbackConfirmed: false,
+      uriAvailable: false,
     },
   });
 });
@@ -498,6 +542,30 @@ test('treats whitespace captured recording uri as missing playback context', () 
     recordingFallbackReason: 'recording_playback_uri_missing',
     recordingUriAvailable: false,
   });
+});
+
+test('normalizes invalid captured recording durations before inspector handoff', () => {
+  for (const capturedSeconds of [Number.NaN, Number.NEGATIVE_INFINITY, -1]) {
+    const snapshot = recordPrototypeRecordingCapture(
+      createInitialPrototypeQaSnapshot({
+        candidate: 'expo-audio',
+        deviceLabel: 'Pixel 8 / Android 15',
+        measuredAt: '2026-06-08T04:39:00.000Z',
+      }),
+      {
+        capturedSeconds,
+        measuredAt: '2026-06-08T04:39:12.000Z',
+        recordingUri: 'file://recording.m4a',
+      },
+    );
+
+    expect(snapshot.recordingCaptureSeconds).toBe(0);
+    expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+      observedPrototypeRecording: {
+        capturedSeconds: 0,
+      },
+    });
+  }
 });
 
 test('updates the prototype QA device label used by the probe draft', () => {

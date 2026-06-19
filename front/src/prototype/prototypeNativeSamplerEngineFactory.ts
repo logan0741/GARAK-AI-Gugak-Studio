@@ -12,6 +12,7 @@ import { SampleAssetManifest } from '../domain/sampleManifest';
 import {
   getDuplicateSampleStringIndexes,
   getMissingSampleStringIndexes,
+  getUnexpectedSampleStringIndexes,
 } from './prototypeSamplerEngineHost';
 
 export type PrototypeNativeSamplerEngineRuntimePorts = {
@@ -29,7 +30,9 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   assetResolver?: PrototypeSampleAssetResolver;
   runtimePorts?: PrototypeNativeSamplerEngineRuntimePorts;
 }): Promise<SamplerEngine> {
+  assertSupportedPrototypeNativeAudioCandidate(input.candidate);
   assertCompletePrototypeSampleManifest(input.manifest);
+  assertLocalPrototypeSampleSourceUris(input.manifest);
 
   const manifest = await resolveSampleAssetManifestUris({
     manifest: input.manifest,
@@ -52,6 +55,18 @@ export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   return engine;
 }
 
+function assertSupportedPrototypeNativeAudioCandidate(candidate: AudioEngineCandidateId): void {
+  if (candidate !== 'expo-audio' && candidate !== 'react-native-audio-api') {
+    throw new Error(`Unsupported prototype native audio candidate: ${String(candidate)}`);
+  }
+}
+
+function assertLocalPrototypeSampleSourceUris(manifest: SampleAssetManifest): void {
+  for (const asset of manifest.assets) {
+    normalizeSourceSampleFileUri(asset);
+  }
+}
+
 function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): void {
   const missingStringIndexes = getMissingSampleStringIndexes(manifest);
   if (missingStringIndexes.length > 0) {
@@ -66,6 +81,13 @@ function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): v
       `Prototype native sampler requires exactly one sample for each string; duplicate strings: ${duplicateStringIndexes.join(', ')}`,
     );
   }
+
+  const unexpectedStringIndexes = getUnexpectedSampleStringIndexes(manifest);
+  if (unexpectedStringIndexes.length > 0) {
+    throw new Error(
+      `Prototype native sampler requires only 12-string sample indexes; unexpected strings: ${unexpectedStringIndexes.join(', ')}`,
+    );
+  }
 }
 
 export async function resolveSampleAssetManifestUris(input: {
@@ -76,18 +98,30 @@ export async function resolveSampleAssetManifestUris(input: {
     ...input.manifest,
     assets: await Promise.all(
       input.manifest.assets.map(async (asset) => {
-        const resolvedFileUri = await input.assetResolver.resolveFileUri(asset.fileUri);
+        const sourceFileUri = normalizeSourceSampleFileUri(asset);
+        const resolvedFileUri = await input.assetResolver.resolveFileUri(sourceFileUri);
 
         return {
           ...asset,
           fileUri: normalizeResolvedSampleFileUri({
-            sourceFileUri: asset.fileUri,
+            sourceFileUri,
             resolvedFileUri,
           }),
         };
       }),
     ),
   };
+}
+
+function normalizeSourceSampleFileUri(asset: { id: string; fileUri: string }): string {
+  const fileUri = asset.fileUri.trim();
+  if (fileUri.length === 0 || isRemoteUri(fileUri)) {
+    throw new Error(
+      `Prototype native sampler requires local sample source URIs before preload; ${asset.id} uses ${fileUri || 'empty URI'}`,
+    );
+  }
+
+  return fileUri;
 }
 
 function normalizeResolvedSampleFileUri(input: {

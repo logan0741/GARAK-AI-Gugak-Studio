@@ -11,6 +11,7 @@ import {
 } from './prototypeHandoffFile';
 import {
   buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts,
+  isPrototypeRecordingMeasurementBackedByPlayback,
   isPrototypeObservedRuntimeReady,
   type PhysicalDevicePrototypeProbeHandoffInput,
 } from './prototypeProbeHandoff';
@@ -228,10 +229,13 @@ function collectDeviceLabelIssues(entries: PhysicalDevicePrototypeProbeHandoffIn
 
 function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
   const issues: string[] = [];
+  const generatedAtIsValid = isUtcIsoTimestamp(handoff.generatedAt);
 
-  if (!isUtcIsoTimestamp(handoff.generatedAt)) {
+  if (!generatedAtIsValid) {
     issues.push('generatedAt must be a UTC ISO timestamp');
   }
+
+  let generatedBeforeMeasurement = false;
 
   for (const entry of handoff.entries) {
     const candidate = entry.inspectorDraft.probeTemplate.candidate;
@@ -239,6 +243,11 @@ function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
 
     if (!isUtcIsoTimestamp(effectiveMeasuredAt)) {
       issues.push(`${candidate}.measuredAt must be a UTC ISO timestamp`);
+    } else if (
+      generatedAtIsValid &&
+      Date.parse(effectiveMeasuredAt) > Date.parse(handoff.generatedAt)
+    ) {
+      generatedBeforeMeasurement = true;
     }
 
     if (!isUtcIsoTimestamp(entry.inspectorDraft.probeTemplate.measuredAt)) {
@@ -246,6 +255,10 @@ function collectTimestampIssues(handoff: PrototypeHandoffFile): string[] {
         `${candidate}.inspectorDraft.probeTemplate.measuredAt must be a UTC ISO timestamp`,
       );
     }
+  }
+
+  if (generatedBeforeMeasurement) {
+    issues.push('generatedAt must be at or after every handoff measuredAt timestamp');
   }
 
   return issues;
@@ -262,6 +275,18 @@ function collectManifestIssues(entries: PhysicalDevicePrototypeProbeHandoffInput
       issues.push(
         `${candidate} sampleManifestVersion must be ${PROTOTYPE_GAYAGEUM_SAMPLE_MANIFEST_VERSION}`,
       );
+    }
+
+    const observedRuntime = entry.inspectorDraft.observedRuntime;
+    if (observedRuntime && hasUnexpectedStringIndexesField(observedRuntime)) {
+      const unexpectedStringIndexes = observedRuntime.unexpectedStringIndexes;
+      if (Array.isArray(unexpectedStringIndexes) && unexpectedStringIndexes.length > 0) {
+        issues.push(
+          `${candidate} unexpected sample string indexes: ${unexpectedStringIndexes.join(', ')}`,
+        );
+      } else {
+        issues.push(`${candidate} unexpectedStringIndexes must be absent`);
+      }
     }
   }
 
@@ -314,7 +339,7 @@ function collectInvalidMeasurementFields(
 
   for (const entry of entries) {
     const candidate = entry.inspectorDraft.probeTemplate.candidate;
-    for (const field of getInvalidMeasurementFields(entry.measurements)) {
+    for (const field of getInvalidMeasurementFields(entry)) {
       invalidFields.push(`${candidate}.${field}`);
     }
   }
@@ -422,10 +447,9 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
-function getInvalidMeasurementFields(
-  measurements: PhysicalDeviceAudioEngineProbeMeasurements,
-): string[] {
-  const invalidFields: string[] = [];
+function getInvalidMeasurementFields(entry: PhysicalDevicePrototypeProbeHandoffInput): string[] {
+  const invalidFields = getUnexpectedMeasurementFields(entry.measurements);
+  const { measurements } = entry;
 
   for (const field of DURATION_MEASUREMENT_FIELDS) {
     const value = measurements[field];
@@ -455,7 +479,29 @@ function getInvalidMeasurementFields(
     }
   }
 
+  if (
+    !isPrototypeRecordingMeasurementBackedByPlayback({
+      inspectorDraft: entry.inspectorDraft,
+      recordingCaptureSeconds: measurements.recordingCaptureSeconds,
+    })
+  ) {
+    invalidFields.push('recordingCaptureSeconds');
+  }
+
   return orderMeasurementFields([...new Set(invalidFields)]);
+}
+
+function getUnexpectedMeasurementFields(
+  measurements: PhysicalDeviceAudioEngineProbeMeasurements,
+): string[] {
+  return Object.keys(measurements)
+    .filter(
+      (field) =>
+        !MEASUREMENT_FIELDS.includes(
+          field as keyof PhysicalDeviceAudioEngineProbeMeasurements,
+        ),
+    )
+    .sort();
 }
 
 function orderMeasurementFields(fields: string[]): string[] {
@@ -463,7 +509,12 @@ function orderMeasurementFields(fields: string[]): string[] {
     MEASUREMENT_FIELDS.map((field, index) => [field, index]),
   );
 
-  return [...fields].sort((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0));
+  return [...fields].sort((left, right) => {
+    const leftOrder = order.get(left) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = order.get(right) ?? Number.MAX_SAFE_INTEGER;
+
+    return leftOrder === rightOrder ? left.localeCompare(right) : leftOrder - rightOrder;
+  });
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {
@@ -472,4 +523,8 @@ function isNonNegativeFiniteNumber(input: unknown): input is number {
 
 function isNonNegativeInteger(input: unknown): input is number {
   return Number.isInteger(input) && typeof input === 'number' && input >= 0;
+}
+
+function hasUnexpectedStringIndexesField(input: object): boolean {
+  return Object.prototype.hasOwnProperty.call(input, 'unexpectedStringIndexes');
 }

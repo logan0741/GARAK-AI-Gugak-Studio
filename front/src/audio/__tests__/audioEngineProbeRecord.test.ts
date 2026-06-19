@@ -204,6 +204,20 @@ test('requires UTC ISO timestamps for generated and measured probe times', () =>
   });
 });
 
+test('rejects probe records generated before any physical measurement timestamp', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      generatedAt: '2026-06-08T00:02:00.000Z',
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'generatedAt must be at or after every probe measuredAt timestamp',
+    ],
+  });
+});
+
 test('rejects UTC ISO timestamps with impossible calendar dates', () => {
   expect(
     parseAudioEngineProbeRecord({

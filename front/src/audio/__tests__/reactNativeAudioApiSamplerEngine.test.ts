@@ -51,6 +51,29 @@ test('creates independent source nodes for at least 8 simultaneous voices', asyn
   expect(runtime.context.sources.some((source) => source.stopCalls.length > 0)).toBe(false);
 });
 
+test('rejects non-finite React Native Audio API control values before touching native nodes', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: Number.NaN }),
+  ).toThrow('velocity must be finite');
+  expect(runtime.context.sources).toHaveLength(0);
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 110, stringIndex: 1, velocity: 0.8 });
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_bend', tsMs: 120, stringIndex: 1, cents: Number.POSITIVE_INFINITY }),
+  ).toThrow('cents must be finite');
+  expect(runtime.context.sources[0].detune.automation).toEqual([]);
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_mute', tsMs: 130, stringIndex: 1, strength: Number.NaN }),
+  ).toThrow('strength must be finite');
+  expect(runtime.context.gains[0].gain.automation).toEqual([]);
+});
+
 test('connects each voice through a lowpass filter and gain before destination', async () => {
   const runtime = createRuntimePort();
   const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
@@ -77,6 +100,22 @@ test('applies pitch bend to active voices through detune automation', async () =
   engine.handleEvent({ type: 'string_bend', tsMs: 130, stringIndex: 3, cents: 85 });
 
   expect(runtime.context.sources[0].detune.automation).toEqual([
+    { type: 'setTargetAtTime', target: 85, startTime: 12.5, timeConstant: 0.015 },
+  ]);
+});
+
+test('does not apply a new same-string bend to an already released voice', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime });
+  await engine.preload();
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 3, velocity: 0.8 });
+  engine.handleEvent({ type: 'string_release', tsMs: 120, stringIndex: 3 });
+  engine.handleEvent({ type: 'string_pluck', tsMs: 140, stringIndex: 3, velocity: 0.8 });
+
+  engine.handleEvent({ type: 'string_bend', tsMs: 160, stringIndex: 3, cents: 85 });
+
+  expect(runtime.context.sources[0].detune.automation).toEqual([]);
+  expect(runtime.context.sources[1].detune.automation).toEqual([
     { type: 'setTargetAtTime', target: 85, startTime: 12.5, timeConstant: 0.015 },
   ]);
 });
@@ -110,6 +149,20 @@ test('does not schedule duplicate source stops for repeated release events', asy
     { type: 'setTargetAtTime', target: 0, startTime: 12.5, timeConstant: 0.05 },
   ]);
   expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
+});
+
+test('does not stop an already released voice again when enforcing the voice budget', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ReactNativeAudioApiSamplerEngine({ manifest, runtime, maxVoices: 1 });
+  await engine.preload();
+  engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.8 });
+  engine.handleEvent({ type: 'string_release', tsMs: 150, stringIndex: 1 });
+
+  engine.handleEvent({ type: 'string_pluck', tsMs: 160, stringIndex: 2, velocity: 0.8 });
+
+  expect(runtime.context.sources[0].stopCalls).toEqual([12.62]);
+  expect(runtime.context.sources[0].disconnectCalls).toEqual([]);
+  expect(runtime.context.sources[1].stopCalls).toEqual([]);
 });
 
 test('steals the oldest voice only after the configured voice budget is exceeded', async () => {

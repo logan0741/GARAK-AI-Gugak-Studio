@@ -81,6 +81,33 @@ test('reports missing areas and missing checks as not complete', () => {
   expect(output).toContain('- Missing checks: day-3-react-native-audio-api.pitch-bend');
 });
 
+test('reports every required check as missing when a smoke run has an empty checks array', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const report = createSmokeReport();
+  const touchRun = report.runs.find((run) => run.area === 'day-4-touch-model');
+  if (!touchRun) {
+    throw new Error('test fixture must include day-4-touch-model');
+  }
+  touchRun.checks = [];
+
+  expect(
+    runWeek1SmokeReportCommand({
+      argv: ['empty-checks-smoke.json'],
+      readTextFile: () => JSON.stringify(report),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: NOT_COMPLETE_FOR_DAY5_REVIEW');
+  expect(output).toContain(
+    '- Missing checks: day-4-touch-model.tap, day-4-touch-model.glissando, day-4-touch-model.hold-drag, day-4-touch-model.ji-eum, day-4-touch-model.bend-button, day-4-touch-model.mute-button, day-4-touch-model.fallback',
+  );
+});
+
 test('reports duplicate areas and blocked checks as not complete', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];

@@ -41,6 +41,7 @@ import {
   recordPrototypeRecordingCapture,
   recordPrototypeRecordingFallback,
   recordPrototypeRecordingPlayback,
+  recordPrototypeRecordingStart,
   updatePrototypeQaDeviceLabel,
   updatePrototypeQaSnapshot,
 } from './prototypeQaSnapshot';
@@ -51,6 +52,8 @@ import {
   stopPrototypeRecordingProbe,
 } from './prototypeRecordingProbeController';
 import {
+  canStartRecordingProbe,
+  canStopRecordingProbe,
   formatRecordingProbeState,
   getRecordingProbeFallbackReason,
   selectPlayableRecordingUri,
@@ -269,6 +272,13 @@ export function GayageumPrototypeScreen() {
   async function handleStartRecordingProbe() {
     const result = await startPrototypeRecordingProbe(engineRef.current, RECORDING_PROBE_SECONDS);
     setRecordingProbeState(result);
+    if (result.status === 'recording') {
+      setQaSnapshot((current) =>
+        recordPrototypeRecordingStart(current, {
+          measuredAt: new Date().toISOString(),
+        }),
+      );
+    }
     recordRecordingProbeFallback(result);
   }
 
@@ -295,7 +305,6 @@ export function GayageumPrototypeScreen() {
   async function handlePlayRecordingProbe() {
     const recordingUri = selectPlayableRecordingUri({
       recordingProbeState,
-      sessionRecordingUri: session.recordingUri,
     });
     if (recordingUri === null) {
       const result = { status: 'failed', errorMessage: 'recording_playback_uri_missing' } as const;
@@ -369,9 +378,14 @@ export function GayageumPrototypeScreen() {
     runtimeObservation,
   );
   const sessionFallbackText = formatPrototypeSessionFallbackForInspector(session);
+  const canStartRecording = canStartRecordingProbe({
+    recordingProbeState,
+  });
+  const canStopRecording = canStopRecordingProbe({
+    recordingProbeState,
+  });
   const playableRecordingUri = selectPlayableRecordingUri({
     recordingProbeState,
-    sessionRecordingUri: session.recordingUri,
   });
 
   return (
@@ -453,16 +467,25 @@ export function GayageumPrototypeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Start 10 second recording probe"
+          disabled={!canStartRecording}
           onPress={handleStartRecordingProbe}
-          style={styles.recordingButton}
+          style={[
+            styles.recordingButton,
+            !canStartRecording ? styles.recordingDisabledButton : undefined,
+          ]}
         >
           <Text style={styles.recordingButtonText}>Rec 10s</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Stop recording probe"
+          disabled={!canStopRecording}
           onPress={handleStopRecordingProbe}
-          style={[styles.recordingButton, styles.recordingStopButton]}
+          style={[
+            styles.recordingButton,
+            styles.recordingStopButton,
+            !canStopRecording ? styles.recordingDisabledButton : undefined,
+          ]}
         >
           <Text style={styles.recordingButtonText}>Stop Rec</Text>
         </Pressable>
@@ -516,6 +539,9 @@ export function GayageumPrototypeScreen() {
         </Text>
         <Text style={styles.inspectorText}>
           Duplicate sample strings: {engineHost.duplicateStringIndexes.join(', ') || 'none'}
+        </Text>
+        <Text style={styles.inspectorText}>
+          Unexpected sample strings: {engineHost.unexpectedStringIndexes.join(', ') || 'none'}
         </Text>
         <Text style={styles.inspectorText}>Events: {session.events.length}</Text>
         <Text style={styles.inspectorText}>Audible fake voices: {audibleVoiceCount}</Text>

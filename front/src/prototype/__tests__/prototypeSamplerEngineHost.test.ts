@@ -73,6 +73,36 @@ test('keeps the fake prototype engine when a manifest has duplicate string index
   expect(host.engine).toBeInstanceOf(FakeSamplerEngine);
 });
 
+test('keeps the fake prototype engine when a manifest has sample strings outside the 12-string range', () => {
+  const host = createPrototypeSamplerEngineHost({
+    requestedCandidate: 'react-native-audio-api',
+    manifest: {
+      version: 'unexpected',
+      assets: [
+        ...completeManifest.assets,
+        {
+          ...completeManifest.assets[0],
+          id: 'string-13',
+          stringIndex: 13,
+        },
+      ],
+    },
+    nativeCandidate: { status: 'ready', engine: { handleEvent: () => undefined } },
+    createFakeEngine: () => new FakeSamplerEngine(),
+  });
+
+  expect(host).toMatchObject({
+    activeRuntime: 'fake-prototype',
+    requestedCandidate: 'react-native-audio-api',
+    manifestVersion: 'unexpected',
+    status: 'invalid_sample_manifest',
+    missingStringIndexes: [],
+    duplicateStringIndexes: [],
+    unexpectedStringIndexes: [13],
+  });
+  expect(host.engine).toBeInstanceOf(FakeSamplerEngine);
+});
+
 test('keeps the fake prototype engine while a complete native candidate is preloading', () => {
   const fakeEngine = new FakeSamplerEngine();
   const host = createPrototypeSamplerEngineHost({
@@ -130,6 +160,7 @@ test('activates a native candidate host only after preload is ready', () => {
     manifestVersion: 'test-12-string-manifest',
     missingStringIndexes: [],
     duplicateStringIndexes: [],
+    unexpectedStringIndexes: [],
     status: 'native_candidate_ready',
   });
 });

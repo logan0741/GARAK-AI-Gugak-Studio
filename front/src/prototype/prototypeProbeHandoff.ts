@@ -34,6 +34,7 @@ export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
   assertInspectorDraftEstimateGuard(input.inspectorDraft);
   assertObservedRuntimeReady(input.inspectorDraft);
   assertPrototypeHandoffDeviceLabel(input);
+  assertPrototypeRecordingEvidenceConsistency(input);
 
   const draft = input.inspectorDraft.probeTemplate;
 
@@ -69,6 +70,30 @@ export function isPrototypeObservedRuntimeReady(
     observedRuntime.activeRuntime === probeTemplate.candidate &&
     observedRuntime.runtimeStatus === 'native_candidate_ready' &&
     observedRuntime.nativePreloadStatus === 'ready'
+  );
+}
+
+export function isPrototypeRecordingMeasurementBackedByPlayback(input: {
+  inspectorDraft: PrototypeProbeDraftInspectorModel;
+  recordingCaptureSeconds: unknown;
+}): boolean {
+  if (!isPositiveRecordingCaptureSeconds(input.recordingCaptureSeconds)) {
+    return true;
+  }
+
+  const recordingCaptureSeconds = input.recordingCaptureSeconds;
+  const observedRecording = input.inspectorDraft.observedPrototypeRecording as
+    | PrototypeProbeDraftInspectorModel['observedPrototypeRecording']
+    | undefined;
+  const observedCapturedSeconds = observedRecording?.capturedSeconds;
+
+  return (
+    observedRecording !== undefined &&
+    isNonNegativeFiniteNumber(observedCapturedSeconds) &&
+    observedCapturedSeconds >= recordingCaptureSeconds &&
+    observedRecording.uriAvailable === true &&
+    observedRecording.playbackConfirmed === true &&
+    observedRecording.fallbackReason === null
   );
 }
 
@@ -133,6 +158,21 @@ function assertPrototypeHandoffDeviceLabel(
   }
 }
 
+function assertPrototypeRecordingEvidenceConsistency(
+  input: PhysicalDevicePrototypeProbeHandoffInput,
+): void {
+  if (
+    !isPrototypeRecordingMeasurementBackedByPlayback({
+      inspectorDraft: input.inspectorDraft,
+      recordingCaptureSeconds: input.measurements.recordingCaptureSeconds,
+    })
+  ) {
+    throw new Error(
+      'prototype recordingCaptureSeconds must be backed by captured recording playback before physical-device promotion',
+    );
+  }
+}
+
 function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspectorModel): void {
   if (!inspectorDraft.observedRuntime) {
     throw new Error('prototype runtime observation is required before physical-device promotion');
@@ -147,9 +187,27 @@ function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspector
     );
   }
 
+  if (hasUnexpectedStringIndexesField(inspectorDraft.observedRuntime)) {
+    throw new Error(
+      'prototype runtime must not report unexpected sample string indexes before physical-device promotion',
+    );
+  }
+
   if (!isPrototypeObservedRuntimeReady(inspectorDraft)) {
     throw new Error(
       `prototype runtime must be ready for ${inspectorDraft.probeTemplate.candidate} before physical-device promotion`,
     );
   }
+}
+
+function isPositiveRecordingCaptureSeconds(input: unknown): input is number {
+  return typeof input === 'number' && Number.isFinite(input) && input > 0;
+}
+
+function isNonNegativeFiniteNumber(input: unknown): input is number {
+  return typeof input === 'number' && Number.isFinite(input) && input >= 0;
+}
+
+function hasUnexpectedStringIndexesField(input: object): boolean {
+  return Object.prototype.hasOwnProperty.call(input, 'unexpectedStringIndexes');
 }

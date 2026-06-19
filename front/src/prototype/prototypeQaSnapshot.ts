@@ -90,9 +90,11 @@ export type PrototypeProbeHandoffTemplateModel = {
 export type PrototypeRuntimeObservation = {
   requestedCandidate: AudioEngineCandidateId;
   activeRuntime: 'fake-prototype' | AudioEngineCandidateId;
+  unexpectedStringIndexes?: number[];
   runtimeStatus:
     | 'missing_sample_manifest'
     | 'duplicate_sample_manifest'
+    | 'invalid_sample_manifest'
     | 'native_candidate_preloading'
     | 'native_candidate_failed'
     | 'native_candidate_ready';
@@ -201,14 +203,31 @@ export function recordPrototypeRecordingCapture(
   },
 ): PrototypeQaSnapshot {
   const recordingUriAvailable = isNonEmptyString(input.recordingUri);
+  const capturedSeconds = normalizeCapturedSeconds(input.capturedSeconds);
 
   return {
     ...snapshot,
     measuredAt: input.measuredAt,
-    recordingCaptureSeconds: input.capturedSeconds,
+    recordingCaptureSeconds: capturedSeconds,
     recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
     recordingPlaybackConfirmed: false,
     recordingUriAvailable,
+  };
+}
+
+export function recordPrototypeRecordingStart(
+  snapshot: PrototypeQaSnapshot,
+  input: {
+    measuredAt: string;
+  },
+): PrototypeQaSnapshot {
+  return {
+    ...snapshot,
+    measuredAt: input.measuredAt,
+    recordingCaptureSeconds: null,
+    recordingFallbackReason: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
   };
 }
 
@@ -222,8 +241,10 @@ export function recordPrototypeRecordingFallback(
   return {
     ...snapshot,
     measuredAt: input.measuredAt,
+    recordingCaptureSeconds: null,
     recordingFallbackReason: input.fallbackReason,
     recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
   };
 }
 
@@ -337,6 +358,14 @@ function createEmptyPhysicalMeasurementTemplate(): PrototypeProbeHandoffMeasurem
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizeCapturedSeconds(capturedSeconds: number): number {
+  if (!Number.isFinite(capturedSeconds) || capturedSeconds < 0) {
+    return 0;
+  }
+
+  return capturedSeconds;
 }
 
 function updateEventDispatchLatency(

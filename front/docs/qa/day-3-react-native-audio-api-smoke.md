@@ -12,12 +12,12 @@ Use this document when validating whether `react-native-audio-api` can support t
 
 | File | Responsibility |
 | --- | --- |
-| `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, voice budget behavior, duplicate release stop suppression, and idempotent cleanup when a stolen voice later emits a native end callback. |
+| `src/audio/reactNativeAudioApiSamplerEngine.ts` | Candidate B `SamplerEngine` implementation. Owns finite control-value validation before native node or automation mutation, `AudioBuffer` preload, source-per-voice playback, `GainNode` mixing, `BiquadFilterNode` setup, detune pitch bend, mute/release envelope, voice budget behavior, duplicate release stop suppression, and idempotent cleanup when a stolen voice later emits a native end callback. |
 | `src/audio/reactNativeAudioApiRuntime.ts` | Only runtime bridge that imports `react-native-audio-api`. Keeps UI and domain code independent from the concrete package. |
 | `src/prototype/gayageumPrototypeController.ts` | Prototype event planner for tap, glissando, 8-voice polyphony burst, pitch-bend probe, and mute probe used by device QA. |
 | `src/prototype/prototypeRecordingProbeController.ts` | Prototype boundary that should report `recording_probe_not_supported` for engines without recording methods instead of treating playback validation as failed. |
 | `src/prototype/prototypeQaSnapshot.ts` | Inspector QA read model. Records `observedPrototypeRecording.fallbackReason` when this candidate cannot provide a recording probe, without promoting it to final physical-device evidence. |
-| `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, 8-voice polyphony, graph wiring, pitch bend, mute/release, voice stealing, and late native end cleanup. |
+| `src/audio/__tests__/reactNativeAudioApiSamplerEngine.test.ts` | Pure port-injected behavior tests for preload, finite control-value guards, 8-voice polyphony, graph wiring, pitch bend, mute/release, voice stealing, and late native end cleanup. |
 | `src/audio/__tests__/reactNativeAudioApiRuntime.test.ts` | Mocked package-delegation test for the installed `react-native-audio-api` API surface. |
 
 ## Automated Verification
@@ -42,7 +42,7 @@ Prerequisite: run `npm run samples:generate-dev` from `front/` before building t
 
 The `dev-synthetic-gayageum-2026-06-08` manifest is a technical fixture only. It can validate preload, latency, polyphony, pitch-bend plumbing, filter/gain graph behavior, and mute/release envelopes, but it is not release-quality gayageum audio and must be replaced by owned or licensed recordings before product sound decisions.
 
-Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. The native sampler factory rejects empty resolved URIs and `http(s)` URIs before loading the candidate runtime. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes; the native sampler factory also rejects missing or duplicate string indexes before creating a candidate runtime. If the manifest is complete and has exactly one asset for each string but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
+Resolve every `SampleAssetManifest.fileUri` through the prototype bundled sample registry and Expo Asset before constructing `ReactNativeAudioApiSamplerEngine`. Do not use remote URLs for normal-play latency checks. The native sampler factory rejects empty or `http(s)` source `fileUri` values before asset resolution, and rejects empty or `http(s)` resolved URIs before loading the candidate runtime. If any string sample is missing, the prototype host must stay on `fake-prototype` and report the missing string indexes; the native sampler factory also rejects missing or duplicate string indexes before creating a candidate runtime. If the manifest is complete and has exactly one asset for each string but native preload has not finished, the prototype host must show `native_candidate_preloading` and keep dispatching to the fake fallback until preload succeeds.
 
 Use a development client, not Expo Go, because this candidate depends on native audio graph APIs:
 

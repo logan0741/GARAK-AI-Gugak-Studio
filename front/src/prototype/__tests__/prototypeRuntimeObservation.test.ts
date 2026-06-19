@@ -96,3 +96,33 @@ test('maps prototype host states into copyable runtime observations', () => {
     sampleManifestVersion: 'test-12-string-manifest',
   });
 });
+
+test('includes unexpected sample string indexes in runtime observations', () => {
+  expect(
+    createPrototypeRuntimeObservation(
+      createPrototypeSamplerEngineHost({
+        requestedCandidate: 'expo-audio',
+        manifest: {
+          version: 'unexpected-manifest',
+          assets: [
+            ...completeManifest.assets,
+            {
+              ...completeManifest.assets[0],
+              id: 'string-13',
+              stringIndex: 13,
+            },
+          ],
+        },
+        nativeCandidate: { status: 'ready', engine: { handleEvent: () => undefined } },
+        createFakeEngine: () => new FakeSamplerEngine(),
+      }),
+    ),
+  ).toEqual({
+    activeRuntime: 'fake-prototype',
+    nativePreloadStatus: 'not_started',
+    requestedCandidate: 'expo-audio',
+    runtimeStatus: 'invalid_sample_manifest',
+    sampleManifestVersion: 'unexpected-manifest',
+    unexpectedStringIndexes: [13],
+  });
+});

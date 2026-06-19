@@ -70,6 +70,27 @@ test('plays a preloaded string immediately when a pluck event arrives', async ()
   expect(runtime.players[0].playCalls).toBe(1);
 });
 
+test('rejects non-finite Expo Audio playback control values before touching native players', async () => {
+  const runtime = createRuntimePort();
+  const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
+  await engine.preload();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: Number.NaN }),
+  ).toThrow('velocity must be finite');
+  expect(runtime.players[0].playCalls).toBe(0);
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_bend', tsMs: 120, stringIndex: 1, cents: Number.POSITIVE_INFINITY }),
+  ).toThrow('cents must be finite');
+  expect(runtime.players[0].playbackRates).toEqual([]);
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_mute', tsMs: 130, stringIndex: 1, strength: Number.NaN }),
+  ).toThrow('strength must be finite');
+  expect(runtime.players[0].volume).toBe(1);
+});
+
 test('surfaces queued playback failures during idle checks', async () => {
   const runtime = createRuntimePort({ seekFails: true });
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
@@ -94,7 +115,7 @@ test('maps bend, mute, and release events onto Expo Audio player controls', asyn
   expect(runtime.players[1].pauseCalls).toBe(1);
 });
 
-test('queues release behind pending Expo Audio seek and play work', async () => {
+test('cancels pending Expo Audio play when release arrives before seek finishes', async () => {
   const runtime = createRuntimePort({ deferSeek: true });
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
   await engine.preload();
@@ -108,7 +129,7 @@ test('queues release behind pending Expo Audio seek and play work', async () => 
   await engine.waitForIdle();
 
   expect(runtime.players[0].seekCalls).toEqual([0]);
-  expect(runtime.players[0].playCalls).toBe(1);
+  expect(runtime.players[0].playCalls).toBe(0);
   expect(runtime.players[0].pauseCalls).toBe(1);
 });
 

@@ -44,6 +44,7 @@ const DEFAULT_HOLD_THRESHOLD_MS = 120;
 const DEFAULT_MUTE_AREA_THRESHOLD = 0.72;
 
 export function createTouchModel(input: TouchModelOptions): TouchModel {
+  assertValidTouchLayout(input.layout);
   const activePointers = new Map<string, ActivePointer>();
   const bendRangePx = input.bendRangePx ?? DEFAULT_BEND_RANGE_PX;
   const holdThresholdMs = input.holdThresholdMs ?? DEFAULT_HOLD_THRESHOLD_MS;
@@ -51,6 +52,7 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 
   return {
     handleFrame(frame) {
+      assertFiniteTouchCoordinate(frame.x, 'x');
       switch (frame.phase) {
         case 'start':
           return handleStart(frame);
@@ -67,21 +69,21 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 
   function handleStart(frame: TouchFrame): PerformanceEvent[] {
     const stringIndex = stringIndexForY(input.layout, frame.y);
+    const isMuteStart = isMuteContact(frame.contactArea, muteAreaThreshold);
+    const event = isMuteStart
+      ? mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 })
+      : mapTap({ tsMs: frame.tsMs, stringIndex, velocity: frame.force ?? 1 });
+
     activePointers.set(frame.pointerId, {
       pointerId: frame.pointerId,
-      mode: isMuteContact(frame.contactArea, muteAreaThreshold) ? 'mute' : 'pending',
+      mode: isMuteStart ? 'mute' : 'pending',
       startedAtMs: frame.tsMs,
       startX: frame.x,
       lastStringIndex: stringIndex,
-      mutedStringIndexes: new Set(),
+      mutedStringIndexes: new Set(isMuteStart ? [stringIndex] : []),
     });
 
-    if (isMuteContact(frame.contactArea, muteAreaThreshold)) {
-      activePointers.get(frame.pointerId)?.mutedStringIndexes.add(stringIndex);
-      return [mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 })];
-    }
-
-    return [mapTap({ tsMs: frame.tsMs, stringIndex, velocity: frame.force ?? 1 })];
+    return [event];
   }
 
   function handleMove(frame: TouchFrame): PerformanceEvent[] {
@@ -104,9 +106,10 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
 
     if (stringIndex !== pointer.lastStringIndex) {
       const crossed = crossedStringIndexes(pointer.lastStringIndex, stringIndex);
+      const events = mapSwipeAcrossStrings({ tsMs: frame.tsMs, stringIndexes: crossed });
       pointer.mode = 'swipe';
       pointer.lastStringIndex = stringIndex;
-      return mapSwipeAcrossStrings({ tsMs: frame.tsMs, stringIndexes: crossed });
+      return events;
     }
 
     if (pointer.mode === 'swipe') {
@@ -117,14 +120,13 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return [];
     }
 
+    const event = mapHoldDrag({
+      tsMs: frame.tsMs,
+      stringIndex,
+      normalizedDelta: (frame.x - pointer.startX) / bendRangePx,
+    });
     pointer.mode = 'bend';
-    return [
-      mapHoldDrag({
-        tsMs: frame.tsMs,
-        stringIndex,
-        normalizedDelta: (frame.x - pointer.startX) / bendRangePx,
-      }),
-    ];
+    return [event];
   }
 
   function handleEnd(frame: TouchFrame): PerformanceEvent[] {
@@ -133,8 +135,9 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return [];
     }
 
+    const event = mapRelease({ tsMs: frame.tsMs, stringIndex: pointer.lastStringIndex });
     activePointers.delete(frame.pointerId);
-    return [mapRelease({ tsMs: frame.tsMs, stringIndex: pointer.lastStringIndex })];
+    return [event];
   }
 
   function mapMuteIfNeeded(
@@ -146,15 +149,14 @@ export function createTouchModel(input: TouchModelOptions): TouchModel {
       return [];
     }
 
+    const event = mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 });
     pointer.mutedStringIndexes.add(stringIndex);
-    return [mapCover({ tsMs: frame.tsMs, stringIndex, area: frame.contactArea ?? 1 })];
+    return [event];
   }
 }
 
 function stringIndexForY(layout: TouchStringLayout, y: number): number {
-  if (!Number.isFinite(y)) {
-    throw new Error('touch y must be finite');
-  }
+  assertFiniteTouchCoordinate(y, 'y');
   if (!Number.isFinite(layout.height) || layout.height <= 0) {
     return 1;
   }
@@ -162,6 +164,26 @@ function stringIndexForY(layout: TouchStringLayout, y: number): number {
   const rowHeight = layout.height / layout.stringCount;
   const rawIndex = Math.floor((y - layout.topY) / rowHeight) + 1;
   return Math.max(1, Math.min(layout.stringCount, rawIndex));
+}
+
+function assertValidTouchLayout(layout: TouchStringLayout): void {
+  if (!Number.isFinite(layout.topY)) {
+    throw new Error('touch layout topY must be finite');
+  }
+
+  if (!Number.isFinite(layout.height) || layout.height <= 0) {
+    throw new Error('touch layout height must be finite and > 0');
+  }
+
+  if (layout.stringCount !== 12) {
+    throw new Error('touch layout stringCount must be 12');
+  }
+}
+
+function assertFiniteTouchCoordinate(value: number, axis: 'x' | 'y'): void {
+  if (!Number.isFinite(value)) {
+    throw new Error(`touch ${axis} must be finite`);
+  }
 }
 
 function crossedStringIndexes(from: number, to: number): number[] {
