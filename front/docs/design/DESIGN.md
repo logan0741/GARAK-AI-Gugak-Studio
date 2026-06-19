@@ -29,7 +29,7 @@
 - 주요 CTA와 강조 컨트롤은 deep navy를 사용한다.
 - GARAK 로고와 강한 브랜드 신호에는 red, amber, white 조합을 쓴다.
 - 회색은 와이어프레임 placeholder 또는 보조 면으로만 사용한다. 최종 UI가 회색 계열만으로 끝나면 현재 브랜드 방향과 맞지 않는다.
-- 화면은 모바일 세로 우선이며, 정보 위계는 `screen-composition-standards.md`를 따른다.
+- 화면은 모바일 세로 우선이며, 정보 위계는 `../product/screen-flow/screen-composition-standards.md`를 따른다.
 - 장식보다 연주, 선택, 저장, 공유의 현재 상태와 다음 행동을 먼저 보여준다.
 
 ## 3. 색상 토큰 후보

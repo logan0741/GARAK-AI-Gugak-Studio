@@ -28,6 +28,12 @@ test('auto-saves a free-play take as an editable work that is not directly share
     createdAt: '2026-06-18T00:00:00.000Z',
     startedAtBeat: 1,
     durationBeats: 4,
+    liveJangdanGuide: {
+      presetId: 'semachi',
+      bpm: 84,
+      volume: 0.6,
+      startedAtBeat: 1,
+    },
   });
 
   expect(work.tracks).toHaveLength(1);
@@ -35,6 +41,12 @@ test('auto-saves a free-play take as an editable work that is not directly share
     id: 'track-1',
     kind: 'instrument',
     instrument: 'gayageum',
+    startedAtBeat: 1,
+  });
+  expect(work.tracks[0].kind === 'instrument' ? work.tracks[0].takes[0].liveJangdanGuide : undefined).toEqual({
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.6,
     startedAtBeat: 1,
   });
   expect(isWorkShareable(work)).toBe(false);
