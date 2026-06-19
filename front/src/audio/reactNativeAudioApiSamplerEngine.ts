@@ -1,6 +1,6 @@
 import { PerformanceEvent } from '../domain/performanceEvent';
 import { SampleAssetManifest } from '../domain/sampleManifest';
-import { SamplerEngine } from './samplerEngine';
+import { SamplerEngine, assertSamplerEventIdentity } from './samplerEngine';
 
 export type ReactNativeAudioApiParamPort = {
   value: number;
@@ -115,6 +115,8 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   }
 
   handleEvent(event: PerformanceEvent): void {
+    assertSamplerEventIdentity(event);
+
     switch (event.type) {
       case 'string_pluck':
       case 'glissando_step':

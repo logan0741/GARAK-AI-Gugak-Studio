@@ -1,6 +1,6 @@
 import { PerformanceEvent } from '../domain/performanceEvent';
 import { SampleAssetManifest } from '../domain/sampleManifest';
-import { SamplerEngine } from './samplerEngine';
+import { SamplerEngine, assertSamplerEventIdentity } from './samplerEngine';
 
 export type ExpoAudioMode = {
   playsInSilentMode: boolean;
@@ -143,6 +143,8 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   handleEvent(event: PerformanceEvent): void {
+    assertSamplerEventIdentity(event);
+
     switch (event.type) {
       case 'string_pluck':
       case 'glissando_step':

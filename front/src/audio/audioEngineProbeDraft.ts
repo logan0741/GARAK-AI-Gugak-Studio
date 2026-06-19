@@ -1,4 +1,5 @@
 import { PerformanceEvent } from '../domain/performanceEvent';
+import { isPhysicalDeviceLabel } from '../qa/physicalDeviceLabel';
 import {
   AudioEngineCandidateId,
   AudioEngineProbe,
@@ -103,11 +104,16 @@ export function promoteAudioEngineProbeDraftToPhysicalDevice(input: {
     throw new Error(`physical-device measurements invalid: ${invalidFields.join(', ')}`);
   }
 
+  const deviceLabel = input.deviceLabel?.trim() || input.draft.deviceLabel.trim();
+  if (!isPhysicalDeviceLabel(deviceLabel)) {
+    throw new Error('physical-device probe deviceLabel must name the tested physical device');
+  }
+
   return {
     ...input.draft,
     ...input.measurements,
     evidenceSource: 'physical-device',
-    deviceLabel: input.deviceLabel?.trim() || input.draft.deviceLabel,
+    deviceLabel,
     measuredAt: input.measuredAt ?? input.draft.measuredAt,
   };
 }

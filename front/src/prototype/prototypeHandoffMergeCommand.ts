@@ -65,6 +65,15 @@ export function runPrototypeHandoffMergeCommand(
       return 1;
     }
 
+    if (
+      hasMeasurementAfterGeneratedAt(parseResult.handoff.entries, parseResult.handoff.generatedAt)
+    ) {
+      input.writeStderr(
+        `Could not merge prototype handoffs: ${handoffPath} generatedAt must be at or after every handoff measuredAt timestamp`,
+      );
+      return 1;
+    }
+
     entries.push(...parseResult.handoff.entries);
   }
 

@@ -431,7 +431,7 @@ function createSmokeReport(input: {
   overrides?: Partial<Record<Week1SmokeAreaId, Record<string, Week1SmokeCheckResult>>>;
 } = {}) {
   return {
-    generatedAt: '2026-06-08T07:00:00.000Z',
+    generatedAt: '2026-06-08T07:05:00.000Z',
     runs: REQUIRED_AREAS.map((area, index) => ({
       area,
       testedAt: `2026-06-08T07:0${index + 1}:00.000Z`,

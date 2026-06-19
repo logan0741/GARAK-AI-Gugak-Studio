@@ -67,8 +67,10 @@ Invariants:
 
 - Session의 기준 데이터는 `PerformanceEvent[]`다.
 - Recording이 없어도 Session은 저장되고 리플레이 가능해야 한다.
-- Session의 `recordingUri`는 선택 값이며, 비어 있거나 공백뿐인 URI는 Recording 산출물로 저장하지 않는다.
+- Session의 `recordings[]`는 선택적 오디오 산출물 목록이며, 비어 있거나 공백뿐인 URI는 Recording 산출물로 저장하지 않는다.
+- Session의 `recordingUri`는 MVP 프로토타입 호환용 최신 캡처 URI다. 기준 데이터는 여전히 `PerformanceEvent[]`이고, Recording만으로는 연주 맥락을 복구하지 않는다.
 - Session은 자신이 사용한 `SampleAssetManifest` 버전을 기록한다.
+- Session은 데모 인스펙터나 심사용 근거 표시가 필요할 때 `DataReferenceManifest` 버전을 선택적으로 기록할 수 있다. 일반 연주 리플레이에는 필수 값이 아니다.
 - Session 밖의 독립 `PerformanceEvent`는 저장하지 않는다.
 
 ### SampleAssetManifest
@@ -100,6 +102,7 @@ Invariants:
 - MVP에서 장단은 실시간 생성 오디오가 아니라 로컬 프리셋 데이터다.
 - 추천 결과는 자동 적용되지 않는다.
 - 사용자가 미리듣고 수락한 프리셋만 `LocalSequencer`가 재생한다.
+- 같은 timestamp의 동시 발음은 밀도 근거로만 사용하고, BPM interval 근거로 사용하지 않는다.
 
 ## Domain Events And Records
 

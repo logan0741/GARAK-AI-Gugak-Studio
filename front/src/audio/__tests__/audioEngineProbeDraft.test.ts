@@ -274,3 +274,47 @@ test('rejects promotion from non-estimate probe evidence', () => {
     }),
   ).toThrow('only estimate probe drafts can be promoted to physical-device evidence');
 });
+
+test('rejects physical promotion when the resolved device label is still a placeholder', () => {
+  const draft = createAudioEngineProbeDraft({
+    candidate: 'expo-audio',
+    deviceLabel: 'replace-with-physical-device-model',
+    measuredAt: '2026-06-08T02:10:00.000Z',
+  });
+
+  expect(() =>
+    promoteAudioEngineProbeDraftToPhysicalDevice({
+      draft,
+      measurements: {
+        touchToSoundLatencyMs: 45,
+        maxStableVoices: 8,
+        pitchBendSmooth: true,
+        glissandoTriggeredStrings: 12,
+        muteReleaseClean: true,
+        preloadStable: true,
+        sessionFallbackPreserved: true,
+        recordingCaptureSeconds: 10,
+      },
+    }),
+  ).toThrow('physical-device probe deviceLabel must name the tested physical device');
+
+  expect(() =>
+    promoteAudioEngineProbeDraftToPhysicalDevice({
+      draft: {
+        ...draft,
+        deviceLabel: 'Pixel 8 / Android 15',
+      },
+      deviceLabel: 'Device / OS',
+      measurements: {
+        touchToSoundLatencyMs: 45,
+        maxStableVoices: 8,
+        pitchBendSmooth: true,
+        glissandoTriggeredStrings: 12,
+        muteReleaseClean: true,
+        preloadStable: true,
+        sessionFallbackPreserved: true,
+        recordingCaptureSeconds: 10,
+      },
+    }),
+  ).toThrow('physical-device probe deviceLabel must name the tested physical device');
+});

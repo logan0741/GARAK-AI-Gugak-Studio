@@ -3,6 +3,7 @@ import {
   buildPrototypeProbeDraft,
   countPrototypeAudibleVoices,
   createInitialPrototypeQaSnapshot,
+  createPrototypeQaSnapshotForCandidateChange,
   formatPrototypeProbeHandoffTemplateForInspector,
   formatPrototypeProbeDraftForInspector,
   recordPrototypeRecordingCapture,
@@ -58,6 +59,39 @@ test('tracks observable device QA counters without claiming audible quality', ()
     glissandoTriggeredStrings: 2,
     muteReleaseClean: false,
     sessionFallbackPreserved: true,
+  });
+});
+
+test('ignores non-finite active voice counts when tracking prototype counters', () => {
+  const snapshot = updatePrototypeQaSnapshot(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:05:00.000Z',
+    }),
+    {
+      activeVoiceCount: 4,
+      audioDispatchOk: true,
+      measuredAt: '2026-06-08T04:05:01.000Z',
+      events: [{ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 }],
+    },
+  );
+
+  const next = updatePrototypeQaSnapshot(snapshot, {
+    activeVoiceCount: Number.POSITIVE_INFINITY,
+    audioDispatchOk: true,
+    measuredAt: '2026-06-08T04:05:02.000Z',
+    events: [{ type: 'string_pluck', tsMs: 110, stringIndex: 2, velocity: 1 }],
+  });
+
+  expect(next.maxStableVoices).toBe(4);
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(next))).toMatchObject({
+    observedFakeCounters: {
+      maxActiveVoices: 4,
+    },
+    probeTemplate: {
+      maxStableVoices: null,
+    },
   });
 });
 
@@ -301,6 +335,40 @@ test('tracks event batch dispatch latency as debug-only evidence', () => {
   });
 });
 
+test('ignores non-finite dispatch timestamps when tracking debug latency', () => {
+  const snapshot = updatePrototypeQaSnapshot(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 physical device',
+      measuredAt: '2026-06-08T04:20:30.000Z',
+    }),
+    {
+      activeVoiceCount: 1,
+      audioDispatchOk: true,
+      dispatchedAtMs: Number.NaN,
+      measuredAt: '2026-06-08T04:20:31.000Z',
+      events: [{ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 1 }],
+    },
+  );
+
+  expect(snapshot.eventDispatchLatency).toEqual({
+    sampleCount: 0,
+    latestMs: null,
+    maxMs: null,
+    averageMs: null,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    observedFakeCounters: {
+      eventDispatchLatency: {
+        sampleCount: 0,
+        latestMs: null,
+        maxMs: null,
+        averageMs: null,
+      },
+    },
+  });
+});
+
 test('records prototype recording capture and playback observations without claiming final evidence', () => {
   const captured = recordPrototypeRecordingCapture(
     createInitialPrototypeQaSnapshot({
@@ -380,6 +448,42 @@ test('clears stale recording playback confirmation when a later capture has no p
   });
 });
 
+test('does not confirm recording playback without a current playable capture', () => {
+  const initial = createInitialPrototypeQaSnapshot({
+    candidate: 'expo-audio',
+    deviceLabel: 'Pixel 8 physical device',
+    measuredAt: '2026-06-08T04:31:45.000Z',
+  });
+
+  const noCapturePlayback = recordPrototypeRecordingPlayback(initial, {
+    measuredAt: '2026-06-08T04:31:46.000Z',
+    playbackConfirmed: true,
+  });
+
+  const missingUriCapture = recordPrototypeRecordingCapture(noCapturePlayback, {
+    capturedSeconds: 10,
+    measuredAt: '2026-06-08T04:31:50.000Z',
+    recordingUri: null,
+  });
+
+  const missingUriPlayback = recordPrototypeRecordingPlayback(missingUriCapture, {
+    measuredAt: '2026-06-08T04:31:55.000Z',
+    playbackConfirmed: true,
+  });
+
+  expect(noCapturePlayback).toMatchObject({
+    recordingCaptureSeconds: null,
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+  expect(missingUriPlayback).toMatchObject({
+    recordingCaptureSeconds: 10,
+    recordingFallbackReason: 'recording_playback_uri_missing',
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+});
+
 test('clears stale recording observations when a new recording probe starts', () => {
   const firstCapture = recordPrototypeRecordingCapture(
     createInitialPrototypeQaSnapshot({
@@ -447,6 +551,34 @@ test('records prototype recording fallback reason without claiming final evidenc
     probeTemplate: {
       evidenceSource: 'estimate',
       recordingCaptureSeconds: null,
+    },
+  });
+});
+
+test('normalizes blank prototype recording fallback reasons before inspector handoff', () => {
+  const snapshot = recordPrototypeRecordingFallback(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:35:30.000Z',
+    }),
+    {
+      fallbackReason: '   ',
+      measuredAt: '2026-06-08T04:35:33.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    measuredAt: '2026-06-08T04:35:33.000Z',
+    recordingFallbackReason: 'recording_probe_failed',
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: false,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    observedPrototypeRecording: {
+      fallbackReason: 'recording_probe_failed',
+      playbackConfirmed: false,
+      uriAvailable: false,
     },
   });
 });
@@ -568,6 +700,40 @@ test('normalizes invalid captured recording durations before inspector handoff',
   }
 });
 
+test('records zero captured recording duration as fallback context before inspector handoff', () => {
+  const captured = recordPrototypeRecordingCapture(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'expo-audio',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:39:30.000Z',
+    }),
+    {
+      capturedSeconds: 0,
+      measuredAt: '2026-06-08T04:39:42.000Z',
+      recordingUri: 'file://empty-recording.m4a',
+    },
+  );
+  const played = recordPrototypeRecordingPlayback(captured, {
+    measuredAt: '2026-06-08T04:39:45.000Z',
+    playbackConfirmed: true,
+  });
+
+  expect(played).toMatchObject({
+    recordingCaptureSeconds: 0,
+    recordingFallbackReason: 'recording_capture_duration_invalid',
+    recordingPlaybackConfirmed: false,
+    recordingUriAvailable: true,
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(played))).toMatchObject({
+    observedPrototypeRecording: {
+      capturedSeconds: 0,
+      fallbackReason: 'recording_capture_duration_invalid',
+      playbackConfirmed: false,
+      uriAvailable: true,
+    },
+  });
+});
+
 test('updates the prototype QA device label used by the probe draft', () => {
   const snapshot = updatePrototypeQaDeviceLabel(
     createInitialPrototypeQaSnapshot({
@@ -611,6 +777,50 @@ test('resets the prototype QA device label to the placeholder when input is clea
   });
   expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
     probeTemplate: {
+      deviceLabel: 'replace-with-physical-device-model',
+    },
+  });
+});
+
+test('keeps placeholder-like prototype QA device labels out of probe drafts', () => {
+  const snapshot = updatePrototypeQaDeviceLabel(
+    createInitialPrototypeQaSnapshot({
+      candidate: 'react-native-audio-api',
+      deviceLabel: 'Pixel 8 / Android 15',
+      measuredAt: '2026-06-08T04:42:00.000Z',
+    }),
+    {
+      deviceLabel: 'Device / OS',
+      measuredAt: '2026-06-08T04:42:10.000Z',
+    },
+  );
+
+  expect(snapshot).toMatchObject({
+    deviceLabel: 'replace-with-physical-device-model',
+    measuredAt: '2026-06-08T04:42:10.000Z',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    probeTemplate: {
+      deviceLabel: 'replace-with-physical-device-model',
+    },
+  });
+});
+
+test('normalizes placeholder-like device labels when switching prototype candidates', () => {
+  const snapshot = createPrototypeQaSnapshotForCandidateChange({
+    candidate: 'expo-audio',
+    deviceLabel: 'Device / OS',
+    measuredAt: '2026-06-08T04:43:00.000Z',
+  });
+
+  expect(snapshot).toMatchObject({
+    candidate: 'expo-audio',
+    deviceLabel: 'replace-with-physical-device-model',
+    measuredAt: '2026-06-08T04:43:00.000Z',
+  });
+  expect(JSON.parse(formatPrototypeProbeDraftForInspector(snapshot))).toMatchObject({
+    probeTemplate: {
+      candidate: 'expo-audio',
       deviceLabel: 'replace-with-physical-device-model',
     },
   });

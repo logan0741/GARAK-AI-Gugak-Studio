@@ -8,6 +8,7 @@ import {
 } from '../audio/audioEngineProbeDraft';
 import { VoiceState } from '../audio/samplerEngine';
 import { PerformanceEvent } from '../domain/performanceEvent';
+import { isPhysicalDeviceLabel } from '../qa/physicalDeviceLabel';
 
 export type PrototypeQaSnapshot = {
   candidate: AudioEngineCandidateId;
@@ -137,6 +138,18 @@ export function createInitialPrototypeQaSnapshot(input: {
   };
 }
 
+export function createPrototypeQaSnapshotForCandidateChange(input: {
+  candidate: AudioEngineCandidateId;
+  deviceLabel: string;
+  measuredAt: string;
+}): PrototypeQaSnapshot {
+  return createInitialPrototypeQaSnapshot({
+    candidate: input.candidate,
+    deviceLabel: normalizePrototypeQaDeviceLabel(input.deviceLabel),
+    measuredAt: input.measuredAt,
+  });
+}
+
 export function updatePrototypeQaSnapshot(
   snapshot: PrototypeQaSnapshot,
   input: {
@@ -152,7 +165,7 @@ export function updatePrototypeQaSnapshot(
     measuredAt: input.measuredAt,
     eventCount: snapshot.eventCount + input.events.length,
     eventDispatchLatency: updateEventDispatchLatency(snapshot.eventDispatchLatency, input),
-    maxStableVoices: Math.max(snapshot.maxStableVoices, input.activeVoiceCount),
+    maxStableVoices: updateMaxStableVoices(snapshot.maxStableVoices, input.activeVoiceCount),
     glissandoTriggeredStrings: collectGlissandoStringIndexes(
       snapshot.glissandoTriggeredStrings,
       input.events,
@@ -174,11 +187,9 @@ export function updatePrototypeQaDeviceLabel(
     measuredAt: string;
   },
 ): PrototypeQaSnapshot {
-  const deviceLabel = input.deviceLabel.trim();
-
   return {
     ...snapshot,
-    deviceLabel: deviceLabel.length > 0 ? deviceLabel : PROTOTYPE_DEVICE_LABEL_PLACEHOLDER,
+    deviceLabel: normalizePrototypeQaDeviceLabel(input.deviceLabel),
     measuredAt: input.measuredAt,
   };
 }
@@ -209,7 +220,10 @@ export function recordPrototypeRecordingCapture(
     ...snapshot,
     measuredAt: input.measuredAt,
     recordingCaptureSeconds: capturedSeconds,
-    recordingFallbackReason: recordingUriAvailable ? null : 'recording_playback_uri_missing',
+    recordingFallbackReason: getRecordingCaptureFallbackReason({
+      capturedSeconds,
+      recordingUriAvailable,
+    }),
     recordingPlaybackConfirmed: false,
     recordingUriAvailable,
   };
@@ -242,7 +256,7 @@ export function recordPrototypeRecordingFallback(
     ...snapshot,
     measuredAt: input.measuredAt,
     recordingCaptureSeconds: null,
-    recordingFallbackReason: input.fallbackReason,
+    recordingFallbackReason: normalizeRecordingFallbackReason(input.fallbackReason),
     recordingPlaybackConfirmed: false,
     recordingUriAvailable: false,
   };
@@ -255,10 +269,17 @@ export function recordPrototypeRecordingPlayback(
     playbackConfirmed: boolean;
   },
 ): PrototypeQaSnapshot {
+  const hasCurrentPlayableCapture =
+    snapshot.recordingCaptureSeconds !== null &&
+    snapshot.recordingUriAvailable &&
+    snapshot.recordingFallbackReason === null;
+
   return {
     ...snapshot,
     measuredAt: input.measuredAt,
-    recordingPlaybackConfirmed: snapshot.recordingPlaybackConfirmed || input.playbackConfirmed,
+    recordingPlaybackConfirmed:
+      hasCurrentPlayableCapture &&
+      (snapshot.recordingPlaybackConfirmed || input.playbackConfirmed),
   };
 }
 
@@ -360,12 +381,39 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function normalizePrototypeQaDeviceLabel(deviceLabel: string): string {
+  const trimmed = deviceLabel.trim();
+
+  return isPhysicalDeviceLabel(trimmed) ? trimmed : PROTOTYPE_DEVICE_LABEL_PLACEHOLDER;
+}
+
 function normalizeCapturedSeconds(capturedSeconds: number): number {
   if (!Number.isFinite(capturedSeconds) || capturedSeconds < 0) {
     return 0;
   }
 
   return capturedSeconds;
+}
+
+function getRecordingCaptureFallbackReason(input: {
+  capturedSeconds: number;
+  recordingUriAvailable: boolean;
+}): string | null {
+  if (input.capturedSeconds === 0) {
+    return 'recording_capture_duration_invalid';
+  }
+
+  if (!input.recordingUriAvailable) {
+    return 'recording_playback_uri_missing';
+  }
+
+  return null;
+}
+
+function normalizeRecordingFallbackReason(fallbackReason: string): string {
+  const trimmed = fallbackReason.trim();
+
+  return trimmed.length > 0 ? trimmed : 'recording_probe_failed';
 }
 
 function updateEventDispatchLatency(
@@ -375,7 +423,11 @@ function updateEventDispatchLatency(
     dispatchedAtMs?: number;
   },
 ): PrototypeEventDispatchLatency {
-  if (input.dispatchedAtMs === undefined || input.events.length === 0) {
+  if (
+    input.dispatchedAtMs === undefined ||
+    !Number.isFinite(input.dispatchedAtMs) ||
+    input.events.length === 0
+  ) {
     return current;
   }
 
@@ -395,6 +447,14 @@ function updateEventDispatchLatency(
     maxMs: current.maxMs === null ? latestMs : Math.max(current.maxMs, latestMs),
     averageMs,
   };
+}
+
+function updateMaxStableVoices(current: number, activeVoiceCount: number): number {
+  if (!Number.isInteger(activeVoiceCount) || activeVoiceCount < 0) {
+    return current;
+  }
+
+  return Math.max(current, activeVoiceCount);
 }
 
 function roundLatencyMs(value: number): number {
