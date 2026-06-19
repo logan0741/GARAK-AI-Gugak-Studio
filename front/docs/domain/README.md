@@ -25,6 +25,7 @@ flowchart LR
     GM --> PE["PerformanceEvent Stream"]
     PE --> IE["Instrument Engine"]
     PE --> SS["Studio Session"]
+    SS --> WORK["Studio Work"]
     PE --> JM["Jangdan Recommendation"]
     IE --> SE["SamplerEngine"]
     SS --> REC["Recording"]
@@ -56,7 +57,7 @@ Invariants:
 
 ### Session
 
-`Session`은 사용자의 연주를 구조화해서 보존하는 작업 단위다.
+`Session`은 사용자의 단일 연주/녹음 맥락을 구조화해서 보존하는 기준 데이터다. 여러 세션과 테이크를 합쳐 편집하는 사용자 작업 단위는 `Work`가 담당한다.
 
 Aggregate boundary:
 
@@ -75,6 +76,28 @@ Invariants:
 - Session은 자신이 사용한 `SampleAssetManifest` 버전을 기록한다.
 - Session은 데모 인스펙터나 심사용 근거 표시가 필요할 때 `DataReferenceManifest` 버전을 선택적으로 기록할 수 있다. 일반 연주 리플레이에는 필수 값이 아니다.
 - Session 밖의 독립 `PerformanceEvent`는 저장하지 않는다.
+
+### Work
+
+`Work`는 자유창작에서 사용자가 만든 여러 트랙/레이어를 보존하는 편집 가능한 작업 단위다. 사용자에게는 "작업" 또는 완성 단계의 "곡"으로 보일 수 있다.
+
+Aggregate boundary:
+
+- `Work`
+- `Track[]`
+- `Take[]`
+- `AccompanimentTrack`
+- 선택적 `ExportedAudio[]`
+
+Invariants:
+
+- Work는 하나 이상의 Track을 가질 수 있다.
+- Instrument Track은 하나 이상의 Take를 가질 수 있고, 각 Take는 `PerformanceEvent[]`와 녹음 직전 BPM/박자/장단 맥락을 보존한다.
+- Accompaniment Track은 사용자가 직접 고르거나 추천을 수락한 `JangdanPreset`, BPM, 볼륨, 시작 박자를 보존한다.
+- Work의 `syncState`는 로컬 보존과 서버 동기화 상태를 분리해 표현한다.
+- 단일 Session 녹음이 끝났다는 이유만으로 Work가 서버에 저장되었다고 보지 않는다.
+- 서버 저장의 1차 후보는 원시 Session이 아니라 여러 트랙/레이어를 가진 Work 또는 Work에서 파생된 ExportedAudio다.
+- ExportedAudio는 공유/재생용 산출물이며, Work의 편집 가능한 기준 데이터를 대체하지 않는다.
 
 ### SampleAssetManifest
 
@@ -160,7 +183,11 @@ Mapping rules:
 | Voice Budget | 동시에 유지할 수 있는 최대 voice 수 | voice stealing 기준 |
 | Envelope | attack, natural decay, release decay 곡선 | 지음/잔향 제어 |
 | Pitch Bend | 재생 중인 voice의 실시간 음고 변화 | 농현/추성/퇴성 압축 표현 |
-| Session | 재현 가능한 연주 작업 단위 | 기준 데이터 |
+| Session | 재현 가능한 단일 연주/녹음 맥락 | 기준 데이터 |
+| Work | 여러 트랙/레이어를 가진 편집 가능한 자유창작 작업 | 보관함의 `작업`, 완성 전 곡 |
+| Track | Work 안에서 악기 연주, 장단/반주, 참조 음원을 담는 레이어 | `InstrumentTrack`, `AccompanimentTrack`, `ReferenceTrack` |
+| Take | 녹음 한 번으로 생긴 연주 이벤트 묶음 | BPM, 박자, 장단 맥락을 함께 보존 |
+| ExportedAudio | Work에서 렌더링한 공유/재생용 산출물 | 보관함의 `내보낸 음원`, 서버 저장 후보 |
 | Recording | Session에서 렌더링/캡처한 오디오 산출물 | 선택 산출물 |
 | SampleAsset | 재생 가능한 단일 오디오 에셋 | manifest에 포함 |
 | Public Asset | 권리와 품질이 확인된 공공 기반 재생 에셋 | `sourceLayer = public_asset` |
@@ -191,6 +218,7 @@ ReplayPlanner implementation note:
 - 현 중심 엔진: 각 현은 독립 울림과 제스처 반응성을 가진다.
 - 로컬 구동: 정상 연주와 장단 재생은 로컬 샘플러/시퀀서 안에서 끝난다.
 - 이벤트 중심 데이터 모델: Session의 원천 데이터는 `PerformanceEvent[]`다.
+- 작업 중심 편집 모델: 여러 Session/Take를 합친 사용자 곡 편집 단위는 `Work`다.
 - 데이터 레이어 격리: 재생 에셋과 분석/검증 참조를 분리한다.
 - 설명 가능한 보조 AI: 추천 근거는 BPM, 밀도, 박자 안정성 같은 지표로 설명 가능해야 한다.
 - 사용자 제어권: AI 추천은 강제 실행이 아니라 제안, 미리듣기, 수락 흐름을 따른다.

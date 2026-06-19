@@ -27,6 +27,7 @@
 | 도메인 용어, aggregate, invariant는 무엇인가? | `docs/domain/README.md` | `docs/architecture/gukak-studio-erd.md` |
 | 세션 저장 구조와 엔티티 관계는 무엇인가? | `docs/architecture/gukak-studio-erd.md` | `docs/domain/README.md` |
 | 런타임 경계와 데이터 흐름은 무엇인가? | `docs/architecture/runtime-architecture.md` | `docs/architecture/tech-stack.md` |
+| AI 모델 서버에 어떤 입력을 보내고 어떤 출력을 받는가? | `docs/architecture/ai-model-pipeline-contract.md` | `docs/architecture/runtime-architecture.md`, `docs/product/screen-flow/current-screen-flow.md` |
 | 기술 스택과 dependency 판단은 무엇인가? | `docs/architecture/tech-stack.md` | `docs/adr/` |
 | 되돌리기 어려운 기술 결정의 이유는 무엇인가? | `docs/adr/` | `docs/architecture/tech-stack.md` |
 | 구현 순서, 파일 경로, 검증 명령은 어디에 있는가? | `docs/plans/implementation/` | `docs/system/conventions.md` |
@@ -34,6 +35,7 @@
 | 문서를 새로 만들거나 옮길 때의 규칙은 무엇인가? | `docs/system/documentation-standard.md` | 이 문서 |
 | 수동 QA와 오디오/기기 검증 기준은 무엇인가? | `docs/qa/` | `docs/architecture/runtime-architecture.md` |
 | 과거 리뷰의 판단 근거는 어디에서 확인하는가? | `docs/reviews/` | 담당 기준 문서 |
+| 구현 결과를 팀에 공유하는 보고서는 어디에 두는가? | `docs/reports/` | 담당 기준 문서, `docs/plans/` |
 | 작업 중단, 실패, handoff 기록은 어디에 남기는가? | `docs/logs/` | `docs/system/conventions.md` |
 
 ## 현재 제품 기준
