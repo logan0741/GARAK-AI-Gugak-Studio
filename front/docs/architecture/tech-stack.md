@@ -170,3 +170,26 @@ Expo 패키지는 `npx expo install <package>`로 설치해 현재 Expo SDK와 �
   - React Native Audio API: https://docs.swmansion.com/react-native-audio-api/
   - Expo Audio: https://docs.expo.dev/versions/latest/sdk/audio/
   - React Native Skia: https://shopify.github.io/react-native-skia/docs/getting-started/installation/
+
+## 9. Lockfile Correction: Week 1 Audio Candidates
+
+This section supersedes the package-version rows in section 6 when they conflict with `package-lock.json`.
+
+| Package | Locked version | Reason |
+| --- | --- | --- |
+| `expo-audio` | `1.1.1` | Expo SDK 54 bundled playback/recording candidate. Installed with `npx expo install`. |
+| `expo-asset` | `12.0.13` | Required peer for `expo-audio`; pinned to the SDK 54-compatible version. |
+| `react-native-audio-api` | `0.11.7` | Week 1 low-latency sampler candidate. `0.12.2` is held because it asks for `react-native-worklets >= 0.6.0`, while the current Expo SDK 54 scaffold uses `react-native-worklets@0.5.1`. |
+| `react-native-worklets` | `0.5.1` | Expo SDK 54-compatible version brought by the current Expo/Reanimated setup. |
+
+Audio engine comparison must use `src/audio/audioEngineEvaluation.ts` and the Day 5 QA checklist before selecting the final `SamplerEngine` implementation.
+
+Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
+
+Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/expoAudioSamplerEngine.ts` and is tested through a port-injected runtime so domain, session, gesture, and prototype controller code do not depend on the concrete audio package.
+
+The Week 1 `expo-audio` runtime resolves/downloads sources before creating players and normalizes recording options through the same SDK helpers used by `useAudioRecorder`. This avoids reporting preload success before a playable URI exists and keeps the 10-second recording probe closer to the native path used by Expo.
+
+Candidate B `react-native-audio-api` imports are isolated in `src/audio/reactNativeAudioApiRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/reactNativeAudioApiSamplerEngine.ts`: it decodes `SampleAssetManifest.fileUri` values into reusable `AudioBuffer` objects, creates a fresh `AudioBufferSourceNode` per pluck/glissando step, routes each voice through `BiquadFilterNode -> GainNode -> destination`, and applies pitch bend through `detune` automation.
+
+Day 4 touch validation uses `src/interaction/touchModel.ts` as the raw-touch boundary. It maps `PanResponder` touch frames into `PerformanceEvent[]` through `GestureMapper`, keeping UI coordinates out of the domain, session, and audio engine layers.
