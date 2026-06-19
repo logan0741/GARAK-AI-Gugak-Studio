@@ -1,7 +1,7 @@
 # Day 3 React Native Audio API Smoke Check
 
-Status: implementation harness ready; physical-device result not recorded yet  
-Owner: Front-end spike  
+Status: implementation harness ready; physical-device result not recorded yet
+Owner: Front-end spike
 Scope: Week 1 candidate B, `react-native-audio-api`
 
 ## Responsibility

@@ -1,7 +1,7 @@
 # Day 4 Touch Model Smoke Check
 
-Status: implementation harness ready; physical-device result not recorded yet  
-Owner: Front-end spike  
+Status: implementation harness ready; physical-device result not recorded yet
+Owner: Front-end spike
 Scope: Week 1 touch model for the 12-string gayageum prototype
 
 ## Responsibility

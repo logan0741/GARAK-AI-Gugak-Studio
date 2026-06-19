@@ -1,7 +1,7 @@
 # Day 2 Expo Audio Smoke Check
 
-Status: implementation harness ready; physical-device result not recorded yet  
-Owner: Front-end spike  
+Status: implementation harness ready; physical-device result not recorded yet
+Owner: Front-end spike
 Scope: Week 1 candidate A, `expo-audio`
 
 ## Responsibility
