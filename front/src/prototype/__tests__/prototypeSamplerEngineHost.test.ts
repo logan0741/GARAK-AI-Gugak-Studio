@@ -4,7 +4,9 @@ import { SamplerEngine } from '../../audio/samplerEngine';
 import { GayageumSampleAsset, SampleAssetManifest } from '../../domain/sampleManifest';
 import {
   createPrototypeSamplerEngineHost,
+  getDuplicateSampleStringIndexes,
   getMissingSampleStringIndexes,
+  getUnexpectedSampleStringIndexes,
 } from '../prototypeSamplerEngineHost';
 
 const completeManifest: SampleAssetManifest = {
@@ -28,6 +30,12 @@ test('reports missing sample strings before native candidate activation', () => 
       assets: completeManifest.assets.slice(0, 3),
     }),
   ).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12]);
+});
+
+test('treats an absent manifest as an empty gayageum sample set', () => {
+  expect(getMissingSampleStringIndexes()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  expect(getDuplicateSampleStringIndexes()).toEqual([]);
+  expect(getUnexpectedSampleStringIndexes()).toEqual([]);
 });
 
 test('keeps the fake prototype engine when a native candidate has no complete manifest', () => {

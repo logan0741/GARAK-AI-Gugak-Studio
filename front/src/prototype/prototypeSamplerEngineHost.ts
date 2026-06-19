@@ -81,6 +81,10 @@ export type PrototypeSamplerEngineHostInput = {
 
 const REQUIRED_STRING_INDEXES = Array.from({ length: 12 }, (_, index) => index + 1);
 
+function getGayageumSampleAssets(manifest?: SampleAssetManifest) {
+  return (manifest?.assets ?? []).filter(isGayageumSampleAsset);
+}
+
 export function createPrototypeSamplerEngineHost(
   input: PrototypeSamplerEngineHostInput,
 ): PrototypeSamplerEngineHost {
@@ -168,7 +172,7 @@ export function createPrototypeSamplerEngineHost(
 
 export function getMissingSampleStringIndexes(manifest?: SampleAssetManifest): number[] {
   const availableStringIndexes = new Set(
-    manifest?.assets.filter(isGayageumSampleAsset).map((asset) => asset.stringIndex) ?? [],
+    getGayageumSampleAssets(manifest).map((asset) => asset.stringIndex),
   );
 
   return REQUIRED_STRING_INDEXES.filter((stringIndex) => !availableStringIndexes.has(stringIndex));
@@ -178,7 +182,7 @@ export function getDuplicateSampleStringIndexes(manifest?: SampleAssetManifest):
   const seenStringIndexes = new Set<number>();
   const duplicateStringIndexes = new Set<number>();
 
-  for (const asset of manifest?.assets.filter(isGayageumSampleAsset) ?? []) {
+  for (const asset of getGayageumSampleAssets(manifest)) {
     if (seenStringIndexes.has(asset.stringIndex)) {
       duplicateStringIndexes.add(asset.stringIndex);
     }
@@ -192,7 +196,7 @@ export function getUnexpectedSampleStringIndexes(manifest?: SampleAssetManifest)
   const requiredStringIndexes = new Set(REQUIRED_STRING_INDEXES);
   const unexpectedStringIndexes = new Set<number>();
 
-  for (const asset of manifest?.assets.filter(isGayageumSampleAsset) ?? []) {
+  for (const asset of getGayageumSampleAssets(manifest)) {
     if (!requiredStringIndexes.has(asset.stringIndex)) {
       unexpectedStringIndexes.add(asset.stringIndex);
     }
