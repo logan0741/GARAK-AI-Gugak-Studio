@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING } from './designTokens';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   JANGDAN_PRESETS,
@@ -414,6 +414,7 @@ const styles = StyleSheet.create({
   },
   question: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 28,
     fontWeight: '700',
     lineHeight: 34,
@@ -439,6 +440,7 @@ const styles = StyleSheet.create({
   },
   segmentText: {
     color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -454,6 +456,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: GARAK_COLORS.text.inverse,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 27,
     fontWeight: '700',
     lineHeight: 34,
@@ -470,6 +473,7 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -484,6 +488,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: GARAK_COLORS.text.inverse,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -503,6 +508,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -517,6 +523,7 @@ const styles = StyleSheet.create({
   quickAccessText: {
     borderRadius: GARAK_RADII.chip,
     color: GARAK_COLORS.text.inverse,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 14,
     fontWeight: '700',
     minWidth: 56,
@@ -549,6 +556,7 @@ const styles = StyleSheet.create({
   },
   instrumentCircleText: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -561,6 +569,7 @@ const styles = StyleSheet.create({
   },
   lockedText: {
     color: GARAK_COLORS.text.disabled,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -574,6 +583,7 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -582,6 +592,7 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -609,11 +620,13 @@ const styles = StyleSheet.create({
   },
   playSurfaceTitle: {
     color: GARAK_COLORS.brand.red,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 32,
     fontWeight: '700',
   },
   playSurfaceText: {
     color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -647,6 +660,7 @@ const styles = StyleSheet.create({
   },
   beatText: {
     color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -661,11 +675,13 @@ const styles = StyleSheet.create({
   },
   trackName: {
     color: GARAK_COLORS.text.inverse,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 14,
     fontWeight: '700',
   },
   trackMeta: {
     color: GARAK_COLORS.brand.amber,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 12,
   },
   optionCard: {
@@ -688,6 +704,7 @@ const styles = StyleSheet.create({
   },
   ghostButtonText: {
     color: GARAK_COLORS.brand.red,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -708,6 +725,7 @@ const styles = StyleSheet.create({
   },
   instrumentChoiceText: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 12,
     fontWeight: '700',
   },

@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
@@ -25,7 +26,7 @@ import {
   PracticeResultContent,
   PracticeSongSelectContent,
 } from './practiceScreens';
-import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING } from './designTokens';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
 import { GARAK_BRAND } from './productFixtures';
 import { ShareFeedContent, SharedDetailContent, SharePrepareContent } from './shareScreens';
 import {
@@ -36,6 +37,9 @@ import {
 } from './settingsScreens';
 
 export function GarakScreenFlowApp() {
+  const [fontsLoaded] = useFonts({
+    [GARAK_TYPOGRAPHY.fontFamily]: require('../../assets/fonts/PretendardVariable.ttf'),
+  });
   const [state, setState] = useState(() => createInitialGarakProductState());
   const summary = useMemo(() => getCurrentScreenSummary(state), [state]);
   const canOpenLanguage =
@@ -43,6 +47,10 @@ export function GarakScreenFlowApp() {
 
   function dispatch(action: GarakProductAction) {
     setState((current) => applyProductAction(current, action));
+  }
+
+  if (!fontsLoaded) {
+    return <SafeAreaView style={styles.safeArea} />;
   }
 
   return (
@@ -177,6 +185,7 @@ const styles = StyleSheet.create({
   },
   headerButtonText: {
     color: GARAK_COLORS.brand.navy,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -185,11 +194,13 @@ const styles = StyleSheet.create({
   },
   logo: {
     color: GARAK_COLORS.brand.red,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 22,
     fontWeight: '800',
   },
   subtitle: {
     color: GARAK_COLORS.brand.navy,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0,
@@ -204,17 +215,20 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: GARAK_COLORS.brand.amber,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 12,
     fontWeight: '700',
   },
   screenTitle: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 28,
     fontWeight: '700',
     lineHeight: 34,
   },
   description: {
     color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     lineHeight: 19,
   },

@@ -61,3 +61,7 @@ export const GARAK_SPACING = {
   xl: 24,
   xxl: 28,
 } as const;
+
+export const GARAK_TYPOGRAPHY = {
+  fontFamily: 'Pretendard',
+} as const;

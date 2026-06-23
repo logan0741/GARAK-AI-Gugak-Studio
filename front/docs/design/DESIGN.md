@@ -71,8 +71,16 @@ Red는 기본적으로 오류 색이 아니라 브랜드 색이다. 오류/위�
 | `color.instrument.*` | `GARAK_COLORS.instrument` | 실제 악기 입력면 표현 후보 |
 | radius | `GARAK_RADII` | 카드는 8px, 버튼/원형 컨트롤은 pill/circle |
 | spacing | `GARAK_SPACING` | 제품 화면 전용 간격 값 |
+| typography | `GARAK_TYPOGRAPHY` | Pretendard family. Figma text layer 기준과 제품 화면 구현에서 공통 사용한다. |
 
 Figma 파일에 로컬 변수나 스타일이 생기면 같은 문서 토큰 이름을 유지하고 `src/product/designTokens.ts`의 값만 갱신한다.
+
+### Typography
+
+- 현재 Figma 화면의 주요 텍스트는 Pretendard Medium/SemiBold 계열로 읽힌다.
+- 제품 UI 구현은 `GARAK_TYPOGRAPHY.fontFamily = 'Pretendard'`를 기준으로 삼는다.
+- 앱은 `expo-font`로 `assets/fonts/PretendardVariable.ttf`를 로드한다. 라이선스 파일은 `assets/fonts/Pretendard-LICENSE.txt`에 둔다.
+- Pretendard는 SIL Open Font License 1.1 기반 배포본을 사용한다. 원본과 라이선스는 [Pretendard GitHub](https://github.com/orioncactus/pretendard), [OFL license](https://github.com/orioncactus/pretendard/blob/main/LICENSE)를 기준으로 확인한다.
 
 ## 4. 로고와 에셋 이름
 

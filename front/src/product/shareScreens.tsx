@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING } from './designTokens';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 
 type ProductDispatch = (action: GarakProductAction) => void;
@@ -108,11 +108,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: GARAK_COLORS.text.inverse,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 16,
     fontWeight: '700',
   },
   bodyText: {
     color: GARAK_COLORS.neutral.canvas,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -149,6 +151,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
   },

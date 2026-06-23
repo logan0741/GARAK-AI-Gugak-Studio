@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING } from './designTokens';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import { MVP_INSTRUMENTS, PRACTICE_SONGS, getInstrumentName } from './productFixtures';
 
@@ -153,11 +153,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 16,
     fontWeight: '700',
   },
   bodyText: {
     color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
     backgroundColor: GARAK_COLORS.brand.amber,
     borderRadius: GARAK_RADII.chip,
     color: GARAK_COLORS.brand.navy,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 12,
     fontWeight: '700',
     paddingHorizontal: 10,
@@ -181,6 +184,7 @@ const styles = StyleSheet.create({
   },
   surfaceTitle: {
     color: GARAK_COLORS.brand.red,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 30,
     fontWeight: '700',
   },
@@ -207,6 +211,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: GARAK_COLORS.text.inverse,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontWeight: '700',
   },
   resultPanel: {
@@ -220,6 +225,7 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     color: GARAK_COLORS.brand.red,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 64,
     fontWeight: '700',
   },
@@ -239,6 +245,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
   },
