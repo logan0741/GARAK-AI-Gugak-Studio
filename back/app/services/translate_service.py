@@ -13,6 +13,33 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+async def translate_batch_to_locale(texts: list[str], locale: str) -> list[str]:
+    """여러 텍스트를 한 번의 API 호출로 번역."""
+    if locale == "ko" or not texts:
+        return texts
+
+    if not settings.google_translate_api_key:
+        return texts
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://translation.googleapis.com/language/translate/v2",
+                params={"key": settings.google_translate_api_key},
+                json={"q": texts, "source": "ko", "target": "en", "format": "text"},
+                timeout=5.0,
+            )
+            response.raise_for_status()
+            translations = response.json()["data"]["translations"]
+            if len(translations) != len(texts):
+                raise ValueError("Translation count mismatch")
+            return [t["translatedText"] for t in translations]
+    except Exception as exc:
+        logger.warning("Batch translate API failed, returning original texts: %s", exc)
+        return texts
+
+
+
 async def translate_to_locale(text: str, locale: str) -> str:
     """locale이 "ko"이면 원문, "en"이면 영어로 번역."""
     if locale == "ko":
@@ -32,5 +59,5 @@ async def translate_to_locale(text: str, locale: str) -> str:
             response.raise_for_status()
             return response.json()["data"]["translations"][0]["translatedText"]
     except Exception as exc:
-        logger.warning("Google Translate API 호출 중 오류 발생: %s", exc)
+        logger.warning("Translate API failed, returning original text: %s", exc)
         return text  # 번역 실패 시 한국어 원문 fallback

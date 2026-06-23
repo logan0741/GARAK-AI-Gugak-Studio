@@ -87,8 +87,18 @@ async def test_upload_track_session_not_found(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_upload_track_no_auth(client: AsyncClient):
-    """인증 없이 업로드 → 401."""
+async def test_upload_track_no_auth(client: AsyncClient, monkeypatch):
+    """인증 없이 업로드 → 401 (BYPASS_AUTH=false 환경)."""
+    import app.core.auth as auth_mod
+
+    class FakeSettings:
+        bypass_auth = False
+        jwt_secret_key = "dev-secret-key"
+        jwt_expire_minutes = 60
+        jwt_refresh_expire_days = 30
+        google_client_id = "test-client-id"
+
+    monkeypatch.setattr(auth_mod, "settings", FakeSettings())
     response = await client.post(
         "/api/tracks/upload",
         data={"session_id": "session_001", "duration_ms": "5000"},
