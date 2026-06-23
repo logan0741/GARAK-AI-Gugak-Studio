@@ -27,6 +27,45 @@ test('tracks voice budget with voice stealing', () => {
   expect(engine.commands).toContain('steal:voice=voice-1');
 });
 
+test('rejects invalid fake voice budgets before prototype counter setup', () => {
+  for (const maxVoices of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
+    expect(() => new FakeSamplerEngine({ maxVoices })).toThrow(
+      'maxVoices must be a positive integer',
+    );
+  }
+});
+
+test('rejects non-finite fake playback controls before updating prototype counters', () => {
+  const engine = new FakeSamplerEngine();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: Number.NaN }),
+  ).toThrow('velocity must be finite');
+  expect(() =>
+    engine.handleEvent({ type: 'string_bend', tsMs: 110, stringIndex: 1, cents: Number.POSITIVE_INFINITY }),
+  ).toThrow('cents must be finite');
+  expect(() =>
+    engine.handleEvent({ type: 'string_mute', tsMs: 120, stringIndex: 1, strength: Number.NaN }),
+  ).toThrow('strength must be finite');
+
+  expect(engine.commands).toEqual([]);
+  expect(engine.activeVoices).toEqual([]);
+});
+
+test('rejects invalid fake performance event identity before updating prototype counters', () => {
+  const engine = new FakeSamplerEngine();
+
+  expect(() =>
+    engine.handleEvent({ type: 'string_pluck', tsMs: Number.NaN, stringIndex: 1, velocity: 1 }),
+  ).toThrow('tsMs must be finite');
+  expect(() =>
+    engine.handleEvent({ type: 'string_bend', tsMs: 110, stringIndex: 13, cents: 20 }),
+  ).toThrow('stringIndex must be an integer from 1 to 12. Received: 13');
+
+  expect(engine.commands).toEqual([]);
+  expect(engine.activeVoices).toEqual([]);
+});
+
 test('maps mute and release events to release envelope state', () => {
   const engine = new FakeSamplerEngine();
 
