@@ -11,6 +11,8 @@ import {
   autoSaveTakeAsWork,
   createPracticeResult,
   exportWorkAudioPlaceholder,
+  toggleWorkTrackMute,
+  toggleWorkTrackSolo,
 } from '../studio/studioLibrary';
 import {
   ExportedAudio,
@@ -68,6 +70,8 @@ export type GarakProductAction =
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
   | { type: 'addTrack' }
+  | { type: 'toggleTrackMute'; trackId: string }
+  | { type: 'toggleTrackSolo'; trackId: string }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
   | { type: 'chooseAccompanimentTrack' }
@@ -174,6 +178,10 @@ export function applyProductAction(
         ...state,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S08' }),
       };
+    case 'toggleTrackMute':
+      return toggleCurrentWorkTrackMute(state, action.trackId);
+    case 'toggleTrackSolo':
+      return toggleCurrentWorkTrackSolo(state, action.trackId);
     case 'chooseInstrumentTrack':
       return {
         ...state,
@@ -505,6 +513,40 @@ function exportCurrentWork(state: GarakProductState): GarakProductState {
     },
     screenFlow: pushTarget(state.screenFlow, 'S19'),
   };
+}
+
+function toggleCurrentWorkTrackMute(
+  state: GarakProductState,
+  trackId: string,
+): GarakProductState {
+  const currentWork = findCurrentWork(state);
+  if (currentWork === undefined) {
+    return state;
+  }
+
+  const nextWork = toggleWorkTrackMute(currentWork, {
+    trackId,
+    updatedAt: state.now(),
+  });
+
+  return nextWork === currentWork ? state : replaceCurrentWork(state, nextWork, state.counters, state.screenFlow);
+}
+
+function toggleCurrentWorkTrackSolo(
+  state: GarakProductState,
+  trackId: string,
+): GarakProductState {
+  const currentWork = findCurrentWork(state);
+  if (currentWork === undefined) {
+    return state;
+  }
+
+  const nextWork = toggleWorkTrackSolo(currentWork, {
+    trackId,
+    updatedAt: state.now(),
+  });
+
+  return nextWork === currentWork ? state : replaceCurrentWork(state, nextWork, state.counters, state.screenFlow);
 }
 
 function savePracticeResult(state: GarakProductState): GarakProductState {
