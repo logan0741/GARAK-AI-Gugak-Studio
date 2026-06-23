@@ -20,10 +20,10 @@ async def test_accompaniment_success(client: AsyncClient):
         response = await client.post("/api/accompaniment", json=VALID_BODY)
     assert response.status_code == 200
     data = response.json()
-    assert "pattern_sequence" in data
-    assert len(data["pattern_sequence"]) > 0
-    assert "playback_rate" in data
-    assert "crossfade_ms" in data
+    assert "patternSequence" in data
+    assert len(data["patternSequence"]) > 0
+    assert "playbackRate" in data
+    assert "crossfadeMs" in data
 
 
 @pytest.mark.asyncio
@@ -60,9 +60,19 @@ async def test_accompaniment_saves_recommendation(client: AsyncClient):
     with patch("app.api.accompaniment.jangdan_repo.get_jangdan_by_id", new_callable=AsyncMock) as mock_get, \
          patch("app.api.accompaniment.jangdan_repo.create_recommendation", new_callable=AsyncMock) as mock_save:
         mock_get.return_value = mock_preset
-        response = await client.post("/api/accompaniment", json={**VALID_BODY, "session_id": "session_001"})
+        response = await client.post("/api/accompaniment", json={**VALID_BODY, "sessionId": "session_001"})
     assert response.status_code == 200
     mock_save.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_accompaniment_semachi(client: AsyncClient):
+    """semachi 장단 → 200."""
+    mock_preset = MagicMock()
+    with patch("app.api.accompaniment.jangdan_repo.get_jangdan_by_id", new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = mock_preset
+        response = await client.post("/api/accompaniment", json={**VALID_BODY, "jangdan": "semachi"})
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio

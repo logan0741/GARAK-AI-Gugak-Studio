@@ -1,7 +1,9 @@
+import asyncio
 import uuid
 from time import time_ns
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -13,7 +15,7 @@ from app.services import ai_client
 router = APIRouter(prefix="/api", tags=["accompaniment"])
 
 
-@router.post("/accompaniment", response_model=AccompanimentResponse)
+@router.post("/accompaniment", response_model=AccompanimentResponse, response_model_by_alias=True)
 async def accompaniment(
     body: AccompanimentRequest,
     db: AsyncSession = Depends(get_db),
@@ -26,12 +28,16 @@ async def accompaniment(
         )
 
     try:
-        result = ai_client.generate_pattern_sequence(
+        result = await asyncio.to_thread(
+            ai_client.generate_pattern_sequence,
             key=body.key,
             jangdan=body.jangdan,
             bpm=body.bpm,
             temperature=body.temperature,
         )
+        pattern_sequence = result["patternSequence"]
+        playback_rate = result["playbackRate"]
+        crossfade_ms = result["crossfadeMs"]
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -51,10 +57,16 @@ async def accompaniment(
             reason={"key": body.key, "temperature": body.temperature},
             created_at_ms=time_ns() // 1_000_000,
         )
-        await jangdan_repo.create_recommendation(db, rec)
+        try:
+            await jangdan_repo.create_recommendation(db, rec)
+        except IntegrityError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid sessionId: {body.session_id}",
+            ) from exc
 
     return AccompanimentResponse(
-        pattern_sequence=result["patternSequence"],
-        playback_rate=result["playbackRate"],
-        crossfade_ms=result["crossfadeMs"],
+        pattern_sequence=pattern_sequence,
+        playback_rate=playback_rate,
+        crossfade_ms=crossfade_ms,
     )
