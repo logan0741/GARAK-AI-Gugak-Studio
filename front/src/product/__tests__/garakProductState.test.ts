@@ -13,7 +13,7 @@ test('starts on the GARAK home in guest free creation mode', () => {
   expect(state.account.status).toBe('guest');
   expect(state.selectedMode).toBe('freeCreation');
   expect(summary.title).toBe('GARAK');
-  expect(summary.primaryCtas).toContain('Next');
+  expect(summary.primaryCtas).toContain('다음');
 });
 
 test('moves through free creation selection to S05 with an MVP instrument', () => {

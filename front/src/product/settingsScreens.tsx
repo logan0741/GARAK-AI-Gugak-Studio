@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING } from './designTokens';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 
 type ProductDispatch = (action: GarakProductAction) => void;
@@ -96,46 +97,50 @@ function SecondaryButton({ label, onPress }: { label: string; onPress: () => voi
 
 const styles = StyleSheet.create({
   stack: {
-    gap: 12,
+    gap: GARAK_SPACING.md,
   },
   panel: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 8,
     padding: 18,
   },
   settingRow: {
     alignItems: 'center',
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     minHeight: 56,
     paddingHorizontal: 16,
   },
   title: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
     fontSize: 15,
     fontWeight: '700',
   },
   valueText: {
-    color: '#777777',
+    color: GARAK_COLORS.brand.amber,
     fontSize: 13,
   },
   bodyText: {
-    color: '#777777',
+    color: GARAK_COLORS.text.secondary,
     fontSize: 13,
     lineHeight: 19,
   },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#9b9b9b',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.brand.navy,
+    borderRadius: GARAK_RADII.button,
     justifyContent: 'center',
     minHeight: 44,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: GARAK_COLORS.text.inverse,
     fontWeight: '700',
   },
   buttonRow: {
@@ -144,14 +149,16 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
-    backgroundColor: '#dedede',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.neutral.soft,
+    borderColor: GARAK_COLORS.neutral.border,
+    borderRadius: GARAK_RADII.button,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
     minHeight: 44,
   },
   secondaryButtonText: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
     fontSize: 13,
     fontWeight: '700',
   },

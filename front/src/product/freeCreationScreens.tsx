@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING } from './designTokens';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   JANGDAN_PRESETS,
@@ -37,7 +38,7 @@ export function HomeScreenContent({
         <Text style={styles.heroTitle}>
           {isFreeCreation ? '내 가락을 직접 만들기' : '민요를 따라 연주하기'}
         </Text>
-        <Text style={styles.bodyText}>
+        <Text style={[styles.bodyText, styles.heroBodyText]}>
           {isFreeCreation
             ? '악기를 고르고 바로 연주를 시작해요. 녹음이 끝나면 작업으로 자동 저장됩니다.'
             : '아리랑, 도라지, 뱃노래 중 하나를 고르고 가이드에 맞춰 연습해요.'}
@@ -45,9 +46,9 @@ export function HomeScreenContent({
         <Pressable
           accessibilityRole="button"
           onPress={() => dispatch({ type: 'next' })}
-          style={styles.primaryButton}
+          style={[styles.primaryButton, styles.heroPrimaryButton]}
         >
-          <Text style={styles.primaryButtonText}>Next</Text>
+          <Text style={[styles.primaryButtonText, styles.heroPrimaryButtonText]}>다음</Text>
         </Pressable>
       </View>
       <View style={styles.homeQuickAccess}>
@@ -129,7 +130,7 @@ export function InstrumentSelectContent({
           state.selectedInstrument === undefined ? styles.disabledButton : undefined,
         ]}
       >
-        <Text style={styles.primaryButtonText}>Next</Text>
+        <Text style={styles.primaryButtonText}>다음</Text>
       </Pressable>
     </View>
   );
@@ -409,69 +410,80 @@ function SecondaryButton({ label, onPress }: { label: string; onPress: () => voi
 
 const styles = StyleSheet.create({
   stack: {
-    gap: 16,
+    gap: GARAK_SPACING.lg,
   },
   question: {
-    color: '#4a4a4a',
+    color: GARAK_COLORS.text.primary,
     fontSize: 28,
-    fontWeight: '300',
+    fontWeight: '700',
     lineHeight: 34,
   },
   segmented: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.neutral.soft,
+    borderColor: GARAK_COLORS.neutral.border,
+    borderRadius: GARAK_RADII.chip,
+    borderWidth: 1,
     flexDirection: 'row',
     minHeight: 34,
     padding: 2,
   },
   segmentButton: {
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: GARAK_RADII.chip,
     flex: 1,
     justifyContent: 'center',
     minHeight: 30,
   },
   segmentButtonActive: {
-    backgroundColor: '#9d9d9d',
+    backgroundColor: GARAK_COLORS.brand.navy,
   },
   segmentText: {
-    color: '#898989',
+    color: GARAK_COLORS.text.secondary,
     fontSize: 12,
     fontWeight: '700',
   },
   segmentTextActive: {
-    color: '#ffffff',
+    color: GARAK_COLORS.text.inverse,
   },
   heroCard: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 34,
+    backgroundColor: GARAK_COLORS.brand.navy,
+    borderRadius: GARAK_RADII.card,
     gap: 18,
-    minHeight: 360,
+    minHeight: 340,
     padding: 28,
   },
   heroTitle: {
-    color: '#7a7a7a',
+    color: GARAK_COLORS.text.inverse,
     fontSize: 27,
-    fontWeight: '300',
+    fontWeight: '700',
     lineHeight: 34,
     marginTop: 'auto',
   },
+  heroBodyText: {
+    color: GARAK_COLORS.neutral.canvas,
+  },
+  heroPrimaryButton: {
+    backgroundColor: GARAK_COLORS.brand.amber,
+  },
+  heroPrimaryButtonText: {
+    color: GARAK_COLORS.brand.navy,
+  },
   bodyText: {
-    color: '#777777',
+    color: GARAK_COLORS.text.secondary,
     fontSize: 13,
     lineHeight: 19,
   },
   primaryButton: {
     alignItems: 'center',
     alignSelf: 'stretch',
-    backgroundColor: '#9b9b9b',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.brand.navy,
+    borderRadius: GARAK_RADII.button,
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: 18,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: GARAK_COLORS.text.inverse,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -480,29 +492,31 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
-    backgroundColor: '#dedede',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.neutral.soft,
+    borderColor: GARAK_COLORS.neutral.border,
+    borderRadius: GARAK_RADII.button,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: 12,
   },
   secondaryButtonText: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
     fontSize: 13,
     fontWeight: '700',
   },
   homeQuickAccess: {
     alignSelf: 'center',
-    backgroundColor: '#bdbdbd',
-    borderRadius: 24,
+    backgroundColor: GARAK_COLORS.brand.navy,
+    borderRadius: GARAK_RADII.button,
     flexDirection: 'row',
     gap: 10,
     padding: 8,
   },
   quickAccessText: {
-    borderRadius: 18,
-    color: '#222222',
+    borderRadius: GARAK_RADII.chip,
+    color: GARAK_COLORS.text.inverse,
     fontSize: 14,
     fontWeight: '700',
     minWidth: 56,
@@ -511,7 +525,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   quickAccessActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: GARAK_COLORS.brand.amber,
+    color: GARAK_COLORS.brand.navy,
   },
   instrumentRow: {
     flexDirection: 'row',
@@ -520,39 +535,45 @@ const styles = StyleSheet.create({
   },
   instrumentCircle: {
     alignItems: 'center',
-    backgroundColor: '#cfcfcf',
-    borderRadius: 28,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.border,
+    borderRadius: GARAK_RADII.circle,
+    borderWidth: 1,
     height: 56,
     justifyContent: 'center',
     width: 56,
   },
   instrumentCircleActive: {
-    backgroundColor: '#5f5f5f',
+    backgroundColor: GARAK_COLORS.brand.red,
+    borderColor: GARAK_COLORS.brand.red,
   },
   instrumentCircleText: {
-    color: '#666666',
+    color: GARAK_COLORS.text.primary,
     fontSize: 11,
     fontWeight: '700',
   },
   instrumentCircleTextActive: {
-    color: '#ffffff',
+    color: GARAK_COLORS.text.inverse,
   },
   lockedCircle: {
-    backgroundColor: '#5f5f5f',
+    backgroundColor: GARAK_COLORS.neutral.soft,
+    borderColor: GARAK_COLORS.neutral.border,
   },
   lockedText: {
-    color: '#ffffff',
+    color: GARAK_COLORS.text.disabled,
     fontSize: 10,
     fontWeight: '700',
   },
   infoPanel: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 14,
     padding: 18,
   },
   panelTitle: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -560,37 +581,39 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   settingLabel: {
-    color: '#666666',
+    color: GARAK_COLORS.text.primary,
     fontSize: 13,
     fontWeight: '700',
   },
   settingBar: {
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.neutral.muted,
     borderRadius: 4,
     height: 6,
   },
   settingBarFill: {
-    backgroundColor: '#8d8d8d',
+    backgroundColor: GARAK_COLORS.brand.amber,
     borderRadius: 4,
     height: 6,
     width: '68%',
   },
   playSurface: {
     alignItems: 'center',
-    backgroundColor: '#d6d6d6',
-    borderRadius: 32,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 18,
     justifyContent: 'center',
     minHeight: 360,
     padding: 28,
   },
   playSurfaceTitle: {
-    color: '#555555',
+    color: GARAK_COLORS.brand.red,
     fontSize: 32,
     fontWeight: '700',
   },
   playSurfaceText: {
-    color: '#777777',
+    color: GARAK_COLORS.text.secondary,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -603,8 +626,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeline: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 12,
     padding: 16,
   },
@@ -614,38 +639,40 @@ const styles = StyleSheet.create({
   },
   beatCell: {
     alignItems: 'center',
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.neutral.muted,
     borderRadius: 4,
     flex: 1,
     minHeight: 30,
     justifyContent: 'center',
   },
   beatText: {
-    color: '#777777',
+    color: GARAK_COLORS.text.secondary,
     fontSize: 11,
     fontWeight: '700',
   },
   trackRow: {
     alignItems: 'center',
-    backgroundColor: '#eeeeee',
-    borderRadius: 6,
+    backgroundColor: GARAK_COLORS.brand.navy,
+    borderRadius: GARAK_RADII.card,
     flexDirection: 'row',
     justifyContent: 'space-between',
     minHeight: 44,
     paddingHorizontal: 12,
   },
   trackName: {
-    color: '#444444',
+    color: GARAK_COLORS.text.inverse,
     fontSize: 14,
     fontWeight: '700',
   },
   trackMeta: {
-    color: '#777777',
+    color: GARAK_COLORS.brand.amber,
     fontSize: 12,
   },
   optionCard: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 8,
     padding: 16,
   },
@@ -660,7 +687,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   ghostButtonText: {
-    color: '#777777',
+    color: GARAK_COLORS.brand.red,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -670,21 +697,21 @@ const styles = StyleSheet.create({
   },
   instrumentChoiceButton: {
     alignItems: 'center',
-    backgroundColor: '#eeeeee',
-    borderRadius: 16,
+    backgroundColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.chip,
     flex: 1,
     minHeight: 34,
     justifyContent: 'center',
   },
   instrumentChoiceButtonActive: {
-    backgroundColor: '#8f8f8f',
+    backgroundColor: GARAK_COLORS.brand.red,
   },
   instrumentChoiceText: {
-    color: '#666666',
+    color: GARAK_COLORS.text.primary,
     fontSize: 12,
     fontWeight: '700',
   },
   instrumentChoiceTextActive: {
-    color: '#ffffff',
+    color: GARAK_COLORS.text.inverse,
   },
 });

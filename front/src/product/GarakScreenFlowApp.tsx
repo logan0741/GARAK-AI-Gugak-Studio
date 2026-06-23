@@ -25,6 +25,7 @@ import {
   PracticeResultContent,
   PracticeSongSelectContent,
 } from './practiceScreens';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING } from './designTokens';
 import { GARAK_BRAND } from './productFixtures';
 import { ShareFeedContent, SharedDetailContent, SharePrepareContent } from './shareScreens';
 import {
@@ -139,28 +140,33 @@ function renderScreenContent(
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.brand.navy,
     flex: 1,
   },
   phoneFrame: {
     alignSelf: 'center',
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.neutral.app,
     flex: 1,
     maxWidth: 430,
     width: '100%',
   },
   header: {
     alignItems: 'center',
+    backgroundColor: GARAK_COLORS.neutral.canvas,
+    borderBottomColor: GARAK_COLORS.neutral.muted,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 72,
+    minHeight: 76,
     paddingHorizontal: 20,
     paddingTop: 10,
   },
   headerButton: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 17,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.circle,
+    borderWidth: 1,
     height: 34,
     justifyContent: 'center',
     width: 34,
@@ -170,7 +176,7 @@ const styles = StyleSheet.create({
     width: 34,
   },
   headerButtonText: {
-    color: '#777777',
+    color: GARAK_COLORS.brand.navy,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -178,37 +184,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    color: '#a0a0a0',
+    color: GARAK_COLORS.brand.red,
     fontSize: 22,
     fontWeight: '800',
   },
   subtitle: {
-    color: '#a0a0a0',
+    color: GARAK_COLORS.brand.navy,
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0,
   },
   content: {
-    gap: 18,
-    padding: 24,
+    gap: GARAK_SPACING.lg,
+    padding: GARAK_SPACING.xl,
     paddingBottom: 36,
   },
   titleBlock: {
-    gap: 6,
+    gap: GARAK_SPACING.xs,
   },
   eyebrow: {
-    color: '#9c9c9c',
+    color: GARAK_COLORS.brand.amber,
     fontSize: 12,
     fontWeight: '700',
   },
   screenTitle: {
-    color: '#4f4f4f',
+    color: GARAK_COLORS.text.primary,
     fontSize: 28,
-    fontWeight: '500',
+    fontWeight: '700',
     lineHeight: 34,
   },
   description: {
-    color: '#858585',
+    color: GARAK_COLORS.text.secondary,
     fontSize: 13,
     lineHeight: 19,
   },
