@@ -58,6 +58,7 @@ JANGDAN_PRESETS = [
     {"id": "jungmori",  "name": "중모리",  "min_bpm": 60,  "max_bpm": 80,  "density_range": "low",    "meter": "12/8"},
     {"id": "gutgeori",  "name": "굿거리",  "min_bpm": 80,  "max_bpm": 110, "density_range": "medium", "meter": "12/8"},
     {"id": "jajinmori", "name": "자진모리", "min_bpm": 120, "max_bpm": 160, "density_range": "high",   "meter": "12/8"},
+    {"id": "semachi",   "name": "세마치",  "min_bpm": 100, "max_bpm": 140, "density_range": "medium", "meter": "9/8"},
 ]
 
 
