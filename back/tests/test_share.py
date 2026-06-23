@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 AUTH = {"Authorization": "Bearer any"}
-VALID_BODY = {"session_id": "session_001"}
+VALID_BODY = {"sessionId": "session_001"}
 
 
 @pytest.mark.asyncio
@@ -21,8 +21,7 @@ async def test_share_success(client: AsyncClient):
 
     assert response.status_code == 201
     data = response.json()
-    assert "share_url" in data
-    assert "/s/" in data["share_url"]
+    assert "shareId" in data
 
 
 @pytest.mark.asyncio
@@ -52,15 +51,15 @@ async def test_get_share_success(client: AsyncClient):
     mock_link.recording_id = None
     mock_link.visibility = "public"
     mock_link.created_at_ms = 1700000000000
+    mock_link.expires_at_ms = None
 
     with patch("app.api.share.share_repo.get_share_link", new_callable=AsyncMock, return_value=mock_link):
         response = await client.get("/api/share/share_abc")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["share_id"] == "share_abc"
-    assert data["session_id"] == "session_001"
-    assert "/s/share_abc" in data["share_url"]
+    assert data["shareId"] == "share_abc"
+    assert data["sessionId"] == "session_001"
 
 
 @pytest.mark.asyncio

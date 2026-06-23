@@ -54,8 +54,8 @@ async def test_score_perfect(client: AsyncClient):
         response = await client.post("/api/folk-songs/arirang/score", json=SCORE_BODY)
     assert response.status_code == 200
     data = response.json()
-    assert data["correct_count"] == 2
-    assert data["total_count"] == 3
+    assert data["correctCount"] == 2
+    assert data["totalCount"] == 3
     assert data["accuracy"] == pytest.approx(66.7, abs=0.1)
 
 

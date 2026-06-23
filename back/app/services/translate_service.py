@@ -31,6 +31,8 @@ async def translate_batch_to_locale(texts: list[str], locale: str) -> list[str]:
             )
             response.raise_for_status()
             translations = response.json()["data"]["translations"]
+            if len(translations) != len(texts):
+                raise ValueError("Translation count mismatch")
             return [t["translatedText"] for t in translations]
     except Exception as exc:
         logger.warning("Batch translate API failed, returning original texts: %s", exc)

@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api", tags=["folk-songs"])
 _TIMING_TOLERANCE_MS = 200  # ±200ms 이내 → 정확
 
 
-@router.get("/folk-songs", response_model=list[FolkSongOut])
+@router.get("/folk-songs", response_model=list[FolkSongOut], response_model_by_alias=True)
 async def list_folk_songs(
     locale: str = Query(default="ko", pattern="^(ko|en)$"),
     db: AsyncSession = Depends(get_db),
@@ -26,7 +26,7 @@ async def list_folk_songs(
     return songs
 
 
-@router.post("/folk-songs/{folk_song_id}/score", response_model=ScoreResponse)
+@router.post("/folk-songs/{folk_song_id}/score", response_model=ScoreResponse, response_model_by_alias=True)
 async def score_folk_song(
     folk_song_id: str,
     body: ScoreRequest,
@@ -37,7 +37,7 @@ async def score_folk_song(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folk song not found")
 
     reference = song.reference_events  # list[dict] with ts_ms
-    user_events = [e.model_dump() for e in body.events]
+    user_events = sorted([e.model_dump() for e in body.events], key=lambda x: x["ts_ms"])
 
     total = len(reference)
     if total == 0:
