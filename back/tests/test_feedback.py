@@ -4,10 +4,10 @@ import pytest
 from httpx import AsyncClient
 
 VALID_BODY = {
-    "session_id": "session_001",
-    "accuracy_score": 0.78,
-    "detected_key": "pyeongjo",
-    "song_name": "아리랑",
+    "sessionId": "session_001",
+    "accuracyScore": 78,
+    "detectedKey": "pyeongjo",
+    "songName": "아리랑",
     "locale": "ko",
 }
 
@@ -23,8 +23,8 @@ async def test_feedback_ko(client: AsyncClient):
         response = await client.post("/api/feedback", json=VALID_BODY)
     assert response.status_code == 200
     data = response.json()
-    assert "feedback_text" in data
-    assert len(data["feedback_text"]) > 0
+    assert "feedbackText" in data
+    assert len(data["feedbackText"]) > 0
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,7 @@ async def test_feedback_en_translates(client: AsyncClient):
     ):
         response = await client.post("/api/feedback", json={**VALID_BODY, "locale": "en"})
     assert response.status_code == 200
-    assert response.json()["feedback_text"] == "Great performance!"
+    assert response.json()["feedbackText"] == "Great performance!"
 
 
 @pytest.mark.asyncio
@@ -70,7 +70,7 @@ async def test_feedback_translate_error_fallback(client: AsyncClient):
     ):
         response = await client.post("/api/feedback", json={**VALID_BODY, "locale": "en"})
     assert response.status_code == 200
-    assert response.json()["feedback_text"] == korean_text
+    assert response.json()["feedbackText"] == korean_text
 
 
 @pytest.mark.asyncio

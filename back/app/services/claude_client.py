@@ -17,13 +17,13 @@ async def generate_feedback(
 
     try:
         import anthropic
-        client = anthropic.Anthropic(api_key=settings.claude_api_key)
+        client = anthropic.AsyncAnthropic(api_key=settings.claude_api_key)
         prompt = (
             f"국악 연주 피드백을 한국어로 2~3문장으로 작성해주세요.\n"
-            f"곡명: {song_name}, 조(key): {detected_key}, 정확도: {accuracy_score:.0%}"
+            f"곡명: {song_name}, 조(key): {detected_key}, 정확도: {accuracy_score:.0f}%"
         )
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        message = await client.messages.create(
+            model="claude-3-5-haiku-20241022",
             max_tokens=300,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -33,7 +33,7 @@ async def generate_feedback(
 
 
 def _stub_feedback(accuracy_score: float, detected_key: str, song_name: str) -> str:
-    score_pct = int(accuracy_score * 100)
+    score_pct = int(accuracy_score)
     return (
         f"{song_name} 연주 결과 정확도 {score_pct}%를 기록하셨습니다. "
         f"{detected_key} 조의 특성을 잘 살려 연주하셨네요. "

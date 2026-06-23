@@ -4,9 +4,13 @@ API 키 미설정 시 원문 그대로 반환 (fallback).
 locale이 "ko"이면 번역 없이 반환.
 """
 
+import logging
+
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 async def translate_to_locale(text: str, locale: str) -> str:
@@ -27,5 +31,6 @@ async def translate_to_locale(text: str, locale: str) -> str:
             )
             response.raise_for_status()
             return response.json()["data"]["translations"][0]["translatedText"]
-    except Exception:
+    except Exception as exc:
+        logger.warning("Google Translate API 호출 중 오류 발생: %s", exc)
         return text  # 번역 실패 시 한국어 원문 fallback
