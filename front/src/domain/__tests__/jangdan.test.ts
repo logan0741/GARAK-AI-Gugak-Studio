@@ -29,3 +29,10 @@ test('recommends jajinmori for fast dense playing', () => {
 
   expect(result.jangdan).toBe('jajinmori');
 });
+
+test('keeps the BPM estimate finite for simultaneous polyphony plucks', () => {
+  const result = recommendJangdan(plucks([1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]));
+
+  expect(result.bpmEstimate).toBe(80);
+  expect(Number.isFinite(result.bpmEstimate)).toBe(true);
+});
