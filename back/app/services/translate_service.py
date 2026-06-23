@@ -39,6 +39,7 @@ async def translate_batch_to_locale(texts: list[str], locale: str) -> list[str]:
         return texts
 
 
+
 async def translate_to_locale(text: str, locale: str) -> str:
     """locale이 "ko"이면 원문, "en"이면 영어로 번역."""
     if locale == "ko":

@@ -11,6 +11,9 @@ from app.api.instruments import router as instruments_router
 from app.api.jangdan_presets import router as jangdan_presets_router
 from app.api.sessions import router as sessions_router
 from app.api.tracks import router as tracks_router
+from app.api.analyze import router as analyze_router
+from app.api.accompaniment import router as accompaniment_router
+from app.api.feedback import router as feedback_router
 from app.api.share import router as share_router
 from app.api.folk_songs import router as folk_songs_router
 
@@ -30,6 +33,9 @@ app.include_router(instruments_router)
 app.include_router(jangdan_presets_router)
 app.include_router(sessions_router)
 app.include_router(tracks_router)
+app.include_router(analyze_router)
+app.include_router(accompaniment_router)
+app.include_router(feedback_router)
 app.include_router(share_router)
 app.include_router(folk_songs_router)
 

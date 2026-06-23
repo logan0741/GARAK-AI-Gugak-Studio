@@ -1,5 +1,5 @@
-import { GayageumPrototypeScreen } from '../src/prototype/GayageumPrototypeScreen';
+import { GarakScreenFlowApp } from '../src/product/GarakScreenFlowApp';
 
 export default function Index() {
-  return <GayageumPrototypeScreen />;
+  return <GarakScreenFlowApp />;
 }

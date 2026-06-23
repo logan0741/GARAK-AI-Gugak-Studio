@@ -51,3 +51,19 @@ test('rejects non-finite gesture values at the mapping boundary', () => {
   );
   expect(() => mapCover({ tsMs: 100, stringIndex: 1, area: Number.NaN })).toThrow('area must be finite');
 });
+
+test('rejects non-finite timestamps at the mapping boundary', () => {
+  expect(() => mapTap({ tsMs: Number.NaN, stringIndex: 1 })).toThrow('tsMs must be finite');
+  expect(() =>
+    mapHoldDrag({ tsMs: Number.POSITIVE_INFINITY, stringIndex: 1, normalizedDelta: 0.5 }),
+  ).toThrow('tsMs must be finite');
+  expect(() =>
+    mapSwipeAcrossStrings({ tsMs: Number.NEGATIVE_INFINITY, stringIndexes: [1, 2] }),
+  ).toThrow('tsMs must be finite');
+  expect(() => mapCover({ tsMs: Number.NaN, stringIndex: 1, area: 0.8 })).toThrow(
+    'tsMs must be finite',
+  );
+  expect(() => mapRelease({ tsMs: Number.NaN, stringIndex: 1 })).toThrow(
+    'tsMs must be finite',
+  );
+});
