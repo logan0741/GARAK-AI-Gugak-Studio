@@ -2,9 +2,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
+from app.core.config import settings
 from app.db.session import async_session_factory
 from app.api.auth import router as auth_router
 from app.api.instruments import router as instruments_router
@@ -20,6 +22,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="GUKAK STUDIO API", version="1.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
