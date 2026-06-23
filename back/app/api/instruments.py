@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.db.session import get_db
 from app.repositories import jangdan_repo
-from app.schemas.instrument import InstrumentOut, SampleEntryOut
+from app.schemas.instrument import InstrumentOut, SampleAssetOut, SampleManifestOut
 
 router = APIRouter(prefix="/api", tags=["instruments"])
 
@@ -15,19 +14,26 @@ async def list_instruments(db: AsyncSession = Depends(get_db)):
     return await jangdan_repo.get_all_instruments(db)
 
 
-@router.get("/instruments/{instrument_id}/samples", response_model=list[SampleEntryOut])
+@router.get("/instruments/{instrument_id}/samples", response_model=SampleManifestOut, response_model_by_alias=True)
 async def list_instrument_samples(instrument_id: str, db: AsyncSession = Depends(get_db)):
-    """악기의 현/음공별 샘플 파일 URL 목록 반환. 앱 시작 시 1회 호출해 음원 다운로드에 사용."""
+    """악기의 현/음공별 샘플 파일 목록 반환. 앱 시작 시 1회 호출해 음원 다운로드에 사용."""
     rows = await jangdan_repo.get_instrument_samples(db, instrument_id)
     if not rows:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instrument not found or no samples registered")
 
-    return [
-        SampleEntryOut(
-            unit_index=unit.unit_index,
-            label=unit.label,
-            articulation=sample_map.articulation,
-            file_url=f"{settings.server_base_url}{asset.file_uri}",
+    _, _, _, first_manifest = rows[0]
+    assets = [
+        SampleAssetOut(
+            id=asset.id,
+            instrument=instrument_id,
+            string_index=unit.unit_index,
+            file_uri=asset.file_uri,
+            source_layer=asset.source_layer,
+            source_name=unit.label,
+            license_note=asset.license,
+            attribution=asset.attribution,
+            base_pitch_cents=asset.base_pitch_cents,
         )
-        for unit, sample_map, asset in rows
+        for unit, _sample_map, asset, _manifest in rows
     ]
+    return SampleManifestOut(version=first_manifest.version, assets=assets)

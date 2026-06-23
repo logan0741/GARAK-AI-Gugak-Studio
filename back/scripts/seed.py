@@ -25,7 +25,7 @@ from app.models.jangdan import JangdanPreset
 
 
 INSTRUMENT = {
-    "id": "12_string_gayageum",
+    "id": "gayageum_12",
     "type": "gayageum",
     "display_name": "가야금 12현",
     "note_unit_count": 12,
@@ -33,25 +33,25 @@ INSTRUMENT = {
 }
 
 INSTRUMENT_UNITS = [
-    {"id": "12sg_unit_01", "instrument_id": "12_string_gayageum", "unit_index": 1,  "label": "1현",  "base_note_name": "D3", "base_pitch_cents": 5000, "has_pitch_bend": True},
-    {"id": "12sg_unit_02", "instrument_id": "12_string_gayageum", "unit_index": 2,  "label": "2현",  "base_note_name": "E3", "base_pitch_cents": 5200, "has_pitch_bend": True},
-    {"id": "12sg_unit_03", "instrument_id": "12_string_gayageum", "unit_index": 3,  "label": "3현",  "base_note_name": "G3", "base_pitch_cents": 5500, "has_pitch_bend": True},
-    {"id": "12sg_unit_04", "instrument_id": "12_string_gayageum", "unit_index": 4,  "label": "4현",  "base_note_name": "A3", "base_pitch_cents": 5700, "has_pitch_bend": True},
-    {"id": "12sg_unit_05", "instrument_id": "12_string_gayageum", "unit_index": 5,  "label": "5현",  "base_note_name": "B3", "base_pitch_cents": 5900, "has_pitch_bend": True},
-    {"id": "12sg_unit_06", "instrument_id": "12_string_gayageum", "unit_index": 6,  "label": "6현",  "base_note_name": "D4", "base_pitch_cents": 6200, "has_pitch_bend": True},
-    {"id": "12sg_unit_07", "instrument_id": "12_string_gayageum", "unit_index": 7,  "label": "7현",  "base_note_name": "E4", "base_pitch_cents": 6400, "has_pitch_bend": True},
-    {"id": "12sg_unit_08", "instrument_id": "12_string_gayageum", "unit_index": 8,  "label": "8현",  "base_note_name": "G4", "base_pitch_cents": 6700, "has_pitch_bend": True},
-    {"id": "12sg_unit_09", "instrument_id": "12_string_gayageum", "unit_index": 9,  "label": "9현",  "base_note_name": "A4", "base_pitch_cents": 6900, "has_pitch_bend": True},
-    {"id": "12sg_unit_10", "instrument_id": "12_string_gayageum", "unit_index": 10, "label": "10현", "base_note_name": "B4", "base_pitch_cents": 7100, "has_pitch_bend": True},
-    {"id": "12sg_unit_11", "instrument_id": "12_string_gayageum", "unit_index": 11, "label": "11현", "base_note_name": "D5", "base_pitch_cents": 7400, "has_pitch_bend": True},
-    {"id": "12sg_unit_12", "instrument_id": "12_string_gayageum", "unit_index": 12, "label": "12현", "base_note_name": "E5", "base_pitch_cents": 7600, "has_pitch_bend": True},
+    {"id": "12sg_unit_01", "instrument_id": "gayageum_12", "unit_index": 1,  "label": "1현",  "base_note_name": "D3", "base_pitch_cents": 5000, "has_pitch_bend": True},
+    {"id": "12sg_unit_02", "instrument_id": "gayageum_12", "unit_index": 2,  "label": "2현",  "base_note_name": "E3", "base_pitch_cents": 5200, "has_pitch_bend": True},
+    {"id": "12sg_unit_03", "instrument_id": "gayageum_12", "unit_index": 3,  "label": "3현",  "base_note_name": "G3", "base_pitch_cents": 5500, "has_pitch_bend": True},
+    {"id": "12sg_unit_04", "instrument_id": "gayageum_12", "unit_index": 4,  "label": "4현",  "base_note_name": "A3", "base_pitch_cents": 5700, "has_pitch_bend": True},
+    {"id": "12sg_unit_05", "instrument_id": "gayageum_12", "unit_index": 5,  "label": "5현",  "base_note_name": "B3", "base_pitch_cents": 5900, "has_pitch_bend": True},
+    {"id": "12sg_unit_06", "instrument_id": "gayageum_12", "unit_index": 6,  "label": "6현",  "base_note_name": "D4", "base_pitch_cents": 6200, "has_pitch_bend": True},
+    {"id": "12sg_unit_07", "instrument_id": "gayageum_12", "unit_index": 7,  "label": "7현",  "base_note_name": "E4", "base_pitch_cents": 6400, "has_pitch_bend": True},
+    {"id": "12sg_unit_08", "instrument_id": "gayageum_12", "unit_index": 8,  "label": "8현",  "base_note_name": "G4", "base_pitch_cents": 6700, "has_pitch_bend": True},
+    {"id": "12sg_unit_09", "instrument_id": "gayageum_12", "unit_index": 9,  "label": "9현",  "base_note_name": "A4", "base_pitch_cents": 6900, "has_pitch_bend": True},
+    {"id": "12sg_unit_10", "instrument_id": "gayageum_12", "unit_index": 10, "label": "10현", "base_note_name": "B4", "base_pitch_cents": 7100, "has_pitch_bend": True},
+    {"id": "12sg_unit_11", "instrument_id": "gayageum_12", "unit_index": 11, "label": "11현", "base_note_name": "D5", "base_pitch_cents": 7400, "has_pitch_bend": True},
+    {"id": "12sg_unit_12", "instrument_id": "gayageum_12", "unit_index": 12, "label": "12현", "base_note_name": "E5", "base_pitch_cents": 7600, "has_pitch_bend": True},
 ]
 
 # 건희 작업 전 테스트용 더미. 실제 샘플이 준비되면 교체할 것.
 SAMPLE_ASSET_MANIFEST = {
     "id": "gayageum_samples_2026_06_a",
     "version": "2026.06.a",
-    "instrument_id": "12_string_gayageum",
+    "instrument_id": "gayageum_12",
 }
 
 JANGDAN_PRESETS = [
