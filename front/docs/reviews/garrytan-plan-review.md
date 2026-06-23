@@ -17,14 +17,14 @@
 
 ## Findings
 
-### 1. CRITICAL GAP: 구현 계획이 문서 source-of-truth를 먼저 고정하지 않았다
+### 1. CRITICAL GAP: 구현 계획이 문서 기준을 먼저 고정하지 않았다
 
 기존 계획은 코드 scaffold부터 시작한다. 하지만 현재 프로젝트는 코드보다 문서와 도메인 모델이 먼저 있는 저장소다. 에이전트가 계획만 읽고 시작하면 `CONTEXT.md`, 도메인 문서, 기술 스택 확정안을 건너뛸 수 있다.
 
 Fix:
 
 - 구현 계획 상단에 mandatory read order를 추가한다.
-- `docs/README.md`를 문서 맵 source of truth로 추가한다.
+- `docs/document-authority-index.md`를 문서 기준 인덱스로 둔다.
 - `docs/domain/README.md`를 DDD canonical document로 추가한다.
 
 ### 2. CRITICAL GAP: 기술 스택 기준 경로가 이동 후에도 예전 위치를 가리켰다
@@ -65,7 +65,7 @@ HOLD SCOPE.
 ## Changes Applied
 
 - 문서 구조를 system of record, architecture, domain, plans, reviews, logs, qa로 재배치했다.
-- 구현 계획의 source-of-truth 링크를 새 문서 구조로 고쳤다.
+- 구현 계획의 문서 기준 링크를 새 문서 구조로 고쳤다.
 - DDD 도메인 문서를 추가했다.
 - 런타임 아키텍처 문서를 추가했다.
 - 계획 상단에 문서 읽기 gate와 Day 5 gate를 추가했다.

@@ -1,4 +1,8 @@
-import { PerformanceEvent } from '../domain/performanceEvent';
+import {
+  PerformanceEvent,
+  assertEventTimestamp,
+  assertStringIndex,
+} from '../domain/performanceEvent';
 
 export type EnvelopeState = 'attack' | 'sustain' | 'release' | 'ended';
 
@@ -13,4 +17,9 @@ export type VoiceState = {
 
 export interface SamplerEngine {
   handleEvent(event: PerformanceEvent): void;
+}
+
+export function assertSamplerEventIdentity(event: PerformanceEvent): void {
+  assertEventTimestamp(event.tsMs);
+  assertStringIndex(event.stringIndex);
 }

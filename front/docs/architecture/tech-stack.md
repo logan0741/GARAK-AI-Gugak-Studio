@@ -1,10 +1,10 @@
-# GUKAK STUDIO 기술 스택 확정안
+# GARAK 기술 스택 확정안
 
 작성일: 2026-06-08  
 상태: MVP 기준 확정  
-적용 범위: 12현 가야금 모바일 MVP, 30초 코어 루프, 로컬 세션, 데모용 장단 추천
+적용 범위: 가야금, 장구, 대금 MVP의 모바일 앱. 현재 구현 검증은 12현 가야금 프로토타입, 로컬 세션, 데모용 장단 추천에서 출발한다.
 
-이 문서는 GUKAK STUDIO의 기술 스택 소스 오브 트루스다. 기존 제안서, 리뷰, 구현 계획, 외부에서 붙여넣은 기술 스택 설명이 이 문서와 충돌하면 기술 스택 판단은 이 문서를 따른다. 도메인 용어와 제품 불변조건은 `../domain/README.md`와 `../../CONTEXT.md`를 따른다.
+이 문서는 GARAK의 기술 스택 기준 문서다. 기존 제안서, 리뷰, 구현 계획, 외부에서 붙여넣은 기술 스택 설명이 이 문서와 충돌하면 기술 스택 판단은 이 문서를 따른다. 도메인 용어와 제품 불변조건은 `../domain/README.md`와 `../../CONTEXT.md`를 따른다.
 
 문서 책임: dependency, 프레임워크, 서버/DB/API 채택 여부, 기술 보류/제외 판단을 관리한다. 도메인 용어 정의는 `../domain/README.md`에 둔다.
 
@@ -14,7 +14,7 @@
 
 첨부 기술 스택은 모바일 악기 앱의 방향성, 저지연 오디오, Skia/Reanimated 기반 인터랙션, Zustand, i18n, Python 분석 스택의 장기 확장 가능성은 기존 기획과 대체로 맞다.
 
-다만 현재 MVP 기획과 충돌하는 항목이 있다. FastAPI, MySQL, Google 로그인, Claude API, Google 번역 API, Markov Chain 반주 생성, 서버 업로드, 공유 링크, Firestore 기반 저장 흐름은 현재 MVP 범위가 아니다. MVP는 네트워크 없는 로컬 악기 경험과 이벤트 중심 세션 모델을 먼저 검증한다.
+다만 현재 MVP 기획과 충돌하는 항목이 있다. FastAPI, MySQL, Google 로그인, Claude API, Google 번역 API, Markov Chain 반주 생성, 녹음 직후 원시 서버 업로드, 공유 링크, Firestore 기반 저장 흐름은 현재 MVP 기본 경로가 아니다. MVP는 네트워크 없는 로컬 악기 경험과 이벤트 중심 세션 모델을 먼저 검증하되, 완성 Work/내보낸 음원 저장 API는 백엔드 계약 확정 시 연결한다.
 
 따라서 확정 방향은 다음과 같다.
 
@@ -81,8 +81,9 @@
 
 | 목적 | 확정 기술/형태 | 적용 규칙 |
 | --- | --- | --- |
-| 도메인 언어 | TypeScript type/module | `PerformanceEvent`, `Session`, `Recording`, `SampleAssetManifest`, `DataReferenceManifest`를 코드의 핵심 계약으로 둔다. |
+| 도메인 언어 | TypeScript type/module | `PerformanceEvent`, `Session`, `Work`, `Track`, `Take`, `Recording`, `SampleAssetManifest`, `DataReferenceManifest`를 코드의 핵심 계약으로 둔다. |
 | 세션 저장 | 로컬 직렬화 JSON | MVP에서는 클라우드 동기화 없이 로컬 세션으로 충분하다. 오디오 파일보다 이벤트 로그가 기준 데이터다. |
+| 작업 저장 | 로컬 `Work` 직렬화 | 여러 테이크와 레이어 편집은 `Work` 기준으로 보존한다. 서버 저장이 붙어도 로컬 보존과 동기화 상태를 분리한다. |
 | 재생 에셋 | `SampleAssetManifest` + 로컬 오디오 파일 | 정상 연주 중 외부 API 또는 파일 I/O에 의존하지 않도록 악기 화면 진입 전에 preload한다. |
 | 분석/검증 참조 | `DataReferenceManifest` | 공공데이터, AI Hub, 검증 기준은 재생 에셋과 분리한다. |
 | 장단 추천 | 로컬 TypeScript `JangdanMatcher` | MVP는 BPM, 터치 밀도, 박자 안정성 기반의 설명 가능한 규칙 엔진으로 시작한다. |
@@ -101,7 +102,7 @@
 
 ## 4. MVP 이후 보류 스택
 
-아래 항목은 폐기하지 않는다. 다만 30초 가야금 코어 루프 검증 전에는 구현하지 않는다.
+아래 항목은 폐기하지 않는다. 다만 가야금 프로토타입의 30초 코어 루프와 세 악기 MVP 화면 흐름이 검증되기 전에는 구현하지 않는다.
 
 | 항목 | 보류 기술 | 보류 사유 | 재검토 시점 |
 | --- | --- | --- | --- |
@@ -112,7 +113,9 @@
 | 동적 번역 | Google 번역 API | 국악 용어 오역 리스크가 있고 MVP에는 정적 UI 번역이면 충분하다. | 사용자 생성/AI 생성 텍스트를 다국어로 제공할 때 |
 | 고급 음악 분석 | Python, librosa, numpy, scikit-learn-extra, dtaidistance | MVP는 이벤트 기반 장단 추천으로 충분하다. | 실제 음원/연주 분석 고도화 단계 |
 | Markov Chain 반주 | Python 학습 파이프라인 + `.pkl` | 기존 기획의 "AI는 오디오 파형을 직접 만들지 않는다" 원칙과 MVP 범위에 비해 과하다. | 로컬 장단 프리셋 MVP가 통과하고, 반주 다양성 문제가 명확해질 때 |
-| 서버 파일 업로드 | FastAPI static/audio, object storage | MVP 기준 데이터는 `Session` 이벤트 로그다. | 외부 공유/내보내기 기능이 제품 요구로 확정될 때 |
+| 서버 파일 업로드 | FastAPI static/audio, object storage | 정상 연주/녹음 경로에는 필요 없다. 단, 완성 Work/내보낸 음원 저장은 제품 요구로 부상했다. | 백엔드가 보관함/완성 곡 저장 API와 전송 단위를 확정할 때 |
+
+2026-06-19 회의 반영: 서버 파일 업로드는 여전히 S05 녹음 완료의 필수 후속 동작이 아니다. 프론트는 로컬 `Session`/`Take`/`Work` 보존을 먼저 보장하고, 서버 저장은 S07 `작업 저장`, S07 `내보내기`, S18 `보관함`, S23 `동기화` 중 백엔드와 합의한 트리거에 연결한다. 단일 `Session`까지 서버에 저장할지, 여러 레이어를 가진 `Work` 또는 `ExportedAudio`만 저장할지는 미정이다.
 
 ---
 
@@ -135,10 +138,10 @@
 
 | 패키지 | 확인 버전 | 메모 |
 | --- | --- | --- |
-| `react-native-audio-api` | `0.12.2` | Web Audio API 유사 구조, Expo plugin 제공 |
-| `expo-audio` | `56.0.11` | Expo 공식 playback/recording 라이브러리 |
+| `react-native-audio-api` | `0.11.7` | Week 1 저지연 sampler 후보. `0.12.2`는 현재 Expo SDK의 `react-native-worklets@0.5.1` 제약 때문에 보류. |
+| `expo-audio` | `1.1.1` | Expo SDK 54 bundled playback/recording 후보. |
 | `@shopify/react-native-skia` | `2.6.4` | React Native 그래픽스 |
-| `react-native-reanimated` | `4.4.1` | UI thread 애니메이션 |
+| `react-native-reanimated` | `4.1.1` | Expo SDK 54 호환 UI thread 애니메이션 dependency. |
 | `zustand` | `5.0.14` | React 상태 관리 |
 | `react-i18next` | `17.0.8` | 정적 UI 다국어 |
 | `react-native-audio-recorder-player` | `4.5.0` | deprecated. 사용하지 않음 |
@@ -170,3 +173,42 @@ Expo 패키지는 `npx expo install <package>`로 설치해 현재 Expo SDK와 �
   - React Native Audio API: https://docs.swmansion.com/react-native-audio-api/
   - Expo Audio: https://docs.expo.dev/versions/latest/sdk/audio/
   - React Native Skia: https://shopify.github.io/react-native-skia/docs/getting-started/installation/
+
+## 9. Lockfile Correction: Week 1 Audio Candidates
+
+This section supersedes the package-version rows in section 6 when they conflict with `package-lock.json`.
+
+| Package | Locked version | Reason |
+| --- | --- | --- |
+| `expo-audio` | `1.1.1` | Expo SDK 54 bundled playback/recording candidate. Installed with `npx expo install`. |
+| `expo-asset` | `12.0.13` | Required peer for `expo-audio`; pinned to the SDK 54-compatible version. |
+| `expo-dev-client` | `6.0.21` | Required for physical-device native audio candidate QA outside Expo Go. |
+| `react-native-audio-api` | `0.11.7` | Week 1 low-latency sampler candidate. `0.12.2` is held because it asks for `react-native-worklets >= 0.6.0`, while the current Expo SDK 54 scaffold uses `react-native-worklets@0.5.1`. |
+| `react-native-web` | `0.21.2` | Required for Expo Router web smoke checks. Web rendering can catch blank-screen/layout regressions, but it is not valid evidence for native audio latency or audio quality. |
+| `react-native-worklets` | `0.5.1` | Expo SDK 54-compatible version brought by the current Expo/Reanimated setup. |
+
+Audio engine comparison must use `src/audio/audioEngineEvaluation.ts` and the Day 5 QA checklist before selecting the final `SamplerEngine` implementation.
+
+Day 5 final selection must be recorded through `src/audio/audioEngineDecisionRecord.ts`. If either required candidate lacks `evidenceSource: 'physical-device'` probe values, or a candidate has duplicate physical-device probes in one record, the decision record remains `INCOMPLETE_DEVICE_EVIDENCE` and no engine is considered final.
+
+Week 1 native config keeps `react-native-audio-api` background/foreground-service capability disabled (`iosBackgroundMode: false`, `androidForegroundService: false`) because the spike validates foreground interaction first. Recording permission remains enabled for the 10-second capture check.
+
+Week 2 physical-device QA uses `expo-dev-client` and the `eas.json` `development` profile because native audio modules and microphone permissions cannot be validated in Expo Go. `npm run start:dev-client` is the Metro entry point after the development client is installed on the device.
+
+Candidate A `expo-audio` imports are isolated in `src/audio/expoAudioRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/expoAudioSamplerEngine.ts` and is tested through a port-injected runtime so domain, session, gesture, and prototype controller code do not depend on the concrete audio package.
+
+The Week 1 `expo-audio` runtime resolves/downloads sources before creating players and normalizes recording options through the same SDK helpers used by `useAudioRecorder`. This avoids reporting preload success before a playable URI exists and keeps the 10-second recording probe closer to the native path used by Expo.
+
+Candidate B `react-native-audio-api` imports are isolated in `src/audio/reactNativeAudioApiRuntime.ts`. The candidate `SamplerEngine` behavior lives in `src/audio/reactNativeAudioApiSamplerEngine.ts`: it decodes `SampleAssetManifest.fileUri` values into reusable `AudioBuffer` objects, creates a fresh `AudioBufferSourceNode` per pluck/glissando step, routes each voice through `BiquadFilterNode -> GainNode -> destination`, and applies pitch bend through `detune` automation.
+
+Day 4 touch validation uses `src/interaction/touchModel.ts` as the raw-touch boundary. It maps `PanResponder` touch frames into `PerformanceEvent[]` through `GestureMapper`, keeping UI coordinates out of the domain, session, and audio engine layers. `src/prototype/gayageumPrototypeController.ts` also provides deterministic Bend and Mute probe planners so candidate engines can repeat pitch-bend and mute/release smoke checks without depending only on manual touch precision.
+
+The prototype runtime host lives in `src/prototype/prototypeSamplerEngineHost.ts`. It may target `expo-audio` or `react-native-audio-api`, but it must keep the active runtime on `fake-prototype` until a complete 12-string `SampleAssetManifest` with no duplicate string indexes is available and the requested native candidate finishes preload. This prevents fake-engine counters, invalid manifests, or unpreloaded native engines from being mistaken for candidate evidence.
+
+Week 1 development samples are managed by `src/prototype/prototypeSampleManifest.ts`, `src/prototype/prototypeBundledSampleAssetUris.ts`, `scripts/generate-dev-gayageum-samples.ts`, and `assets/audio/gayageum-dev/`. Run `npm run samples:generate-dev` before Week 2 physical-device QA to regenerate the synthetic 12-string WAV fixtures. Manifest version `dev-synthetic-gayageum-2026-06-08` is valid only for technical engine validation; final release audio must use owned or licensed gayageum recordings and a new manifest version.
+
+Recording checks in the prototype go through `src/prototype/prototypeRecordingProbeController.ts`. Engines without `startRecordingProbe` and `stopRecordingProbe` must report `recording_probe_not_supported` instead of failing the session fallback path. `expo-audio` is currently the recording-capable candidate.
+
+Prototype sample paths must pass through `src/prototype/prototypeNativeSamplerEngineFactory.ts` before reaching a native audio engine. The factory rejects 12-string manifests with missing or duplicate string indexes, rejects blank or remote source `fileUri` values before asset resolution, resolves manifest `fileUri` values through the bundled sample registry in `src/prototype/prototypeBundledSampleAssetRegistry.ts` and Expo Asset, rejects blank or remote resolved URIs, then gives the engine a playable local URI. Web smoke runs intentionally do not start native audio candidates; they use the fake fallback for layout and inspector-state checks only.
+
+Event-session fallback evidence is formatted by `src/prototype/prototypeSessionFallback.ts` as `gukak-studio-session-fallback-v1`. The prototype inspector must keep that JSON copyable so Day 5 QA can preserve replayable `Session.events` when audio capture is unsupported or fails. `src/domain/replayPlanner.ts` turns a copied session and matching `SampleAssetManifest` into a deterministic replay schedule, `src/prototype/prototypeSessionReplayPreview.ts` reports waiting/ready/blocked replay readiness in the inspector, `src/prototype/gayageumPrototypeController.ts` dispatches ready replay schedules through the current `SamplerEngine`, and `npm run qa:session-fallback -- <session-fallback.json> [sample-manifest.json]` verifies the copied fallback before it is used as replay evidence.
