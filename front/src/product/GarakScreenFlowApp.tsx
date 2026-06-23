@@ -32,7 +32,8 @@ import {
   SettingsContent,
 } from './settingsScreens';
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
-import { GARAK_SCREEN_ASSETS, GarakWordmark } from './garakUi';
+import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
+import { GarakWordmark } from './garakUi';
 
 export function GarakScreenFlowApp() {
   const [state, setState] = useState(() => createInitialGarakProductState());

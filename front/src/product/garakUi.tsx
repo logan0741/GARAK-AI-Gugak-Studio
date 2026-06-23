@@ -12,33 +12,10 @@ import {
 } from 'react-native';
 import { InstrumentId } from '../studio/studioTypes';
 import { GARAK_COLORS, GARAK_LAYOUT, GARAK_RADIUS } from './garakDesignSystem';
+import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { getInstrumentName } from './productFixtures';
 
 type ButtonTone = 'navy' | 'red' | 'amber' | 'light' | 'outline';
-
-export const GARAK_SCREEN_ASSETS = {
-  brand: {
-    wordmark: require('../../assets/product/brand-wordmark-garak.png'),
-  },
-  shell: {
-    homeEntryButton: require('../../assets/product/home-entry-globe-button.png'),
-    profileAvatar: require('../../assets/product/profile-avatar.png'),
-  },
-  home: {
-    playHero: require('../../assets/product/home-play-hero.png'),
-  },
-  creation: {
-    jangguInstrumentPanel: require('../../assets/product/creation-instrument-janggu-panel.png'),
-  },
-  library: {
-    playlistPanel: require('../../assets/product/library-playlist-panel.png'),
-  },
-  share: {
-    myGarakPlayer: require('../../assets/product/share-my-garak-player.png'),
-    recentPlaybackStrip: require('../../assets/product/share-recent-playback-strip.png'),
-    recommendationHero: require('../../assets/product/share-recommendation-hero.png'),
-  },
-} as const;
 
 export function GarakWordmark({ small = false }: { small?: boolean }) {
   return (
@@ -227,7 +204,7 @@ export function VisualHero({
   );
 }
 
-export function FigmaImagePanel({
+export function ArtworkImagePanel({
   source,
   accessibilityLabel,
   style,
@@ -241,9 +218,9 @@ export function FigmaImagePanel({
   return (
     <ImageBackground
       accessibilityLabel={accessibilityLabel}
-      imageStyle={[styles.figmaPanelImage, imageStyle]}
+      imageStyle={[styles.artworkPanelImage, imageStyle]}
       source={source}
-      style={[styles.figmaPanel, style]}
+      style={[styles.artworkPanel, style]}
     />
   );
 }
@@ -405,16 +382,6 @@ const styles = StyleSheet.create({
     height: 35,
     width: 101,
   },
-  wordmark: {
-    color: GARAK_COLORS.brandRed,
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 0,
-    lineHeight: 30,
-  },
-  wordmarkSmall: {
-    fontSize: 27,
-  },
   heading: {
     gap: 10,
   },
@@ -500,14 +467,6 @@ const styles = StyleSheet.create({
   quickAccessItemActive: {
     backgroundColor: GARAK_COLORS.brandAmber,
   },
-  quickAccessText: {
-    color: GARAK_COLORS.surfaceCard,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  quickAccessTextActive: {
-    color: GARAK_COLORS.brandNavy,
-  },
   userGlyph: {
     alignItems: 'center',
     height: 20,
@@ -590,38 +549,12 @@ const styles = StyleSheet.create({
     right: 29,
     width: 110,
   },
-  figmaPanel: {
+  artworkPanel: {
     overflow: 'hidden',
     width: '100%',
   },
-  figmaPanelImage: {
+  artworkPanelImage: {
     resizeMode: 'cover',
-  },
-  heroInstrumentPlate: {
-    transform: [{ rotate: '-10deg' }, { scale: 1.05 }],
-  },
-  visualHeroTitle: {
-    color: GARAK_COLORS.surfaceCard,
-    fontSize: 27,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 34,
-  },
-  visualHeroDescription: {
-    color: '#E2E2E2',
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 10,
-    maxWidth: 210,
-  },
-  heroCta: {
-    alignSelf: 'flex-end',
-    backgroundColor: GARAK_COLORS.brandNavy,
-    borderColor: GARAK_COLORS.surfaceCard,
-    borderWidth: 1,
-    marginTop: 28,
-    minHeight: 59,
-    minWidth: 110,
   },
   instrumentVisual: {
     alignItems: 'center',

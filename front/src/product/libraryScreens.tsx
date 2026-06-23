@@ -1,9 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GARAK_COLORS } from './garakDesignSystem';
 import { GarakProductAction, GarakProductState } from './garakProductState';
+import { LibraryPlaylistArtworkPanel } from './garakArtworkPanels';
 import {
-  FigmaImagePanel,
-  GARAK_SCREEN_ASSETS,
   MiniTrackPlayer,
   PrimaryPillButton,
   ScreenHeading,
@@ -26,44 +25,16 @@ export function LibraryContent({
   return (
     <View style={styles.stack}>
       <ScreenHeading title={'나의 GARAK\n라이브러리'} />
-      <View style={styles.libraryFigmaPanelWrap}>
-        <FigmaImagePanel
-          accessibilityLabel="Figma 라이브러리 패널"
-          source={GARAK_SCREEN_ASSETS.library.playlistPanel}
-          style={styles.libraryFigmaPanel}
-          imageStyle={styles.libraryFigmaPanelImage}
-        />
-        <Pressable
-          accessibilityLabel="선택한 작업 열기"
-          accessibilityRole="button"
-          onPress={() =>
-            firstWork
-              ? dispatch({ type: 'openWork', workId: firstWork.id })
-              : dispatch({ type: 'navigate', target: 'S01' })
-          }
-          style={styles.libraryPanelHitArea}
-        />
-        <View style={styles.libraryNavHitRow}>
-          <Pressable
-            accessibilityLabel="라이브러리"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
-            style={styles.libraryNavHit}
-          />
-          <Pressable
-            accessibilityLabel="홈"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'navigate', target: 'S01' })}
-            style={styles.libraryNavHit}
-          />
-          <Pressable
-            accessibilityLabel="쉐어"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'navigate', target: 'S20' })}
-            style={styles.libraryNavHit}
-          />
-        </View>
-      </View>
+      <LibraryPlaylistArtworkPanel
+        onOpenSelectedWork={() =>
+          firstWork
+            ? dispatch({ type: 'openWork', workId: firstWork.id })
+            : dispatch({ type: 'navigate', target: 'S01' })
+        }
+        onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
+        onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
+        onShare={() => dispatch({ type: 'navigate', target: 'S20' })}
+      />
     </View>
   );
 }
@@ -142,34 +113,6 @@ function PlaylistPlaceholder({
 const styles = StyleSheet.create({
   stack: {
     gap: 18,
-  },
-  libraryFigmaPanelWrap: {
-    borderRadius: 34,
-    overflow: 'hidden',
-  },
-  libraryFigmaPanel: {
-    height: 633,
-  },
-  libraryFigmaPanelImage: {
-    borderRadius: 34,
-  },
-  libraryPanelHitArea: {
-    height: 410,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  libraryNavHitRow: {
-    bottom: 35,
-    flexDirection: 'row',
-    height: 64,
-    left: 84,
-    position: 'absolute',
-    width: 179,
-  },
-  libraryNavHit: {
-    flex: 1,
   },
   featureList: {
     gap: 10,

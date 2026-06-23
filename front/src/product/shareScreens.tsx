@@ -2,15 +2,17 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GARAK_COLORS } from './garakDesignSystem';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
+  ShareMyGarakPlayerArtwork,
+  ShareRecentPlaybackArtwork,
+  ShareRecommendationArtwork,
+} from './garakArtworkPanels';
+import {
   CategoryChips,
-  FigmaImagePanel,
-  GARAK_SCREEN_ASSETS,
   InstrumentVisual,
   MiniTrackPlayer,
   PrimaryPillButton,
   ScreenHeading,
   SecondaryPillButton,
-  garakCardShadow,
 } from './garakUi';
 
 type ProductDispatch = (action: GarakProductAction) => void;
@@ -57,18 +59,7 @@ export function ShareFeedContent({ dispatch }: { state: GarakProductState; dispa
     <View style={styles.stack}>
       <ScreenHeading title={'다양한 GARAK들을\n함께 공유해요'} />
       <CategoryChips labels={['Hot', 'K-pop', 'K-Drama OST', 'K-Minyo']} />
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'navigate', target: 'S21' })}
-        style={styles.shareHeroButton}
-      >
-        <FigmaImagePanel
-          accessibilityLabel="추천 가락 히어로"
-          source={GARAK_SCREEN_ASSETS.share.recommendationHero}
-          style={styles.shareHeroImage}
-          imageStyle={styles.shareHeroImageStyle}
-        />
-      </Pressable>
+      <ShareRecommendationArtwork onPress={() => dispatch({ type: 'navigate', target: 'S21' })} />
       <Pressable
         accessibilityRole="button"
         onPress={() => dispatch({ type: 'navigate', target: 'S17' })}
@@ -77,56 +68,13 @@ export function ShareFeedContent({ dispatch }: { state: GarakProductState; dispa
         <Text style={styles.sectionTitle}>나의 GARAK 공유하기</Text>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'navigate', target: 'S17' })}
-        style={styles.sharePlayerButton}
-      >
-        <FigmaImagePanel
-          accessibilityLabel="내 GARAK 플레이어"
-          source={GARAK_SCREEN_ASSETS.share.myGarakPlayer}
-          style={styles.sharePlayerImage}
-          imageStyle={styles.sharePlayerImageStyle}
-        />
-      </Pressable>
-      <View style={styles.shareRecentWrap}>
-        <FigmaImagePanel
-          accessibilityLabel="최근 재생한 GARAK 목록"
-          source={GARAK_SCREEN_ASSETS.share.recentPlaybackStrip}
-          style={styles.shareRecentStrip}
-        />
-        <View style={styles.shareRecentHitRow}>
-          {['Korea Minyo', 'K-Drama OST', 'My Arirang'].map((title) => (
-            <Pressable
-              accessibilityLabel={title}
-              accessibilityRole="button"
-              key={title}
-              onPress={() => dispatch({ type: 'navigate', target: 'S21' })}
-              style={styles.shareRecentHit}
-            />
-          ))}
-        </View>
-        <View style={styles.shareNavHitRow}>
-          <Pressable
-            accessibilityLabel="라이브러리"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
-            style={styles.shareNavHit}
-          />
-          <Pressable
-            accessibilityLabel="홈"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'navigate', target: 'S01' })}
-            style={styles.shareNavHit}
-          />
-          <Pressable
-            accessibilityLabel="쉐어"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'navigate', target: 'S20' })}
-            style={styles.shareNavHit}
-          />
-        </View>
-      </View>
+      <ShareMyGarakPlayerArtwork onPress={() => dispatch({ type: 'navigate', target: 'S17' })} />
+      <ShareRecentPlaybackArtwork
+        onOpenRecent={() => dispatch({ type: 'navigate', target: 'S21' })}
+        onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
+        onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
+        onShare={() => dispatch({ type: 'navigate', target: 'S20' })}
+      />
     </View>
   );
 }
@@ -170,89 +118,6 @@ const styles = StyleSheet.create({
   rowPrimary: {
     flex: 1,
   },
-  shareHeroButton: {
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  shareHeroImage: {
-    height: 259,
-  },
-  shareHeroImageStyle: {
-    borderRadius: 28,
-  },
-  sharePlayerButton: {
-    borderRadius: 26,
-    marginTop: -16,
-    overflow: 'hidden',
-  },
-  sharePlayerImage: {
-    height: 82,
-  },
-  sharePlayerImageStyle: {
-    borderRadius: 26,
-  },
-  shareRecentWrap: {
-    height: 174,
-    marginRight: -47,
-    overflow: 'hidden',
-    position: 'relative',
-    width: 369,
-  },
-  shareRecentStrip: {
-    height: 174,
-    width: 369,
-  },
-  shareRecentHitRow: {
-    flexDirection: 'row',
-    gap: 12,
-    height: 96,
-    left: 0,
-    position: 'absolute',
-    top: 0,
-    width: 369,
-  },
-  shareRecentHit: {
-    width: 132,
-  },
-  shareNavHitRow: {
-    flexDirection: 'row',
-    height: 64,
-    left: 83,
-    position: 'absolute',
-    top: 64,
-    width: 179,
-  },
-  shareNavHit: {
-    flex: 1,
-  },
-  recommendationCard: {
-    backgroundColor: GARAK_COLORS.brandNavy,
-    borderRadius: 24,
-    minHeight: 230,
-    overflow: 'hidden',
-    padding: 18,
-    ...garakCardShadow,
-  },
-  recommendationArtwork: {
-    backgroundColor: GARAK_COLORS.surfaceCanvas,
-    borderRadius: 20,
-    height: 126,
-    justifyContent: 'center',
-    marginBottom: 14,
-    overflow: 'hidden',
-  },
-  recommendationTitle: {
-    color: GARAK_COLORS.surfaceCard,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  recommendationText: {
-    color: GARAK_COLORS.surfaceSoft,
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 7,
-    maxWidth: 210,
-  },
   sectionHeaderRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -267,29 +132,6 @@ const styles = StyleSheet.create({
   chevron: {
     color: GARAK_COLORS.brandNavy,
     fontSize: 24,
-    fontWeight: '800',
-  },
-  recentRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  recentCard: {
-    backgroundColor: GARAK_COLORS.surfaceCard,
-    borderRadius: 18,
-    flex: 1,
-    minHeight: 134,
-    overflow: 'hidden',
-    padding: 10,
-  },
-  recentThumb: {
-    backgroundColor: GARAK_COLORS.brandNavy,
-    borderRadius: 14,
-    height: 72,
-    marginBottom: 10,
-  },
-  recentTitle: {
-    color: GARAK_COLORS.textPrimary,
-    fontSize: 11,
     fontWeight: '800',
   },
   detailHero: {

@@ -2,9 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { InstrumentId } from '../studio/studioTypes';
 import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakProductAction, GarakProductState } from './garakProductState';
+import { InstrumentSelectionArtworkPanel } from './garakArtworkPanels';
 import {
-  FigmaImagePanel,
-  GARAK_SCREEN_ASSETS,
   InstrumentBadge,
   InstrumentVisual,
   MiniTrackPlayer,
@@ -79,12 +78,7 @@ export function InstrumentSelectContent({
         onSelect={(instrument) => dispatch({ type: 'selectInstrument', instrument })}
       />
       {selectedInstrument === DEFAULT_FREE_CREATION_INSTRUMENT ? (
-        <FigmaImagePanel
-          accessibilityLabel="장구 악기 선택 미리보기"
-          source={GARAK_SCREEN_ASSETS.creation.jangguInstrumentPanel}
-          style={styles.instrumentFigmaPanel}
-          imageStyle={styles.instrumentFigmaPanelImage}
-        />
+        <InstrumentSelectionArtworkPanel />
       ) : (
         <View style={styles.instrumentPreviewCard}>
           <InstrumentVisual instrument={selectedInstrument} />
@@ -455,12 +449,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 22,
     ...garakCardShadow,
-  },
-  instrumentFigmaPanel: {
-    height: 435,
-  },
-  instrumentFigmaPanelImage: {
-    borderRadius: GARAK_RADIUS.hero,
   },
   playPreviewCard: {
     backgroundColor: GARAK_COLORS.surfaceCard,
