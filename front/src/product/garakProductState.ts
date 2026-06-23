@@ -20,6 +20,7 @@ import {
   Work,
 } from '../studio/studioTypes';
 import {
+  DEFAULT_FREE_CREATION_INSTRUMENT,
   GARAK_BRAND,
   getInstrumentName,
   getPracticeSongTitle,
@@ -150,6 +151,7 @@ export function applyProductAction(
     case 'startWithDefaults':
       return {
         ...state,
+        selectedInstrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
         screenFlow: pushTarget(state.screenFlow, 'S05'),
       };
     case 'completePerformance':
@@ -368,7 +370,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
 function completePerformance(state: GarakProductState, events: PerformanceEvent[]): GarakProductState {
   const nextCounters = incrementCounters(state.counters, ['work', 'track', 'take']);
   const now = state.now();
-  const instrument = state.selectedInstrument ?? 'gayageum';
+  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const work = autoSaveTakeAsWork({
     workId: `work-${nextCounters.work}`,
     trackId: `track-${nextCounters.track}`,
@@ -438,7 +440,7 @@ function applyInstrumentTrack(
   const nextWork = addInstrumentTrack(currentWork, {
     trackId: `track-${nextCounters.track}`,
     takeId: `take-${nextCounters.take}`,
-    instrument: state.selectedInstrument ?? 'gayageum',
+    instrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
     events,
     createdAt: now,
     durationBeats: 4,
@@ -588,7 +590,7 @@ function defaultPerformanceEvent(): PerformanceEvent {
 }
 
 function getInstrumentLabel(state: GarakProductState): string {
-  return getInstrumentName(state.selectedInstrument ?? 'gayageum');
+  return getInstrumentName(state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT);
 }
 
 function selectedSongLabel(state: GarakProductState): string {

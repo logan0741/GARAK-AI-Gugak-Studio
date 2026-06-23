@@ -1,5 +1,15 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GARAK_COLORS } from './garakDesignSystem';
 import { GarakProductAction, GarakProductState } from './garakProductState';
+import {
+  FigmaImagePanel,
+  GARAK_SCREEN_ASSETS,
+  MiniTrackPlayer,
+  PrimaryPillButton,
+  ScreenHeading,
+  SecondaryPillButton,
+  garakCardShadow,
+} from './garakUi';
 import { getInstrumentName } from './productFixtures';
 
 type ProductDispatch = (action: GarakProductAction) => void;
@@ -11,42 +21,49 @@ export function LibraryContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const firstWork = state.library.works[0];
+
   return (
     <View style={styles.stack}>
-      <Text style={styles.sectionTitle}>작업</Text>
-      {state.library.works.length === 0 ? (
-        <EmptyState label="아직 만든 작업이 없어요." />
-      ) : (
-        state.library.works.map((work) => (
+      <ScreenHeading title={'나의 GARAK\n라이브러리'} />
+      <View style={styles.libraryFigmaPanelWrap}>
+        <FigmaImagePanel
+          accessibilityLabel="Figma 라이브러리 패널"
+          source={GARAK_SCREEN_ASSETS.library.playlistPanel}
+          style={styles.libraryFigmaPanel}
+          imageStyle={styles.libraryFigmaPanelImage}
+        />
+        <Pressable
+          accessibilityLabel="선택한 작업 열기"
+          accessibilityRole="button"
+          onPress={() =>
+            firstWork
+              ? dispatch({ type: 'openWork', workId: firstWork.id })
+              : dispatch({ type: 'navigate', target: 'S01' })
+          }
+          style={styles.libraryPanelHitArea}
+        />
+        <View style={styles.libraryNavHitRow}>
           <Pressable
+            accessibilityLabel="라이브러리"
             accessibilityRole="button"
-            key={work.id}
-            onPress={() => dispatch({ type: 'openWork', workId: work.id })}
-            style={styles.listItem}
-          >
-            <Text style={styles.itemTitle}>{work.title}</Text>
-            <Text style={styles.itemMeta}>{work.tracks.length} tracks · 로컬</Text>
-          </Pressable>
-        ))
-      )}
-      <Text style={styles.sectionTitle}>내보낸 음원 / 결과</Text>
-      {[...state.library.exportedAudios, ...state.library.practiceResults].length === 0 ? (
-        <EmptyState label="아직 내보낸 음원이나 결과가 없어요." />
-      ) : (
-        [...state.library.exportedAudios, ...state.library.practiceResults].map((item) => (
+            onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
+            style={styles.libraryNavHit}
+          />
           <Pressable
+            accessibilityLabel="홈"
             accessibilityRole="button"
-            key={item.id}
-            onPress={() => dispatch({ type: 'navigate', target: 'S19' })}
-            style={styles.listItem}
-          >
-            <Text style={styles.itemTitle}>
-              {item.kind === 'exported_audio' ? item.title : `${getInstrumentName(item.instrument)} 연습 결과`}
-            </Text>
-            <Text style={styles.itemMeta}>{item.shareState}</Text>
-          </Pressable>
-        ))
-      )}
+            onPress={() => dispatch({ type: 'navigate', target: 'S01' })}
+            style={styles.libraryNavHit}
+          />
+          <Pressable
+            accessibilityLabel="쉐어"
+            accessibilityRole="button"
+            onPress={() => dispatch({ type: 'navigate', target: 'S20' })}
+            style={styles.libraryNavHit}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -62,98 +79,215 @@ export function PlayerDetailContent({
 
   return (
     <View style={styles.stack}>
-      <View style={styles.playerPanel}>
-        <Text style={styles.itemTitle}>{exported?.title ?? '연주 상세'}</Text>
-        <View style={styles.progressBar}>
-          <View style={styles.progressFill} />
+      <ScreenHeading title="가락 미리듣기" compact />
+      <MiniTrackPlayer title={exported?.title ?? 'My Arirang'} tone="navy" />
+      <View style={styles.detailCard}>
+        <Text style={styles.rowTitle}>{exported?.title ?? '연주 상세'}</Text>
+        <Text style={styles.rowMeta}>사용 악기 {exported?.instrumentNames.join(', ') || '가야금'}</Text>
+        <View style={styles.waveform}>
+          {Array.from({ length: 18 }, (_, index) => (
+            <View key={index} style={[styles.wave, { height: 8 + (index % 5) * 8 }]} />
+          ))}
         </View>
-        <Text style={styles.itemMeta}>사용 악기 {exported?.instrumentNames.join(', ') || '가야금'}</Text>
       </View>
       <View style={styles.buttonRow}>
-        <SecondaryButton label="편집으로 열기" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
-        <SecondaryButton label="공유" onPress={() => dispatch({ type: 'navigate', target: 'S17' })} />
+        <SecondaryPillButton label="편집으로 열기" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
+        <SecondaryPillButton label="공유" onPress={() => dispatch({ type: 'navigate', target: 'S17' })} />
       </View>
     </View>
   );
 }
 
-function EmptyState({ label }: { label: string }) {
+function EmptyState({
+  title,
+  body,
+  cta,
+  onPress,
+}: {
+  title: string;
+  body: string;
+  cta: string;
+  onPress: () => void;
+}) {
   return (
     <View style={styles.emptyState}>
-      <Text style={styles.itemMeta}>{label}</Text>
+      <Text style={styles.rowTitle}>{title}</Text>
+      <Text style={styles.rowMeta}>{body}</Text>
+      <PrimaryPillButton label={cta} tone="amber" onPress={onPress} />
     </View>
   );
 }
 
-function SecondaryButton({ label, onPress }: { label: string; onPress: () => void }) {
+function PlaylistPlaceholder({
+  title,
+  date,
+  active,
+}: {
+  title: string;
+  date: string;
+  active?: boolean;
+}) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.secondaryButton}>
-      <Text style={styles.secondaryButtonText}>{label}</Text>
-    </Pressable>
+    <View style={[styles.playlistRow, active ? styles.playlistRowActive : undefined]}>
+      <View style={[styles.playlistDot, active ? styles.playlistDotActive : undefined]} />
+      <View style={styles.playlistCopy}>
+        <Text style={[styles.playlistTitle, active ? styles.playlistTitleActive : undefined]}>{title}</Text>
+        <Text style={styles.playlistDate}>{date}</Text>
+      </View>
+      <Text style={styles.playlistAction}>▶</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   stack: {
-    gap: 12,
+    gap: 18,
   },
-  sectionTitle: {
-    color: '#555555',
-    fontSize: 16,
-    fontWeight: '700',
+  libraryFigmaPanelWrap: {
+    borderRadius: 34,
+    overflow: 'hidden',
   },
-  listItem: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
-    gap: 5,
-    padding: 16,
+  libraryFigmaPanel: {
+    height: 633,
   },
-  itemTitle: {
-    color: '#555555',
-    fontSize: 16,
-    fontWeight: '700',
+  libraryFigmaPanelImage: {
+    borderRadius: 34,
   },
-  itemMeta: {
-    color: '#777777',
+  libraryPanelHitArea: {
+    height: 410,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  libraryNavHitRow: {
+    bottom: 35,
+    flexDirection: 'row',
+    height: 64,
+    left: 84,
+    position: 'absolute',
+    width: 179,
+  },
+  libraryNavHit: {
+    flex: 1,
+  },
+  featureList: {
+    gap: 10,
+  },
+  libraryHeroRow: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 22,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 74,
+    paddingHorizontal: 20,
+    ...garakCardShadow,
+  },
+  libraryHeroRowActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+  },
+  rowTitle: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  rowTitleLight: {
+    color: GARAK_COLORS.surfaceCard,
+  },
+  rowMeta: {
+    color: GARAK_COLORS.textSecondary,
     fontSize: 12,
+    marginTop: 5,
+  },
+  rowMetaLight: {
+    color: GARAK_COLORS.surfaceSoft,
+  },
+  rowAction: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  rowActionLight: {
+    color: GARAK_COLORS.surfaceCard,
+  },
+  sectionLabel: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  playlist: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 24,
+    gap: 6,
+    padding: 10,
+  },
+  playlistRow: {
+    alignItems: 'center',
+    borderRadius: 17,
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 55,
+    paddingHorizontal: 12,
+  },
+  playlistRowActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+  },
+  playlistDot: {
+    backgroundColor: GARAK_COLORS.surfaceSoft,
+    borderRadius: 19,
+    height: 37,
+    width: 37,
+  },
+  playlistDotActive: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+  },
+  playlistCopy: {
+    flex: 1,
+  },
+  playlistTitle: {
+    color: GARAK_COLORS.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  playlistTitleActive: {
+    color: GARAK_COLORS.surfaceCard,
+  },
+  playlistDate: {
+    color: '#A2A2A2',
+    fontSize: 10,
+    marginTop: 4,
+  },
+  playlistAction: {
+    color: GARAK_COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
   },
   emptyState: {
-    backgroundColor: '#eeeeee',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 24,
+    gap: 12,
+    padding: 18,
   },
-  playerPanel: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
-    gap: 18,
+  detailCard: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 24,
+    gap: 16,
     padding: 20,
   },
-  progressBar: {
-    backgroundColor: '#eeeeee',
-    borderRadius: 4,
-    height: 8,
+  waveform: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
+    height: 58,
   },
-  progressFill: {
-    backgroundColor: '#8f8f8f',
+  wave: {
+    backgroundColor: GARAK_COLORS.brandAmber,
     borderRadius: 4,
-    height: 8,
-    width: '38%',
+    flex: 1,
   },
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#dedede',
-    borderRadius: 18,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  secondaryButtonText: {
-    color: '#555555',
-    fontSize: 13,
-    fontWeight: '700',
   },
 });

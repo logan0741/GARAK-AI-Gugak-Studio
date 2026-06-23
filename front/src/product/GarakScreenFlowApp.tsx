@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   AccompanimentTrackContent,
   AddTrackContent,
@@ -16,7 +16,6 @@ import {
   createInitialGarakProductState,
   GarakProductAction,
   GarakProductState,
-  getCurrentScreenSummary,
 } from './garakProductState';
 import { LibraryContent, PlayerDetailContent } from './libraryScreens';
 import {
@@ -25,7 +24,6 @@ import {
   PracticeResultContent,
   PracticeSongSelectContent,
 } from './practiceScreens';
-import { GARAK_BRAND } from './productFixtures';
 import { ShareFeedContent, SharedDetailContent, SharePrepareContent } from './shareScreens';
 import {
   IntroGuideContent,
@@ -33,12 +31,17 @@ import {
   LoginSyncContent,
   SettingsContent,
 } from './settingsScreens';
+import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
+import { GARAK_SCREEN_ASSETS, GarakWordmark } from './garakUi';
 
 export function GarakScreenFlowApp() {
   const [state, setState] = useState(() => createInitialGarakProductState());
-  const summary = useMemo(() => getCurrentScreenSummary(state), [state]);
+  const currentScreen = state.screenFlow.currentScreen;
+  const isHome = currentScreen === 'S01';
+  const isLibrary = currentScreen === 'S18';
+  const isShare = currentScreen === 'S20';
   const canOpenLanguage =
-    state.screenFlow.currentScreen === 'S01' || state.screenFlow.currentScreen === 'S22';
+    currentScreen === 'S01' || currentScreen === 'S22';
 
   function dispatch(action: GarakProductAction) {
     setState((current) => applyProductAction(current, action));
@@ -47,39 +50,91 @@ export function GarakScreenFlowApp() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.phoneFrame}>
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'back' })}
-            style={styles.headerButton}
-          >
-            <Text style={styles.headerButtonText}>‹</Text>
-          </Pressable>
-          <View style={styles.logoBlock}>
-            <Text style={styles.logo}>{GARAK_BRAND.serviceName}</Text>
-            <Text style={styles.subtitle}>{GARAK_BRAND.subtitle}</Text>
+        <View style={styles.statusBar}>
+          <Text style={styles.statusTime}>9:41</Text>
+          <View style={styles.statusIconGroup}>
+            <View style={styles.signalBars}>
+              <View style={[styles.signalBar, styles.signalBarSmall]} />
+              <View style={[styles.signalBar, styles.signalBarMedium]} />
+              <View style={[styles.signalBar, styles.signalBarLarge]} />
+            </View>
+            <View style={styles.wifiGlyph}>
+              <View style={styles.wifiDot} />
+            </View>
+            <View style={styles.batteryGlyph}>
+              <View style={styles.batteryFill} />
+            </View>
+            <View style={styles.batteryCap} />
           </View>
-          {canOpenLanguage ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
-              style={styles.headerButton}
-            >
-              <Text style={styles.headerButtonText}>◎</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.headerButtonSpacer} />
-          )}
+        </View>
+        <View style={styles.header}>
+          <View style={[styles.headerLeftSlot, isLibrary ? styles.headerWideSlot : undefined]}>
+            {isHome ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => dispatch({ type: 'navigate', target: 'S03' })}
+                style={styles.headerButton}
+              >
+                <Image source={GARAK_SCREEN_ASSETS.shell.homeEntryButton} style={styles.headerIconImage} />
+              </Pressable>
+            ) : isLibrary || isShare ? null : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => dispatch({ type: 'back' })}
+                style={styles.headerButton}
+              >
+                <Text style={styles.headerButtonText}>‹</Text>
+              </Pressable>
+            )}
+          </View>
+          <GarakWordmark small />
+          <View style={[styles.headerRightSlot, isLibrary ? styles.headerWideSlot : undefined]}>
+            {isHome || isShare ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
+                style={styles.avatarButton}
+              >
+                <Image source={GARAK_SCREEN_ASSETS.shell.profileAvatar} style={styles.avatarImage} />
+              </Pressable>
+            ) : isLibrary ? (
+              <View style={styles.headerActionGroup}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
+                  style={styles.headerButton}
+                >
+                  <Text style={styles.headerButtonText}>...</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => dispatch({ type: 'navigate', target: 'S01' })}
+                  style={styles.headerButton}
+                >
+                  <Text style={styles.headerButtonText}>+</Text>
+                </Pressable>
+              </View>
+            ) : canOpenLanguage ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
+                style={styles.headerButton}
+              >
+                <Text style={styles.headerButtonText}>◎</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.headerButtonSpacer} />
+            )}
+          </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.titleBlock}>
-            <Text style={styles.eyebrow}>{summary.eyebrow}</Text>
-            <Text style={styles.screenTitle}>{summary.title}</Text>
-            <Text style={styles.description}>{summary.description}</Text>
-          </View>
+        <ScrollView
+          contentContainerStyle={[styles.content, isHome ? styles.homeContent : undefined]}
+          showsVerticalScrollIndicator={false}
+        >
           {renderScreenContent(state, dispatch)}
         </ScrollView>
+        <View style={styles.homeIndicator} />
       </View>
     </SafeAreaView>
   );
@@ -139,77 +194,161 @@ function renderScreenContent(
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.surfaceSoft,
     flex: 1,
   },
   phoneFrame: {
     alignSelf: 'center',
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.surfaceApp,
     flex: 1,
-    maxWidth: 430,
+    maxHeight: GARAK_LAYOUT.figmaPhoneHeight,
+    maxWidth: GARAK_LAYOUT.figmaPhoneWidth,
+    overflow: 'hidden',
     width: '100%',
+  },
+  statusBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    height: 50,
+    justifyContent: 'space-between',
+    paddingHorizontal: 28,
+    paddingTop: 14,
+  },
+  statusTime: {
+    color: GARAK_COLORS.inkBlack,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  statusIconGroup: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
+  },
+  signalBars: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: 2,
+    height: 12,
+  },
+  signalBar: {
+    backgroundColor: GARAK_COLORS.inkBlack,
+    borderRadius: 1,
+    width: 3,
+  },
+  signalBarSmall: {
+    height: 5,
+  },
+  signalBarMedium: {
+    height: 8,
+  },
+  signalBarLarge: {
+    height: 11,
+  },
+  wifiGlyph: {
+    borderColor: GARAK_COLORS.inkBlack,
+    borderRadius: 8,
+    borderTopWidth: 3,
+    height: 10,
+    justifyContent: 'flex-end',
+    width: 14,
+  },
+  wifiDot: {
+    alignSelf: 'center',
+    backgroundColor: GARAK_COLORS.inkBlack,
+    borderRadius: 2,
+    height: 3,
+    width: 3,
+  },
+  batteryGlyph: {
+    borderColor: GARAK_COLORS.inkBlack,
+    borderRadius: 3,
+    borderWidth: 1,
+    height: 11,
+    justifyContent: 'center',
+    padding: 1,
+    width: 21,
+  },
+  batteryFill: {
+    backgroundColor: GARAK_COLORS.inkBlack,
+    borderRadius: 2,
+    flex: 1,
+  },
+  batteryCap: {
+    backgroundColor: GARAK_COLORS.inkBlack,
+    borderRadius: 1,
+    height: 4,
+    marginLeft: -4,
+    width: 2,
   },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 72,
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    height: 56,
+    paddingHorizontal: GARAK_LAYOUT.horizontalPadding,
+  },
+  headerLeftSlot: {
+    alignItems: 'flex-start',
+    width: GARAK_LAYOUT.headerIconSize,
+  },
+  headerRightSlot: {
+    alignItems: 'flex-end',
+    width: GARAK_LAYOUT.headerIconSize,
+  },
+  headerWideSlot: {
+    width: 76,
+  },
+  headerActionGroup: {
+    flexDirection: 'row',
+    gap: 8,
   },
   headerButton: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: GARAK_COLORS.surfaceCard,
     borderRadius: 17,
-    height: 34,
+    height: GARAK_LAYOUT.headerIconSize,
     justifyContent: 'center',
-    width: 34,
+    width: GARAK_LAYOUT.headerIconSize,
   },
   headerButtonSpacer: {
-    height: 34,
-    width: 34,
+    height: GARAK_LAYOUT.headerIconSize,
+    width: GARAK_LAYOUT.headerIconSize,
   },
   headerButtonText: {
-    color: '#777777',
-    fontSize: 20,
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 18,
     fontWeight: '700',
   },
-  logoBlock: {
-    alignItems: 'center',
+  headerIconImage: {
+    height: GARAK_LAYOUT.headerIconSize,
+    width: GARAK_LAYOUT.headerIconSize,
   },
-  logo: {
-    color: '#a0a0a0',
-    fontSize: 22,
-    fontWeight: '800',
+  avatarButton: {
+    borderRadius: 17,
+    height: GARAK_LAYOUT.headerIconSize,
+    overflow: 'hidden',
+    width: GARAK_LAYOUT.headerIconSize,
   },
-  subtitle: {
-    color: '#a0a0a0',
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0,
+  avatarImage: {
+    height: '100%',
+    width: '100%',
   },
   content: {
     gap: 18,
-    padding: 24,
-    paddingBottom: 36,
+    paddingHorizontal: GARAK_LAYOUT.horizontalPadding,
+    paddingTop: 23,
+    paddingBottom: 72,
   },
-  titleBlock: {
-    gap: 6,
+  homeContent: {
+    paddingTop: 69,
   },
-  eyebrow: {
-    color: '#9c9c9c',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  screenTitle: {
-    color: '#4f4f4f',
-    fontSize: 28,
-    fontWeight: '500',
-    lineHeight: 34,
-  },
-  description: {
-    color: '#858585',
-    fontSize: 13,
-    lineHeight: 19,
+  homeIndicator: {
+    alignSelf: 'center',
+    backgroundColor: GARAK_COLORS.inkBlack,
+    borderRadius: 2,
+    bottom: 8,
+    height: 4,
+    position: 'absolute',
+    width: 135,
   },
 });

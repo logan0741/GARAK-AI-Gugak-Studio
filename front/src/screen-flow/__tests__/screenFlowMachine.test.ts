@@ -180,6 +180,33 @@ test('allows direct navigate only through current screen transitions', () => {
   expect(next.history).toEqual(['S07', 'S08']);
 });
 
+test('supports quick access navigation among home, library, share, and settings surfaces', () => {
+  const libraryState = createInitialScreenFlowState({
+    currentScreen: 'S18',
+    history: ['S01'],
+  });
+  const shareState = createInitialScreenFlowState({
+    currentScreen: 'S20',
+    history: ['S01'],
+  });
+  const settingsState = createInitialScreenFlowState({
+    currentScreen: 'S22',
+    history: ['S01'],
+  });
+
+  expect(transitionScreenFlow(libraryState, { type: 'navigate', target: 'S20' }).currentScreen).toBe('S20');
+  expect(transitionScreenFlow(libraryState, { type: 'navigate', target: 'S01' }).currentScreen).toBe('S01');
+  expect(transitionScreenFlow(libraryState, { type: 'navigate', target: 'S18' })).toEqual(libraryState);
+
+  expect(transitionScreenFlow(shareState, { type: 'navigate', target: 'S18' }).currentScreen).toBe('S18');
+  expect(transitionScreenFlow(shareState, { type: 'navigate', target: 'S01' }).currentScreen).toBe('S01');
+  expect(transitionScreenFlow(shareState, { type: 'navigate', target: 'S20' })).toEqual(shareState);
+
+  expect(transitionScreenFlow(settingsState, { type: 'navigate', target: 'S18' }).currentScreen).toBe('S18');
+  expect(transitionScreenFlow(settingsState, { type: 'navigate', target: 'S20' }).currentScreen).toBe('S20');
+  expect(transitionScreenFlow(settingsState, { type: 'navigate', target: 'S01' }).currentScreen).toBe('S01');
+});
+
 test('rejects direct navigate to implemented screens that are not reachable from the current screen', () => {
   const state = createInitialScreenFlowState({
     currentScreen: 'S04',

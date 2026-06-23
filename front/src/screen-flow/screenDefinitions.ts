@@ -215,6 +215,8 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
       { action: 'openWork', target: 'S07' },
       { action: 'listen', target: 'S19' },
       { action: 'share', target: 'S17' },
+      { action: 'home', target: 'S01' },
+      { action: 'shareFeed', target: 'S20' },
     ],
   },
   S19: {
@@ -236,6 +238,8 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     transitions: [
       { action: 'detail', target: 'S21' },
       { action: 'remix', target: 'S07' },
+      { action: 'home', target: 'S01' },
+      { action: 'library', target: 'S18' },
     ],
   },
   S21: {
@@ -258,6 +262,8 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
       { action: 'loginAndLoadMySongs', target: 'S23' },
       { action: 'changeLanguage', target: 'S02' },
       { action: 'manageLibrary', target: 'S18' },
+      { action: 'home', target: 'S01' },
+      { action: 'shareFeed', target: 'S20' },
     ],
   },
   S23: {

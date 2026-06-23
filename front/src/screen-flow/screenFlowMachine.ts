@@ -126,6 +126,10 @@ function resolveNavigationTarget(state: ScreenFlowState, screenId: string): Impl
 
   assertImplementedScreenId(screenId);
 
+  if (screenId === state.currentScreen) {
+    return screenId;
+  }
+
   if (!hasTransitionToTarget(state.currentScreen, screenId)) {
     throw new Error(`${screenId} is not reachable from ${state.currentScreen}`);
   }

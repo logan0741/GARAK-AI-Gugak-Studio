@@ -1,6 +1,24 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { InstrumentId } from '../studio/studioTypes';
+import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
+  FigmaImagePanel,
+  GARAK_SCREEN_ASSETS,
+  InstrumentBadge,
+  InstrumentVisual,
+  MiniTrackPlayer,
+  PrimaryPillButton,
+  ProgressSteps,
+  QuickAccessNav,
+  ScreenHeading,
+  SecondaryPillButton,
+  TrackPill,
+  VisualHero,
+  garakCardShadow,
+} from './garakUi';
+import {
+  DEFAULT_FREE_CREATION_INSTRUMENT,
   JANGDAN_PRESETS,
   LOCKED_FUTURE_INSTRUMENT_SLOTS,
   MVP_INSTRUMENTS,
@@ -8,64 +26,30 @@ import {
 } from './productFixtures';
 
 type ProductDispatch = (action: GarakProductAction) => void;
+const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
 
 export function HomeScreenContent({
-  state,
   dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const isFreeCreation = state.selectedMode === 'freeCreation';
-
   return (
-    <View style={styles.stack}>
-      <Text style={styles.question}>연주 모드를 선택해요.</Text>
-      <View style={styles.segmented}>
-        <ModeButton
-          active={isFreeCreation}
-          label="자유창작 모드"
-          onPress={() => dispatch({ type: 'selectMode', mode: 'freeCreation' })}
-        />
-        <ModeButton
-          active={!isFreeCreation}
-          label="따라하기 모드"
-          onPress={() => dispatch({ type: 'selectMode', mode: 'practice' })}
-        />
-      </View>
-      <View style={styles.heroCard}>
-        <Text style={styles.heroTitle}>
-          {isFreeCreation ? '내 가락을 직접 만들기' : '민요를 따라 연주하기'}
-        </Text>
-        <Text style={styles.bodyText}>
-          {isFreeCreation
-            ? '악기를 고르고 바로 연주를 시작해요. 녹음이 끝나면 작업으로 자동 저장됩니다.'
-            : '아리랑, 도라지, 뱃노래 중 하나를 고르고 가이드에 맞춰 연습해요.'}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => dispatch({ type: 'next' })}
-          style={styles.primaryButton}
-        >
-          <Text style={styles.primaryButtonText}>Next</Text>
-        </Pressable>
-      </View>
-      <View style={styles.homeQuickAccess}>
-        <Pressable onPress={() => dispatch({ type: 'navigate', target: 'S22' })}>
-          <Text style={styles.quickAccessText}>마이</Text>
-        </Pressable>
-        <Text style={[styles.quickAccessText, styles.quickAccessActive]}>홈</Text>
-        <Pressable onPress={() => dispatch({ type: 'navigate', target: 'S20' })}>
-          <Text style={styles.quickAccessText}>쉐어</Text>
-        </Pressable>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'navigate', target: 'S03' })}
-        style={styles.ghostButton}
-      >
-        <Text style={styles.ghostButtonText}>입문 가이드</Text>
-      </Pressable>
+    <View style={styles.screenStack}>
+      <VisualHero
+        title="GARAK과 함께 국악 연주하기"
+        description="전통 악기를 연주하고, 장단 추천으로 자신만의 가락을 완성할 수 있습니다."
+        cta="PLAY"
+        onPress={() => dispatch({ type: 'next' })}
+      />
+
+      <QuickAccessNav
+        active="home"
+        onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
+        onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
+        onShare={() => dispatch({ type: 'navigate', target: 'S20' })}
+        style={styles.homeQuickAccess}
+      />
     </View>
   );
 }
@@ -77,60 +61,45 @@ export function InstrumentSelectContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const selectedInstrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+
+  function confirmSelectionAndContinue() {
+    if (state.selectedInstrument === undefined) {
+      dispatch({ type: 'selectInstrument', instrument: selectedInstrument });
+    }
+
+    dispatch({ type: 'next' });
+  }
+
   return (
-    <View style={styles.stack}>
-      <Text style={styles.question}>연주 할 악기를 선택해요.</Text>
-      <View style={styles.instrumentRow}>
-        {MVP_INSTRUMENTS.map((instrument) => (
-          <Pressable
-            accessibilityRole="button"
-            key={instrument.id}
-            onPress={() => dispatch({ type: 'selectInstrument', instrument: instrument.id })}
-            style={[
-              styles.instrumentCircle,
-              state.selectedInstrument === instrument.id ? styles.instrumentCircleActive : undefined,
-            ]}
-          >
-            <Text
-              style={[
-                styles.instrumentCircleText,
-                state.selectedInstrument === instrument.id
-                  ? styles.instrumentCircleTextActive
-                  : undefined,
-              ]}
-            >
-              {instrument.name}
-            </Text>
-          </Pressable>
-        ))}
-        {Array.from({ length: LOCKED_FUTURE_INSTRUMENT_SLOTS }, (_, index) => (
-          <View key={index} style={[styles.instrumentCircle, styles.lockedCircle]}>
-            <Text style={styles.lockedText}>lock</Text>
-          </View>
-        ))}
-      </View>
-      <View style={styles.infoPanel}>
-        <Text style={styles.panelTitle}>
-          {state.selectedInstrument
-            ? `${getInstrumentName(state.selectedInstrument)} 설명`
-            : '선택한 악기 설명'}
-        </Text>
-        <Text style={styles.bodyText}>
-          {MVP_INSTRUMENTS.find((item) => item.id === state.selectedInstrument)?.description ??
-            '가야금, 장구, 대금은 MVP에서 실제 연주 가능한 악기입니다.'}
-        </Text>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={state.selectedInstrument === undefined}
-        onPress={() => dispatch({ type: 'next' })}
-        style={[
-          styles.primaryButton,
-          state.selectedInstrument === undefined ? styles.disabledButton : undefined,
-        ]}
-      >
-        <Text style={styles.primaryButtonText}>Next</Text>
-      </Pressable>
+    <View style={styles.screenStack}>
+      <ScreenHeading title={'연주 할 악기를\n선택해요.'} />
+      <InstrumentChipRow
+        selectedInstrument={selectedInstrument}
+        onSelect={(instrument) => dispatch({ type: 'selectInstrument', instrument })}
+      />
+      {selectedInstrument === DEFAULT_FREE_CREATION_INSTRUMENT ? (
+        <FigmaImagePanel
+          accessibilityLabel="장구 악기 선택 미리보기"
+          source={GARAK_SCREEN_ASSETS.creation.jangguInstrumentPanel}
+          style={styles.instrumentFigmaPanel}
+          imageStyle={styles.instrumentFigmaPanelImage}
+        />
+      ) : (
+        <View style={styles.instrumentPreviewCard}>
+          <InstrumentVisual instrument={selectedInstrument} />
+          <InstrumentBadge instrument={selectedInstrument} />
+          <Text style={styles.instrumentDescription}>
+            {MVP_INSTRUMENTS.find((item) => item.id === selectedInstrument)?.description}
+            {'\n'}선택한 악기는 연주, 녹음, 트랙 추가 흐름에 연결됩니다.
+          </Text>
+        </View>
+      )}
+      <ProgressSteps step={0} />
+      <PrimaryPillButton
+        label="Next"
+        onPress={confirmSelectionAndContinue}
+      />
     </View>
   );
 }
@@ -142,30 +111,29 @@ export function InstrumentSettingsContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const instrument = MVP_INSTRUMENTS.find((item) => item.id === state.selectedInstrument) ?? MVP_INSTRUMENTS[0];
+  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const instrumentDefinition = MVP_INSTRUMENTS.find((item) => item.id === instrument) ?? MVP_INSTRUMENTS[0];
 
   return (
-    <View style={styles.stack}>
-      <Text style={styles.question}>{instrument.name} 기본 설정</Text>
-      <View style={styles.infoPanel}>
-        {instrument.settings.map((setting) => (
-          <View key={setting} style={styles.settingRow}>
-            <Text style={styles.settingLabel}>{setting}</Text>
-            <View style={styles.settingBar}>
-              <View style={styles.settingBarFill} />
-            </View>
-          </View>
-        ))}
+    <View style={styles.screenStack}>
+      <ScreenHeading title={'연주 할 화면을\n미리 볼 수 있어요.'} />
+      <View style={styles.playPreviewCard}>
+        <InstrumentVisual instrument={instrument} />
+        <View style={styles.noteBubble}>
+          <Text style={styles.noteBubbleText}>연주와 녹음은 이 화면에서 바로 시작해요.</Text>
+        </View>
       </View>
+      <Text style={styles.instrumentDescription}>
+        {instrumentDefinition.settings.join(' · ')} 기본값으로 시작합니다. BPM과 장단은 녹음 직전에 정합니다.
+      </Text>
+      <ProgressSteps step={1} />
       <View style={styles.buttonRow}>
-        <SecondaryButton label="직접 조정" onPress={() => dispatch({ type: 'navigate', target: 'S04' })} />
-        <Pressable
-          accessibilityRole="button"
+        <SecondaryPillButton label="직접 조정" onPress={() => dispatch({ type: 'navigate', target: 'S04' })} />
+        <PrimaryPillButton
+          label="Next"
           onPress={() => dispatch({ type: 'startWithDefaults' })}
-          style={[styles.primaryButton, styles.rowButton]}
-        >
-          <Text style={styles.primaryButtonText}>기본값으로 시작</Text>
-        </Pressable>
+          style={styles.rowPrimary}
+        />
       </View>
     </View>
   );
@@ -178,30 +146,24 @@ export function FreePlayContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const instrument = getInstrumentName(state.selectedInstrument ?? 'gayageum');
+  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
 
   return (
-    <View style={styles.stack}>
-      <View style={styles.playSurface}>
-        <Text style={styles.playSurfaceTitle}>{instrument}</Text>
-        <Text style={styles.playSurfaceText}>
-          {instrument === '장구'
-            ? '궁편과 채편 영역을 나눠 장단을 녹음합니다.'
-            : instrument === '대금'
-              ? '운지와 호흡 강도를 압축한 터치 영역으로 선율을 녹음합니다.'
-              : '12현 가야금 현을 중심으로 선율을 녹음합니다.'}
-        </Text>
+    <View style={styles.screenStack}>
+      <View style={styles.freePlaySurface}>
+        <View style={styles.freePlayTopBar}>
+          <Text style={styles.surfaceBrand}>GARAK</Text>
+          <View style={styles.inlineControls}>
+            <Text style={styles.inlineControl}>▶</Text>
+            <Text style={styles.inlineControlAmber}>●</Text>
+          </View>
+        </View>
+        <InstrumentVisual instrument={instrument} />
       </View>
       <View style={styles.buttonRow}>
-        <SecondaryButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
-        <SecondaryButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => dispatch({ type: 'completePerformance' })}
-          style={styles.primaryButton}
-        >
-          <Text style={styles.primaryButtonText}>완료</Text>
-        </Pressable>
+        <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
+        <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
+        <PrimaryPillButton label="녹음 완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
       </View>
     </View>
   );
@@ -215,36 +177,40 @@ export function TrackLayerEditorContent({
   dispatch: ProductDispatch;
 }) {
   const work = state.library.works.find((item) => item.id === state.currentWorkId);
+  const tracks = work?.tracks ?? [];
 
   return (
-    <View style={styles.stack}>
-      <View style={styles.timeline}>
-        <Text style={styles.panelTitle}>{work?.title ?? '새 작업'}</Text>
-        <View style={styles.beatGrid}>
-          {Array.from({ length: 8 }, (_, index) => (
-            <View key={index} style={styles.beatCell}>
-              <Text style={styles.beatText}>{index + 1}</Text>
-            </View>
-          ))}
-        </View>
-        {work?.tracks.map((track, index) => (
-          <View key={track.id} style={styles.trackRow}>
-            <Text style={styles.trackName}>
-              {track.kind === 'instrument'
+    <View style={styles.screenStack}>
+      <ScreenHeading title={tracks.length > 2 ? '가락 미리듣기' : '나만의 가락 만들기'} compact />
+      <MiniTrackPlayer title={work?.title ?? 'My Janggu'} tone="navy" />
+      <Text style={styles.instrumentDescription}>
+        {tracks.length > 0
+          ? '연주 한 트랙들과 추가한 장단으로 나만의 가락을 완성해요.'
+          : '연주를 마치면 첫 트랙이 자동 저장됩니다.'}
+      </Text>
+      <View style={styles.trackStack}>
+        {tracks.map((track, index) => (
+          <TrackPill
+            key={track.id}
+            label={`TRACK ${index + 1} : ${
+              track.kind === 'instrument'
                 ? getInstrumentName(track.instrument)
                 : track.kind === 'accompaniment'
-                  ? '장단 반주'
-                  : track.title}
-            </Text>
-            <Text style={styles.trackMeta}>Track {index + 1}</Text>
-          </View>
+                  ? '장단'
+                  : track.title
+            }`}
+            tone={index === 0 ? 'amber' : index === 1 ? 'red' : 'navy'}
+            onPress={() => undefined}
+          />
         ))}
+        <TrackPill label="트랙 추가하기" tone="outline" onPress={() => dispatch({ type: 'addTrack' })} />
+        <TrackPill label="장단 추천 추가하기" tone="light" onPress={() => dispatch({ type: 'chooseAccompanimentTrack' })} />
       </View>
       <View style={styles.buttonRow}>
-        <SecondaryButton label="트랙 추가" onPress={() => dispatch({ type: 'addTrack' })} />
-        <SecondaryButton label="내보내기" onPress={() => dispatch({ type: 'exportCurrentWork' })} />
-        <SecondaryButton label="보관함" onPress={() => dispatch({ type: 'navigate', target: 'S18' })} />
+        <SecondaryPillButton label="보관함" onPress={() => dispatch({ type: 'navigate', target: 'S18' })} />
+        <SecondaryPillButton label="내보내기" tone="outline" onPress={() => dispatch({ type: 'exportCurrentWork' })} />
       </View>
+      <PrimaryPillButton label="GO" onPress={() => dispatch({ type: 'exportCurrentWork' })} />
     </View>
   );
 }
@@ -257,51 +223,27 @@ export function AddTrackContent({
   dispatch: ProductDispatch;
 }) {
   return (
-    <View style={styles.stack}>
-      <Text style={styles.question}>추가할 레이어를 선택해요.</Text>
-      <View style={styles.optionCard}>
+    <View style={styles.screenStack}>
+      <ScreenHeading title={'추가할 트랙을\n선택해요.'} />
+      <View style={styles.optionPanel}>
         <Text style={styles.panelTitle}>악기 연주 추가</Text>
-        <Text style={styles.bodyText}>가야금, 장구, 대금 연주를 새 트랙으로 녹음합니다.</Text>
-        <View style={styles.instrumentChoiceRow}>
-          {MVP_INSTRUMENTS.map((instrument) => (
-            <Pressable
-              accessibilityRole="button"
-              key={instrument.id}
-              onPress={() =>
-                dispatch({ type: 'chooseInstrumentTrack', instrument: instrument.id })
-              }
-              style={[
-                styles.instrumentChoiceButton,
-                state.selectedInstrument === instrument.id
-                  ? styles.instrumentChoiceButtonActive
-                  : undefined,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.instrumentChoiceText,
-                  state.selectedInstrument === instrument.id
-                    ? styles.instrumentChoiceTextActive
-                    : undefined,
-                ]}
-              >
-                {instrument.name}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <Text style={styles.instrumentDescription}>다른 악기를 녹음해 새 트랙으로 쌓습니다.</Text>
+        <InstrumentChipRow
+          selectedInstrument={state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT}
+          onSelect={(instrument) => dispatch({ type: 'chooseInstrumentTrack', instrument })}
+        />
       </View>
       <Pressable
         accessibilityRole="button"
         onPress={() => dispatch({ type: 'chooseAccompanimentTrack' })}
-        style={styles.optionCard}
+        style={styles.optionPanel}
       >
-        <Text style={styles.panelTitle}>장단/반주 추가</Text>
-        <Text style={styles.bodyText}>장단 프리셋을 반주 트랙으로 생성합니다.</Text>
+        <Text style={styles.panelTitle}>장단 추천 / 반주 추가</Text>
+        <Text style={styles.instrumentDescription}>세마치, 중모리, 자진모리 프리셋을 미리듣고 트랙으로 추가합니다.</Text>
       </Pressable>
-      <View style={[styles.optionCard, styles.disabledPanel]}>
+      <View style={[styles.optionPanel, styles.lockedOption]}>
         <Text style={styles.panelTitle}>가져오기</Text>
-        <Text style={styles.bodyText}>이후 업데이트에서 지원할 예정입니다.</Text>
+        <Text style={styles.instrumentDescription}>외부 파일 가져오기는 이후 업데이트에서 지원합니다.</Text>
       </View>
     </View>
   );
@@ -314,19 +256,15 @@ export function ExtraInstrumentRecordContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+
   return (
-    <View style={styles.stack}>
-      <View style={styles.playSurface}>
-        <Text style={styles.playSurfaceTitle}>{getInstrumentName(state.selectedInstrument ?? 'gayageum')}</Text>
-        <Text style={styles.playSurfaceText}>기존 작업을 들으며 새 테이크를 녹음합니다.</Text>
+    <View style={styles.screenStack}>
+      <ScreenHeading title={`${getInstrumentName(instrument)} 트랙 녹음`} compact />
+      <View style={styles.freePlaySurface}>
+        <InstrumentVisual instrument={instrument} />
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'applyInstrumentTrack' })}
-        style={styles.primaryButton}
-      >
-        <Text style={styles.primaryButtonText}>적용</Text>
-      </Pressable>
+      <PrimaryPillButton label="TRACK 적용" onPress={() => dispatch({ type: 'applyInstrumentTrack' })} />
     </View>
   );
 }
@@ -343,17 +281,27 @@ function JangdanPresetPanel({ mode, dispatch }: { mode: 'live' | 'track'; dispat
   const defaultPreset = JANGDAN_PRESETS[0];
 
   return (
-    <View style={styles.stack}>
-      {JANGDAN_PRESETS.map((preset) => (
-        <View key={preset.id} style={styles.optionCard}>
-          <Text style={styles.panelTitle}>{preset.name}</Text>
-          <Text style={styles.bodyText}>
-            GARAK 기본 BPM {preset.defaultBpm} · {preset.minBpm}-{preset.maxBpm} · {preset.beatUnit}
-          </Text>
-        </View>
-      ))}
-      <Pressable
-        accessibilityRole="button"
+    <View style={styles.screenStack}>
+      <ScreenHeading
+        title={mode === 'live' ? '라이브 장단을\n선택해요.' : '장단 트랙을\n만들어요.'}
+        description="AI 생성 오디오가 아니라 로컬 장단 프리셋을 미리듣고 수락하는 흐름입니다."
+      />
+      <MiniTrackPlayer title={mode === 'live' ? 'Live Jangdan Guide' : 'AI 추천: 세마치'} tone="amber" />
+      <View style={styles.presetStack}>
+        {JANGDAN_PRESETS.map((preset) => (
+          <View key={preset.id} style={styles.presetRow}>
+            <View>
+              <Text style={styles.panelTitle}>{preset.name}</Text>
+              <Text style={styles.metaText}>
+                GARAK 기본 BPM {preset.defaultBpm} · {preset.minBpm}-{preset.maxBpm} · {preset.beatUnit}
+              </Text>
+            </View>
+            <Text style={styles.previewText}>미리듣기</Text>
+          </View>
+        ))}
+      </View>
+      <PrimaryPillButton
+        label={mode === 'live' ? '적용하고 연주로 돌아가기' : '반주 트랙 추가'}
         onPress={() =>
           mode === 'live'
             ? dispatch({
@@ -369,12 +317,46 @@ function JangdanPresetPanel({ mode, dispatch }: { mode: 'live' | 'track'; dispat
                 volume: 0.7,
               })
         }
-        style={styles.primaryButton}
-      >
-        <Text style={styles.primaryButtonText}>
-          {mode === 'live' ? '적용하고 연주로 돌아가기' : '반주 트랙 추가'}
-        </Text>
-      </Pressable>
+      />
+    </View>
+  );
+}
+
+function InstrumentChipRow({
+  selectedInstrument,
+  onSelect,
+}: {
+  selectedInstrument: InstrumentId;
+  onSelect: (instrument: InstrumentId) => void;
+}) {
+  return (
+    <View style={styles.instrumentChips}>
+      {INSTRUMENT_CHIP_ORDER.map((instrumentId) => {
+        const instrument = MVP_INSTRUMENTS.find((item) => item.id === instrumentId);
+
+        if (!instrument) {
+          return null;
+        }
+
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedInstrument === instrument.id }}
+            key={instrument.id}
+            onPress={() => onSelect(instrument.id)}
+            style={[styles.instrumentChip, selectedInstrument === instrument.id ? styles.instrumentChipActive : undefined]}
+          >
+            <Text style={[styles.instrumentChipText, selectedInstrument === instrument.id ? styles.instrumentChipTextActive : undefined]}>
+              {instrument.name}
+            </Text>
+          </Pressable>
+        );
+      })}
+      {Array.from({ length: LOCKED_FUTURE_INSTRUMENT_SLOTS }, (_, index) => (
+        <View key={index} style={[styles.instrumentChip, styles.instrumentChipLocked]}>
+          <Text style={styles.instrumentChipLockedText}>잠금</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -391,6 +373,7 @@ function ModeButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ selected: active }}
       onPress={onPress}
       style={[styles.segmentButton, active ? styles.segmentButtonActive : undefined]}
     >
@@ -399,292 +382,227 @@ function ModeButton({
   );
 }
 
-function SecondaryButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.secondaryButton}>
-      <Text style={styles.secondaryButtonText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  stack: {
-    gap: 16,
+  screenStack: {
+    gap: 18,
   },
-  question: {
-    color: '#4a4a4a',
-    fontSize: 28,
-    fontWeight: '300',
-    lineHeight: 34,
+  homeQuickAccess: {
+    marginTop: 71,
+  },
+  homeTopRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: -6,
+  },
+  smallCircleButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 17,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  smallCircleText: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  avatarButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandRed,
+    borderColor: GARAK_COLORS.surfaceApp,
+    borderRadius: 18,
+    borderWidth: 2,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  avatarText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 11,
+    fontWeight: '800',
   },
   segmented: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 17,
     flexDirection: 'row',
+    gap: 14,
     minHeight: 34,
-    padding: 2,
+    padding: 3,
   },
   segmentButton: {
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 15,
     flex: 1,
     justifyContent: 'center',
-    minHeight: 30,
   },
   segmentButtonActive: {
-    backgroundColor: '#9d9d9d',
+    backgroundColor: GARAK_COLORS.brandNavy,
   },
   segmentText: {
-    color: '#898989',
+    color: '#ACACAC',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   segmentTextActive: {
-    color: '#ffffff',
+    color: GARAK_COLORS.surfaceCard,
   },
-  heroCard: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 34,
-    gap: 18,
-    minHeight: 360,
-    padding: 28,
+  instrumentPreviewCard: {
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderRadius: GARAK_RADIUS.hero,
+    minHeight: 430,
+    overflow: 'hidden',
+    padding: 22,
+    ...garakCardShadow,
   },
-  heroTitle: {
-    color: '#7a7a7a',
-    fontSize: 27,
-    fontWeight: '300',
-    lineHeight: 34,
-    marginTop: 'auto',
+  instrumentFigmaPanel: {
+    height: 435,
   },
-  bodyText: {
-    color: '#777777',
-    fontSize: 13,
-    lineHeight: 19,
+  instrumentFigmaPanelImage: {
+    borderRadius: GARAK_RADIUS.hero,
   },
-  primaryButton: {
+  playPreviewCard: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: GARAK_RADIUS.hero,
+    minHeight: 440,
+    overflow: 'hidden',
+    padding: 16,
+    ...garakCardShadow,
+  },
+  freePlaySurface: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 26,
+    minHeight: 390,
+    overflow: 'hidden',
+    padding: 14,
+    ...garakCardShadow,
+  },
+  freePlayTopBar: {
     alignItems: 'center',
-    alignSelf: 'stretch',
-    backgroundColor: '#9b9b9b',
-    borderRadius: 18,
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: 18,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  disabledButton: {
-    opacity: 0.45,
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#dedede',
-    borderRadius: 18,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: 12,
-  },
-  secondaryButtonText: {
-    color: '#555555',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  homeQuickAccess: {
-    alignSelf: 'center',
-    backgroundColor: '#bdbdbd',
-    borderRadius: 24,
     flexDirection: 'row',
-    gap: 10,
-    padding: 8,
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
-  quickAccessText: {
-    borderRadius: 18,
-    color: '#222222',
-    fontSize: 14,
-    fontWeight: '700',
-    minWidth: 56,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    textAlign: 'center',
+  surfaceBrand: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 13,
+    fontWeight: '800',
   },
-  quickAccessActive: {
-    backgroundColor: '#ffffff',
-  },
-  instrumentRow: {
+  inlineControls: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  instrumentCircle: {
-    alignItems: 'center',
-    backgroundColor: '#cfcfcf',
-    borderRadius: 28,
-    height: 56,
-    justifyContent: 'center',
-    width: 56,
-  },
-  instrumentCircleActive: {
-    backgroundColor: '#5f5f5f',
-  },
-  instrumentCircleText: {
-    color: '#666666',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  instrumentCircleTextActive: {
-    color: '#ffffff',
-  },
-  lockedCircle: {
-    backgroundColor: '#5f5f5f',
-  },
-  lockedText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  infoPanel: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
-    gap: 14,
-    padding: 18,
-  },
-  panelTitle: {
-    color: '#555555',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  settingRow: {
     gap: 8,
   },
-  settingLabel: {
-    color: '#666666',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  settingBar: {
-    backgroundColor: '#eeeeee',
-    borderRadius: 4,
-    height: 6,
-  },
-  settingBarFill: {
-    backgroundColor: '#8d8d8d',
-    borderRadius: 4,
-    height: 6,
-    width: '68%',
-  },
-  playSurface: {
-    alignItems: 'center',
-    backgroundColor: '#d6d6d6',
-    borderRadius: 32,
-    gap: 18,
-    justifyContent: 'center',
-    minHeight: 360,
-    padding: 28,
-  },
-  playSurfaceTitle: {
-    color: '#555555',
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  playSurfaceText: {
-    color: '#777777',
+  inlineControl: {
+    color: GARAK_COLORS.brandNavy,
     fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
+    fontWeight: '800',
+  },
+  inlineControlAmber: {
+    color: GARAK_COLORS.brandAmber,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  noteBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: 'rgba(229,145,0,0.18)',
+    borderColor: GARAK_COLORS.brandAmber,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: -10,
+    maxWidth: 230,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  noteBubbleText: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  instrumentDescription: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
   },
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
   },
-  rowButton: {
+  rowPrimary: {
     flex: 1,
   },
-  timeline: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+  trackStack: {
     gap: 12,
-    padding: 16,
   },
-  beatGrid: {
+  optionPanel: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: GARAK_COLORS.lineSoft,
+    borderRadius: 22,
+    borderWidth: 1,
+    gap: 12,
+    padding: 18,
+  },
+  lockedOption: {
+    opacity: 0.64,
+  },
+  panelTitle: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  instrumentChips: {
     flexDirection: 'row',
-    gap: 4,
+    flexWrap: 'wrap',
+    gap: 7,
   },
-  beatCell: {
+  instrumentChip: {
     alignItems: 'center',
-    backgroundColor: '#eeeeee',
-    borderRadius: 4,
-    flex: 1,
-    minHeight: 30,
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 16,
+    minHeight: 27,
+    minWidth: 48,
     justifyContent: 'center',
+    paddingHorizontal: 10,
   },
-  beatText: {
-    color: '#777777',
-    fontSize: 11,
-    fontWeight: '700',
+  instrumentChipActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
   },
-  trackRow: {
+  instrumentChipLocked: {
+    backgroundColor: GARAK_COLORS.surfaceSoft,
+  },
+  instrumentChipText: {
+    color: '#ACACAC',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  instrumentChipTextActive: {
+    color: GARAK_COLORS.surfaceCard,
+  },
+  instrumentChipLockedText: {
+    color: '#ACACAC',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  presetStack: {
+    gap: 10,
+  },
+  presetRow: {
     alignItems: 'center',
-    backgroundColor: '#eeeeee',
-    borderRadius: 6,
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 44,
-    paddingHorizontal: 12,
+    minHeight: 72,
+    paddingHorizontal: 16,
   },
-  trackName: {
-    color: '#444444',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  trackMeta: {
-    color: '#777777',
+  metaText: {
+    color: GARAK_COLORS.textSecondary,
     fontSize: 12,
+    lineHeight: 18,
   },
-  optionCard: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
-    gap: 8,
-    padding: 16,
-  },
-  disabledPanel: {
-    opacity: 0.6,
-  },
-  ghostButton: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    minHeight: 36,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-  ghostButtonText: {
-    color: '#777777',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  instrumentChoiceRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  instrumentChoiceButton: {
-    alignItems: 'center',
-    backgroundColor: '#eeeeee',
-    borderRadius: 16,
-    flex: 1,
-    minHeight: 34,
-    justifyContent: 'center',
-  },
-  instrumentChoiceButtonActive: {
-    backgroundColor: '#8f8f8f',
-  },
-  instrumentChoiceText: {
-    color: '#666666',
+  previewText: {
+    color: GARAK_COLORS.brandAmber,
     fontSize: 12,
-    fontWeight: '700',
-  },
-  instrumentChoiceTextActive: {
-    color: '#ffffff',
+    fontWeight: '800',
   },
 });

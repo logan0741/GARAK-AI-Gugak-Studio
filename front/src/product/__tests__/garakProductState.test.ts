@@ -30,6 +30,19 @@ test('moves through free creation selection to S05 with an MVP instrument', () =
   expect(getCurrentScreenSummary(state).title).toBe('장구 자유연주');
 });
 
+test('uses the visible default free-creation instrument when starting with defaults', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.selectedInstrument).toBe('janggu');
+  expect(getCurrentScreenSummary(state).title).toBe('장구 자유연주');
+});
+
 test('completes S05 by auto-saving an editable work and opening S07', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

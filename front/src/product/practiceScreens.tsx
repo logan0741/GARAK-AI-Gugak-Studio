@@ -1,5 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GARAK_COLORS } from './garakDesignSystem';
 import { GarakProductAction, GarakProductState } from './garakProductState';
+import {
+  InstrumentVisual,
+  PrimaryPillButton,
+  ScreenHeading,
+  SecondaryPillButton,
+  garakCardShadow,
+} from './garakUi';
 import { MVP_INSTRUMENTS, PRACTICE_SONGS, getInstrumentName } from './productFixtures';
 
 type ProductDispatch = (action: GarakProductAction) => void;
@@ -12,17 +20,21 @@ export function PracticeSongSelectContent({
 }) {
   return (
     <View style={styles.stack}>
-      {PRACTICE_SONGS.map((song) => (
+      <ScreenHeading title={'따라할 민요를\n선택해요.'} />
+      {PRACTICE_SONGS.map((song, index) => (
         <Pressable
           accessibilityRole="button"
           key={song.id}
           onPress={() => dispatch({ type: 'selectPracticeSong', songId: song.id })}
-          style={styles.songCard}
+          style={[styles.songCard, index === 0 ? styles.songCardActive : undefined]}
         >
-          <Text style={styles.cardTitle}>{song.title}</Text>
-          <Text style={styles.bodyText}>
-            {song.difficulty} · {song.durationSeconds}초 · 추천 {getInstrumentName(song.recommendedInstrument)}
-          </Text>
+          <View>
+            <Text style={[styles.cardTitle, index === 0 ? styles.cardTitleLight : undefined]}>{song.title}</Text>
+            <Text style={[styles.bodyText, index === 0 ? styles.bodyTextLight : undefined]}>
+              {song.difficulty} · {song.durationSeconds}초 · 추천 {getInstrumentName(song.recommendedInstrument)}
+            </Text>
+          </View>
+          <Text style={[styles.cardAction, index === 0 ? styles.cardActionLight : undefined]}>›</Text>
         </Pressable>
       ))}
     </View>
@@ -40,6 +52,7 @@ export function PracticeInstrumentSelectContent({
 
   return (
     <View style={styles.stack}>
+      <ScreenHeading title={'따라할 악기를\n선택해요.'} description={`${song.title}에 맞춰 연주할 악기를 고릅니다.`} />
       {MVP_INSTRUMENTS.map((instrument) => (
         <Pressable
           accessibilityRole="button"
@@ -70,27 +83,20 @@ export function PracticePerformanceContent({
   dispatch: ProductDispatch;
 }) {
   const song = PRACTICE_SONGS.find((item) => item.id === state.selectedPracticeSongId) ?? PRACTICE_SONGS[0];
+  const instrument = state.selectedInstrument ?? song.recommendedInstrument;
 
   return (
     <View style={styles.stack}>
+      <ScreenHeading title={song.title} compact description="다음 입력 가이드에 맞춰 연주합니다." />
       <View style={styles.practiceSurface}>
-        <Text style={styles.surfaceTitle}>{song.title}</Text>
-        <Text style={styles.bodyText}>
-          다음 구간이 밝게 표시되고, 타이밍 정확도가 실시간으로 표시됩니다.
-        </Text>
+        <InstrumentVisual instrument={instrument} />
         <View style={styles.guideRow}>
           {Array.from({ length: 6 }, (_, index) => (
             <View key={index} style={[styles.guideCell, index === 2 ? styles.guideCellActive : undefined]} />
           ))}
         </View>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'finishPractice' })}
-        style={styles.primaryButton}
-      >
-        <Text style={styles.primaryButtonText}>완주</Text>
-      </Pressable>
+      <PrimaryPillButton label="완주" onPress={() => dispatch({ type: 'finishPractice' })} />
     </View>
   );
 }
@@ -103,6 +109,7 @@ export function PracticeResultContent({
 }) {
   return (
     <View style={styles.stack}>
+      <ScreenHeading title="결과 / AI 피드백" compact />
       <View style={styles.resultPanel}>
         <Text style={styles.scoreText}>82</Text>
         <Text style={styles.cardTitle}>박자 흐름이 안정적이에요.</Text>
@@ -111,124 +118,111 @@ export function PracticeResultContent({
         </Text>
       </View>
       <View style={styles.buttonRow}>
-        <SecondaryButton label="다시 연주" onPress={() => dispatch({ type: 'navigate', target: 'S15' })} />
-        <SecondaryButton label="저장" onPress={() => dispatch({ type: 'savePracticeResult' })} />
-        <SecondaryButton label="공유" onPress={() => dispatch({ type: 'sharePracticeResult' })} />
+        <SecondaryPillButton label="다시 연주" onPress={() => dispatch({ type: 'navigate', target: 'S15' })} />
+        <SecondaryPillButton label="저장" onPress={() => dispatch({ type: 'savePracticeResult' })} />
+        <SecondaryPillButton label="공유" onPress={() => dispatch({ type: 'sharePracticeResult' })} />
       </View>
     </View>
   );
 }
 
-function SecondaryButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.secondaryButton}>
-      <Text style={styles.secondaryButtonText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   stack: {
-    gap: 14,
+    gap: 16,
   },
   songCard: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
-    gap: 8,
-    padding: 16,
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 22,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 82,
+    padding: 18,
+    ...garakCardShadow,
+  },
+  songCardActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
   },
   instrumentCard: {
     alignItems: 'center',
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 22,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 68,
-    padding: 16,
+    minHeight: 72,
+    padding: 18,
   },
   cardTitle: {
-    color: '#555555',
+    color: GARAK_COLORS.textPrimary,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  cardTitleLight: {
+    color: GARAK_COLORS.surfaceCard,
   },
   bodyText: {
-    color: '#777777',
+    color: GARAK_COLORS.textSecondary,
     fontSize: 13,
     lineHeight: 19,
   },
+  bodyTextLight: {
+    color: GARAK_COLORS.surfaceSoft,
+  },
+  cardAction: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  cardActionLight: {
+    color: GARAK_COLORS.surfaceCard,
+  },
   badge: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    color: '#555555',
+    backgroundColor: 'rgba(229,145,0,0.2)',
+    borderColor: GARAK_COLORS.brandAmber,
+    borderRadius: 14,
+    borderWidth: 1,
+    color: GARAK_COLORS.textPrimary,
     fontSize: 12,
-    fontWeight: '700',
-    paddingHorizontal: 10,
+    fontWeight: '800',
+    paddingHorizontal: 12,
     paddingVertical: 5,
   },
   practiceSurface: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 32,
-    gap: 18,
-    minHeight: 360,
-    padding: 28,
-  },
-  surfaceTitle: {
-    color: '#555555',
-    fontSize: 30,
-    fontWeight: '700',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 28,
+    gap: 16,
+    minHeight: 390,
+    padding: 16,
+    ...garakCardShadow,
   },
   guideRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 'auto',
   },
   guideCell: {
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.surfaceSoft,
     borderRadius: 5,
     flex: 1,
-    height: 54,
+    height: 46,
   },
   guideCellActive: {
-    backgroundColor: '#9b9b9b',
-  },
-  primaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#9b9b9b',
-    borderRadius: 18,
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
+    backgroundColor: GARAK_COLORS.brandAmber,
   },
   resultPanel: {
     alignItems: 'center',
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 28,
     gap: 12,
     padding: 24,
+    ...garakCardShadow,
   },
   scoreText: {
-    color: '#555555',
-    fontSize: 64,
-    fontWeight: '700',
+    color: GARAK_COLORS.brandRed,
+    fontSize: 68,
+    fontWeight: '800',
   },
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#dedede',
-    borderRadius: 18,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  secondaryButtonText: {
-    color: '#555555',
-    fontSize: 13,
-    fontWeight: '700',
   },
 });

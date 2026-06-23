@@ -30,6 +30,8 @@ export const GARAK_BRAND = {
   subtitle: 'AI GUGAK STUDIO',
 };
 
+export const DEFAULT_FREE_CREATION_INSTRUMENT: InstrumentId = 'janggu';
+
 export const MVP_INSTRUMENTS: InstrumentDefinition[] = [
   {
     id: 'gayageum',
