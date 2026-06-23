@@ -26,9 +26,15 @@ import {
   PracticeSong,
 } from './productFixtures';
 
-export type AccountState = {
-  status: 'guest' | 'loggedIn';
-};
+export type AccountState =
+  | {
+      status: 'guest';
+    }
+  | {
+      status: 'loggedIn';
+      userId: string;
+      email: string;
+    };
 
 export type ProductLibraryState = {
   works: Work[];
@@ -91,7 +97,9 @@ export type ScreenSummary = {
   primaryCtas: string[];
 };
 
-export function createInitialGarakProductState(input: { now?: () => string } = {}): GarakProductState {
+export function createInitialGarakProductState(
+  input: { now?: () => string; account?: AccountState } = {},
+): GarakProductState {
   return {
     screenFlow: createInitialScreenFlowState(),
     selectedMode: 'freeCreation',
@@ -100,7 +108,7 @@ export function createInitialGarakProductState(input: { now?: () => string } = {
       exportedAudios: [],
       practiceResults: [],
     },
-    account: {
+    account: input.account ?? {
       status: 'guest',
     },
     counters: {

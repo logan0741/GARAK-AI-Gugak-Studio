@@ -1,5 +1,5 @@
-import { GarakScreenFlowApp } from '../src/product/GarakScreenFlowApp';
+import { GarakAuthEntryApp } from '../src/product/GarakAuthEntryApp';
 
 export default function Index() {
-  return <GarakScreenFlowApp />;
+  return <GarakAuthEntryApp />;
 }

@@ -18,7 +18,7 @@ export function IntroGuideContent({ dispatch }: { state: GarakProductState; disp
     <View style={styles.stack}>
       <View style={styles.panel}>
         <Text style={styles.title}>입문 가이드</Text>
-        <Text style={styles.bodyText}>농현, 추성, 퇴성의 기본 움직임을 짧게 확인합니다.</Text>
+        <Text style={styles.bodyText}>농현, 추성, 퇴성 같은 기본 움직임을 짧게 확인합니다.</Text>
       </View>
       <Pressable
         accessibilityRole="button"
@@ -34,21 +34,28 @@ export function IntroGuideContent({ dispatch }: { state: GarakProductState; disp
 export function SettingsContent({
   state,
   dispatch,
+  onLogout,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
+  onLogout?: () => void;
 }) {
+  const isLoggedIn = state.account.status === 'loggedIn';
+  const accountValue = state.account.status === 'loggedIn' ? state.account.email : '게스트';
+
   return (
     <View style={styles.stack}>
-      <SettingRow label="현재 상태" value={state.account.status === 'guest' ? '게스트' : '로그인'} />
+      <SettingRow label="현재 상태" value={accountValue} />
       <SettingRow label="로컬 작업" value={`${state.library.works.length}개`} />
       <SettingRow label="언어" value="한국어" />
       <Pressable
         accessibilityRole="button"
-        onPress={() => dispatch({ type: 'loginAndLoadMySongs' })}
-        style={styles.primaryButton}
+        onPress={isLoggedIn ? onLogout : () => dispatch({ type: 'loginAndLoadMySongs' })}
+        style={isLoggedIn ? styles.secondaryButton : styles.primaryButton}
       >
-        <Text style={styles.primaryButtonText}>로그인하고 내 곡 불러오기</Text>
+        <Text style={isLoggedIn ? styles.secondaryButtonText : styles.primaryButtonText}>
+          {isLoggedIn ? '로그아웃' : '로그인하고 내 곡 불러오기'}
+        </Text>
       </Pressable>
     </View>
   );
@@ -64,7 +71,7 @@ export function LoginSyncContent({
   return (
     <View style={styles.stack}>
       <View style={styles.panel}>
-        <Text style={styles.title}>로컬 보관함 유지</Text>
+        <Text style={styles.title}>로컬 보관함 동기화</Text>
         <Text style={styles.bodyText}>
           현재 로컬 작업 {state.library.works.length}개를 유지한 채 계정에 저장된 곡을 불러옵니다.
         </Text>

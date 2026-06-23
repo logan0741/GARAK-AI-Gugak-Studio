@@ -13,6 +13,7 @@ import {
   TrackLayerEditorContent,
 } from './freeCreationScreens';
 import {
+  AccountState,
   applyProductAction,
   createInitialGarakProductState,
   GarakProductAction,
@@ -27,7 +28,7 @@ import {
   PracticeSongSelectContent,
 } from './practiceScreens';
 import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
-import { GARAK_BRAND } from './productFixtures';
+import { GarakLogo } from './GarakLogo';
 import { ShareFeedContent, SharedDetailContent, SharePrepareContent } from './shareScreens';
 import {
   IntroGuideContent,
@@ -36,11 +37,16 @@ import {
   SettingsContent,
 } from './settingsScreens';
 
-export function GarakScreenFlowApp() {
+type GarakScreenFlowAppProps = {
+  account?: AccountState;
+  onLogout?: () => void;
+};
+
+export function GarakScreenFlowApp({ account, onLogout }: GarakScreenFlowAppProps = {}) {
   const [fontsLoaded] = useFonts({
     [GARAK_TYPOGRAPHY.fontFamily]: require('../../assets/fonts/PretendardVariable.ttf'),
   });
-  const [state, setState] = useState(() => createInitialGarakProductState());
+  const [state, setState] = useState(() => createInitialGarakProductState({ account }));
   const summary = useMemo(() => getCurrentScreenSummary(state), [state]);
   const canOpenLanguage =
     state.screenFlow.currentScreen === 'S01' || state.screenFlow.currentScreen === 'S22';
@@ -65,8 +71,7 @@ export function GarakScreenFlowApp() {
             <Text style={styles.headerButtonText}>‹</Text>
           </Pressable>
           <View style={styles.logoBlock}>
-            <Text style={styles.logo}>{GARAK_BRAND.serviceName}</Text>
-            <Text style={styles.subtitle}>{GARAK_BRAND.subtitle}</Text>
+            <GarakLogo variant="red" width={76} />
           </View>
           {canOpenLanguage ? (
             <Pressable
@@ -87,7 +92,7 @@ export function GarakScreenFlowApp() {
             <Text style={styles.screenTitle}>{summary.title}</Text>
             <Text style={styles.description}>{summary.description}</Text>
           </View>
-          {renderScreenContent(state, dispatch)}
+          {renderScreenContent(state, dispatch, onLogout)}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -97,6 +102,7 @@ export function GarakScreenFlowApp() {
 function renderScreenContent(
   state: GarakProductState,
   dispatch: (action: GarakProductAction) => void,
+  onLogout?: () => void,
 ) {
   switch (state.screenFlow.currentScreen) {
     case 'S01':
@@ -140,7 +146,7 @@ function renderScreenContent(
     case 'S21':
       return <SharedDetailContent state={state} dispatch={dispatch} />;
     case 'S22':
-      return <SettingsContent state={state} dispatch={dispatch} />;
+      return <SettingsContent state={state} dispatch={dispatch} onLogout={onLogout} />;
     case 'S23':
       return <LoginSyncContent state={state} dispatch={dispatch} />;
   }
