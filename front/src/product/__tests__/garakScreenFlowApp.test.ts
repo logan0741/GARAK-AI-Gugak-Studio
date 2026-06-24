@@ -130,6 +130,8 @@ test('connects S19 player edit and share CTAs to selected library item actions',
   expect(source).toContain('playerActions.shareAction');
   expect(source).toContain('편집으로 열기');
   expect(source).toContain('공유');
+  expect(source).toContain('보관함으로 돌아가기');
+  expect(source).toContain('dispatch(playerActions.backAction)');
   expect(source).toContain('dispatch(playerActions.editAction)');
   expect(source).toContain('dispatch(playerActions.shareAction)');
 });

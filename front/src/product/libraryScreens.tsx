@@ -131,6 +131,14 @@ export function PlayerDetailContent({
       accessibilityLabel={`${player.title} 재생 화면`}
       style={styles.playingScreen}
     >
+      <Pressable
+        accessibilityLabel="보관함으로 돌아가기"
+        accessibilityRole="button"
+        onPress={() => dispatch(playerActions.backAction)}
+        style={styles.playingBackButton}
+      >
+        <Text style={styles.playingBackButtonText}>‹</Text>
+      </Pressable>
       <View style={styles.playingBackdropLine} />
       <View style={styles.playingBackdropShelf}>
         <View style={[styles.playingBackdropTile, styles.playingBackdropTileMuted]} />
@@ -402,6 +410,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     width: '100%',
+  },
+  playingBackButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    left: 18,
+    position: 'absolute',
+    top: 18,
+    width: 44,
+    zIndex: 3,
+  },
+  playingBackButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 31,
+    fontWeight: '800',
+    lineHeight: 36,
   },
   playingBackdropLine: {
     backgroundColor: 'rgba(255,255,255,0.08)',
