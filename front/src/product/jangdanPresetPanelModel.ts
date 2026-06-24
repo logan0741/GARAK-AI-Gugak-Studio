@@ -28,13 +28,14 @@ export function getJangdanPresetPanelModel(
     state.previewingJangdanPreset?.mode === mode
       ? state.previewingJangdanPreset.presetId
       : undefined;
+  const previewingPreset = JANGDAN_PRESETS.find((preset) => preset.id === previewingPresetId);
 
   if (mode === 'live') {
     return {
       recommendationStatus: 'ready',
       recommendedPreset: defaultPreset,
       miniPlayerTitle: 'Live Jangdan Guide',
-      acceptedPreset: defaultPreset,
+      acceptedPreset: previewingPreset ?? defaultPreset,
       manualPresets: JANGDAN_PRESETS,
       previewingPresetId,
     };
@@ -51,7 +52,7 @@ export function getJangdanPresetPanelModel(
       recommendationStatus: 'insufficient-data',
       recommendationMessage: INSUFFICIENT_JANGDAN_RECOMMENDATION_COPY,
       miniPlayerTitle: 'AI 추천 준비 중',
-      acceptedPreset: defaultPreset,
+      acceptedPreset: previewingPreset ?? defaultPreset,
       manualPresets: JANGDAN_PRESETS,
       previewingPresetId,
     };
@@ -65,7 +66,7 @@ export function getJangdanPresetPanelModel(
     recommendationStatus: 'ready',
     recommendedPreset,
     miniPlayerTitle: `AI 추천: ${recommendedPreset.name}`,
-    acceptedPreset: recommendedPreset,
+    acceptedPreset: previewingPreset ?? recommendedPreset,
     manualPresets: JANGDAN_PRESETS,
     previewingPresetId,
   };

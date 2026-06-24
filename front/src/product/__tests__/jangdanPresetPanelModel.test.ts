@@ -72,3 +72,20 @@ test('exposes the previewing jangdan preset only for the active panel mode', () 
   expect(getJangdanPresetPanelModel(state, 'track').previewingPresetId).toBe('jungmori');
   expect(getJangdanPresetPanelModel(state, 'live').previewingPresetId).toBeUndefined();
 });
+
+test('accepts the previewed S10B preset when adding an accompaniment track', () => {
+  let state = createWorkState(plucks([0, 650, 1300, 1950, 2600]));
+
+  state = applyProductAction(state, {
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.7,
+  });
+
+  const model = getJangdanPresetPanelModel(state, 'track');
+
+  expect(model.acceptedPreset.id).toBe('jungmori');
+  expect(model.acceptedPreset.defaultBpm).toBe(80);
+});
