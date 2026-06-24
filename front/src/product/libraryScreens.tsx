@@ -5,6 +5,7 @@ import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   getMyLibraryItemAction,
+  getMyLibraryPlayerActions,
   getMyLibraryPlayerViewModel,
   getMyLibraryViewModel,
   MyLibraryHeroCard,
@@ -109,11 +110,13 @@ export function LibraryContent({
 
 export function PlayerDetailContent({
   state,
+  dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
   const player = getMyLibraryPlayerViewModel(state);
+  const playerActions = getMyLibraryPlayerActions(state);
 
   return (
     <View
@@ -166,6 +169,40 @@ export function PlayerDetailContent({
             <View style={styles.playingVolumeFill} />
           </View>
           <SpeakerGlyph />
+        </View>
+        <View style={styles.playingActionRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playerActions.editAction === undefined }}
+            disabled={playerActions.editAction === undefined}
+            onPress={() => {
+              if (playerActions.editAction !== undefined) {
+                dispatch(playerActions.editAction);
+              }
+            }}
+            style={[
+              styles.playingActionButton,
+              playerActions.editAction === undefined ? styles.playingActionButtonDisabled : undefined,
+            ]}
+          >
+            <Text style={styles.playingActionButtonText}>편집으로 열기</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playerActions.shareAction === undefined }}
+            disabled={playerActions.shareAction === undefined}
+            onPress={() => {
+              if (playerActions.shareAction !== undefined) {
+                dispatch(playerActions.shareAction);
+              }
+            }}
+            style={[
+              styles.playingActionButton,
+              playerActions.shareAction === undefined ? styles.playingActionButtonDisabled : undefined,
+            ]}
+          >
+            <Text style={styles.playingActionButtonText}>공유</Text>
+          </Pressable>
         </View>
         {player.showsAirPlay ? (
           <Pressable accessibilityLabel="AirPlay" accessibilityRole="button" style={styles.playingAirPlay}>
@@ -545,6 +582,31 @@ const styles = StyleSheet.create({
     color: GARAK_COLORS.surfaceCard,
     fontSize: 14,
     fontWeight: '700',
+  },
+  playingActionRow: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  playingActionButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 17,
+    borderWidth: 1,
+    flex: 1,
+    height: 34,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  playingActionButtonDisabled: {
+    opacity: 0.38,
+  },
+  playingActionButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 12,
+    fontWeight: '800',
   },
   speakerGlyph: {
     height: 24,

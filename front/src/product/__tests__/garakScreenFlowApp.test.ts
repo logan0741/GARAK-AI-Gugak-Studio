@@ -91,6 +91,18 @@ test('connects S18 library tabs, search, sync label, and empty state CTA', () =>
   expect(source).toContain('model.emptyState');
 });
 
+test('connects S19 player edit and share CTAs to selected library item actions', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/libraryScreens.tsx'), 'utf8');
+
+  expect(source).toContain('getMyLibraryPlayerActions');
+  expect(source).toContain('playerActions.editAction');
+  expect(source).toContain('playerActions.shareAction');
+  expect(source).toContain('편집으로 열기');
+  expect(source).toContain('공유');
+  expect(source).toContain('dispatch(playerActions.editAction)');
+  expect(source).toContain('dispatch(playerActions.shareAction)');
+});
+
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
