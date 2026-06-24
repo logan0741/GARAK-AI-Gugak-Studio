@@ -62,8 +62,13 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).toContain('AI 반주 추가');
   expect(source).toContain('useWindowDimensions');
   expect(source).toContain('modeGuidePanelCompact');
+  expect(source).toContain("type: 'selectIntroGuideMode'");
+  expect(source).toContain("mode: 'freeCreation'");
+  expect(source).toContain("mode: 'practice'");
   expect(source).toContain("target: 'S04'");
   expect(source).not.toContain('GARAK에 오신 것을 환영해요');
+  expect(source).not.toContain('onPress={() => undefined}');
+  expect(source).not.toContain("onPress={() => dispatch({ type: 'navigate', target: 'S13' })}");
 });
 
 test('connects S23 login sync preview and actions to library data', () => {

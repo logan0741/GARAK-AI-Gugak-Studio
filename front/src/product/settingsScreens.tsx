@@ -43,9 +43,17 @@ export function LanguageContent({
   );
 }
 
-export function IntroGuideContent({ dispatch }: { state: GarakProductState; dispatch: ProductDispatch }) {
+export function IntroGuideContent({
+  state,
+  dispatch,
+}: {
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
   const { height } = useWindowDimensions();
   const isCompactHeight = height < 820;
+  const isFreeCreationMode = state.selectedMode === 'freeCreation';
+  const isPracticeMode = state.selectedMode === 'practice';
 
   return (
     <View style={styles.modeGuideScreen}>
@@ -55,19 +63,23 @@ export function IntroGuideContent({ dispatch }: { state: GarakProductState; disp
       <View style={[styles.modeToggleRow, isCompactHeight ? styles.modeToggleRowCompact : undefined]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ selected: true }}
-          onPress={() => undefined}
-          style={[styles.modeToggleButton, styles.modeToggleButtonActive]}
+          accessibilityState={{ selected: isFreeCreationMode }}
+          onPress={() => dispatch({ type: 'selectIntroGuideMode', mode: 'freeCreation' })}
+          style={[styles.modeToggleButton, isFreeCreationMode ? styles.modeToggleButtonActive : undefined]}
         >
-          <Text style={[styles.modeToggleText, styles.modeToggleTextActive]}>자유창작 모드</Text>
+          <Text style={[styles.modeToggleText, isFreeCreationMode ? styles.modeToggleTextActive : undefined]}>
+            자유창작 모드
+          </Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ selected: false }}
-          onPress={() => dispatch({ type: 'navigate', target: 'S13' })}
-          style={styles.modeToggleButton}
+          accessibilityState={{ selected: isPracticeMode }}
+          onPress={() => dispatch({ type: 'selectIntroGuideMode', mode: 'practice' })}
+          style={[styles.modeToggleButton, isPracticeMode ? styles.modeToggleButtonActive : undefined]}
         >
-          <Text style={styles.modeToggleText}>따라하기 모드</Text>
+          <Text style={[styles.modeToggleText, isPracticeMode ? styles.modeToggleTextActive : undefined]}>
+            따라하기 모드
+          </Text>
         </Pressable>
       </View>
       <View style={[styles.modeGuidePanel, isCompactHeight ? styles.modeGuidePanelCompact : undefined]}>
@@ -93,7 +105,14 @@ export function IntroGuideContent({ dispatch }: { state: GarakProductState; disp
         </View>
         <View style={[styles.modeGuideBottom, isCompactHeight ? styles.modeGuideBottomCompact : undefined]}>
           <ProgressSteps step={0} />
-          <PrimaryPillButton label="NEXT" onPress={() => dispatch({ type: 'navigate', target: 'S04' })} />
+          <PrimaryPillButton
+            label="NEXT"
+            onPress={() =>
+              isPracticeMode
+                ? dispatch({ type: 'selectIntroGuideMode', mode: 'practice' })
+                : dispatch({ type: 'navigate', target: 'S04' })
+            }
+          />
         </View>
       </View>
     </View>

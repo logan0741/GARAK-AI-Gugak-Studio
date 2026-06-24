@@ -114,6 +114,7 @@ export type GarakProductState = {
 
 export type GarakProductAction =
   | { type: 'selectMode'; mode: ScreenFlowMode }
+  | { type: 'selectIntroGuideMode'; mode: ScreenFlowMode }
   | { type: 'setLanguage'; language: ProductLanguage }
   | { type: 'next' }
   | { type: 'selectInstrument'; instrument: InstrumentId }
@@ -233,6 +234,24 @@ export function applyProductAction(
           type: 'selectMode',
           mode: action.mode,
         }),
+      };
+    case 'selectIntroGuideMode':
+      return {
+        ...state,
+        selectedMode: action.mode,
+        screenFlow:
+          action.mode === 'practice'
+            ? transitionScreenFlow(
+                {
+                  ...state.screenFlow,
+                  mode: action.mode,
+                },
+                { type: 'navigate', target: 'S13' },
+              )
+            : {
+                ...state.screenFlow,
+                mode: action.mode,
+              },
       };
     case 'setLanguage':
       return {

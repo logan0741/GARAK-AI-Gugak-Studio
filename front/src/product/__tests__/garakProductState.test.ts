@@ -464,6 +464,18 @@ test('keeps S14 on instrument selection until Next starts practice performance',
   expect(state.screenFlow.currentScreen).toBe('S15');
 });
 
+test('chooses practice mode from the S03 mode guide before opening song selection', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S03' });
+  state = applyProductAction(state, { type: 'selectIntroGuideMode', mode: 'practice' });
+
+  expect(state.selectedMode).toBe('practice');
+  expect(state.screenFlow.mode).toBe('practice');
+  expect(state.screenFlow.currentScreen).toBe('S13');
+  expect(getCurrentScreenSummary(state).title).toBe('민요 선택');
+});
+
 test('previews a practice song from S13 without choosing it', () => {
   let state = createInitialGarakProductState();
 
