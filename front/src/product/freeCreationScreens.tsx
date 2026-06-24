@@ -41,7 +41,7 @@ export function HomeScreenContent({
     <View style={styles.screenStack}>
       <VisualHero
         title="GARAK과 함께 국악 연주하기"
-        description="전통 악기를 연주하고, 장단 추천으로 자신만의 가락을 완성할 수 있습니다."
+        description="전통 악기를 연주하고, AI와 함께 자신만의 가락을 완성할 수 있습니다."
         cta="PLAY"
         onPress={() => dispatch({ type: 'next' })}
       />

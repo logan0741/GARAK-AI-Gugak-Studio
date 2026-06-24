@@ -9,3 +9,10 @@ test('does not render a mocked OS status bar in the app shell', () => {
   expect(source).not.toContain('styles.statusBar');
   expect(source).not.toContain('homeIndicator');
 });
+
+test('uses the Figma home hero copy in the home screen accessibility contract', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('AI와 함께');
+  expect(source).not.toContain('장단 추천으로');
+});
