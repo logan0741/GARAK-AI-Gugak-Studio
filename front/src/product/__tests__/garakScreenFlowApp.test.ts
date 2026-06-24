@@ -158,6 +158,19 @@ test('connects S16 result actions to retry, save, share, and choose another song
   expect(source).toMatch(/label="다른 민요 선택"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S13' \}\)\}/);
 });
 
+test('keeps S14 instrument selection separate from the Next action', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/practiceScreens.tsx'), 'utf8');
+  const stateSource = readFileSync(resolve(process.cwd(), 'src/product/garakProductState.ts'), 'utf8');
+  const selectInstrumentReducerCase =
+    stateSource.match(/case 'selectPracticeInstrument':[\s\S]*?case 'finishPractice':/)?.[0] ?? '';
+
+  expect(source).toContain('selectedPracticeInstrument');
+  expect(source).toContain("type: 'selectPracticeInstrument'");
+  expect(source).toMatch(/PrimaryPillButton label="NEXT" onPress=\{\(\) => dispatch\(\{ type: 'next' \}\)\}/);
+  expect(selectInstrumentReducerCase).toContain('selectedInstrument: action.instrument');
+  expect(selectInstrumentReducerCase).not.toContain("pushTarget(state.screenFlow, 'S15')");
+});
+
 test('connects shared detail remix and save buttons to library data actions', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 

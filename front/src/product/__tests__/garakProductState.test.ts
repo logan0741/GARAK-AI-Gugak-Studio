@@ -185,6 +185,7 @@ test('saves a practice result as a shareable library item without creating a wor
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'arirang' });
   state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'finishPractice' });
   state = applyProductAction(state, { type: 'savePracticeResult' });
 
@@ -207,6 +208,7 @@ test('shares a practice result by creating a shareable target before opening S17
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'doraji' });
   state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'finishPractice' });
   state = applyProductAction(state, { type: 'sharePracticeResult' });
 
@@ -222,6 +224,22 @@ test('shares a practice result by creating a shareable target before opening S17
     kind: 'practiceResult',
     practiceResultId: state.library.practiceResults[0].id,
   });
+});
+
+test('keeps S14 on instrument selection until Next starts practice performance', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'practice' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'arirang' });
+  state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'daegeum' });
+
+  expect(state.selectedInstrument).toBe('daegeum');
+  expect(state.screenFlow.currentScreen).toBe('S14');
+
+  state = applyProductAction(state, { type: 'next' });
+
+  expect(state.screenFlow.currentScreen).toBe('S15');
 });
 
 test('routes settings login CTA to S23 while preserving local library state', () => {
@@ -403,6 +421,7 @@ test('publishes the selected practice result from S17 and marks it shared', () =
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'doraji' });
   state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'finishPractice' });
   state = applyProductAction(state, { type: 'sharePracticeResult' });
   state = applyProductAction(state, { type: 'publishShareTarget' });

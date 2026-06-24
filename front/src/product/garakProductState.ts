@@ -229,7 +229,6 @@ export function applyProductAction(
       return {
         ...state,
         selectedInstrument: action.instrument,
-        screenFlow: pushTarget(state.screenFlow, 'S15'),
       };
     case 'finishPractice':
       return {

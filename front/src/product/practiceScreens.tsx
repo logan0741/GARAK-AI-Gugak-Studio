@@ -50,6 +50,7 @@ export function PracticeInstrumentSelectContent({
   dispatch: ProductDispatch;
 }) {
   const song = PRACTICE_SONGS.find((item) => item.id === state.selectedPracticeSongId) ?? PRACTICE_SONGS[0];
+  const selectedPracticeInstrument = state.selectedInstrument ?? song.recommendedInstrument;
 
   return (
     <View style={styles.stack}>
@@ -61,17 +62,26 @@ export function PracticeInstrumentSelectContent({
           onPress={() =>
             dispatch({ type: 'selectPracticeInstrument', instrument: instrument.id })
           }
-          style={styles.instrumentCard}
+          style={[
+            styles.instrumentCard,
+            selectedPracticeInstrument === instrument.id ? styles.instrumentCardSelected : undefined,
+          ]}
         >
           <View>
             <Text style={styles.cardTitle}>{instrument.name}</Text>
             <Text style={styles.bodyText}>따라하기 난이도 보통</Text>
           </View>
-          {song.recommendedInstrument === instrument.id ? (
-            <Text style={styles.badge}>추천</Text>
-          ) : null}
+          <View style={styles.instrumentBadgeRow}>
+            {song.recommendedInstrument === instrument.id ? (
+              <Text style={styles.badge}>추천</Text>
+            ) : null}
+            {selectedPracticeInstrument === instrument.id ? (
+              <Text style={styles.selectedBadge}>선택됨</Text>
+            ) : null}
+          </View>
         </Pressable>
       ))}
+      <PrimaryPillButton label="NEXT" onPress={() => dispatch({ type: 'next' })} />
     </View>
   );
 }
@@ -173,11 +183,16 @@ const styles = StyleSheet.create({
   instrumentCard: {
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: 'transparent',
     borderRadius: 22,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     minHeight: 72,
     padding: 18,
+  },
+  instrumentCardSelected: {
+    borderColor: GARAK_COLORS.brandAmber,
   },
   cardTitle: {
     color: GARAK_COLORS.textPrimary,
@@ -209,6 +224,20 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     color: GARAK_COLORS.textPrimary,
+    fontSize: 12,
+    fontWeight: '800',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  instrumentBadgeRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  selectedBadge: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: 14,
+    color: GARAK_COLORS.surfaceCard,
     fontSize: 12,
     fontWeight: '800',
     paddingHorizontal: 12,
