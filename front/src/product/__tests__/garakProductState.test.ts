@@ -66,6 +66,41 @@ test('keeps S05 in place and shows guidance when completing without a recorded t
   expect(getCurrentScreenSummary(state).description).toContain('저장할 테이크가 없어요');
 });
 
+test('keeps S05 in place and shows guidance when opening layer editor without a work', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'openLayerEditor' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.library.works).toHaveLength(0);
+  expect(state.currentWorkId).toBeUndefined();
+  expect(getCurrentScreenSummary(state).description).toContain('저장할 테이크가 없어요');
+});
+
+test('opens the layer editor from S05 when a saved work exists', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'back' });
+  state = applyProductAction(state, { type: 'openLayerEditor' });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.currentWorkId).toBe('work-1');
+  expect(state.freePlayNotice).toBeUndefined();
+});
+
 test('completes S05 by auto-saving an editable work and opening S07', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

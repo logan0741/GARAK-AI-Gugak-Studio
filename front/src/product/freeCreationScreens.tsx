@@ -290,7 +290,7 @@ export function FreePlayContent({
               onPress={() => dispatch({ type: 'startPerformanceRecording' })}
             />
             <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
-            <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
+            <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'openLayerEditor' })} />
             <PrimaryPillButton label="완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
           </View>
         </View>

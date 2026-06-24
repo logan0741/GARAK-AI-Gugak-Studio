@@ -121,6 +121,7 @@ export type GarakProductAction =
   | { type: 'startWithDefaults' }
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
+  | { type: 'openLayerEditor' }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
   | {
@@ -291,6 +292,8 @@ export function applyProductAction(
       };
     case 'completePerformance':
       return completePerformance(state, action.events);
+    case 'openLayerEditor':
+      return openLayerEditor(state);
     case 'openLiveJangdanGuide':
       return {
         ...state,
@@ -696,6 +699,29 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
         : pushTarget(state.screenFlow, 'S05'),
       { type: 'completePerformance' },
     ),
+  };
+}
+
+function openLayerEditor(state: GarakProductState): GarakProductState {
+  if (findCurrentWork(state) === undefined) {
+    return {
+      ...state,
+      freePlayNotice: 'missingTake',
+    };
+  }
+
+  return {
+    ...state,
+    freePlayNotice: undefined,
+    screenFlow:
+      state.screenFlow.currentScreen === 'S07'
+        ? state.screenFlow
+        : transitionScreenFlow(
+            state.screenFlow.currentScreen === 'S05'
+              ? state.screenFlow
+              : pushTarget(state.screenFlow, 'S05'),
+            { type: 'navigate', target: 'S07' },
+          ),
   };
 }
 
