@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { InstrumentId } from '../studio/studioTypes';
+import type { InstrumentId, Track } from '../studio/studioTypes';
 import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
 import { GarakProductAction, GarakProductState } from './garakProductState';
@@ -49,6 +49,18 @@ const PERFORMANCE_PREVIEW_TOP_CALLOUT =
   '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.';
 const PERFORMANCE_PREVIEW_BOTTOM_CALLOUT =
   '연주할 때는 양손으로 궁편과 열편을 손에 쥐고 연주.';
+
+function isInstrumentTrack(track: Track): track is Extract<Track, { kind: 'instrument' }> {
+  return track.kind === 'instrument';
+}
+
+function getNextTrackInstrument(existingInstruments: InstrumentId[]): InstrumentId {
+  return (
+    INSTRUMENT_CHIP_ORDER.find((instrument) => !existingInstruments.includes(instrument)) ??
+    existingInstruments[0] ??
+    DEFAULT_FREE_CREATION_INSTRUMENT
+  );
+}
 
 export function HomeScreenContent({
   dispatch,
@@ -371,12 +383,18 @@ export function AddTrackContent({
   dispatch: ProductDispatch;
 }) {
   const work = state.library.works.find((item) => item.id === state.currentWorkId);
-  const firstInstrumentTrack = work?.tracks.find((track) => track.kind === 'instrument');
+  const instrumentTracks = work?.tracks.filter(isInstrumentTrack) ?? [];
+  const firstInstrumentTrack = instrumentTracks[0];
+  const secondInstrumentTrack = instrumentTracks[1];
   const primaryInstrument =
-    firstInstrumentTrack?.kind === 'instrument'
-      ? firstInstrumentTrack.instrument
-      : state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
-  const currentTrackLabel = `TRACK 1 : ${getInstrumentName(primaryInstrument)}`;
+    firstInstrumentTrack?.instrument ?? state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const nextTrackInstrument = getNextTrackInstrument(instrumentTracks.map((track) => track.instrument));
+  const secondInstrumentTrackLabel = secondInstrumentTrack
+    ? `Track 2 : ${getInstrumentName(secondInstrumentTrack.instrument)}`
+    : undefined;
+  const currentTrackLabel = secondInstrumentTrackLabel
+    ? `Track 1 : ${getInstrumentName(primaryInstrument)}`
+    : `TRACK 1 : ${getInstrumentName(primaryInstrument)}`;
 
   return (
     <View style={styles.freeCreationTrackAddScreen}>
@@ -395,7 +413,12 @@ export function AddTrackContent({
           accessibilityRole="button"
           accessibilityLabel="AI 반주 생성하기"
           onPress={() => dispatch({ type: 'chooseAccompanimentTrack' })}
-          style={[styles.freeCreationLayerOptionWrap, styles.freeCreationAccompanimentLayer]}
+          style={[
+            styles.freeCreationLayerOptionWrap,
+            secondInstrumentTrackLabel
+              ? styles.freeCreationAccompanimentLayerAfterInstrument
+              : styles.freeCreationAccompanimentLayer,
+          ]}
         >
           <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionNavy]}>
             <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextNavy]}>
@@ -404,18 +427,30 @@ export function AddTrackContent({
           </View>
         </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="트랙 추가하기"
-          onPress={() => dispatch({ type: 'chooseInstrumentTrack', instrument: primaryInstrument })}
-          style={[styles.freeCreationLayerOptionWrap, styles.freeCreationInstrumentLayer]}
-        >
-          <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionRed]}>
-            <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextRed]}>
-              트랙 추가하기
-            </Text>
+        {secondInstrumentTrackLabel ? (
+          <View
+            accessible
+            accessibilityLabel={secondInstrumentTrackLabel}
+            style={[styles.freeCreationLayerOptionWrap, styles.freeCreationAddedInstrumentLayer]}
+          >
+            <View style={styles.freeCreationAddedInstrumentTrackButton}>
+              <Text style={styles.freeCreationAddedInstrumentTrackButtonText}>{secondInstrumentTrackLabel}</Text>
+            </View>
           </View>
-        </Pressable>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="트랙 추가하기"
+            onPress={() => dispatch({ type: 'chooseInstrumentTrack', instrument: nextTrackInstrument })}
+            style={[styles.freeCreationLayerOptionWrap, styles.freeCreationInstrumentLayer]}
+          >
+            <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionRed]}>
+              <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextRed]}>
+                트랙 추가하기
+              </Text>
+            </View>
+          </Pressable>
+        )}
 
         <View style={styles.freeCreationCurrentTrackButton}>
           <Text style={styles.freeCreationCurrentTrackButtonText}>{currentTrackLabel}</Text>
@@ -1215,8 +1250,16 @@ const styles = StyleSheet.create({
     top: 264,
     zIndex: 1,
   },
+  freeCreationAccompanimentLayerAfterInstrument: {
+    top: 264,
+    zIndex: 1,
+  },
   freeCreationInstrumentLayer: {
     top: 341,
+    zIndex: 2,
+  },
+  freeCreationAddedInstrumentLayer: {
+    top: 344,
     zIndex: 2,
   },
   freeCreationLayerOptionRotated: {
@@ -1248,6 +1291,23 @@ const styles = StyleSheet.create({
   freeCreationLayerOptionTextRed: {
     color: GARAK_COLORS.brandRed,
   },
+  freeCreationAddedInstrumentTrackButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandRed,
+    borderRadius: 126,
+    height: 59,
+    justifyContent: 'center',
+    transform: [{ rotate: '-8.4deg' }],
+    width: 346,
+  },
+  freeCreationAddedInstrumentTrackButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    lineHeight: 20,
+    textTransform: 'uppercase',
+  },
   freeCreationCurrentTrackButton: {
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.brandAmber,
@@ -1265,6 +1325,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.7,
     lineHeight: 20,
+    textTransform: 'uppercase',
   },
   freeCreationTrackAddGoButton: {
     alignItems: 'center',

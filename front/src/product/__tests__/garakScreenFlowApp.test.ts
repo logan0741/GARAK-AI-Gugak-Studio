@@ -10,6 +10,16 @@ test('does not render a mocked OS status bar in the app shell', () => {
   expect(source).not.toContain('homeIndicator');
 });
 
+test('uses the Figma completed instrument stack for S08 after adding a track', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('secondInstrumentTrackLabel');
+  expect(source).toContain('Track 2 :');
+  expect(source).toContain('freeCreationAddedInstrumentLayer');
+  expect(source).toContain('freeCreationAddedInstrumentTrackButton');
+  expect(source).toContain('freeCreationAccompanimentLayerAfterInstrument');
+});
+
 test('uses the Figma home hero copy in the home screen accessibility contract', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
