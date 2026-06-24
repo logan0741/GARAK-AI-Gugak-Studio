@@ -42,6 +42,17 @@ export function GayageumLandscapeStageArtwork() {
   );
 }
 
+export function DaegeumLandscapeStageArtwork() {
+  return (
+    <ArtworkImagePanel
+      accessibilityLabel="대금 자유 연주 가로 스테이지"
+      source={GARAK_SCREEN_ASSETS.creation.daegeumFreePlayLandscapeStage}
+      style={styles.jangguLandscapeStage}
+      imageStyle={styles.jangguLandscapeStageImage}
+    />
+  );
+}
+
 export function JangguPreviewStageArtwork({ style }: { style?: StyleProp<ViewStyle> }) {
   return (
     <ArtworkImagePanel

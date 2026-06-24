@@ -51,6 +51,15 @@ test('ships the Figma gayageum stage bitmap for the landscape free-play surface'
   expect(existsSync(resolve(productAssetsDir, 'creation-free-play-gayageum-stage.png'))).toBe(true);
 });
 
+test('ships the Figma daegeum stage bitmap for the landscape free-play surface', () => {
+  const assetName = 'creation-free-play-daegeum-stage.png';
+
+  expect(existsSync(resolve(productAssetsDir, assetName))).toBe(true);
+  expect(getProductAssetSha256(assetName)).toBe(
+    'B74D984255A588B2A21C66B1301B8694F5FE5D91DA0FC9ECE51C9D1F8980E0E9',
+  );
+});
+
 test('uses the embedded Figma header only on the free-play landscape artwork screen', () => {
   expect(usesEmbeddedLandscapeArtworkHeader('S05')).toBe(true);
   expect(usesEmbeddedLandscapeArtworkHeader('S09')).toBe(false);

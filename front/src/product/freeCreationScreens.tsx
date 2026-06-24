@@ -4,6 +4,7 @@ import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
+  DaegeumLandscapeStageArtwork,
   GayageumLandscapeStageArtwork,
   InstrumentSelectionArtworkPanel,
   JangguLandscapeStageArtwork,
@@ -208,13 +209,25 @@ export function FreePlayContent({
 }) {
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isLandscapeFrame = frameMode === 'landscape';
+  const usesFigmaDaegeumLandscapeStage = isLandscapeFrame && instrument === 'daegeum';
   const usesFigmaGayageumLandscapeStage = isLandscapeFrame && instrument === 'gayageum';
   const usesFigmaJangguLandscapeStage = isLandscapeFrame && instrument === 'janggu';
-  const usesFigmaLandscapeStage = usesFigmaGayageumLandscapeStage || usesFigmaJangguLandscapeStage;
+  const usesFigmaLandscapeStage =
+    usesFigmaDaegeumLandscapeStage || usesFigmaGayageumLandscapeStage || usesFigmaJangguLandscapeStage;
 
   return (
     <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
-      {usesFigmaGayageumLandscapeStage ? (
+      {usesFigmaDaegeumLandscapeStage ? (
+        <View style={styles.jangguLandscapeStageWrap}>
+          <DaegeumLandscapeStageArtwork />
+          <Pressable
+            accessibilityLabel="뒤로가기"
+            accessibilityRole="button"
+            onPress={() => dispatch({ type: 'back' })}
+            style={styles.jangguLandscapeBackHit}
+          />
+        </View>
+      ) : usesFigmaGayageumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <GayageumLandscapeStageArtwork />
           <Pressable
