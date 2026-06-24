@@ -2,6 +2,7 @@ import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View }
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState, ProductPlayerSelection } from './garakProductState';
+import { FEATURED_SHARED_RECORDING, getInstrumentName } from './productFixtures';
 import {
   getShareFeedViewModel,
   getSharePrepareAction,
@@ -41,7 +42,7 @@ export function SharePrepareContent({
         <SecondaryPillButton
           disabled={!model.canShare}
           label="공유하기"
-          onPress={() => dispatch({ type: 'navigate', target: 'S20' })}
+          onPress={() => dispatch({ type: 'publishShareTarget' })}
         />
         <SecondaryPillButton
           disabled={!model.canShare}
@@ -282,17 +283,26 @@ const RECENT_CARD_ARTWORK = {
 } as const;
 
 export function SharedDetailContent({ dispatch }: { state: GarakProductState; dispatch: ProductDispatch }) {
+  const recording = FEATURED_SHARED_RECORDING;
+
   return (
     <View style={styles.stack}>
       <ScreenHeading title="공유 가락 듣기" compact />
       <View style={styles.detailHero}>
-        <InstrumentVisual instrument="gayageum" />
+        <InstrumentVisual instrument={recording.instrument} />
       </View>
-      <MiniTrackPlayer title="아침의 아리랑" tone="red" />
-      <Text style={styles.bodyText}>공유 곡을 듣고 새 작업의 참조 트랙으로 리믹스할 수 있습니다.</Text>
+      <MiniTrackPlayer title={recording.title} tone="red" />
+      <Text style={styles.bodyText}>
+        {recording.authorDisplayName} · {getInstrumentName(recording.instrument)} · {recording.sourceLabel}
+      </Text>
       <View style={styles.buttonRow}>
-        <PrimaryPillButton label="리믹스" tone="amber" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} style={styles.rowPrimary} />
-        <SecondaryPillButton label="저장" onPress={() => dispatch({ type: 'navigate', target: 'S18' })} />
+        <PrimaryPillButton
+          label="리믹스"
+          tone="amber"
+          onPress={() => dispatch({ type: 'remixSharedRecording' })}
+          style={styles.rowPrimary}
+        />
+        <SecondaryPillButton label="저장" onPress={() => dispatch({ type: 'saveSharedRecording' })} />
       </View>
     </View>
   );

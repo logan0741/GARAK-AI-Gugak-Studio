@@ -55,6 +55,8 @@ export type ReferenceTrack = {
   kind: 'reference';
   sourceShareId: string;
   title: string;
+  authorDisplayName: string;
+  sourceLabel: string;
   volume: number;
   mute: boolean;
   solo: boolean;
@@ -77,13 +79,16 @@ export type Work = {
 export type ExportedAudio = {
   id: string;
   kind: 'exported_audio';
-  workId: string;
+  workId?: string;
   title: string;
   durationSeconds: number;
   instrumentNames: string[];
   createdAt: string;
   audioUri: string;
   shareState: ShareState;
+  sourceShareId?: string;
+  authorDisplayName?: string;
+  sourceLabel?: string;
 };
 
 export type PracticeResult = {

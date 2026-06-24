@@ -228,9 +228,16 @@ function MyLibraryPlaylistRowView({
           {row.title}
         </Text>
         {row.active ? (
-          <View style={styles.playlistProgress}>
-            <View style={styles.playlistProgressFill} />
-          </View>
+          <>
+            {row.subtitle !== undefined ? (
+              <Text numberOfLines={1} style={styles.playlistActiveMeta}>
+                {row.subtitle}
+              </Text>
+            ) : null}
+            <View style={[styles.playlistProgress, row.subtitle !== undefined ? styles.playlistProgressWithMeta : undefined]}>
+              <View style={styles.playlistProgressFill} />
+            </View>
+          </>
         ) : (
           <Text style={styles.playlistDate}>{row.date}</Text>
         )}
@@ -704,12 +711,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },
+  playlistActiveMeta: {
+    color: '#C9CBD4',
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0,
+    marginTop: 3,
+  },
   playlistProgress: {
     backgroundColor: '#5A5D6D',
     borderRadius: 3,
     height: 3,
     marginTop: 9,
     overflow: 'hidden',
+  },
+  playlistProgressWithMeta: {
+    marginTop: 5,
   },
   playlistProgressFill: {
     backgroundColor: GARAK_COLORS.brandAmber,

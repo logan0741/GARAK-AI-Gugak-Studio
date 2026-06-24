@@ -32,7 +32,7 @@ test('builds the Figma share-feed defaults', () => {
   ]);
 });
 
-test('uses a saved export as the shareable player item', () => {
+test('uses a shared export as the share-feed player item', () => {
   const state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
   });
@@ -51,7 +51,7 @@ test('uses a saved export as the shareable player item', () => {
           instrumentNames: ['가야금'],
           createdAt: '2026-06-18T00:00:00.000Z',
           audioUri: 'placeholder://export-1.wav',
-          shareState: 'ready',
+          shareState: 'shared',
         },
       ],
     },
@@ -61,6 +61,156 @@ test('uses a saved export as the shareable player item', () => {
     exportedAudioId: 'export-1',
     sourceKind: 'exportedAudio',
     title: 'My Exported Garak',
+  });
+});
+
+test('does not expose a share-ready export before it is published', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  const model = getShareFeedViewModel({
+    ...state,
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio',
+          workId: 'work-1',
+          title: '공유 전 내보내기',
+          durationSeconds: 42,
+          instrumentNames: ['가야금'],
+          createdAt: '2026-06-18T00:00:00.000Z',
+          audioUri: 'placeholder://export-1.wav',
+          shareState: 'ready',
+        },
+      ],
+    },
+  });
+
+  expect(model.player).toMatchObject({
+    sourceKind: 'demo',
+    title: 'My Arirang',
+  });
+});
+
+test('does not expose an auto-saved work as a share-feed player item', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  const model = getShareFeedViewModel({
+    ...state,
+    library: {
+      ...state.library,
+      works: [
+        {
+          id: 'work-1',
+          title: '자동 저장 작업',
+          createdAt: '2026-06-18T00:00:00.000Z',
+          updatedAt: '2026-06-18T00:00:00.000Z',
+          source: 'free_creation',
+          syncState: 'local_only',
+          tracks: [],
+        },
+      ],
+    },
+  });
+
+  expect(model.player).toMatchObject({
+    sourceKind: 'demo',
+    title: 'My Arirang',
+  });
+});
+
+test('prefers the selected shared practice result over an older shared export in the feed player', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  const model = getShareFeedViewModel({
+    ...state,
+    selectedPlayerItem: { kind: 'practiceResult', practiceResultId: 'practice-1' },
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio',
+          workId: 'work-1',
+          title: '먼저 공유한 내보내기',
+          durationSeconds: 42,
+          instrumentNames: ['가야금'],
+          createdAt: '2026-06-17T00:00:00.000Z',
+          audioUri: 'placeholder://export-1.wav',
+          shareState: 'shared',
+        },
+      ],
+      practiceResults: [
+        {
+          id: 'practice-1',
+          kind: 'practice_result',
+          songId: 'doraji',
+          instrument: 'daegeum',
+          accuracyScore: 91,
+          timingScore: 88,
+          feedback: '호흡이 안정적이에요.',
+          createdAt: '2026-06-18T00:00:00.000Z',
+          shareState: 'shared',
+        },
+      ],
+    },
+  });
+
+  expect(model.player).toMatchObject({
+    practiceResultId: 'practice-1',
+    sourceKind: 'practiceResult',
+    title: '도라지 연습 결과',
+  });
+});
+
+test('prefers the selected newer shared export when older shared exports already exist', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  const model = getShareFeedViewModel({
+    ...state,
+    selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: 'export-2' },
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio',
+          workId: 'work-1',
+          title: '먼저 공유한 내보내기',
+          durationSeconds: 42,
+          instrumentNames: ['가야금'],
+          createdAt: '2026-06-17T00:00:00.000Z',
+          audioUri: 'placeholder://export-1.wav',
+          shareState: 'shared',
+        },
+        {
+          id: 'export-2',
+          kind: 'exported_audio',
+          workId: 'work-2',
+          title: '방금 공유한 내보내기',
+          durationSeconds: 36,
+          instrumentNames: ['장구'],
+          createdAt: '2026-06-18T00:00:00.000Z',
+          audioUri: 'placeholder://export-2.wav',
+          shareState: 'shared',
+        },
+      ],
+    },
+  });
+
+  expect(model.player).toMatchObject({
+    exportedAudioId: 'export-2',
+    sourceKind: 'exportedAudio',
+    title: '방금 공유한 내보내기',
   });
 });
 

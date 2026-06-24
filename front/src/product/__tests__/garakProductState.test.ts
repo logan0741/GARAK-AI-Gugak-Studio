@@ -262,3 +262,121 @@ test('completes explicit login sync without dropping local library items', () =>
   expect(state.library.works[0].id).toBe('work-1');
   expect(state.screenFlow.currentScreen).toBe('S18');
 });
+
+test('remixes a shared demo recording into a new editable reference work', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S21' });
+  state = applyProductAction(state, { type: 'remixSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.currentWorkId).toBe('work-1');
+  expect(state.library.works).toHaveLength(1);
+  expect(state.library.works[0]).toMatchObject({
+    id: 'work-1',
+    title: '아침의 아리랑 리믹스',
+    source: 'remix',
+    syncState: 'local_only',
+  });
+  expect(state.library.works[0].tracks).toEqual([
+    {
+      id: 'track-1',
+      kind: 'reference',
+      sourceShareId: 'shared-morning-arirang',
+      title: '아침의 아리랑',
+      authorDisplayName: 'Minsu_Kim',
+      sourceLabel: '공유 피드 데모',
+      volume: 0.8,
+      mute: false,
+      solo: false,
+      startedAtBeat: 1,
+      createdAt: '2026-06-18T00:00:00.000Z',
+    },
+  ]);
+});
+
+test('saves a shared demo recording as a playable library audio item', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S21' });
+  state = applyProductAction(state, { type: 'saveSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S18');
+  expect(state.library.works).toHaveLength(0);
+  expect(state.library.exportedAudios).toHaveLength(1);
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    id: 'export-1',
+    kind: 'exported_audio',
+    title: '아침의 아리랑',
+    durationSeconds: 48,
+    instrumentNames: ['가야금'],
+    sourceShareId: 'shared-morning-arirang',
+    authorDisplayName: 'Minsu_Kim',
+    sourceLabel: '공유 피드 데모',
+    audioUri: 'placeholder://shared-morning-arirang.wav',
+    shareState: 'ready',
+  });
+  expect(state.library.exportedAudios[0].workId).toBeUndefined();
+  expect(state.selectedPlayerItem).toEqual({
+    kind: 'exportedAudio',
+    exportedAudioId: 'export-1',
+  });
+});
+
+test('publishes the selected exported audio from S17 and marks it shared', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S17' });
+  state = applyProductAction(state, { type: 'publishShareTarget' });
+
+  expect(state.screenFlow.currentScreen).toBe('S20');
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    id: 'export-1',
+    shareState: 'shared',
+  });
+  expect(state.selectedPlayerItem).toEqual({
+    kind: 'exportedAudio',
+    exportedAudioId: 'export-1',
+  });
+});
+
+test('publishes the selected practice result from S17 and marks it shared', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'practice' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'doraji' });
+  state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'finishPractice' });
+  state = applyProductAction(state, { type: 'sharePracticeResult' });
+  state = applyProductAction(state, { type: 'publishShareTarget' });
+
+  expect(state.screenFlow.currentScreen).toBe('S20');
+  expect(state.library.practiceResults[0]).toMatchObject({
+    id: 'practice-1',
+    songId: 'doraji',
+    instrument: 'daegeum',
+    shareState: 'shared',
+  });
+  expect(state.selectedPlayerItem).toEqual({
+    kind: 'practiceResult',
+    practiceResultId: 'practice-1',
+  });
+});

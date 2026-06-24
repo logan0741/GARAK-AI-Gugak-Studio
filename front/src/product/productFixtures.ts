@@ -25,6 +25,17 @@ export type JangdanPreset = {
   beatUnit: string;
 };
 
+export type SharedRecording = {
+  id: string;
+  title: string;
+  authorDisplayName: string;
+  sourceLabel: string;
+  instrument: InstrumentId;
+  durationSeconds: number;
+  audioUri: string;
+  remixable: boolean;
+};
+
 export const GARAK_BRAND = {
   serviceName: 'GARAK',
   subtitle: 'AI GUGAK STUDIO',
@@ -108,6 +119,17 @@ export const JANGDAN_PRESETS: JangdanPreset[] = [
     beatUnit: '♩.',
   },
 ];
+
+export const FEATURED_SHARED_RECORDING: SharedRecording = {
+  id: 'shared-morning-arirang',
+  title: '아침의 아리랑',
+  authorDisplayName: 'Minsu_Kim',
+  sourceLabel: '공유 피드 데모',
+  instrument: 'gayageum',
+  durationSeconds: 48,
+  audioUri: 'placeholder://shared-morning-arirang.wav',
+  remixable: true,
+};
 
 export function getInstrumentName(instrument: InstrumentId): string {
   return MVP_INSTRUMENTS.find((item) => item.id === instrument)?.name ?? instrument;

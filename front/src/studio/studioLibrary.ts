@@ -8,6 +8,7 @@ import {
   LibrarySections,
   LiveJangdanGuide,
   PracticeResult,
+  ReferenceTrack,
   Take,
   Work,
 } from './studioTypes';
@@ -139,6 +140,8 @@ export function exportWorkAudioPlaceholder(input: {
   durationSeconds: number;
   createdAt: string;
 }): ExportedAudio {
+  const referenceSource = collectReferenceSource(input.work);
+
   return {
     id: input.id,
     kind: 'exported_audio',
@@ -149,6 +152,7 @@ export function exportWorkAudioPlaceholder(input: {
     createdAt: input.createdAt,
     audioUri: input.audioUri,
     shareState: 'ready',
+    ...referenceSource,
   };
 }
 
@@ -252,9 +256,29 @@ function collectInstrumentNames(work: Work): string[] {
     if (track.kind === 'accompaniment') {
       names.add('장단');
     }
+    if (track.kind === 'reference') {
+      names.add(`참조: ${track.title}`);
+    }
   }
 
   return [...names];
+}
+
+function collectReferenceSource(work: Work): Pick<
+  ExportedAudio,
+  'sourceShareId' | 'authorDisplayName' | 'sourceLabel'
+> | undefined {
+  const referenceTrack = work.tracks.find((track): track is ReferenceTrack => track.kind === 'reference');
+
+  if (referenceTrack === undefined) {
+    return undefined;
+  }
+
+  return {
+    sourceShareId: referenceTrack.sourceShareId,
+    authorDisplayName: referenceTrack.authorDisplayName,
+    sourceLabel: referenceTrack.sourceLabel,
+  };
 }
 
 function resolveStartBeat(playheadBeat: number | undefined): number {

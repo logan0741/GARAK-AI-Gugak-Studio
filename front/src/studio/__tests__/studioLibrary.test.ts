@@ -9,6 +9,7 @@ import {
   mergeAccountLibraryPreview,
   selectLibrarySections,
 } from '../studioLibrary';
+import type { Work } from '../studioTypes';
 
 const pluck = {
   type: 'string_pluck',
@@ -169,6 +170,50 @@ test('separates editable works from exported audio and practice results in the l
   expect(sections.shareables.map((item) => item.id)).toEqual(['export-1', 'practice-1']);
   expect(exported.shareState).toBe('ready');
   expect(practiceResult.shareState).toBe('ready');
+});
+
+test('exports a reference-only remix work with shared recording provenance', () => {
+  const work: Work = {
+    id: 'work-remix',
+    title: '아침의 아리랑 리믹스',
+    createdAt: '2026-06-18T00:00:00.000Z',
+    updatedAt: '2026-06-18T00:00:00.000Z',
+    source: 'remix',
+    syncState: 'local_only',
+    tracks: [
+      {
+        id: 'track-reference',
+        kind: 'reference',
+        sourceShareId: 'shared-morning-arirang',
+        title: '아침의 아리랑',
+        authorDisplayName: 'Minsu_Kim',
+        sourceLabel: '공유 피드 데모',
+        volume: 0.8,
+        mute: false,
+        solo: false,
+        startedAtBeat: 1,
+        createdAt: '2026-06-18T00:00:00.000Z',
+      },
+    ],
+  };
+
+  const exported = exportWorkAudioPlaceholder({
+    id: 'export-remix',
+    work,
+    title: '아침의 아리랑 리믹스 내보내기',
+    audioUri: 'placeholder://export-remix.wav',
+    durationSeconds: 24,
+    createdAt: '2026-06-18T00:05:00.000Z',
+  });
+
+  expect(exported).toMatchObject({
+    id: 'export-remix',
+    workId: 'work-remix',
+    instrumentNames: ['참조: 아침의 아리랑'],
+    sourceShareId: 'shared-morning-arirang',
+    authorDisplayName: 'Minsu_Kim',
+    sourceLabel: '공유 피드 데모',
+  });
 });
 
 test('previews account sync without deleting local library items', () => {

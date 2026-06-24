@@ -216,7 +216,7 @@ function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {
     kind: 'exportedAudio',
     playable: true,
     active: false,
-    subtitle: `${audio.instrumentNames.join(', ')} · ${formatDuration(audio.durationSeconds)}`,
+    subtitle: formatExportedAudioSubtitle(audio),
     exportedAudioId: audio.id,
     sortKey: toSortKey(audio.createdAt),
     order: order++,
@@ -300,7 +300,7 @@ function createWorkPlayerViewModel(work: Work): MyLibraryPlayerViewModel {
 function createExportedAudioPlayerViewModel(audio: ExportedAudio): MyLibraryPlayerViewModel {
   return {
     title: audio.title,
-    meta: `사용 악기 ${audio.instrumentNames.join(', ') || '가야금'} · ${formatDuration(audio.durationSeconds)}`,
+    meta: formatExportedAudioPlayerMeta(audio),
     sourceKind: 'exportedAudio',
     ...FIGMA_PLAYING_PLAYER_STATE,
     editWorkId: audio.workId,
@@ -362,6 +362,32 @@ function formatDuration(durationSeconds: number): string {
   const seconds = Math.round(durationSeconds % 60);
 
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatExportedAudioSubtitle(audio: ExportedAudio): string {
+  return joinMetadata([
+    formatSharedSource(audio),
+    `${audio.instrumentNames.join(', ')} · ${formatDuration(audio.durationSeconds)}`,
+  ]);
+}
+
+function formatExportedAudioPlayerMeta(audio: ExportedAudio): string {
+  return joinMetadata([
+    formatSharedSource(audio),
+    `사용 악기 ${audio.instrumentNames.join(', ') || '가야금'} · ${formatDuration(audio.durationSeconds)}`,
+  ]);
+}
+
+function formatSharedSource(audio: ExportedAudio): string | undefined {
+  if (audio.authorDisplayName === undefined || audio.sourceLabel === undefined) {
+    return undefined;
+  }
+
+  return `${audio.authorDisplayName} · ${audio.sourceLabel}`;
+}
+
+function joinMetadata(parts: Array<string | undefined>): string {
+  return parts.filter((part): part is string => part !== undefined && part.length > 0).join(' · ');
 }
 
 function formatPracticeSongTitle(songId: string): string {

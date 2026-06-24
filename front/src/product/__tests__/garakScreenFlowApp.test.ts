@@ -135,6 +135,23 @@ test('prevents the share feed from entering S17 without a shareable target', () 
   expect(source).not.toContain("onPress={() => dispatch({ type: 'navigate', target: 'S17' })}");
 });
 
+test('connects S17 share publishing to the selected share target state', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+
+  expect(source).toContain("type: 'publishShareTarget'");
+  expect(source).not.toContain("label=\"공유하기\"\n          onPress={() => dispatch({ type: 'navigate', target: 'S20' })}");
+});
+
+test('connects shared detail remix and save buttons to library data actions', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+
+  expect(source).toContain('FEATURED_SHARED_RECORDING');
+  expect(source).toContain("type: 'remixSharedRecording'");
+  expect(source).toContain("type: 'saveSharedRecording'");
+  expect(source).not.toContain("label=\"리믹스\" tone=\"amber\" onPress={() => dispatch({ type: 'navigate', target: 'S07' })}");
+  expect(source).not.toContain("label=\"저장\" onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
+});
+
 test('uses the Figma stacked track add flow for S08', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 

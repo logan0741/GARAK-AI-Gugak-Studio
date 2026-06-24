@@ -151,38 +151,65 @@ function formatExportedInstrumentNames(audio: ExportedAudio): string {
 }
 
 function getShareablePlayer(state: GarakProductState): ShareFeedPlayer {
-  const exportedAudio = state.library.exportedAudios[0];
+  const selectedPlayer = getSelectedSharedPlayer(state);
 
-  if (exportedAudio !== undefined) {
-    return {
-      title: exportedAudio.title,
-      sourceKind: 'exportedAudio',
-      exportedAudioId: exportedAudio.id,
-    };
+  if (selectedPlayer !== undefined) {
+    return selectedPlayer;
   }
 
-  const work = state.library.works[0];
+  const newestSharedItem = [
+    ...state.library.exportedAudios
+      .filter((audio) => audio.shareState === 'shared')
+      .map((audio) => ({ createdAt: audio.createdAt, player: toExportedAudioPlayer(audio) })),
+    ...state.library.practiceResults
+      .filter((result) => result.shareState === 'shared')
+      .map((result) => ({ createdAt: result.createdAt, player: toPracticeResultPlayer(result) })),
+  ].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
 
-  if (work !== undefined) {
-    return {
-      title: work.title,
-      sourceKind: 'work',
-      workId: work.id,
-    };
-  }
-
-  const practiceResult = state.library.practiceResults[0];
-
-  if (practiceResult !== undefined) {
-    return {
-      title: 'Practice Result',
-      sourceKind: 'practiceResult',
-      practiceResultId: practiceResult.id,
-    };
+  if (newestSharedItem !== undefined) {
+    return newestSharedItem.player;
   }
 
   return {
     title: 'My Arirang',
     sourceKind: 'demo',
+  };
+}
+
+function getSelectedSharedPlayer(state: GarakProductState): ShareFeedPlayer | undefined {
+  const selected = state.selectedPlayerItem;
+
+  if (selected?.kind === 'exportedAudio') {
+    const audio = state.library.exportedAudios.find(
+      (item) => item.id === selected.exportedAudioId && item.shareState === 'shared',
+    );
+
+    return audio === undefined ? undefined : toExportedAudioPlayer(audio);
+  }
+
+  if (selected?.kind === 'practiceResult') {
+    const result = state.library.practiceResults.find(
+      (item) => item.id === selected.practiceResultId && item.shareState === 'shared',
+    );
+
+    return result === undefined ? undefined : toPracticeResultPlayer(result);
+  }
+
+  return undefined;
+}
+
+function toExportedAudioPlayer(audio: ExportedAudio): ShareFeedPlayer {
+  return {
+    title: audio.title,
+    sourceKind: 'exportedAudio',
+    exportedAudioId: audio.id,
+  };
+}
+
+function toPracticeResultPlayer(result: PracticeResult): ShareFeedPlayer {
+  return {
+    title: `${getPracticeSongTitle(result.songId)} 연습 결과`,
+    sourceKind: 'practiceResult',
+    practiceResultId: result.id,
   };
 }

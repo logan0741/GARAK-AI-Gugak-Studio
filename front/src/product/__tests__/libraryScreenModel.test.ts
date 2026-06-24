@@ -151,3 +151,30 @@ test('builds the player detail from the selected my-library item', () => {
     title: state.library.exportedAudios[0].title,
   });
 });
+
+test('keeps shared recording provenance visible after saving it to the library', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S21' });
+  state = applyProductAction(state, { type: 'saveSharedRecording' });
+
+  const library = getMyLibraryViewModel(state);
+
+  expect(library.playlistRows[0]).toMatchObject({
+    kind: 'exportedAudio',
+    title: '아침의 아리랑',
+    subtitle: 'Minsu_Kim · 공유 피드 데모 · 가야금 · 0:48',
+  });
+
+  const player = getMyLibraryPlayerViewModel(state);
+
+  expect(player).toMatchObject({
+    sourceKind: 'exportedAudio',
+    title: '아침의 아리랑',
+    meta: 'Minsu_Kim · 공유 피드 데모 · 사용 악기 가야금 · 0:48',
+  });
+  expect(player.editWorkId).toBeUndefined();
+});
