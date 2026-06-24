@@ -33,6 +33,7 @@ import {
   type JangdanPresetPanelMode,
 } from './jangdanPresetPanelModel';
 import { getFreeCreationCompletedPreviewModel } from './freeCreationCompletedPreviewModel';
+import { getFreeCreationMixEditorModel } from './freeCreationMixEditorModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
@@ -307,6 +308,7 @@ export function TrackLayerEditorContent({
 }) {
   const work = state.library.works.find((item) => item.id === state.currentWorkId);
   const hasAccompanimentTrack = work?.tracks.some(isAccompanimentTrack) ?? false;
+  const mixEditorModel = getFreeCreationMixEditorModel(state);
 
   if (hasAccompanimentTrack) {
     return <FreeCreationCompletedPreviewContent state={state} dispatch={dispatch} />;
@@ -314,7 +316,11 @@ export function TrackLayerEditorContent({
 
   return (
     <View style={styles.freeCreationMixScreen}>
-      <View style={styles.freeCreationPlayerDeck} accessible accessibilityLabel="My Janggu 재생 미리보기">
+      <View
+        style={styles.freeCreationPlayerDeck}
+        accessible
+        accessibilityLabel={mixEditorModel.playerAccessibilityLabel}
+      >
         <View style={styles.freeCreationPlayerShadowBack} />
         <View style={styles.freeCreationPlayerShadowFront} />
         <View style={styles.freeCreationPlayerCard}>
@@ -322,7 +328,7 @@ export function TrackLayerEditorContent({
             <Text style={styles.freeCreationNewBadgeText}>NEW!</Text>
           </View>
           <Text numberOfLines={1} style={styles.freeCreationPlayerTitle}>
-            My Janggu
+            {mixEditorModel.playerTitle}
           </Text>
           <View style={styles.freeCreationPlayerProgress}>
             <View style={styles.freeCreationPlayerProgressFill} />

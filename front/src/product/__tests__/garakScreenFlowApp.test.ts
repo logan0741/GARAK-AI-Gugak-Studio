@@ -182,12 +182,15 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
 
   expect(source).toContain('freeCreationMixScreen');
   expect(source).toContain('freeCreationPlayerDeck');
-  expect(source).toContain('My Janggu');
+  expect(source).toContain('getFreeCreationMixEditorModel');
+  expect(source).toContain('mixEditorModel.playerTitle');
+  expect(source).toContain('mixEditorModel.playerAccessibilityLabel');
   expect(source).toContain('Mix');
   expect(source).toContain('Save & Share project');
   expect(source).toContain("type: 'addTrack'");
   expect(source).toContain("type: 'exportCurrentWork'");
   expect(source).not.toContain('TrackPill label="트랙 추가하기"');
+  expect(source).not.toContain('My Janggu');
 });
 
 test('prevents the share feed from entering S17 without a shareable target', () => {
