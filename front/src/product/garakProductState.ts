@@ -1162,10 +1162,11 @@ function applyInstrumentTrack(
     return state;
   }
 
-  const takeEvents = events.length > 0 ? events : state.pendingFreePlayTake?.events ?? [];
-  if (takeEvents.length === 0) {
+  const hasRecordedTake = state.pendingFreePlayTake !== undefined || events.length > 0;
+  if (!hasRecordedTake) {
     return state;
   }
+  const takeEvents = events.length > 0 ? events : state.pendingFreePlayTake?.events ?? [];
 
   const nextCounters = incrementCounters(state.counters, ['track', 'take']);
   const now = state.now();

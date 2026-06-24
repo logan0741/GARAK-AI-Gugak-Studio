@@ -676,7 +676,7 @@ test('keeps S07 work track edits no-op when they would not change the work', () 
   });
 });
 
-test('does not add an S09 instrument track until a take has recorded events', () => {
+test('does not add an S09 instrument track until recording starts, then applies the recorded take', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
   });
@@ -697,11 +697,21 @@ test('does not add an S09 instrument track until a take has recorded events', ()
   expect(state.screenFlow.currentScreen).toBe('S09');
   expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeApply);
 
-  state = applyProductAction(state, { type: 'restartInstrumentTrackRecording' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
   state = applyProductAction(state, { type: 'applyInstrumentTrack' });
 
-  expect(state.screenFlow.currentScreen).toBe('S09');
-  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeApply);
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeApply + 1);
+  expect(state.library.works[0].tracks[1]).toMatchObject({
+    kind: 'instrument',
+    instrument: 'daegeum',
+    startedAtBeat: 1,
+  });
+  expect(
+    state.library.works[0].tracks[1].kind === 'instrument'
+      ? state.library.works[0].tracks[1].takes[0].events
+      : undefined,
+  ).toEqual([]);
 });
 
 test('records, restarts, and cancels an S09 extra instrument take before adding a track', () => {
