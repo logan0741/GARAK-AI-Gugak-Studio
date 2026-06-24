@@ -43,6 +43,14 @@ test('connects S10 jangdan preset previews without applying the preset', () => {
   expect(source).toContain("type: 'turnOffLiveJangdanGuide'");
   expect(source).toContain("type: 'cancelAccompanimentTrack'");
   expect(source).toContain('model.previewingPresetId');
+  expect(source).toContain('model.bpmValueLabel');
+  expect(source).toContain('model.volumeValueLabel');
+  expect(source).toContain('dispatch(model.decreaseBpmAction)');
+  expect(source).toContain('dispatch(model.increaseBpmAction)');
+  expect(source).toContain('dispatch(model.decreaseVolumeAction)');
+  expect(source).toContain('dispatch(model.increaseVolumeAction)');
+  expect(source).toContain('disabled={model.acceptAction === undefined}');
+  expect(source).toContain('dispatch(model.acceptAction)');
   expect(source).toContain('미리듣는 중');
   expect(source).toContain("label={mode === 'live' ? '끄기' : '취소'}");
   expect(source).toContain('previewButtonActive');

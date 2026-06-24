@@ -796,6 +796,20 @@ function JangdanPresetPanel({
       {model.recommendationMessage ? (
         <Text style={styles.recommendationMessage}>{model.recommendationMessage}</Text>
       ) : null}
+      <View style={styles.jangdanControlStack}>
+        <JangdanStepperControl
+          label="BPM"
+          value={model.bpmValueLabel}
+          onDecrease={() => dispatch(model.decreaseBpmAction)}
+          onIncrease={() => dispatch(model.increaseBpmAction)}
+        />
+        <JangdanStepperControl
+          label="볼륨"
+          value={model.volumeValueLabel}
+          onDecrease={() => dispatch(model.decreaseVolumeAction)}
+          onIncrease={() => dispatch(model.increaseVolumeAction)}
+        />
+      </View>
       <View style={styles.presetStack}>
         {model.manualPresets.map((preset) => {
           const isPreviewing = model.previewingPresetId === preset.id;
@@ -817,7 +831,7 @@ function JangdanPresetPanel({
                     mode,
                     presetId: preset.id,
                     bpm: preset.defaultBpm,
-                    volume: mode === 'live' ? 0.6 : 0.7,
+                    volume: model.acceptedVolume,
                   })
                 }
                 style={[
@@ -834,21 +848,10 @@ function JangdanPresetPanel({
         })}
       </View>
       <PrimaryPillButton
+        disabled={model.acceptAction === undefined}
         label={mode === 'live' ? '적용하고 연주로 돌아가기' : '반주 트랙 추가'}
         onPress={() =>
-          mode === 'live'
-            ? dispatch({
-                type: 'applyLiveJangdanGuide',
-                presetId: model.acceptedPreset.id,
-                bpm: model.acceptedPreset.defaultBpm,
-                volume: 0.6,
-              })
-            : dispatch({
-                type: 'addAccompanimentTrack',
-                presetId: model.acceptedPreset.id,
-                bpm: model.acceptedPreset.defaultBpm,
-                volume: 0.7,
-              })
+          model.acceptAction === undefined ? undefined : dispatch(model.acceptAction)
         }
       />
       <SecondaryPillButton
@@ -859,6 +862,41 @@ function JangdanPresetPanel({
             : dispatch({ type: 'cancelAccompanimentTrack' })
         }
       />
+    </View>
+  );
+}
+
+function JangdanStepperControl({
+  label,
+  value,
+  onDecrease,
+  onIncrease,
+}: {
+  label: string;
+  value: string;
+  onDecrease: () => void;
+  onIncrease: () => void;
+}) {
+  return (
+    <View style={styles.jangdanStepperRow}>
+      <Text style={styles.jangdanStepperLabel}>{label}</Text>
+      <Pressable
+        accessibilityLabel={`${label} 낮추기`}
+        accessibilityRole="button"
+        onPress={onDecrease}
+        style={styles.jangdanStepperButton}
+      >
+        <Text style={styles.jangdanStepperButtonText}>-</Text>
+      </Pressable>
+      <Text style={styles.jangdanStepperValue}>{value}</Text>
+      <Pressable
+        accessibilityLabel={`${label} 높이기`}
+        accessibilityRole="button"
+        onPress={onIncrease}
+        style={styles.jangdanStepperButton}
+      >
+        <Text style={styles.jangdanStepperButtonText}>+</Text>
+      </Pressable>
     </View>
   );
 }
@@ -2137,6 +2175,47 @@ const styles = StyleSheet.create({
   },
   presetStack: {
     gap: 10,
+  },
+  jangdanControlStack: {
+    gap: 8,
+  },
+  jangdanStepperRow: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 18,
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 48,
+    paddingHorizontal: 14,
+  },
+  jangdanStepperLabel: {
+    color: GARAK_COLORS.textSecondary,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  jangdanStepperButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceSoft,
+    borderRadius: 14,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  jangdanStepperButtonText: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 22,
+  },
+  jangdanStepperValue: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0,
+    minWidth: 64,
+    textAlign: 'center',
   },
   presetRow: {
     alignItems: 'center',

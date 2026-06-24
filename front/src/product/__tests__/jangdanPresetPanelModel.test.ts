@@ -53,6 +53,7 @@ test('models S10B recommendation from current work events with manual fallback p
   expect(fallbackModel.recommendedPreset).toBeUndefined();
   expect(fallbackModel.acceptedPreset.id).toBe(JANGDAN_PRESETS[0].id);
   expect(fallbackModel.acceptedPreset.defaultBpm).toBe(JANGDAN_PRESETS[0].defaultBpm);
+  expect(fallbackModel.acceptAction).toBeUndefined();
   expect(fallbackModel.manualPresets.map((preset) => preset.id)).toEqual(
     JANGDAN_PRESETS.map((preset) => preset.id),
   );
@@ -80,12 +81,81 @@ test('accepts the previewed S10B preset when adding an accompaniment track', () 
     type: 'previewJangdanPreset',
     mode: 'track',
     presetId: 'jungmori',
-    bpm: 80,
-    volume: 0.7,
+    bpm: 76,
+    volume: 0.42,
   });
 
   const model = getJangdanPresetPanelModel(state, 'track');
 
   expect(model.acceptedPreset.id).toBe('jungmori');
-  expect(model.acceptedPreset.defaultBpm).toBe(80);
+  expect(model.acceptedBpm).toBe(76);
+  expect(model.acceptedVolume).toBe(0.42);
+  expect(model.acceptAction).toMatchObject({
+    type: 'addAccompanimentTrack',
+    presetId: 'jungmori',
+    bpm: 76,
+    volume: 0.42,
+  });
+  expect(model.bpmValueLabel).toBe('76 BPM');
+  expect(model.volumeValueLabel).toBe('42%');
+  expect(model.increaseBpmAction).toMatchObject({
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.42,
+  });
+  expect(model.increaseVolumeAction).toMatchObject({
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 76,
+    volume: 0.52,
+  });
+});
+
+test('clamps S10B preview controls to preset bpm and volume bounds', () => {
+  let state = createWorkState(plucks([0, 650, 1300, 1950, 2600]));
+
+  state = applyProductAction(state, {
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 999,
+    volume: 2,
+  });
+
+  const maxModel = getJangdanPresetPanelModel(state, 'track');
+
+  expect(maxModel.acceptedBpm).toBe(100);
+  expect(maxModel.acceptedVolume).toBe(1);
+  expect(maxModel.increaseBpmAction).toMatchObject({ bpm: 100 });
+  expect(maxModel.increaseVolumeAction).toMatchObject({ volume: 1 });
+  expect(maxModel.acceptAction).toMatchObject({
+    type: 'addAccompanimentTrack',
+    presetId: 'jungmori',
+    bpm: 100,
+    volume: 1,
+  });
+
+  state = applyProductAction(state, {
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: -1,
+    volume: -0.5,
+  });
+
+  const minModel = getJangdanPresetPanelModel(state, 'track');
+
+  expect(minModel.acceptedBpm).toBe(70);
+  expect(minModel.acceptedVolume).toBe(0);
+  expect(minModel.decreaseBpmAction).toMatchObject({ bpm: 70 });
+  expect(minModel.decreaseVolumeAction).toMatchObject({ volume: 0 });
+  expect(minModel.acceptAction).toMatchObject({
+    type: 'addAccompanimentTrack',
+    presetId: 'jungmori',
+    bpm: 70,
+    volume: 0,
+  });
 });
