@@ -33,6 +33,22 @@ test('previews S23 account sync without dropping local library items', () => {
     login: { type: 'completeLoginSync' },
     sync: { type: 'completeLoginSync' },
     importSelected: { type: 'completeLoginSync' },
-    skip: { type: 'navigate', target: 'S22' },
+    skip: { type: 'back' },
   });
+});
+
+test('returns to the S23 entry surface when skipping login sync', () => {
+  let settingsState = createInitialGarakProductState();
+  settingsState = applyProductAction(settingsState, { type: 'navigate', target: 'S22' });
+  settingsState = applyProductAction(settingsState, { type: 'loginAndLoadMySongs' });
+  settingsState = applyProductAction(settingsState, getLoginSyncViewModel(settingsState).actions.skip);
+
+  expect(settingsState.screenFlow.currentScreen).toBe('S22');
+
+  let libraryState = createInitialGarakProductState();
+  libraryState = applyProductAction(libraryState, { type: 'navigate', target: 'S18' });
+  libraryState = applyProductAction(libraryState, { type: 'loginAndLoadMySongs' });
+  libraryState = applyProductAction(libraryState, getLoginSyncViewModel(libraryState).actions.skip);
+
+  expect(libraryState.screenFlow.currentScreen).toBe('S18');
 });

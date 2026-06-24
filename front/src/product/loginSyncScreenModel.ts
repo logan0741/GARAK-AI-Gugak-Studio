@@ -43,7 +43,7 @@ export function getLoginSyncViewModel(state: GarakProductState): LoginSyncViewMo
       login: { type: 'completeLoginSync' },
       sync: { type: 'completeLoginSync' },
       importSelected: { type: 'completeLoginSync' },
-      skip: { type: 'navigate', target: 'S22' },
+      skip: { type: 'back' },
     },
   };
 }
