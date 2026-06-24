@@ -58,6 +58,8 @@ export type FreePlayNotice = 'missingTake';
 
 export type TrackAddNotice = 'importLocked';
 
+export type InstrumentSelectNotice = 'futureInstrument';
+
 export type PracticeAttemptStatus = 'ready' | 'playing' | 'paused' | 'completed';
 
 export type PracticeAttempt = {
@@ -87,6 +89,7 @@ export type GarakProductState = {
   librarySearchQuery: string;
   pendingFreePlayTake?: PendingFreePlayTake;
   freePlayNotice?: FreePlayNotice;
+  instrumentSelectNotice?: InstrumentSelectNotice;
   trackAddNotice?: TrackAddNotice;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
@@ -118,6 +121,7 @@ export type GarakProductAction =
   | { type: 'setLanguage'; language: ProductLanguage }
   | { type: 'next' }
   | { type: 'selectInstrument'; instrument: InstrumentId }
+  | { type: 'showFutureInstrumentNotice' }
   | { type: 'startWithDefaults' }
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
@@ -272,12 +276,19 @@ export function applyProductAction(
       return {
         ...state,
         selectedInstrument: action.instrument,
+        instrumentSelectNotice: undefined,
         practiceAttempt: undefined,
+      };
+    case 'showFutureInstrumentNotice':
+      return {
+        ...state,
+        instrumentSelectNotice: 'futureInstrument',
       };
     case 'startWithDefaults':
       return {
         ...state,
         selectedInstrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
+        instrumentSelectNotice: undefined,
         pendingFreePlayTake: undefined,
         freePlayNotice: undefined,
         screenFlow: pushTarget(state.screenFlow, 'S05'),
@@ -526,9 +537,15 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         primaryCtas: ['자유창작 모드', '따라하기 모드', 'Next'],
       };
     case 'S04':
-      return summary(screenId, '악기 선택', '자유창작', '가야금, 장구, 대금 중 연주할 악기를 선택해요.', [
-        'Next',
-      ]);
+      return summary(
+        screenId,
+        '악기 선택',
+        '자유창작',
+        state.instrumentSelectNotice === 'futureInstrument'
+          ? '새로운 악기가 업데이트될 예정이에요. 지금은 가야금, 장구, 대금 중 선택해 주세요.'
+          : '가야금, 장구, 대금 중 연주할 악기를 선택해요.',
+        ['Next'],
+      );
     case 'S04A':
       return summary(screenId, '연주 기본 설정', getInstrumentLabel(state), '초보자는 기본값으로 바로 시작할 수 있어요.', [
         '기본값으로 시작',

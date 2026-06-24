@@ -141,6 +141,9 @@ test('uses the Figma instrument selection design for the free-creation instrumen
   expect(source).toContain('장구는 한국 전통 음악에서');
   expect(source).toContain('InstrumentSelectionArtworkPanel');
   expect(source).toContain('FUTURE_INSTRUMENT_CHIPS');
+  expect(source).toContain('onLockedInstrumentPress');
+  expect(source).toContain("type: 'showFutureInstrumentNotice'");
+  expect(source).toContain('새로운 악기가 업데이트될 예정이에요');
   expect(source).toContain('NEXT');
   expect(source).not.toContain('연주 & 녹음');
 });

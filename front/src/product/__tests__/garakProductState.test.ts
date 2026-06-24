@@ -50,6 +50,18 @@ test('uses the visible default free-creation instrument when starting with defau
   expect(getCurrentScreenSummary(state).title).toBe('장구 자유연주');
 });
 
+test('keeps locked future instruments unselected and shows an update notice', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'showFutureInstrumentNotice' });
+
+  expect(state.screenFlow.currentScreen).toBe('S04');
+  expect(state.selectedInstrument).toBeUndefined();
+  expect(getCurrentScreenSummary(state).description).toContain('새로운 악기가 업데이트될 예정이에요');
+});
+
 test('keeps S05 in place and shows guidance when completing without a recorded take', () => {
   let state = createInitialGarakProductState();
 

@@ -125,7 +125,11 @@ export function InstrumentSelectContent({
         variant="figma"
         selectedInstrument={selectedInstrument}
         onSelect={(instrument) => dispatch({ type: 'selectInstrument', instrument })}
+        onLockedInstrumentPress={() => dispatch({ type: 'showFutureInstrumentNotice' })}
       />
+      {state.instrumentSelectNotice === 'futureInstrument' ? (
+        <Text style={styles.instrumentSelectNotice}>새로운 악기가 업데이트될 예정이에요.</Text>
+      ) : null}
       {selectedInstrument === DEFAULT_FREE_CREATION_INSTRUMENT ? (
         <View
           accessible
@@ -798,10 +802,12 @@ function JangdanPresetPanel({
 function InstrumentChipRow({
   selectedInstrument,
   onSelect,
+  onLockedInstrumentPress,
   variant = 'wrap',
 }: {
   selectedInstrument: InstrumentId;
   onSelect: (instrument: InstrumentId) => void;
+  onLockedInstrumentPress?: () => void;
   variant?: 'wrap' | 'figma';
 }) {
   const chipContent = (
@@ -841,9 +847,11 @@ function InstrumentChipRow({
       })}
       {variant === 'figma'
         ? FUTURE_INSTRUMENT_CHIPS.map((chip) => (
-            <View
+            <Pressable
               accessibilityLabel="준비 중인 악기"
+              accessibilityRole="button"
               key={chip.id}
+              onPress={onLockedInstrumentPress}
               style={[
                 styles.instrumentChip,
                 styles.instrumentChipFigma,
@@ -852,12 +860,18 @@ function InstrumentChipRow({
               ]}
             >
               <LockGlyph />
-            </View>
+            </Pressable>
           ))
         : Array.from({ length: LOCKED_FUTURE_INSTRUMENT_SLOTS }, (_, index) => (
-            <View key={index} style={[styles.instrumentChip, styles.instrumentChipLocked]}>
+            <Pressable
+              accessibilityLabel="준비 중인 악기"
+              accessibilityRole="button"
+              key={index}
+              onPress={onLockedInstrumentPress}
+              style={[styles.instrumentChip, styles.instrumentChipLocked]}
+            >
               <Text style={styles.instrumentChipLockedText}>잠금</Text>
-            </View>
+            </Pressable>
           ))}
     </>
   );
@@ -936,6 +950,14 @@ const styles = StyleSheet.create({
   instrumentSelectTitleStrong: {
     color: '#191919',
     fontWeight: '800',
+  },
+  instrumentSelectNotice: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+    marginTop: 8,
+    textAlign: 'center',
   },
   instrumentSelectArtworkWrap: {
     marginTop: 18,
