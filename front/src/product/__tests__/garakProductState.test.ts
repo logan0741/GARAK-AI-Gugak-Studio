@@ -244,6 +244,37 @@ test('leaves jangdan preset panels without applying pending preview data', () =>
   expect(trackState.library.works[0].tracks).toHaveLength(trackCountBeforeCancel);
 });
 
+test('keeps S08 import locked and lets track add cancel return to the editor', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+
+  const currentWorkId = state.currentWorkId;
+  const trackCountBeforeImport = state.library.works[0].tracks.length;
+
+  state = applyProductAction(state, { type: 'showLockedImportTrackNotice' });
+
+  expect(state.screenFlow.currentScreen).toBe('S08');
+  expect(state.trackAddNotice).toBe('importLocked');
+  expect(state.currentWorkId).toBe(currentWorkId);
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeImport);
+
+  state = applyProductAction(state, { type: 'cancelTrackAdd' });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.trackAddNotice).toBeUndefined();
+  expect(state.currentWorkId).toBe(currentWorkId);
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeImport);
+});
+
 test('adds new tracks at the provided playhead beat', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

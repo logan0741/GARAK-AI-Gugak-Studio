@@ -53,6 +53,8 @@ export type PendingFreePlayTake = {
 
 export type FreePlayNotice = 'missingTake';
 
+export type TrackAddNotice = 'importLocked';
+
 export type PracticeAttemptStatus = 'ready' | 'playing' | 'paused' | 'completed';
 
 export type PracticeAttempt = {
@@ -80,6 +82,7 @@ export type GarakProductState = {
   librarySearchQuery: string;
   pendingFreePlayTake?: PendingFreePlayTake;
   freePlayNotice?: FreePlayNotice;
+  trackAddNotice?: TrackAddNotice;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
@@ -122,6 +125,8 @@ export type GarakProductAction =
     }
   | { type: 'turnOffLiveJangdanGuide' }
   | { type: 'addTrack' }
+  | { type: 'showLockedImportTrackNotice' }
+  | { type: 'cancelTrackAdd' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
   | { type: 'chooseAccompanimentTrack' }
@@ -291,12 +296,28 @@ export function applyProductAction(
     case 'addTrack':
       return {
         ...state,
+        trackAddNotice: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S08' }),
+      };
+    case 'showLockedImportTrackNotice':
+      return {
+        ...state,
+        trackAddNotice: 'importLocked',
+      };
+    case 'cancelTrackAdd':
+      return {
+        ...state,
+        trackAddNotice: undefined,
+        screenFlow:
+          state.screenFlow.currentScreen === 'S08'
+            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
+            : pushTarget(state.screenFlow, 'S07'),
       };
     case 'chooseInstrumentTrack':
       return {
         ...state,
         selectedInstrument: action.instrument,
+        trackAddNotice: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S09' }),
       };
     case 'applyInstrumentTrack':
@@ -304,6 +325,7 @@ export function applyProductAction(
     case 'chooseAccompanimentTrack':
       return {
         ...state,
+        trackAddNotice: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S10B' }),
       };
     case 'addAccompanimentTrack':

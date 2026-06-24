@@ -275,6 +275,10 @@ test('uses the Figma stacked track add flow for S08', () => {
   expect(source).toContain('나만의 가락');
   expect(source).toContain('AI 반주 생성하기');
   expect(source).toContain('트랙 추가하기');
+  expect(source).toContain('가져오기');
+  expect(source).toContain('가져오기는 이후 업데이트에서 지원할 예정이에요.');
+  expect(source).toContain("type: 'showLockedImportTrackNotice'");
+  expect(source).toContain("type: 'cancelTrackAdd'");
   expect(source).toContain('freeCreationLayerOptionRotated');
   expect(source).toContain("rotate: '-8.4deg'");
   expect(source).toContain("type: 'chooseAccompanimentTrack'");

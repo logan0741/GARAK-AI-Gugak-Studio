@@ -558,9 +558,32 @@ export function AddTrackContent({
           </Pressable>
         )}
 
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="가져오기 준비 중"
+          onPress={() => dispatch({ type: 'showLockedImportTrackNotice' })}
+          style={[
+            styles.freeCreationLayerOptionWrap,
+            styles.freeCreationImportLayer,
+            styles.lockedOption,
+          ]}
+        >
+          <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionAmber]}>
+            <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextAmber]}>
+              가져오기
+            </Text>
+          </View>
+        </Pressable>
+
         <View style={styles.freeCreationCurrentTrackButton}>
           <Text style={styles.freeCreationCurrentTrackButtonText}>{currentTrackLabel}</Text>
         </View>
+
+        {state.trackAddNotice === 'importLocked' ? (
+          <Text style={styles.freeCreationTrackAddNotice}>
+            가져오기는 이후 업데이트에서 지원할 예정이에요.
+          </Text>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -569,6 +592,14 @@ export function AddTrackContent({
           style={styles.freeCreationTrackAddGoButton}
         >
           <Text style={styles.freeCreationTrackAddGoButtonText}>GO</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="트랙 추가 취소"
+          onPress={() => dispatch({ type: 'cancelTrackAdd' })}
+          style={styles.freeCreationTrackAddCancelButton}
+        >
+          <Text style={styles.freeCreationTrackAddCancelButtonText}>취소</Text>
         </Pressable>
       </View>
     </View>
@@ -1569,6 +1600,10 @@ const styles = StyleSheet.create({
     top: 344,
     zIndex: 2,
   },
+  freeCreationImportLayer: {
+    top: 414,
+    zIndex: 3,
+  },
   freeCreationLayerOptionRotated: {
     alignItems: 'center',
     backgroundColor: 'transparent',
@@ -1586,6 +1621,9 @@ const styles = StyleSheet.create({
   freeCreationLayerOptionRed: {
     borderColor: GARAK_COLORS.brandRed,
   },
+  freeCreationLayerOptionAmber: {
+    borderColor: GARAK_COLORS.brandAmber,
+  },
   freeCreationLayerOptionText: {
     fontSize: 14,
     fontWeight: '600',
@@ -1597,6 +1635,9 @@ const styles = StyleSheet.create({
   },
   freeCreationLayerOptionTextRed: {
     color: GARAK_COLORS.brandRed,
+  },
+  freeCreationLayerOptionTextAmber: {
+    color: GARAK_COLORS.brandAmber,
   },
   freeCreationAddedInstrumentTrackButton: {
     alignItems: 'center',
@@ -1624,7 +1665,7 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
     right: 0,
-    top: 458,
+    top: 512,
   },
   freeCreationCurrentTrackButtonText: {
     color: GARAK_COLORS.surfaceCard,
@@ -1638,7 +1679,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.brandNavy,
     borderRadius: GARAK_RADIUS.pill,
-    bottom: 77,
+    bottom: 79,
     height: 48,
     justifyContent: 'center',
     left: 0,
@@ -1651,6 +1692,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.7,
     lineHeight: 20,
+  },
+  freeCreationTrackAddCancelButton: {
+    alignItems: 'center',
+    borderColor: 'rgba(31,32,46,0.24)',
+    borderRadius: GARAK_RADIUS.pill,
+    borderWidth: 1,
+    bottom: 25,
+    height: 42,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  freeCreationTrackAddCancelButtonText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0,
+  },
+  freeCreationTrackAddNotice: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 12,
+    fontWeight: '700',
+    left: 12,
+    lineHeight: 17,
+    position: 'absolute',
+    right: 12,
+    textAlign: 'center',
+    top: 152,
   },
   freePlaySurface: {
     backgroundColor: GARAK_COLORS.surfaceCard,
