@@ -56,3 +56,21 @@ test('uses the Figma performance preview design before entering free play', () =
   expect(source).toContain('startWithDefaults');
   expect(source).not.toContain('직접 조정');
 });
+
+test('uses the Figma gayageum stage for landscape free play', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('GayageumLandscapeStageArtwork');
+  expect(source).toContain('usesFigmaGayageumLandscapeStage');
+  expect(source).toContain("instrument === 'gayageum'");
+});
+
+test('lets embedded Figma landscape stages own the full viewport', () => {
+  const appSource = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+  const freePlaySource = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(appSource).toContain('embeddedLandscapeContent');
+  expect(appSource).toContain('landscapeContentStyle = usesEmbeddedHeader ? styles.embeddedLandscapeContent');
+  expect(freePlaySource).toContain('usesFigmaLandscapeStage');
+  expect(freePlaySource).toContain('!usesFigmaLandscapeStage ?');
+});

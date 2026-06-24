@@ -4,6 +4,7 @@ import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
+  GayageumLandscapeStageArtwork,
   InstrumentSelectionArtworkPanel,
   JangguLandscapeStageArtwork,
   JangguPreviewStageArtwork,
@@ -207,11 +208,23 @@ export function FreePlayContent({
 }) {
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isLandscapeFrame = frameMode === 'landscape';
+  const usesFigmaGayageumLandscapeStage = isLandscapeFrame && instrument === 'gayageum';
   const usesFigmaJangguLandscapeStage = isLandscapeFrame && instrument === 'janggu';
+  const usesFigmaLandscapeStage = usesFigmaGayageumLandscapeStage || usesFigmaJangguLandscapeStage;
 
   return (
     <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
-      {usesFigmaJangguLandscapeStage ? (
+      {usesFigmaGayageumLandscapeStage ? (
+        <View style={styles.jangguLandscapeStageWrap}>
+          <GayageumLandscapeStageArtwork />
+          <Pressable
+            accessibilityLabel="뒤로가기"
+            accessibilityRole="button"
+            onPress={() => dispatch({ type: 'back' })}
+            style={styles.jangguLandscapeBackHit}
+          />
+        </View>
+      ) : usesFigmaJangguLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <JangguLandscapeStageArtwork />
           <Pressable
@@ -233,11 +246,13 @@ export function FreePlayContent({
           <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
         </View>
       )}
-      <View style={[styles.buttonRow, isLandscapeFrame ? styles.landscapeButtonRow : undefined]}>
-        <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
-        <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
-        <PrimaryPillButton label="녹음 완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
-      </View>
+      {!usesFigmaLandscapeStage ? (
+        <View style={[styles.buttonRow, isLandscapeFrame ? styles.landscapeButtonRow : undefined]}>
+          <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
+          <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
+          <PrimaryPillButton label="녹음 완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
+        </View>
+      ) : null}
     </View>
   );
 }

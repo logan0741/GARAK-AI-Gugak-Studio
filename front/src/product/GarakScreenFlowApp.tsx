@@ -54,8 +54,9 @@ export function GarakScreenFlowApp() {
   const isLandscapeFrame = frameConfig.mode === 'landscape';
   const usesEmbeddedHeader = isLandscapeFrame && usesEmbeddedLandscapeArtworkHeader(currentScreen);
   const usesImmersiveFrame = frameConfig.mode === 'portrait' && usesImmersivePortraitScreen(currentScreen);
+  const landscapeContentStyle = usesEmbeddedHeader ? styles.embeddedLandscapeContent : styles.landscapeContent;
   const contentStyle = isLandscapeFrame
-    ? styles.landscapeContent
+    ? landscapeContentStyle
     : usesImmersiveFrame
       ? styles.immersiveContent
       : undefined;
@@ -299,6 +300,13 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
     paddingHorizontal: 28,
     paddingTop: 12,
+  },
+  embeddedLandscapeContent: {
+    flex: 1,
+    gap: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   immersiveContent: {
     flex: 1,

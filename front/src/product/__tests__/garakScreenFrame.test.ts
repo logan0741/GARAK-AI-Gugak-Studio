@@ -35,6 +35,10 @@ test('ships the Figma janggu stage bitmap for the landscape free-play surface', 
   expect(existsSync(resolve(productAssetsDir, 'creation-free-play-janggu-stage.png'))).toBe(true);
 });
 
+test('ships the Figma gayageum stage bitmap for the landscape free-play surface', () => {
+  expect(existsSync(resolve(productAssetsDir, 'creation-free-play-gayageum-stage.png'))).toBe(true);
+});
+
 test('uses the embedded Figma header only on the free-play landscape artwork screen', () => {
   expect(usesEmbeddedLandscapeArtworkHeader('S05')).toBe(true);
   expect(usesEmbeddedLandscapeArtworkHeader('S09')).toBe(false);

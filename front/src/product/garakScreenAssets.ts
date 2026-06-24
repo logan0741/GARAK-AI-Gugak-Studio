@@ -11,6 +11,7 @@ export const GARAK_SCREEN_ASSETS = {
     playHero: require('../../assets/product/home-play-hero.png'),
   },
   creation: {
+    gayageumFreePlayLandscapeStage: require('../../assets/product/creation-free-play-gayageum-stage.png'),
     jangguFreePlayLandscapeStage: require('../../assets/product/creation-free-play-janggu-stage.png'),
     jangguInstrumentPanel: require('../../assets/product/creation-instrument-janggu-panel.png'),
   },

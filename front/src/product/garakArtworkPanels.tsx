@@ -31,6 +31,17 @@ export function JangguLandscapeStageArtwork() {
   );
 }
 
+export function GayageumLandscapeStageArtwork() {
+  return (
+    <ArtworkImagePanel
+      accessibilityLabel="가야금 자유 연주 가로 스테이지"
+      source={GARAK_SCREEN_ASSETS.creation.gayageumFreePlayLandscapeStage}
+      style={styles.jangguLandscapeStage}
+      imageStyle={styles.jangguLandscapeStageImage}
+    />
+  );
+}
+
 export function JangguPreviewStageArtwork({ style }: { style?: StyleProp<ViewStyle> }) {
   return (
     <ArtworkImagePanel
