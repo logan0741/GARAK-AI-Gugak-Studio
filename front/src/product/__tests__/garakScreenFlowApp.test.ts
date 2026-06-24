@@ -191,6 +191,20 @@ test('lets embedded Figma landscape stages own the full viewport', () => {
   expect(freePlaySource).toContain('!usesFigmaLandscapeStage ?');
 });
 
+test('connects S05 embedded Figma landscape stage hotspots to free-play actions', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('LandscapeStageActionHits');
+  expect(source).toContain("accessibilityLabel=\"녹음 시작\"");
+  expect(source).toContain("type: 'startPerformanceRecording'");
+  expect(source).toContain("accessibilityLabel=\"장단 설정\"");
+  expect(source).toContain("type: 'openLiveJangdanGuide'");
+  expect(source).toContain("accessibilityLabel=\"레이어 편집\"");
+  expect(source).toContain("type: 'openLayerEditor'");
+  expect(source).toContain("accessibilityLabel=\"연주 완료\"");
+  expect(source).toContain("type: 'completePerformance'");
+});
+
 test('connects S05 recording start separately from completion and missing-take guidance', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 

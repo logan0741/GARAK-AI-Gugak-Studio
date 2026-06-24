@@ -244,32 +244,17 @@ export function FreePlayContent({
       {usesFigmaDaegeumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <DaegeumLandscapeStageArtwork />
-          <Pressable
-            accessibilityLabel="뒤로가기"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'back' })}
-            style={styles.jangguLandscapeBackHit}
-          />
+          <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : usesFigmaGayageumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <GayageumLandscapeStageArtwork />
-          <Pressable
-            accessibilityLabel="뒤로가기"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'back' })}
-            style={styles.jangguLandscapeBackHit}
-          />
+          <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : usesFigmaJangguLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <JangguLandscapeStageArtwork />
-          <Pressable
-            accessibilityLabel="뒤로가기"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'back' })}
-            style={styles.jangguLandscapeBackHit}
-          />
+          <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : (
         <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
@@ -300,6 +285,43 @@ export function FreePlayContent({
         </View>
       ) : null}
     </View>
+  );
+}
+
+function LandscapeStageActionHits({ dispatch }: { dispatch: ProductDispatch }) {
+  return (
+    <>
+      <Pressable
+        accessibilityLabel="뒤로가기"
+        accessibilityRole="button"
+        onPress={() => dispatch({ type: 'back' })}
+        style={styles.jangguLandscapeBackHit}
+      />
+      <Pressable
+        accessibilityLabel="녹음 시작"
+        accessibilityRole="button"
+        onPress={() => dispatch({ type: 'startPerformanceRecording' })}
+        style={[styles.landscapeStageActionHit, styles.landscapeStageRecordHit]}
+      />
+      <Pressable
+        accessibilityLabel="장단 설정"
+        accessibilityRole="button"
+        onPress={() => dispatch({ type: 'openLiveJangdanGuide' })}
+        style={[styles.landscapeStageActionHit, styles.landscapeStageJangdanHit]}
+      />
+      <Pressable
+        accessibilityLabel="레이어 편집"
+        accessibilityRole="button"
+        onPress={() => dispatch({ type: 'openLayerEditor' })}
+        style={[styles.landscapeStageActionHit, styles.landscapeStageLayerHit]}
+      />
+      <Pressable
+        accessibilityLabel="연주 완료"
+        accessibilityRole="button"
+        onPress={() => dispatch({ type: 'completePerformance' })}
+        style={[styles.landscapeStageActionHit, styles.landscapeStageCompleteHit]}
+      />
+    </>
   );
 }
 
@@ -1810,6 +1832,34 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     width: 140,
+  },
+  landscapeStageActionHit: {
+    position: 'absolute',
+    zIndex: 3,
+  },
+  landscapeStageRecordHit: {
+    height: 52,
+    right: 34,
+    top: 82,
+    width: 52,
+  },
+  landscapeStageJangdanHit: {
+    height: 52,
+    right: 0,
+    top: 82,
+    width: 44,
+  },
+  landscapeStageLayerHit: {
+    bottom: 94,
+    left: '31%',
+    right: '31%',
+    top: 94,
+  },
+  landscapeStageCompleteHit: {
+    bottom: 0,
+    height: 96,
+    right: 0,
+    width: 172,
   },
   freePlayTopBar: {
     alignItems: 'center',
