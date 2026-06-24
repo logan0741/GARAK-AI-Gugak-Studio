@@ -814,6 +814,47 @@ test('saves a practice result as a shareable library item without creating a wor
   });
 });
 
+test('saves S16 practice result scores from the current attempt model', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+  state = {
+    ...state,
+    selectedPracticeSongId: 'doraji',
+    selectedInstrument: 'daegeum',
+    screenFlow: {
+      currentScreen: 'S16',
+      history: ['S01', 'S13', 'S14', 'S15'],
+      mode: 'practice',
+    },
+    practiceAttempt: {
+      songId: 'doraji',
+      instrument: 'daegeum',
+      status: 'completed',
+      inputEvents: [
+        { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.7 },
+        { type: 'string_pluck', tsMs: 520, stringIndex: 2, velocity: 0.7 },
+        { type: 'string_pluck', tsMs: 1040, stringIndex: 3, velocity: 0.7 },
+      ],
+      timingErrorsMs: [90, -110, 100],
+      startedAt: '2026-06-18T00:00:00.000Z',
+      completedAt: '2026-06-18T00:00:30.000Z',
+    },
+  };
+  state = applyProductAction(state, { type: 'savePracticeResult' });
+
+  expect(state.library.practiceResults[0]).toMatchObject({
+    songId: 'doraji',
+    instrument: 'daegeum',
+    accuracyScore: 41,
+    timingScore: 20,
+    feedback:
+      '박자를 조금 더 맞춰보세요. 박자 오차 평균 100ms입니다. 가이드 박을 듣고 한 박자씩 천천히 맞춰보세요.',
+    shareState: 'ready',
+  });
+  expect(state.library.practiceResults[0].accuracyScore).not.toBe(82);
+});
+
 test('shares a practice result by creating a shareable target before opening S17', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

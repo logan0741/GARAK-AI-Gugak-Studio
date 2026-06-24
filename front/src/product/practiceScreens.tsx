@@ -10,6 +10,7 @@ import {
   garakCardShadow,
 } from './garakUi';
 import { MVP_INSTRUMENTS, PRACTICE_SONGS, getInstrumentName } from './productFixtures';
+import { getPracticeResultModel } from './practiceResultModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 
@@ -190,40 +191,50 @@ export function PracticePerformanceContent({
 }
 
 export function PracticeResultContent({
+  state,
   dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const resultModel = getPracticeResultModel(state);
+
   return (
     <View style={styles.stack}>
-      <ScreenHeading title="결과 / AI 피드백" compact />
+      <ScreenHeading
+        title="결과 / AI 피드백"
+        compact
+        description={`${resultModel.songTitle} · ${resultModel.instrumentName}`}
+      />
       <View style={styles.resultPanel}>
-        <Text style={styles.scoreText}>82</Text>
-        <Text style={styles.cardTitle}>박자 흐름이 안정적이에요.</Text>
+        <Text style={styles.scoreText}>{resultModel.accuracyScoreLabel}</Text>
+        <Text style={styles.cardTitle}>{resultModel.feedbackTitle}</Text>
         <Text style={styles.bodyText}>
-          일부 구간은 조금 빠르게 들어갔지만 전체적인 선율 진행은 잘 유지되었습니다.
+          정확도 {resultModel.accuracyScore}% · 타이밍 {resultModel.timingScoreLabel}
+        </Text>
+        <Text style={styles.bodyText}>
+          {resultModel.feedbackDescription}
         </Text>
       </View>
       <View style={[styles.buttonRow, styles.resultButtonGrid]}>
         <SecondaryPillButton
           label="다시 연주"
-          onPress={() => dispatch({ type: 'navigate', target: 'S15' })}
+          onPress={() => dispatch(resultModel.actions.retry)}
           style={styles.resultActionButton}
         />
         <SecondaryPillButton
           label="저장"
-          onPress={() => dispatch({ type: 'savePracticeResult' })}
+          onPress={() => dispatch(resultModel.actions.save)}
           style={styles.resultActionButton}
         />
         <SecondaryPillButton
           label="공유"
-          onPress={() => dispatch({ type: 'sharePracticeResult' })}
+          onPress={() => dispatch(resultModel.actions.share)}
           style={styles.resultActionButton}
         />
         <SecondaryPillButton
           label="다른 민요 선택"
-          onPress={() => dispatch({ type: 'navigate', target: 'S13' })}
+          onPress={() => dispatch(resultModel.actions.chooseAnotherSong)}
           style={styles.resultActionButton}
         />
       </View>

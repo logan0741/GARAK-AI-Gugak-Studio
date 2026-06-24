@@ -359,11 +359,21 @@ test('connects S17 share publishing to the selected share target state', () => {
 
 test('connects S16 result actions to retry, save, share, and choose another song', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/practiceScreens.tsx'), 'utf8');
+  const componentSource = source.slice(
+    source.indexOf('export function PracticeResultContent'),
+    source.indexOf('const styles = StyleSheet.create'),
+  );
 
-  expect(source).toMatch(/label="다시 연주"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S15' \}\)\}/);
-  expect(source).toMatch(/label="저장"\s+onPress=\{\(\) => dispatch\(\{ type: 'savePracticeResult' \}\)\}/);
-  expect(source).toMatch(/label="공유"\s+onPress=\{\(\) => dispatch\(\{ type: 'sharePracticeResult' \}\)\}/);
-  expect(source).toMatch(/label="다른 민요 선택"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S13' \}\)\}/);
+  expect(componentSource).toContain('getPracticeResultModel');
+  expect(componentSource).toContain('resultModel.accuracyScoreLabel');
+  expect(componentSource).toContain('resultModel.feedbackTitle');
+  expect(componentSource).toContain('resultModel.feedbackDescription');
+  expect(componentSource).toMatch(/label="다시 연주"[\s\S]*?dispatch\(resultModel\.actions\.retry\)/);
+  expect(componentSource).toMatch(/label="저장"[\s\S]*?dispatch\(resultModel\.actions\.save\)/);
+  expect(componentSource).toMatch(/label="공유"[\s\S]*?dispatch\(resultModel\.actions\.share\)/);
+  expect(componentSource).toMatch(
+    /label="다른 민요 선택"[\s\S]*?dispatch\(resultModel\.actions\.chooseAnotherSong\)/,
+  );
 });
 
 test('connects S13 song preview and guide readiness metadata', () => {

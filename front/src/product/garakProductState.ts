@@ -42,6 +42,7 @@ import {
   type InstrumentSampleReadinessInput,
   type InstrumentSampleStatus,
 } from './instrumentSampleReadiness';
+import { buildPracticeResultFeedback, evaluatePracticeResult } from './practiceResultEvaluation';
 
 export type { InstrumentSampleStatus } from './instrumentSampleReadiness';
 
@@ -1352,13 +1353,19 @@ function createPracticeResultAndRoute(
   target: ImplementedScreenId,
 ): GarakProductState {
   const nextCounters = incrementCounters(state.counters, ['practiceResult']);
+  const evaluation = evaluatePracticeResult({
+    practiceAttempt: state.practiceAttempt,
+    selectedPracticeSongId: state.selectedPracticeSongId,
+    selectedInstrument: state.selectedInstrument,
+  });
+  const feedback = buildPracticeResultFeedback(evaluation);
   const result = createPracticeResult({
     id: `practice-${nextCounters.practiceResult}`,
-    songId: state.selectedPracticeSongId ?? 'arirang',
-    instrument: state.selectedInstrument ?? 'gayageum',
-    accuracyScore: 82,
-    timingScore: 78,
-    feedback: '박자 흐름이 안정적이에요.',
+    songId: evaluation.songId,
+    instrument: evaluation.instrument,
+    accuracyScore: evaluation.accuracyScore,
+    timingScore: evaluation.timingScore,
+    feedback: feedback.fullText,
     createdAt: state.now(),
   });
 
