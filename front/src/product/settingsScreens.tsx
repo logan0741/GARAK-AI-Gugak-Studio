@@ -19,12 +19,26 @@ import { getLoginSyncViewModel } from './loginSyncScreenModel';
 type ProductDispatch = (action: GarakProductAction) => void;
 const FREE_CREATION_GUIDE_STEPS = ['악기 선택', '연주 & 녹음', '트랙추가', '믹싱', 'AI 반주 추가', '저장 및 공유'] as const;
 
-export function LanguageContent() {
+export function LanguageContent({
+  state,
+  dispatch,
+}: {
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
   return (
     <View style={styles.stack}>
       <ScreenHeading title="언어 전환" compact />
-      <SettingRow label="한국어" value="선택됨" />
-      <SettingRow label="English" value="Available" />
+      <LanguageOptionRow
+        label="한국어"
+        selected={state.language === 'ko'}
+        onPress={() => dispatch({ type: 'setLanguage', language: 'ko' })}
+      />
+      <LanguageOptionRow
+        label="English"
+        selected={state.language === 'en'}
+        onPress={() => dispatch({ type: 'setLanguage', language: 'en' })}
+      />
     </View>
   );
 }
@@ -99,7 +113,7 @@ export function SettingsContent({
       <View style={styles.settingsCard}>
         <SettingRow label="현재 상태" value={state.account.status === 'guest' ? '게스트' : '로그인'} />
         <SettingRow label="로컬 작업" value={`${state.library.works.length}개`} />
-        <SettingRow label="언어" value="한국어" />
+        <SettingRow label="언어" value={languageLabel(state.language)} />
       </View>
       <View style={styles.settingsActionRow}>
         <SettingsActionButton
@@ -272,6 +286,28 @@ function SettingRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function LanguageOptionRow({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.settingRow, pressed ? styles.pressedCapsuleButton : undefined]}
+    >
+      <Text style={styles.settingLabel}>{label}</Text>
+      <Text style={styles.settingValue}>{selected ? '선택됨' : '사용 가능'}</Text>
+    </Pressable>
+  );
+}
+
 function SettingsActionButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable
@@ -282,6 +318,10 @@ function SettingsActionButton({ label, onPress }: { label: string; onPress: () =
       <Text style={styles.settingsActionText}>{label}</Text>
     </Pressable>
   );
+}
+
+function languageLabel(language: GarakProductState['language']): string {
+  return language === 'ko' ? '한국어' : 'English';
 }
 
 const styles = StyleSheet.create({

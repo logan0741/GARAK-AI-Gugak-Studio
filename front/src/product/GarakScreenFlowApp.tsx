@@ -160,7 +160,7 @@ function renderScreenContent(
     case 'S01':
       return <HomeScreenContent state={state} dispatch={dispatch} />;
     case 'S02':
-      return <LanguageContent />;
+      return <LanguageContent state={state} dispatch={dispatch} />;
     case 'S03':
       return <IntroGuideContent state={state} dispatch={dispatch} />;
     case 'S04':

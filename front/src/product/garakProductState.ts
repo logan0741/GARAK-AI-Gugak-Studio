@@ -48,6 +48,8 @@ export type ProductLibraryState = {
 
 export type ProductLibraryTab = 'works' | 'shareables';
 
+export type ProductLanguage = 'ko' | 'en';
+
 export type PendingFreePlayTake = {
   events: PerformanceEvent[];
 };
@@ -73,6 +75,7 @@ export type JangdanPresetPreviewMode = 'live' | 'track';
 export type GarakProductState = {
   screenFlow: ScreenFlowState;
   selectedMode: ScreenFlowMode;
+  language: ProductLanguage;
   selectedInstrument?: InstrumentId;
   selectedPracticeSongId?: PracticeSong['id'];
   previewingPracticeSongId?: PracticeSong['id'];
@@ -111,6 +114,7 @@ export type GarakProductState = {
 
 export type GarakProductAction =
   | { type: 'selectMode'; mode: ScreenFlowMode }
+  | { type: 'setLanguage'; language: ProductLanguage }
   | { type: 'next' }
   | { type: 'selectInstrument'; instrument: InstrumentId }
   | { type: 'startWithDefaults' }
@@ -174,6 +178,7 @@ export function createInitialGarakProductState(input: { now?: () => string } = {
   return {
     screenFlow: createInitialScreenFlowState(),
     selectedMode: 'freeCreation',
+    language: 'ko',
     library: {
       works: [],
       exportedAudios: [],
@@ -228,6 +233,11 @@ export function applyProductAction(
           type: 'selectMode',
           mode: action.mode,
         }),
+      };
+    case 'setLanguage':
+      return {
+        ...state,
+        language: action.language,
       };
     case 'next':
       if (state.screenFlow.currentScreen === 'S14') {

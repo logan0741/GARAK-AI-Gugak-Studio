@@ -92,6 +92,18 @@ test('connects S22 settings actions to language and library management', () => {
   expect(source).toMatch(/label="보관함 관리"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S18' \}\)\}/);
 });
 
+test('connects S02 language choices to the product language state', () => {
+  const appSource = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+  const settingsSource = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
+
+  expect(appSource).toContain('<LanguageContent state={state} dispatch={dispatch} />');
+  expect(settingsSource).toContain("type: 'setLanguage'");
+  expect(settingsSource).toContain("language: 'ko'");
+  expect(settingsSource).toContain("language: 'en'");
+  expect(settingsSource).toContain('state.language');
+  expect(settingsSource).toContain('languageLabel');
+});
+
 test('connects S18 library tabs, search, sync label, and empty state CTA', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/libraryScreens.tsx'), 'utf8');
 

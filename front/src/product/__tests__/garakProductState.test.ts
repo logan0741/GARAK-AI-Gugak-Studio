@@ -555,6 +555,38 @@ test('routes settings login CTA to S23 while preserving local library state', ()
   expect(getCurrentScreenSummary(state).primaryCtas).toContain('로그인');
 });
 
+test('changes the display language from S02 without touching local library data', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = {
+    ...state,
+    screenFlow: {
+      currentScreen: 'S22',
+      history: ['S01'],
+      mode: 'freeCreation',
+    },
+  };
+  state = applyProductAction(state, { type: 'navigate', target: 'S02' });
+
+  expect(state.language).toBe('ko');
+  expect(state.library.works).toHaveLength(1);
+
+  state = applyProductAction(state, { type: 'setLanguage', language: 'en' });
+
+  expect(state.language).toBe('en');
+  expect(state.screenFlow.currentScreen).toBe('S02');
+  expect(state.library.works).toHaveLength(1);
+  expect(state.account.status).toBe('guest');
+});
+
 test('completes explicit login sync without dropping local library items', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
