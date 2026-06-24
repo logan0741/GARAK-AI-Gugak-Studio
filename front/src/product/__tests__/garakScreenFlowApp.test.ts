@@ -80,11 +80,17 @@ test('connects S10 jangdan preset previews without applying the preset', () => {
   expect(source).toContain('previewButtonActive');
 });
 
-test('uses the Figma home hero copy in the home screen accessibility contract', () => {
+test('uses the language-aware Figma home hero copy in the home screen accessibility contract', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const modelSource = readFileSync(resolve(process.cwd(), 'src/product/homeScreenModel.ts'), 'utf8');
 
-  expect(source).toContain('AI와 함께');
-  expect(source).not.toContain('장단 추천으로');
+  expect(source).toContain('getHomeScreenViewModel');
+  expect(source).toContain('homeModel.title');
+  expect(source).toContain('homeModel.description');
+  expect(source).toContain('cta={homeModel.ctaLabel}');
+  expect(source).toContain('labels={homeModel.quickAccessLabels}');
+  expect(modelSource).toContain('AI와 함께');
+  expect(modelSource).not.toContain('장단 추천으로');
 });
 
 test('uses the Figma free-creation mode guide for the intro screen', () => {
@@ -139,8 +145,11 @@ test('connects S22 settings actions to language and library management', () => {
 test('connects S02 language choices to the product language state', () => {
   const appSource = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
   const settingsSource = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
+  const homeEntryButtonBlock = appSource.match(/<Pressable[\s\S]*?homeEntryButton[\s\S]*?<\/Pressable>/)?.[0];
 
   expect(appSource).toContain('<LanguageContent state={state} dispatch={dispatch} />');
+  expect(homeEntryButtonBlock).toContain("target: 'S02'");
+  expect(homeEntryButtonBlock).not.toContain("target: 'S03'");
   expect(settingsSource).toContain("type: 'setLanguage'");
   expect(settingsSource).toContain("language: 'ko'");
   expect(settingsSource).toContain("language: 'en'");

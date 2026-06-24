@@ -47,6 +47,7 @@ import {
   getFreeCreationMixEditorModel,
   type FreeCreationTrackControlModel,
 } from './freeCreationMixEditorModel';
+import { getHomeScreenViewModel } from './homeScreenModel';
 import { getInstrumentSettingsModel } from './instrumentSettingsModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
@@ -96,22 +97,26 @@ function getNextTrackInstrument(existingInstruments: InstrumentId[]): Instrument
 }
 
 export function HomeScreenContent({
+  state,
   dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const homeModel = getHomeScreenViewModel(state);
+
   return (
     <View style={styles.screenStack}>
       <VisualHero
-        title="GARAK과 함께 국악 연주하기"
-        description="전통 악기를 연주하고, AI와 함께 자신만의 가락을 완성할 수 있습니다."
-        cta="PLAY"
+        title={homeModel.title}
+        description={homeModel.description}
+        cta={homeModel.ctaLabel}
         onPress={() => dispatch({ type: 'next' })}
       />
 
       <QuickAccessNav
         active="home"
+        labels={homeModel.quickAccessLabels}
         onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
         onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
         onShare={() => dispatch({ type: 'navigate', target: 'S20' })}

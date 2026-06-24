@@ -89,7 +89,7 @@ export function GarakScreenFlowApp({
               {isHome ? (
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => dispatch({ type: 'navigate', target: 'S03' })}
+                  onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
                   style={styles.headerButton}
                 >
                   <Image source={GARAK_SCREEN_ASSETS.shell.homeEntryButton} style={styles.headerIconImage} />

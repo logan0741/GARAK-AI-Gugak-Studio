@@ -110,6 +110,11 @@ export function ProgressSteps({ step, total = 3 }: { step: number; total?: numbe
 
 export function QuickAccessNav({
   active,
+  labels = {
+    library: '마이',
+    home: '홈',
+    share: '쉐어',
+  },
   onLibrary,
   onHome,
   onShare,
@@ -117,6 +122,11 @@ export function QuickAccessNav({
   style,
 }: {
   active: 'library' | 'home' | 'share';
+  labels?: {
+    library: string;
+    home: string;
+    share: string;
+  };
   onLibrary: () => void;
   onHome: () => void;
   onShare: () => void;
@@ -125,9 +135,9 @@ export function QuickAccessNav({
 }) {
   return (
     <View style={[styles.quickAccess, dark ? styles.quickAccessDark : styles.quickAccessLight, style]}>
-      <QuickAccessItem label="마이" active={active === 'library'} onPress={onLibrary} />
-      <QuickAccessItem label="홈" active={active === 'home'} onPress={onHome} kind="home" />
-      <QuickAccessItem label="쉐어" active={active === 'share'} onPress={onShare} kind="share" />
+      <QuickAccessItem label={labels.library} active={active === 'library'} onPress={onLibrary} />
+      <QuickAccessItem label={labels.home} active={active === 'home'} onPress={onHome} kind="home" />
+      <QuickAccessItem label={labels.share} active={active === 'share'} onPress={onShare} kind="share" />
     </View>
   );
 }
