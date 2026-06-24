@@ -37,6 +37,12 @@ test('builds the Figma share-feed defaults', () => {
     'recent-kpop-demon-hunters',
     'recent-korea-minyo',
   ]);
+  expect(model.sortLabel).toBe('인기순');
+  expect(model.recentCards.map((card) => card.subtitle)).toEqual([
+    'Drama_Garak · 대금 · 57초',
+    'Kpop_Garak · 장구 · 64초',
+    'Minyo_Archive · 가야금 · 52초',
+  ]);
 });
 
 test('models S21 shared detail remix availability and provenance', () => {

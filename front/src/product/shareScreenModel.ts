@@ -6,6 +6,7 @@ import {
   getInstrumentName,
   getPracticeSongTitle,
   PRACTICE_SONGS,
+  SHARE_FEED_RECORDINGS,
   type SharedRecording,
 } from './productFixtures';
 
@@ -42,6 +43,7 @@ export type ShareFeedViewModel = {
   categories: ShareFeedCategory[];
   hero: ShareFeedHero;
   player: ShareFeedPlayer;
+  sortLabel: string;
   recentCards: ShareFeedRecentCard[];
 };
 
@@ -70,28 +72,22 @@ export type SharedDetailViewModel = {
 
 const SHARE_FEED_CATEGORIES = ['Hot', 'K-pop', 'K-Drama OST', 'K-Minyo', 'Arirang'] as const;
 
-const FIGMA_RECENT_CARDS: ShareFeedRecentCard[] = [
+const FIGMA_RECENT_CARD_PRESENTATION: Array<Pick<ShareFeedRecentCard, 'id' | 'recordingId' | 'liked' | 'artwork'>> = [
   {
     id: 'recent-kdrama-ost',
     recordingId: 'recent-kdrama-ost',
-    title: 'K-Drama OST',
-    subtitle: 'Drama mood',
     liked: false,
     artwork: 'floral',
   },
   {
     id: 'recent-kpop-demon-hunters',
     recordingId: 'recent-kpop-demon-hunters',
-    title: 'K-pop Demon Hunters',
-    subtitle: 'Remix',
     liked: true,
     artwork: 'dancheong',
   },
   {
     id: 'recent-korea-minyo',
     recordingId: 'recent-korea-minyo',
-    title: 'Korea Minyo',
-    subtitle: 'Minyo',
     liked: false,
     artwork: 'pattern',
   },
@@ -110,7 +106,8 @@ export function getShareFeedViewModel(state: GarakProductState): ShareFeedViewMo
       description: '케이팝 데몬 헌터스의 노래들을 가락과 함께 국악으로 연주해요.',
     },
     player: getShareablePlayer(state),
-    recentCards: FIGMA_RECENT_CARDS,
+    sortLabel: '인기순',
+    recentCards: createRecentCards(),
   };
 }
 
@@ -179,6 +176,30 @@ export function getSharedDetailViewModel(state: GarakProductState): SharedDetail
       save: { type: 'saveSharedRecording' },
     },
   };
+}
+
+function createRecentCards(): ShareFeedRecentCard[] {
+  return FIGMA_RECENT_CARD_PRESENTATION.map((card) => {
+    const recording = SHARE_FEED_RECORDINGS.find((item) => item.id === card.recordingId);
+
+    if (recording === undefined) {
+      return {
+        ...card,
+        title: card.recordingId,
+        subtitle: '공유 정보 없음',
+      };
+    }
+
+    return {
+      ...card,
+      title: recording.title,
+      subtitle: formatSharedRecordingSubtitle(recording),
+    };
+  });
+}
+
+function formatSharedRecordingSubtitle(recording: SharedRecording): string {
+  return `${recording.authorDisplayName} · ${getInstrumentName(recording.instrument)} · ${formatSeconds(recording.durationSeconds)}`;
 }
 
 function getSharePrepareTarget(state: GarakProductState): ExportedAudio | PracticeResult | undefined {

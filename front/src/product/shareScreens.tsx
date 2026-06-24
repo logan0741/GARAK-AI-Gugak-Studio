@@ -210,7 +210,10 @@ export function ShareFeedContent({
         }}
         style={styles.shareRecentHeaderRow}
       >
-        <Text style={styles.sectionTitle}>최근 재생한 GARAK</Text>
+        <View style={styles.shareRecentHeadingCopy}>
+          <Text style={styles.sectionTitle}>최근 재생한 GARAK</Text>
+          <Text style={styles.shareRecentSortLabel}>{model.sortLabel}</Text>
+        </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
 
@@ -308,6 +311,14 @@ function ShareRecentCardView({
             <Text style={styles.shareRecentLikeText}>♥</Text>
           </View>
         ) : null}
+        <View style={styles.shareRecentCopy}>
+          <Text numberOfLines={1} style={styles.shareRecentTitle}>
+            {card.title}
+          </Text>
+          <Text numberOfLines={2} style={styles.shareRecentSubtitle}>
+            {card.subtitle}
+          </Text>
+        </View>
       </ImageBackground>
     </Pressable>
   );
@@ -601,9 +612,20 @@ const styles = StyleSheet.create({
   shareRecentHeaderRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 5,
+    justifyContent: 'space-between',
     marginBottom: 10,
     marginTop: 18,
+  },
+  shareRecentHeadingCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  shareRecentSortLabel: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0,
+    marginTop: 2,
   },
   shareRecentArea: {
     height: 224,
@@ -653,6 +675,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     lineHeight: 16,
+  },
+  shareRecentCopy: {
+    backgroundColor: 'rgba(10,11,18,0.62)',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    bottom: 0,
+    gap: 4,
+    left: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    position: 'absolute',
+    right: 0,
+  },
+  shareRecentTitle: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 15,
+  },
+  shareRecentSubtitle: {
+    color: 'rgba(255,255,255,0.86)',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 12,
   },
   shareQuickAccessOverlay: {
     alignSelf: 'center',

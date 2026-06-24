@@ -325,6 +325,8 @@ test('connects shared detail remix and save buttons to library data actions', ()
 test('keeps the share quick access tab active on S20', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 
+  expect(source).toContain('model.sortLabel');
+  expect(source).toContain('card.subtitle');
   expect(source).toContain(
     '<QuickAccessNav\n          active="share"\n          dark\n          style={styles.shareQuickAccessOverlay}',
   );
