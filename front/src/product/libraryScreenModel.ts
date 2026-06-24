@@ -1,4 +1,4 @@
-import type { ExportedAudio, PracticeResult, Work } from '../studio/studioTypes';
+import type { ExportedAudio, PracticeResult, SyncState, Work } from '../studio/studioTypes';
 import type { GarakProductAction, GarakProductState, ProductLibraryTab } from './garakProductState';
 import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
 
@@ -21,6 +21,7 @@ export type MyLibraryPlaylistRow = {
   playable: boolean;
   active: boolean;
   subtitle?: string;
+  storageLabel?: string;
   workId?: string;
   exportedAudioId?: string;
   practiceResultId?: string;
@@ -267,6 +268,7 @@ function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {
     playable: true,
     active: false,
     subtitle: `${work.tracks.length} track${work.tracks.length === 1 ? '' : 's'}`,
+    storageLabel: formatWorkStorageLabel(work.syncState),
     workId: work.id,
     sortKey: toSortKey(work.updatedAt || work.createdAt),
     order: order++,
@@ -319,7 +321,7 @@ function filterLibraryRows(rows: ActualLibraryRow[], searchQuery: string): Actua
   const normalizedQuery = searchQuery.toLocaleLowerCase();
 
   return rows.filter((row) =>
-    [row.title, row.subtitle, row.date, row.kind]
+    [row.title, row.subtitle, row.storageLabel, row.date, row.kind]
       .filter((value): value is string => value !== undefined)
       .some((value) => value.toLocaleLowerCase().includes(normalizedQuery)),
   );
@@ -554,6 +556,19 @@ function formatSharedSource(audio: ExportedAudio): string | undefined {
   }
 
   return `${audio.authorDisplayName} · ${audio.sourceLabel}`;
+}
+
+function formatWorkStorageLabel(syncState: SyncState): string {
+  switch (syncState) {
+    case 'local_only':
+      return '로컬 저장 · 서버 저장 대기';
+    case 'synced':
+      return '계정 동기화 완료';
+    case 'account_only':
+      return '계정 저장';
+    case 'conflict':
+      return '동기화 확인 필요';
+  }
 }
 
 function joinMetadata(parts: Array<string | undefined>): string {

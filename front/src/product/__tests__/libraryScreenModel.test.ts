@@ -116,6 +116,62 @@ test('filters the library to exported audio and practice results on the shareabl
   });
 });
 
+test('shows each S18 work row storage and sync state', () => {
+  const createdAt = '2026-06-18T00:00:00.000Z';
+  const model = getMyLibraryViewModel({
+    ...createInitialGarakProductState({ now: () => createdAt }),
+    library: {
+      works: [
+        {
+          id: 'work-local',
+          title: '로컬 작업',
+          createdAt,
+          updatedAt: '2026-06-18T00:03:00.000Z',
+          source: 'free_creation',
+          syncState: 'local_only',
+          tracks: [],
+        },
+        {
+          id: 'work-synced',
+          title: '동기화 작업',
+          createdAt,
+          updatedAt: '2026-06-18T00:02:00.000Z',
+          source: 'synced',
+          syncState: 'synced',
+          tracks: [],
+        },
+        {
+          id: 'work-account',
+          title: '계정 작업',
+          createdAt,
+          updatedAt: '2026-06-18T00:01:00.000Z',
+          source: 'synced',
+          syncState: 'account_only',
+          tracks: [],
+        },
+        {
+          id: 'work-conflict',
+          title: '확인 필요한 작업',
+          createdAt,
+          updatedAt: '2026-06-18T00:00:00.000Z',
+          source: 'synced',
+          syncState: 'conflict',
+          tracks: [],
+        },
+      ],
+      exportedAudios: [],
+      practiceResults: [],
+    },
+  });
+
+  expect(model.playlistRows.map((row) => [row.title, row.storageLabel])).toEqual([
+    ['로컬 작업', '로컬 저장 · 서버 저장 대기'],
+    ['동기화 작업', '계정 동기화 완료'],
+    ['계정 작업', '계정 저장'],
+    ['확인 필요한 작업', '동기화 확인 필요'],
+  ]);
+});
+
 test('filters the active library tab by search query', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -138,6 +194,40 @@ test('filters the active library tab by search query', () => {
     ctaLabel: '검색 지우기',
     action: { type: 'updateLibrarySearchQuery', query: '' },
   });
+});
+
+test('filters S18 work rows by visible storage status text', () => {
+  const createdAt = '2026-06-18T00:00:00.000Z';
+  const model = getMyLibraryViewModel({
+    ...createInitialGarakProductState({ now: () => createdAt }),
+    librarySearchQuery: '계정 동기화',
+    library: {
+      works: [
+        {
+          id: 'work-local',
+          title: '로컬 작업',
+          createdAt,
+          updatedAt: '2026-06-18T00:01:00.000Z',
+          source: 'free_creation',
+          syncState: 'local_only',
+          tracks: [],
+        },
+        {
+          id: 'work-synced',
+          title: '동기화 작업',
+          createdAt,
+          updatedAt: '2026-06-18T00:00:00.000Z',
+          source: 'synced',
+          syncState: 'synced',
+          tracks: [],
+        },
+      ],
+      exportedAudios: [],
+      practiceResults: [],
+    },
+  });
+
+  expect(model.playlistRows.map((row) => row.title)).toEqual(['동기화 작업']);
 });
 
 test('routes library work rows to the editor and shareables to the player', () => {

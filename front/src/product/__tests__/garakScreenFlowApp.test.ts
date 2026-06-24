@@ -147,7 +147,7 @@ test('connects S02 language choices to the product language state', () => {
   expect(settingsSource).toContain('state.language');
 });
 
-test('connects S18 library tabs, search, sync label, and empty state CTA', () => {
+test('connects S18 library tabs, search, sync label, row storage status, and empty state CTA', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/libraryScreens.tsx'), 'utf8');
 
   expect(source).toContain('model.tabs.map');
@@ -157,6 +157,7 @@ test('connects S18 library tabs, search, sync label, and empty state CTA', () =>
   expect(source).toContain('model.syncLabel');
   expect(source).toContain('accessibilityLabel="보관함 동기화"');
   expect(source).toContain("type: 'loginAndLoadMySongs'");
+  expect(source).toContain('row.storageLabel');
   expect(source).toContain('model.emptyState');
 });
 

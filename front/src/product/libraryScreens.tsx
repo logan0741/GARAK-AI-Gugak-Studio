@@ -328,6 +328,9 @@ function MyLibraryPlaylistRowView({
   row: MyLibraryPlaylistRow;
   onPress: () => void;
 }) {
+  const activeMeta = formatPlaylistRowMeta([row.subtitle, row.storageLabel]);
+  const inactiveMeta = formatPlaylistRowMeta([row.date, row.storageLabel]);
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -351,17 +354,17 @@ function MyLibraryPlaylistRowView({
         </Text>
         {row.active ? (
           <>
-            {row.subtitle !== undefined ? (
+            {activeMeta !== undefined ? (
               <Text numberOfLines={1} style={styles.playlistActiveMeta}>
-                {row.subtitle}
+                {activeMeta}
               </Text>
             ) : null}
-            <View style={[styles.playlistProgress, row.subtitle !== undefined ? styles.playlistProgressWithMeta : undefined]}>
+            <View style={[styles.playlistProgress, activeMeta !== undefined ? styles.playlistProgressWithMeta : undefined]}>
               <View style={styles.playlistProgressFill} />
             </View>
           </>
         ) : (
-          <Text style={styles.playlistDate}>{row.date}</Text>
+          <Text numberOfLines={1} style={styles.playlistDate}>{inactiveMeta}</Text>
         )}
       </View>
       {row.active ? (
@@ -376,6 +379,12 @@ function MyLibraryPlaylistRowView({
       )}
     </Pressable>
   );
+}
+
+function formatPlaylistRowMeta(parts: Array<string | undefined>): string | undefined {
+  const visibleParts = parts.filter((part): part is string => part !== undefined && part.length > 0);
+
+  return visibleParts.length === 0 ? undefined : visibleParts.join(' · ');
 }
 
 function WaveformGlyph({
