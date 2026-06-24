@@ -95,3 +95,18 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
   expect(source).toContain("type: 'exportCurrentWork'");
   expect(source).not.toContain('TrackPill label="트랙 추가하기"');
 });
+
+test('uses the Figma stacked track add flow for S08', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('freeCreationTrackAddScreen');
+  expect(source).toContain('나만의 가락');
+  expect(source).toContain('AI 반주 생성하기');
+  expect(source).toContain('트랙 추가하기');
+  expect(source).toContain('freeCreationLayerOptionRotated');
+  expect(source).toContain("rotate: '-8.4deg'");
+  expect(source).toContain("type: 'chooseAccompanimentTrack'");
+  expect(source).toContain("type: 'chooseInstrumentTrack'");
+  expect(source).toContain('TRACK 1 :');
+  expect(source).not.toContain("추가할 트랙을\\n선택해요.");
+});

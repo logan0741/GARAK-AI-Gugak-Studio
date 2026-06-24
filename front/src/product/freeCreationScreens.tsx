@@ -370,29 +370,83 @@ export function AddTrackContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const work = state.library.works.find((item) => item.id === state.currentWorkId);
+  const firstInstrumentTrack = work?.tracks.find((track) => track.kind === 'instrument');
+  const primaryInstrument =
+    firstInstrumentTrack?.kind === 'instrument'
+      ? firstInstrumentTrack.instrument
+      : state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const currentTrackLabel = `TRACK 1 : ${getInstrumentName(primaryInstrument)}`;
+
   return (
-    <View style={styles.screenStack}>
-      <ScreenHeading title={'추가할 트랙을\n선택해요.'} />
-      <View style={styles.optionPanel}>
-        <Text style={styles.panelTitle}>악기 연주 추가</Text>
-        <Text style={styles.instrumentDescription}>다른 악기를 녹음해 새 트랙으로 쌓습니다.</Text>
-        <InstrumentChipRow
-          selectedInstrument={state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT}
-          onSelect={(instrument) => dispatch({ type: 'chooseInstrumentTrack', instrument })}
-        />
+    <View style={styles.freeCreationTrackAddScreen}>
+      <Text style={styles.freeCreationTrackAddTitle}>
+        <Text style={styles.freeCreationTrackAddTitleStrong}>나만의 가락</Text> 만들기
+      </Text>
+
+      <View style={styles.freeCreationTrackAddPanel}>
+        <TrackAddWaveformGlyph />
+        <Text style={styles.freeCreationTrackAddCopy}>
+          다른 악기를 연주하여 트랙을 추가해요. {'\n'}트랙을 추가하고, AI 반주를 추가하여{'\n'}
+          <Text style={styles.freeCreationTrackAddCopyStrong}>나만의 가락</Text>을 생성해요.
+        </Text>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="AI 반주 생성하기"
+          onPress={() => dispatch({ type: 'chooseAccompanimentTrack' })}
+          style={[styles.freeCreationLayerOptionWrap, styles.freeCreationAccompanimentLayer]}
+        >
+          <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionNavy]}>
+            <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextNavy]}>
+              AI 반주 생성하기
+            </Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="트랙 추가하기"
+          onPress={() => dispatch({ type: 'chooseInstrumentTrack', instrument: primaryInstrument })}
+          style={[styles.freeCreationLayerOptionWrap, styles.freeCreationInstrumentLayer]}
+        >
+          <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionRed]}>
+            <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextRed]}>
+              트랙 추가하기
+            </Text>
+          </View>
+        </Pressable>
+
+        <View style={styles.freeCreationCurrentTrackButton}>
+          <Text style={styles.freeCreationCurrentTrackButtonText}>{currentTrackLabel}</Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="다음 단계로 이동"
+          onPress={() => dispatch({ type: 'exportCurrentWork' })}
+          style={styles.freeCreationTrackAddGoButton}
+        >
+          <Text style={styles.freeCreationTrackAddGoButtonText}>GO</Text>
+        </Pressable>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'chooseAccompanimentTrack' })}
-        style={styles.optionPanel}
-      >
-        <Text style={styles.panelTitle}>장단 추천 / 반주 추가</Text>
-        <Text style={styles.instrumentDescription}>세마치, 중모리, 자진모리 프리셋을 미리듣고 트랙으로 추가합니다.</Text>
-      </Pressable>
-      <View style={[styles.optionPanel, styles.lockedOption]}>
-        <Text style={styles.panelTitle}>가져오기</Text>
-        <Text style={styles.instrumentDescription}>외부 파일 가져오기는 이후 업데이트에서 지원합니다.</Text>
-      </View>
+    </View>
+  );
+}
+
+function TrackAddWaveformGlyph() {
+  return (
+    <View
+      style={styles.freeCreationTrackAddWaveform}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <View style={[styles.freeCreationTrackAddWaveformBar, styles.freeCreationTrackAddWaveformTiny]} />
+      <View style={[styles.freeCreationTrackAddWaveformBar, styles.freeCreationTrackAddWaveformMedium]} />
+      <View style={[styles.freeCreationTrackAddWaveformBar, styles.freeCreationTrackAddWaveformTallest]} />
+      <View style={[styles.freeCreationTrackAddWaveformBar, styles.freeCreationTrackAddWaveformRegular]} />
+      <View style={[styles.freeCreationTrackAddWaveformBar, styles.freeCreationTrackAddWaveformTall]} />
+      <View style={[styles.freeCreationTrackAddWaveformBar, styles.freeCreationTrackAddWaveformShort]} />
     </View>
   );
 }
@@ -1077,6 +1131,158 @@ const styles = StyleSheet.create({
   freeCreationShareLineDown: {
     top: 11,
     transform: [{ rotate: '23deg' }],
+  },
+  freeCreationTrackAddScreen: {
+    marginTop: 50,
+  },
+  freeCreationTrackAddTitle: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 28,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 34,
+  },
+  freeCreationTrackAddTitleStrong: {
+    color: GARAK_COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  freeCreationTrackAddPanel: {
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 40,
+    borderWidth: 1,
+    height: 697,
+    marginTop: 29,
+    overflow: 'hidden',
+    paddingHorizontal: 18,
+    paddingTop: 45,
+    position: 'relative',
+    width: '100%',
+    ...garakCardShadow,
+  },
+  freeCreationTrackAddWaveform: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    height: 19,
+    width: 18,
+  },
+  freeCreationTrackAddWaveformBar: {
+    backgroundColor: '#242424',
+    borderRadius: 1,
+    width: 1.2,
+  },
+  freeCreationTrackAddWaveformTiny: {
+    height: 5,
+  },
+  freeCreationTrackAddWaveformMedium: {
+    height: 12,
+  },
+  freeCreationTrackAddWaveformTallest: {
+    height: 19,
+  },
+  freeCreationTrackAddWaveformRegular: {
+    height: 9.5,
+  },
+  freeCreationTrackAddWaveformTall: {
+    height: 15,
+  },
+  freeCreationTrackAddWaveformShort: {
+    height: 6,
+  },
+  freeCreationTrackAddCopy: {
+    color: '#656565',
+    fontSize: 13.36,
+    fontWeight: '300',
+    letterSpacing: 0,
+    lineHeight: 16.2,
+    marginTop: 21,
+    width: 278,
+  },
+  freeCreationTrackAddCopyStrong: {
+    color: '#656565',
+    fontWeight: '500',
+  },
+  freeCreationLayerOptionWrap: {
+    alignItems: 'center',
+    height: 109,
+    justifyContent: 'center',
+    left: -3,
+    position: 'absolute',
+    width: 351,
+  },
+  freeCreationAccompanimentLayer: {
+    top: 264,
+    zIndex: 1,
+  },
+  freeCreationInstrumentLayer: {
+    top: 341,
+    zIndex: 2,
+  },
+  freeCreationLayerOptionRotated: {
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderRadius: 126,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    height: 59,
+    justifyContent: 'center',
+    transform: [{ rotate: '-8.4deg' }],
+    width: 346,
+  },
+  freeCreationLayerOptionNavy: {
+    borderColor: GARAK_COLORS.brandNavy,
+  },
+  freeCreationLayerOptionRed: {
+    borderColor: GARAK_COLORS.brandRed,
+  },
+  freeCreationLayerOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    lineHeight: 20,
+  },
+  freeCreationLayerOptionTextNavy: {
+    color: GARAK_COLORS.brandNavy,
+  },
+  freeCreationLayerOptionTextRed: {
+    color: GARAK_COLORS.brandRed,
+  },
+  freeCreationCurrentTrackButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandAmber,
+    borderRadius: 126,
+    height: 59,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 458,
+  },
+  freeCreationCurrentTrackButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    lineHeight: 20,
+  },
+  freeCreationTrackAddGoButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: GARAK_RADIUS.pill,
+    bottom: 77,
+    height: 48,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  freeCreationTrackAddGoButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    lineHeight: 20,
   },
   freePlaySurface: {
     backgroundColor: GARAK_COLORS.surfaceCard,
