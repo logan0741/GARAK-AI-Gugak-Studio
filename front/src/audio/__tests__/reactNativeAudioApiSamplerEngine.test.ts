@@ -216,7 +216,6 @@ test('steals the oldest voice only after the configured voice budget is exceeded
   engine.handleEvent({ type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 });
 
   expect(runtime.context.sources[0].stopCalls).toEqual([12.5]);
-  expect(runtime.context.sources[0].onEnded).toBeNull();
   expect(runtime.context.sources[1].stopCalls).toEqual([]);
   expect(runtime.context.sources[2].stopCalls).toEqual([]);
 });
@@ -340,7 +339,7 @@ class FakeAudioBufferSourceNode extends FakeAudioNode {
   buffer: FakeAudioBuffer | null = null;
   detune = new FakeAudioParam();
   playbackRate = new FakeAudioParam();
-  onEnded: ((event: never) => void) | null | undefined;
+  onEnded: ((event: never) => void) | undefined;
   startedAt: number | undefined;
   stopCalls: number[] = [];
 

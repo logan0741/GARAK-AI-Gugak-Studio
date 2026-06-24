@@ -187,9 +187,8 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
   private releaseString(stringIndex: number): void {
     const currentTime = this.requireContext().currentTime;
     const stopAt = Number((currentTime + RELEASE_STOP_DELAY_SECONDS).toFixed(3));
-    const voicesToRelease = this.activeVoicesForString(stringIndex);
 
-    for (const voice of voicesToRelease) {
+    for (const voice of this.activeVoicesForString(stringIndex)) {
       if (voice.releaseScheduled) {
         continue;
       }
@@ -197,7 +196,6 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
       voice.releaseScheduled = true;
       voice.gain.gain.setTargetAtTime(0, currentTime, RELEASE_TIME_CONSTANT_SECONDS);
       voice.source.stop(stopAt);
-      removeMatching(this.activeVoices, (candidate) => candidate === voice);
     }
   }
 
@@ -206,7 +204,6 @@ export class ReactNativeAudioApiSamplerEngine implements SamplerEngine {
       const stolenIndex = this.activeVoices.findIndex((voice) => !voice.releaseScheduled);
       const stolen = stolenIndex >= 0 ? this.activeVoices.splice(stolenIndex, 1)[0] : undefined;
       if (stolen) {
-        stolen.source.onEnded = null;
         stolen.source.stop(this.requireContext().currentTime);
         this.disconnectVoice(stolen);
       }
