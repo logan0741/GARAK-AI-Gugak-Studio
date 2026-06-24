@@ -232,7 +232,10 @@ export function getMyLibraryItemAction(
   }
 
   if (item.workId !== undefined) {
-    return { type: 'openWork', workId: item.workId };
+    return {
+      type: 'playLibraryItem',
+      item: { kind: 'work', workId: item.workId },
+    };
   }
 
   if (item.exportedAudioId !== undefined) {
