@@ -70,12 +70,96 @@ test('keeps S05 in place and shows guidance when completing without a recorded t
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'openFreePlayRecordingSetup' });
   state = applyProductAction(state, { type: 'completePerformance' });
 
   expect(state.screenFlow.currentScreen).toBe('S05');
   expect(state.library.works).toHaveLength(0);
   expect(state.currentWorkId).toBeUndefined();
+  expect(state.freePlayRecordingSetup).toBeUndefined();
   expect(getCurrentScreenSummary(state).description).toContain('저장할 테이크가 없어요');
+});
+
+test('opens S05 recording setup before recording and stores confirmed tempo metadata', () => {
+  const events: PerformanceEvent[] = [
+    {
+      type: 'string_pluck',
+      tsMs: 0,
+      stringIndex: 1,
+      velocity: 0.8,
+    },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-24T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'openFreePlayRecordingSetup' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.pendingFreePlayTake).toBeUndefined();
+  expect(state.freePlayRecordingSetup).toEqual({
+    presetId: 'semachi',
+    bpm: 84,
+    beatUnit: '♩.',
+  });
+
+  state = applyProductAction(state, { type: 'selectFreePlayRecordingPreset', presetId: 'jungmori' });
+  state = applyProductAction(state, { type: 'adjustFreePlayRecordingBpm', delta: 28 });
+
+  expect(state.freePlayRecordingSetup).toEqual({
+    presetId: 'jungmori',
+    bpm: 100,
+    beatUnit: '♩',
+  });
+
+  state = applyProductAction(state, { type: 'startPerformanceRecording', events });
+
+  expect(state.freePlayRecordingSetup).toBeUndefined();
+  expect(state.pendingFreePlayTake).toEqual({
+    events,
+    recordingSetup: {
+      presetId: 'jungmori',
+      bpm: 100,
+      beatUnit: '♩',
+    },
+  });
+
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  const firstTrack = state.library.works[0].tracks[0];
+  expect(firstTrack.kind === 'instrument' ? firstTrack.takes[0].recordingSetup : undefined).toEqual({
+    presetId: 'jungmori',
+    bpm: 100,
+    beatUnit: '♩',
+  });
+});
+
+test('closes S05 recording setup when leaving for jangdan or layer actions', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'openFreePlayRecordingSetup' });
+  state = applyProductAction(state, { type: 'openLiveJangdanGuide' });
+
+  expect(state.screenFlow.currentScreen).toBe('S10A');
+  expect(state.freePlayRecordingSetup).toBeUndefined();
+
+  state = applyProductAction(state, { type: 'turnOffLiveJangdanGuide' });
+  state = applyProductAction(state, { type: 'openFreePlayRecordingSetup' });
+  state = applyProductAction(state, { type: 'openLayerEditor' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.freePlayRecordingSetup).toBeUndefined();
+  expect(state.freePlayNotice).toBe('missingTake');
 });
 
 test('keeps S05 in place and shows guidance when opening layer editor without a work', () => {

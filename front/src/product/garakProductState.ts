@@ -17,11 +17,13 @@ import {
   InstrumentId,
   JangdanPresetId,
   PracticeResult,
+  RecordingSetup,
   Work,
 } from '../studio/studioTypes';
 import {
   DEFAULT_FREE_CREATION_INSTRUMENT,
   GARAK_BRAND,
+  JANGDAN_PRESETS,
   PRACTICE_SONGS,
   SharedRecording,
   getSharedRecordingById,
@@ -52,6 +54,7 @@ export type ProductLanguage = 'ko' | 'en';
 
 export type PendingFreePlayTake = {
   events: PerformanceEvent[];
+  recordingSetup: RecordingSetup;
 };
 
 export type FreePlayNotice = 'missingTake';
@@ -90,6 +93,7 @@ export type GarakProductState = {
   libraryTab: ProductLibraryTab;
   librarySearchQuery: string;
   pendingFreePlayTake?: PendingFreePlayTake;
+  freePlayRecordingSetup?: RecordingSetup;
   freePlayNotice?: FreePlayNotice;
   instrumentSelectNotice?: InstrumentSelectNotice;
   trackAddNotice?: TrackAddNotice;
@@ -126,7 +130,11 @@ export type GarakProductAction =
   | { type: 'selectInstrument'; instrument: InstrumentId }
   | { type: 'showFutureInstrumentNotice' }
   | { type: 'startWithDefaults' }
-  | { type: 'startPerformanceRecording'; events?: PerformanceEvent[] }
+  | { type: 'openFreePlayRecordingSetup' }
+  | { type: 'selectFreePlayRecordingPreset'; presetId: JangdanPresetId }
+  | { type: 'adjustFreePlayRecordingBpm'; delta: number }
+  | { type: 'cancelFreePlayRecordingSetup' }
+  | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | { type: 'openLayerEditor' }
   | { type: 'openLiveJangdanGuide' }
@@ -313,15 +321,46 @@ export function applyProductAction(
         selectedInstrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
         instrumentSelectNotice: undefined,
         pendingFreePlayTake: undefined,
+        freePlayRecordingSetup: undefined,
         freePlayNotice: undefined,
         screenFlow: pushTarget(state.screenFlow, 'S05'),
+      };
+    case 'openFreePlayRecordingSetup':
+      return {
+        ...state,
+        freePlayRecordingSetup: state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
+        freePlayNotice: undefined,
+      };
+    case 'selectFreePlayRecordingPreset':
+      return {
+        ...state,
+        freePlayRecordingSetup: createRecordingSetup(action.presetId),
+        freePlayNotice: undefined,
+      };
+    case 'adjustFreePlayRecordingBpm':
+      return {
+        ...state,
+        freePlayRecordingSetup: adjustRecordingSetupBpm(
+          state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
+          action.delta,
+        ),
+        freePlayNotice: undefined,
+      };
+    case 'cancelFreePlayRecordingSetup':
+      return {
+        ...state,
+        freePlayRecordingSetup: undefined,
       };
     case 'startPerformanceRecording':
       return {
         ...state,
         pendingFreePlayTake: {
           events: action.events ?? [],
+          recordingSetup: normalizeRecordingSetup(
+            action.recordingSetup ?? state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
+          ),
         },
+        freePlayRecordingSetup: undefined,
         freePlayNotice: undefined,
       };
     case 'completePerformance':
@@ -331,6 +370,7 @@ export function applyProductAction(
     case 'openLiveJangdanGuide':
       return {
         ...state,
+        freePlayRecordingSetup: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S10A' }),
       };
     case 'applyLiveJangdanGuide':
@@ -390,6 +430,7 @@ export function applyProductAction(
         selectedInstrument: action.instrument,
         trackAddNotice: undefined,
         pendingFreePlayTake: undefined,
+        freePlayRecordingSetup: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S09' }),
       };
     case 'restartInstrumentTrackRecording':
@@ -397,7 +438,9 @@ export function applyProductAction(
         ...state,
         pendingFreePlayTake: {
           events: action.events ?? [],
+          recordingSetup: createDefaultRecordingSetup(),
         },
+        freePlayRecordingSetup: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S09'
             ? state.screenFlow
@@ -409,6 +452,7 @@ export function applyProductAction(
       return {
         ...state,
         pendingFreePlayTake: undefined,
+        freePlayRecordingSetup: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S09'
             ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
@@ -594,9 +638,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         screenId,
         `${getInstrumentLabel(state)} 자유연주`,
         '녹음',
-        state.freePlayNotice === 'missingTake'
-          ? '저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.'
-          : '악기를 직접 연주하고 완료하면 작업으로 자동 저장돼요.',
+        freePlayDescription(state),
         ['녹음', '장단', '완료'],
       );
     case 'S07':
@@ -711,6 +753,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
   if (state.pendingFreePlayTake === undefined) {
     return {
       ...state,
+      freePlayRecordingSetup: undefined,
       freePlayNotice: 'missingTake',
     };
   }
@@ -729,6 +772,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     createdAt: now,
     startedAtBeat: 1,
     durationBeats: 4,
+    recordingSetup: state.pendingFreePlayTake.recordingSetup,
     liveJangdanGuide: state.pendingLiveJangdanGuide
       ? {
           presetId: state.pendingLiveJangdanGuide.presetId,
@@ -744,6 +788,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     counters: nextCounters,
     currentWorkId: work.id,
     pendingFreePlayTake: undefined,
+    freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
     workSaveStatus: undefined,
     pendingLiveJangdanGuide: undefined,
@@ -760,16 +805,57 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
   };
 }
 
+function freePlayDescription(state: GarakProductState): string {
+  if (state.freePlayRecordingSetup !== undefined) {
+    return '녹음 전 BPM, 박자, 장단을 확인하고 시작해요.';
+  }
+
+  if (state.freePlayNotice === 'missingTake') {
+    return '저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.';
+  }
+
+  return '악기를 직접 연주하고 완료하면 작업으로 자동 저장돼요.';
+}
+
+function createDefaultRecordingSetup(): RecordingSetup {
+  const preset = JANGDAN_PRESETS[0];
+  return createRecordingSetup(preset.id, preset.defaultBpm);
+}
+
+function createRecordingSetup(presetId: JangdanPresetId, bpm?: number): RecordingSetup {
+  const preset = JANGDAN_PRESETS.find((item) => item.id === presetId) ?? JANGDAN_PRESETS[0];
+
+  return {
+    presetId: preset.id,
+    bpm: clampBpm(preset, bpm ?? preset.defaultBpm),
+    beatUnit: preset.beatUnit,
+  };
+}
+
+function adjustRecordingSetupBpm(setup: RecordingSetup, delta: number): RecordingSetup {
+  return createRecordingSetup(setup.presetId, setup.bpm + delta);
+}
+
+function normalizeRecordingSetup(setup: RecordingSetup): RecordingSetup {
+  return createRecordingSetup(setup.presetId, setup.bpm);
+}
+
+function clampBpm(preset: { minBpm: number; maxBpm: number }, bpm: number): number {
+  return Math.min(preset.maxBpm, Math.max(preset.minBpm, Math.round(bpm)));
+}
+
 function openLayerEditor(state: GarakProductState): GarakProductState {
   if (findCurrentWork(state) === undefined) {
     return {
       ...state,
+      freePlayRecordingSetup: undefined,
       freePlayNotice: 'missingTake',
     };
   }
 
   return {
     ...state,
+    freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
     screenFlow:
       state.screenFlow.currentScreen === 'S07'

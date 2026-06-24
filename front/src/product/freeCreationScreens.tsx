@@ -24,6 +24,7 @@ import {
 } from './garakUi';
 import {
   DEFAULT_FREE_CREATION_INSTRUMENT,
+  JANGDAN_PRESETS,
   LOCKED_FUTURE_INSTRUMENT_SLOTS,
   MVP_INSTRUMENTS,
   getInstrumentName,
@@ -279,13 +280,24 @@ export function FreePlayContent({
           <View style={[styles.buttonRow, isLandscapeFrame ? styles.landscapeButtonRow : undefined]}>
             <SecondaryPillButton
               label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}
-              onPress={() => dispatch({ type: 'startPerformanceRecording' })}
+              onPress={() => dispatch({ type: 'openFreePlayRecordingSetup' })}
             />
             <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
             <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'openLayerEditor' })} />
             <PrimaryPillButton label="완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
           </View>
         </View>
+      ) : null}
+      {state.freePlayRecordingSetup !== undefined ? (
+        <>
+          <Pressable
+            accessibilityLabel="녹음 전 설정 닫기"
+            accessibilityRole="button"
+            onPress={() => dispatch({ type: 'cancelFreePlayRecordingSetup' })}
+            style={styles.recordingSetupBackdrop}
+          />
+          <FreePlayRecordingSetupSheet state={state} dispatch={dispatch} />
+        </>
       ) : null}
     </View>
   );
@@ -308,6 +320,83 @@ function LandscapeStageNotice({ visible }: { visible: boolean }) {
   );
 }
 
+function FreePlayRecordingSetupSheet({
+  state,
+  dispatch,
+}: {
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
+  const setup = state.freePlayRecordingSetup;
+
+  if (setup === undefined) {
+    return null;
+  }
+
+  return (
+    <View
+      style={styles.recordingSetupSheet}
+    >
+      <Text style={styles.recordingSetupEyebrow}>녹음 전 설정</Text>
+      <Text style={styles.recordingSetupTitle}>장단과 BPM을 확인한 뒤 녹음해요.</Text>
+      <View style={styles.recordingPresetGrid}>
+        {JANGDAN_PRESETS.map((preset) => {
+          const active = setup.presetId === preset.id;
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              key={preset.id}
+              onPress={() => dispatch({ type: 'selectFreePlayRecordingPreset', presetId: preset.id })}
+              style={[
+                styles.recordingPresetButton,
+                active ? styles.recordingPresetButtonActive : undefined,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.recordingPresetName,
+                  active ? styles.recordingPresetNameActive : undefined,
+                ]}
+              >
+                {preset.name}
+              </Text>
+              <Text
+                style={[
+                  styles.recordingPresetMeta,
+                  active ? styles.recordingPresetMetaActive : undefined,
+                ]}
+              >
+                {preset.defaultBpm} BPM · {preset.beatUnit}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <JangdanStepperControl
+        label="BPM"
+        value={`${setup.bpm} BPM`}
+        onDecrease={() => dispatch({ type: 'adjustFreePlayRecordingBpm', delta: -4 })}
+        onIncrease={() => dispatch({ type: 'adjustFreePlayRecordingBpm', delta: 4 })}
+      />
+      <Text style={styles.recordingSetupMetaText}>박자 {setup.beatUnit}</Text>
+      <View style={styles.recordingSetupActions}>
+        <SecondaryPillButton
+          label="취소"
+          onPress={() => dispatch({ type: 'cancelFreePlayRecordingSetup' })}
+          style={styles.recordingSetupActionButton}
+        />
+        <PrimaryPillButton
+          label="녹음 시작"
+          onPress={() => dispatch({ type: 'startPerformanceRecording', recordingSetup: setup })}
+          style={styles.recordingSetupActionButton}
+        />
+      </View>
+    </View>
+  );
+}
+
 function LandscapeStageActionHits({ dispatch }: { dispatch: ProductDispatch }) {
   return (
     <>
@@ -320,7 +409,7 @@ function LandscapeStageActionHits({ dispatch }: { dispatch: ProductDispatch }) {
       <Pressable
         accessibilityLabel="녹음 시작"
         accessibilityRole="button"
-        onPress={() => dispatch({ type: 'startPerformanceRecording' })}
+        onPress={() => dispatch({ type: 'openFreePlayRecordingSetup' })}
         style={[styles.landscapeStageActionHit, styles.landscapeStageRecordHit]}
       />
       <Pressable
@@ -1032,6 +1121,7 @@ function ModeButton({
 const styles = StyleSheet.create({
   screenStack: {
     gap: 18,
+    position: 'relative',
   },
   instrumentSelectScreen: {
     gap: 0,
@@ -1996,6 +2086,91 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 16,
     textAlign: 'center',
+  },
+  recordingSetupSheet: {
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(31,32,46,0.14)',
+    borderRadius: 24,
+    borderWidth: 1,
+    bottom: 12,
+    gap: 10,
+    left: 12,
+    padding: 16,
+    position: 'absolute',
+    right: 12,
+    zIndex: 12,
+    ...garakCardShadow,
+  },
+  recordingSetupBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15,16,24,0.22)',
+    zIndex: 11,
+  },
+  recordingSetupEyebrow: {
+    color: GARAK_COLORS.brandAmber,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  recordingSetupTitle: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 21,
+  },
+  recordingPresetGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  recordingPresetButton: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: 'rgba(31,32,46,0.08)',
+    borderRadius: 16,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 54,
+    minWidth: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 9,
+  },
+  recordingPresetButtonActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderColor: GARAK_COLORS.brandNavy,
+  },
+  recordingPresetName: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  recordingPresetNameActive: {
+    color: GARAK_COLORS.surfaceCard,
+  },
+  recordingPresetMeta: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 15,
+    marginTop: 3,
+  },
+  recordingPresetMetaActive: {
+    color: 'rgba(255,255,255,0.76)',
+  },
+  recordingSetupMetaText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  recordingSetupActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  recordingSetupActionButton: {
+    flex: 1,
+    minWidth: 0,
   },
   freePlayTopBar: {
     alignItems: 'center',

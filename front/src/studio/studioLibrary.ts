@@ -8,6 +8,7 @@ import {
   LibrarySections,
   LiveJangdanGuide,
   PracticeResult,
+  RecordingSetup,
   ReferenceTrack,
   Take,
   Work,
@@ -32,6 +33,7 @@ export function autoSaveTakeAsWork(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
 }): Work {
   const take = createTake({
@@ -40,6 +42,7 @@ export function autoSaveTakeAsWork(input: {
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
   });
 
@@ -215,6 +218,7 @@ function createTake(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
 }): Take {
   return {
@@ -223,6 +227,7 @@ function createTake(input: {
     recordingUri: normalizeOptionalText(input.recordingUri),
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
+    recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
   };
 }

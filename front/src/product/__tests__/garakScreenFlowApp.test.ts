@@ -226,7 +226,7 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
   expect(source).toContain('LandscapeStageNotice');
   expect(source).toContain("visible={state.freePlayNotice === 'missingTake'}");
   expect(source).toContain("accessibilityLabel=\"녹음 시작\"");
-  expect(source).toContain("type: 'startPerformanceRecording'");
+  expect(source).toContain("type: 'openFreePlayRecordingSetup'");
   expect(source).toContain("accessibilityLabel=\"장단 설정\"");
   expect(source).toContain("type: 'openLiveJangdanGuide'");
   expect(source).toContain("accessibilityLabel=\"레이어 편집\"");
@@ -238,11 +238,19 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
 test('connects S05 recording start separately from completion and missing-take guidance', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
+  expect(source).toContain('FreePlayRecordingSetupSheet');
+  expect(source).toContain('recordingSetupBackdrop');
+  expect(source).toContain("state.freePlayRecordingSetup !== undefined");
+  expect(source).toContain("type: 'openFreePlayRecordingSetup'");
+  expect(source).toContain("type: 'selectFreePlayRecordingPreset'");
+  expect(source).toContain("type: 'adjustFreePlayRecordingBpm'");
+  expect(source).toContain("type: 'cancelFreePlayRecordingSetup'");
   expect(source).toContain("type: 'startPerformanceRecording'");
   expect(source).toContain("type: 'completePerformance'");
   expect(source).toContain("type: 'openLayerEditor'");
   expect(source).toContain("state.freePlayNotice === 'missingTake'");
   expect(source).toContain('저장할 테이크가 없어요');
+  expect(source).toContain('녹음 전 설정');
   expect(source).toContain("label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}");
   expect(source).not.toContain("label=\"레이어\" onPress={() => dispatch({ type: 'navigate', target: 'S07' })}");
 });

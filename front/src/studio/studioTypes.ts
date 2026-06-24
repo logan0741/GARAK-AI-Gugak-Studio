@@ -17,12 +17,19 @@ export type LiveJangdanGuide = {
   startedAtBeat: number;
 };
 
+export type RecordingSetup = {
+  presetId: JangdanPresetId;
+  bpm: number;
+  beatUnit: string;
+};
+
 export type Take = {
   id: string;
   events: PerformanceEvent[];
   recordingUri?: string;
   startedAtBeat: number;
   durationBeats: number;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
 };
 
