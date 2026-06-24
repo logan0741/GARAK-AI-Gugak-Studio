@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { applyProductAction, createInitialGarakProductState } from '../garakProductState';
 import {
   getMyLibraryItemAction,
+  getMyLibraryPlayerActions,
   getMyLibraryPlayerViewModel,
   getMyLibraryViewModel,
 } from '../libraryScreenModel';
@@ -149,6 +150,26 @@ test('builds the player detail from the selected my-library item', () => {
     editWorkId: 'work-1',
     sourceKind: 'exportedAudio',
     title: state.library.exportedAudios[0].title,
+  });
+});
+
+test('exposes S19 player actions without choosing their visual placement', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+
+  expect(getMyLibraryPlayerActions(state)).toEqual({
+    editAction: { type: 'openSelectedPlayerEditor' },
+    shareAction: { type: 'shareSelectedPlayerItem' },
+    backAction: { type: 'navigate', target: 'S18' },
   });
 });
 

@@ -355,6 +355,45 @@ test('publishes the selected exported audio from S17 and marks it shared', () =>
   });
 });
 
+test('opens S17 from the S19 player for the selected exported audio', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'shareSelectedPlayerItem' });
+
+  expect(state.screenFlow.currentScreen).toBe('S17');
+  expect(state.selectedPlayerItem).toEqual({
+    kind: 'exportedAudio',
+    exportedAudioId: 'export-1',
+  });
+});
+
+test('opens the original work editor from the S19 player when the export has a work source', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'openSelectedPlayerEditor' });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.currentWorkId).toBe('work-1');
+});
+
 test('publishes the selected practice result from S17 and marks it shared', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

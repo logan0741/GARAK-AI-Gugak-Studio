@@ -87,12 +87,14 @@ export type GarakProductAction =
   | { type: 'finishPractice' }
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
+  | { type: 'shareSelectedPlayerItem' }
   | { type: 'publishShareTarget' }
   | { type: 'remixSharedRecording' }
   | { type: 'saveSharedRecording' }
   | { type: 'loginAndLoadMySongs' }
   | { type: 'completeLoginSync' }
   | { type: 'playLibraryItem'; item: ProductPlayerSelection }
+  | { type: 'openSelectedPlayerEditor' }
   | { type: 'navigate'; target: ImplementedScreenId }
   | { type: 'back' }
   | { type: 'openWork'; workId: string };
@@ -142,6 +144,8 @@ export function applyProductAction(
           target: 'S19',
         }),
       };
+    case 'openSelectedPlayerEditor':
+      return openSelectedPlayerEditor(state);
     case 'openWork':
       return {
         ...state,
@@ -236,6 +240,8 @@ export function applyProductAction(
       return savePracticeResult(state);
     case 'sharePracticeResult':
       return createPracticeResultAndRoute(state, 'S17');
+    case 'shareSelectedPlayerItem':
+      return shareSelectedPlayerItem(state);
     case 'publishShareTarget':
       return publishShareTarget(state);
     case 'remixSharedRecording':
@@ -685,6 +691,50 @@ function publishShareTarget(state: GarakProductState): GarakProductState {
     selectedPlayerItem: target,
     screenFlow: pushTarget(state.screenFlow, 'S20'),
   };
+}
+
+function shareSelectedPlayerItem(state: GarakProductState): GarakProductState {
+  const target = resolveShareTargetSelection(state);
+
+  if (target === undefined) {
+    return state;
+  }
+
+  return {
+    ...state,
+    selectedPlayerItem: target,
+    screenFlow: pushTarget(state.screenFlow, 'S17'),
+  };
+}
+
+function openSelectedPlayerEditor(state: GarakProductState): GarakProductState {
+  const workId = resolveSelectedPlayerEditWorkId(state);
+
+  if (workId === undefined) {
+    return state;
+  }
+
+  return {
+    ...state,
+    currentWorkId: workId,
+    screenFlow: pushTarget(state.screenFlow, 'S07'),
+  };
+}
+
+function resolveSelectedPlayerEditWorkId(state: GarakProductState): string | undefined {
+  const selected = state.selectedPlayerItem;
+
+  if (selected?.kind === 'work') {
+    return state.library.works.some((work) => work.id === selected.workId)
+      ? selected.workId
+      : undefined;
+  }
+
+  if (selected?.kind === 'exportedAudio') {
+    return state.library.exportedAudios.find((audio) => audio.id === selected.exportedAudioId)?.workId;
+  }
+
+  return undefined;
 }
 
 function resolveShareTargetSelection(

@@ -41,6 +41,12 @@ export type MyLibraryPlayerViewModel = {
   editWorkId?: string;
 };
 
+export type MyLibraryPlayerActions = {
+  editAction?: GarakProductAction;
+  shareAction?: GarakProductAction;
+  backAction: GarakProductAction;
+};
+
 type ActualLibraryRow = MyLibraryPlaylistRow & {
   sortKey: number;
   order: number;
@@ -160,6 +166,23 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
   }
 
   return createDemoPlayerViewModel('My Arirang');
+}
+
+export function getMyLibraryPlayerActions(state: GarakProductState): MyLibraryPlayerActions {
+  const player = getMyLibraryPlayerViewModel(state);
+  const selection = state.selectedPlayerItem;
+  const canShare =
+    selection?.kind === 'exportedAudio'
+      ? state.library.exportedAudios.some((audio) => audio.id === selection.exportedAudioId)
+      : selection?.kind === 'practiceResult'
+        ? state.library.practiceResults.some((result) => result.id === selection.practiceResultId)
+        : false;
+
+  return {
+    editAction: player.editWorkId !== undefined ? { type: 'openSelectedPlayerEditor' } : undefined,
+    shareAction: canShare ? { type: 'shareSelectedPlayerItem' } : undefined,
+    backAction: { type: 'navigate', target: 'S18' },
+  };
 }
 
 export function getMyLibraryItemAction(
