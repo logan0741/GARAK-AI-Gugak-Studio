@@ -85,6 +85,7 @@ export type GarakProductState = {
   selectedPracticeSongId?: PracticeSong['id'];
   previewingPracticeSongId?: PracticeSong['id'];
   currentWorkId?: string;
+  workPlayheadBeat: number;
   selectedPlayerItem?: ProductPlayerSelection;
   playingPlayerItem?: ProductPlayerSelection;
   selectedSharedRecordingId?: SharedRecording['id'];
@@ -136,6 +137,7 @@ export type GarakProductAction =
   | { type: 'cancelFreePlayRecordingSetup' }
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
+  | { type: 'setWorkPlayheadBeat'; beat: number }
   | { type: 'openLayerEditor' }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
@@ -212,6 +214,7 @@ export function createInitialGarakProductState(input: { now?: () => string } = {
     },
     libraryTab: 'works',
     librarySearchQuery: '',
+    workPlayheadBeat: 1,
     counters: {
       work: 0,
       track: 0,
@@ -257,6 +260,7 @@ export function applyProductAction(
         ...state,
         currentWorkId: action.workId,
         workSaveStatus: undefined,
+        workPlayheadBeat: 1,
         screenFlow: transitionScreenFlow(state.screenFlow, {
           type: 'navigate',
           target: 'S07',
@@ -365,6 +369,11 @@ export function applyProductAction(
       };
     case 'completePerformance':
       return completePerformance(state, action.events);
+    case 'setWorkPlayheadBeat':
+      return {
+        ...state,
+        workPlayheadBeat: normalizeWorkPlayheadBeat(action.beat),
+      };
     case 'openLayerEditor':
       return openLayerEditor(state);
     case 'openLiveJangdanGuide':
@@ -787,6 +796,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     ...state,
     counters: nextCounters,
     currentWorkId: work.id,
+    workPlayheadBeat: 1,
     pendingFreePlayTake: undefined,
     freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
@@ -842,6 +852,10 @@ function normalizeRecordingSetup(setup: RecordingSetup): RecordingSetup {
 
 function clampBpm(preset: { minBpm: number; maxBpm: number }, bpm: number): number {
   return Math.min(preset.maxBpm, Math.max(preset.minBpm, Math.round(bpm)));
+}
+
+function normalizeWorkPlayheadBeat(beat: number): number {
+  return typeof beat === 'number' && Number.isFinite(beat) && beat > 0 ? Math.round(beat) : 1;
 }
 
 function openLayerEditor(state: GarakProductState): GarakProductState {
@@ -987,7 +1001,7 @@ function applyInstrumentTrack(
     events: takeEvents,
     createdAt: now,
     durationBeats: 4,
-    playheadBeat,
+    playheadBeat: playheadBeat ?? state.workPlayheadBeat,
   });
 
   return {
@@ -1012,7 +1026,7 @@ function applyAccompanimentTrack(
     bpm: action.bpm,
     volume: action.volume,
     createdAt: state.now(),
-    playheadBeat: action.playheadBeat,
+    playheadBeat: action.playheadBeat ?? state.workPlayheadBeat,
   });
 
   const nextState = replaceCurrentWork(
@@ -1159,6 +1173,7 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
     counters: nextCounters,
     currentWorkId: work.id,
     workSaveStatus: undefined,
+    workPlayheadBeat: 1,
     library: {
       ...state.library,
       works: [...state.library.works, work],
@@ -1265,6 +1280,7 @@ function openSelectedPlayerEditor(state: GarakProductState): GarakProductState {
     ...state,
     currentWorkId: workId,
     workSaveStatus: undefined,
+    workPlayheadBeat: 1,
     screenFlow: pushTarget(state.screenFlow, 'S07'),
   };
 }

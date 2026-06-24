@@ -480,6 +480,15 @@ export function TrackLayerEditorContent({
           <Text style={styles.freeCreationMixCopyStrong}>나만의 가락</Text>을 생성해요.
         </Text>
 
+        <View style={styles.freeCreationPlayheadControl}>
+          <JangdanStepperControl
+            label="재생 헤드"
+            value={mixEditorModel.playheadBeatLabel}
+            onDecrease={() => dispatch(mixEditorModel.decreasePlayheadAction)}
+            onIncrease={() => dispatch(mixEditorModel.increasePlayheadAction)}
+          />
+        </View>
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="트랙과 AI 반주 믹스"
@@ -1628,6 +1637,12 @@ const styles = StyleSheet.create({
     color: GARAK_COLORS.textSecondary,
     fontWeight: '500',
   },
+  freeCreationPlayheadControl: {
+    left: 27,
+    position: 'absolute',
+    right: 28,
+    top: 103,
+  },
   freeCreationCompletedCopy: {
     color: '#656565',
     fontSize: 13.36,
@@ -1708,7 +1723,7 @@ const styles = StyleSheet.create({
     left: 27,
     position: 'absolute',
     right: 28,
-    top: 163,
+    top: 170,
   },
   freeCreationMixButtonText: {
     color: GARAK_COLORS.surfaceCard,

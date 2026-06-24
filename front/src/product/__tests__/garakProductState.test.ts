@@ -484,6 +484,49 @@ test('adds new tracks at the provided playhead beat', () => {
   });
 });
 
+test('uses the S07 playhead beat when adding new instrument and accompaniment tracks', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'setWorkPlayheadBeat', beat: 7 });
+
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'janggu' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: [{ type: 'string_pluck', tsMs: 80, stringIndex: 2, velocity: 0.7 }],
+  });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack' });
+
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
+  state = applyProductAction(state, {
+    type: 'addAccompanimentTrack',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.7,
+  });
+
+  const [, instrumentTrack, accompanimentTrack] = state.library.works[0].tracks;
+
+  expect(state.workPlayheadBeat).toBe(7);
+  expect(instrumentTrack).toMatchObject({
+    kind: 'instrument',
+    startedAtBeat: 7,
+  });
+  expect(accompanimentTrack).toMatchObject({
+    kind: 'accompaniment',
+    startedAtBeat: 7,
+  });
+});
+
 test('does not add an S09 instrument track until a take has recorded events', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -877,10 +920,12 @@ test('remixes a shared demo recording into a new editable reference work', () =>
 
   state = applyProductAction(state, { type: 'navigate', target: 'S20' });
   state = applyProductAction(state, { type: 'navigate', target: 'S21' });
+  state = applyProductAction(state, { type: 'setWorkPlayheadBeat', beat: 7 });
   state = applyProductAction(state, { type: 'remixSharedRecording' });
 
   expect(state.screenFlow.currentScreen).toBe('S07');
   expect(state.currentWorkId).toBe('work-1');
+  expect(state.workPlayheadBeat).toBe(1);
   expect(state.library.works).toHaveLength(1);
   expect(state.library.works[0]).toMatchObject({
     id: 'work-1',
@@ -1104,11 +1149,13 @@ test('opens the original work editor from the S19 player when the export has a w
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'setWorkPlayheadBeat', beat: 7 });
   state = applyProductAction(state, { type: 'exportCurrentWork' });
   state = applyProductAction(state, { type: 'openSelectedPlayerEditor' });
 
   expect(state.screenFlow.currentScreen).toBe('S07');
   expect(state.currentWorkId).toBe('work-1');
+  expect(state.workPlayheadBeat).toBe(1);
 });
 
 test('plays and pauses the selected S19 library player item without leaving the player', () => {

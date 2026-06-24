@@ -265,6 +265,9 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
   expect(source).toContain('mixEditorModel.playerAccessibilityLabel');
   expect(source).toContain('mixEditorModel.saveAction');
   expect(source).toContain('mixEditorModel.saveStatusLabel');
+  expect(source).toContain('mixEditorModel.playheadBeatLabel');
+  expect(source).toContain('dispatch(mixEditorModel.decreasePlayheadAction)');
+  expect(source).toContain('dispatch(mixEditorModel.increasePlayheadAction)');
   expect(source).toContain('Mix');
   expect(source).toContain('작업 저장');
   expect(source).toContain('Save & Share project');

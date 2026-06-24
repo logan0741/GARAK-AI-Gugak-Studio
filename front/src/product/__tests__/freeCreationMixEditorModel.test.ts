@@ -67,3 +67,34 @@ test('exposes a local work save action and status for the S07 mix player', () =>
     }).saveStatusLabel,
   ).toBe('저장됨');
 });
+
+test('models the S07 beat-grid playhead controls for track placement', () => {
+  const createdAt = '2026-06-24T12:00:00.000Z';
+  const work = autoSaveTakeAsWork({
+    workId: 'work-playhead',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    title: '박자 편집 작업',
+    instrument: 'janggu',
+    events: [],
+    createdAt,
+    startedAtBeat: 1,
+    durationBeats: 4,
+  });
+  const state = {
+    ...createInitialGarakProductState({ now: () => createdAt }),
+    currentWorkId: work.id,
+    workPlayheadBeat: 5,
+    library: {
+      works: [work],
+      exportedAudios: [],
+      practiceResults: [],
+    },
+  };
+
+  expect(getFreeCreationMixEditorModel(state)).toMatchObject({
+    playheadBeatLabel: '5박',
+    decreasePlayheadAction: { type: 'setWorkPlayheadBeat', beat: 4 },
+    increasePlayheadAction: { type: 'setWorkPlayheadBeat', beat: 6 },
+  });
+});
