@@ -614,6 +614,20 @@ test('routes settings login CTA to S23 while preserving local library state', ()
   expect(getCurrentScreenSummary(state).primaryCtas).toContain('로그인');
 });
 
+test('summarizes S22 and S23 with documented settings and sync CTAs', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S22' });
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['로그인하고 내 곡 불러오기', '언어 변경', '보관함 관리']),
+  );
+
+  state = applyProductAction(state, { type: 'loginAndLoadMySongs' });
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['로그인', '동기화', '선택해서 가져오기', '건너뛰기']),
+  );
+});
+
 test('routes library sync CTA to S23 while preserving local library state', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -812,6 +826,24 @@ test('uses the selected S20 shared recording when remixing and saving from S21',
     authorDisplayName: 'Drama_Garak',
     audioUri: 'placeholder://recent-kdrama-ost.wav',
   });
+});
+
+test('does not remix an S21 shared recording when remixing is unavailable', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, {
+    type: 'openSharedRecordingDetail',
+    recordingId: 'recent-korea-minyo',
+  });
+  state = applyProductAction(state, { type: 'remixSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S21');
+  expect(state.selectedSharedRecordingId).toBe('recent-korea-minyo');
+  expect(state.currentWorkId).toBeUndefined();
+  expect(state.library.works).toHaveLength(0);
 });
 
 test('publishes the selected exported audio from S17 and marks it shared', () => {

@@ -7,6 +7,7 @@ import {
 } from './garakDesignSystem';
 import { GarakLogo } from './GarakLogo';
 import { GarakProductAction, GarakProductState } from './garakProductState';
+import { getSettingsViewModel } from './settingsScreenModel';
 import {
   PrimaryPillButton,
   ProgressSteps,
@@ -132,27 +133,29 @@ export function SettingsContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const model = getSettingsViewModel(state);
+
   return (
     <View style={styles.stack}>
       <ScreenHeading title="마이 / 설정" compact description="게스트 상태에서도 보관함과 언어 설정을 사용할 수 있습니다." />
       <View style={styles.settingsCard}>
-        <SettingRow label="현재 상태" value={state.account.status === 'guest' ? '게스트' : '로그인'} />
-        <SettingRow label="로컬 작업" value={`${state.library.works.length}개`} />
-        <SettingRow label="언어" value={languageLabel(state.language)} />
+        {model.rows.map((row) => (
+          <SettingRow key={row.label} label={row.label} value={row.value} />
+        ))}
       </View>
       <View style={styles.settingsActionRow}>
         <SettingsActionButton
           label="언어 변경"
-          onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
+          onPress={() => dispatch(model.actions.changeLanguage)}
         />
         <SettingsActionButton
           label="보관함 관리"
-          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
+          onPress={() => dispatch(model.actions.manageLibrary)}
         />
       </View>
       <PrimaryPillButton
         label="로그인하고 내 곡 불러오기"
-        onPress={() => dispatch({ type: 'loginAndLoadMySongs' })}
+        onPress={() => dispatch(model.actions.loginAndLoadMySongs)}
       />
       <QuickAccessNav
         active="library"
@@ -343,10 +346,6 @@ function SettingsActionButton({ label, onPress }: { label: string; onPress: () =
       <Text style={styles.settingsActionText}>{label}</Text>
     </Pressable>
   );
-}
-
-function languageLabel(language: GarakProductState['language']): string {
-  return language === 'ko' ? '한국어' : 'English';
 }
 
 const styles = StyleSheet.create({

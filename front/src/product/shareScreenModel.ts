@@ -2,9 +2,11 @@ import { ExportedAudio, PracticeResult } from '../studio/studioTypes';
 import type { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   FEATURED_SHARED_RECORDING,
+  getSharedRecordingById,
   getInstrumentName,
   getPracticeSongTitle,
   PRACTICE_SONGS,
+  type SharedRecording,
 } from './productFixtures';
 
 export type ShareFeedCategory = {
@@ -51,6 +53,19 @@ export type SharePrepareViewModel = {
   instrumentLabel: string;
   sourceLabel: string;
   isPreviewing: boolean;
+};
+
+export type SharedDetailViewModel = {
+  title: string;
+  instrument: SharedRecording['instrument'];
+  provenanceLabel: string;
+  durationLabel: string;
+  remixStatusLabel: string;
+  canRemix: boolean;
+  actions: {
+    remix?: GarakProductAction;
+    save: GarakProductAction;
+  };
 };
 
 const SHARE_FEED_CATEGORIES = ['Hot', 'K-pop', 'K-Drama OST', 'K-Minyo', 'Arirang'] as const;
@@ -146,6 +161,24 @@ export function getSharePrepareAction(state: GarakProductState): GarakProductAct
   return getSharePrepareViewModel(state).canShare
     ? { type: 'navigate', target: 'S17' }
     : undefined;
+}
+
+export function getSharedDetailViewModel(state: GarakProductState): SharedDetailViewModel {
+  const recording = getSharedRecordingById(state.selectedSharedRecordingId);
+  const instrumentName = getInstrumentName(recording.instrument);
+
+  return {
+    title: recording.title,
+    instrument: recording.instrument,
+    provenanceLabel: `${recording.authorDisplayName} · ${instrumentName} · ${recording.sourceLabel}`,
+    durationLabel: formatSeconds(recording.durationSeconds),
+    remixStatusLabel: recording.remixable ? '리믹스 가능' : '저장만 가능',
+    canRemix: recording.remixable,
+    actions: {
+      remix: recording.remixable ? { type: 'remixSharedRecording' } : undefined,
+      save: { type: 'saveSharedRecording' },
+    },
+  };
 }
 
 function getSharePrepareTarget(state: GarakProductState): ExportedAudio | PracticeResult | undefined {

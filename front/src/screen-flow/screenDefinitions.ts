@@ -259,7 +259,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S22',
     name: 'My And Settings',
     mvpStatus: 'required',
-    primaryCtas: ['loginAndLoadMySongs', 'changeLanguage'],
+    primaryCtas: ['loginAndLoadMySongs', 'changeLanguage', 'manageLibrary'],
     transitions: [
       { action: 'loginAndLoadMySongs', target: 'S23' },
       { action: 'changeLanguage', target: 'S02' },
@@ -272,9 +272,10 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S23',
     name: 'Login And Library Sync',
     mvpStatus: 'recommended',
-    primaryCtas: ['login', 'sync', 'skip'],
+    primaryCtas: ['login', 'sync', 'importSelected', 'skip'],
     transitions: [
       { action: 'sync', target: 'S18' },
+      { action: 'importSelected', target: 'S18' },
       { action: 'skip', target: 'S22' },
     ],
   },

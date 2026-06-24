@@ -2,8 +2,8 @@ import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View }
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState, ProductPlayerSelection } from './garakProductState';
-import { getInstrumentName, getSharedRecordingById } from './productFixtures';
 import {
+  getSharedDetailViewModel,
   getShareFeedViewModel,
   getSharePrepareAction,
   getSharePrepareViewModel,
@@ -349,26 +349,31 @@ export function SharedDetailContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const recording = getSharedRecordingById(state.selectedSharedRecordingId);
+  const model = getSharedDetailViewModel(state);
 
   return (
     <View style={styles.stack}>
       <ScreenHeading title="공유 가락 듣기" compact />
       <View style={styles.detailHero}>
-        <InstrumentVisual instrument={recording.instrument} />
+        <InstrumentVisual instrument={model.instrument} />
       </View>
-      <MiniTrackPlayer title={recording.title} tone="red" />
+      <MiniTrackPlayer title={model.title} tone="red" />
       <Text style={styles.bodyText}>
-        {recording.authorDisplayName} · {getInstrumentName(recording.instrument)} · {recording.sourceLabel}
+        {model.provenanceLabel} · {model.durationLabel} · {model.remixStatusLabel}
       </Text>
       <View style={styles.buttonRow}>
         <PrimaryPillButton
           label="리믹스"
           tone="amber"
-          onPress={() => dispatch({ type: 'remixSharedRecording' })}
+          disabled={!model.canRemix}
+          onPress={() => {
+            if (model.actions.remix !== undefined) {
+              dispatch(model.actions.remix);
+            }
+          }}
           style={styles.rowPrimary}
         />
-        <SecondaryPillButton label="저장" onPress={() => dispatch({ type: 'saveSharedRecording' })} />
+        <SecondaryPillButton label="저장" onPress={() => dispatch(model.actions.save)} />
       </View>
     </View>
   );

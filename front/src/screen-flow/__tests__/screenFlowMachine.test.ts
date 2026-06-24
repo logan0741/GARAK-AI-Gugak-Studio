@@ -75,6 +75,15 @@ test('defines documented cancel and disable transitions for track and jangdan fl
   });
 });
 
+test('keeps settings and login sync primary CTAs aligned with the screen-flow document', () => {
+  expect(implementedScreenDefinitions.S22.primaryCtas).toEqual(
+    expect.arrayContaining(['loginAndLoadMySongs', 'changeLanguage', 'manageLibrary']),
+  );
+  expect(implementedScreenDefinitions.S23.primaryCtas).toEqual(
+    expect.arrayContaining(['login', 'sync', 'importSelected', 'skip']),
+  );
+});
+
 test('routes S01 Next to S04 when free creation mode is selected', () => {
   const state = transitionScreenFlow(createInitialScreenFlowState(), {
     type: 'selectMode',

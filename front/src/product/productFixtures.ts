@@ -169,7 +169,7 @@ export const SHARE_FEED_RECORDINGS: SharedRecording[] = [
     instrument: 'gayageum',
     durationSeconds: 52,
     audioUri: 'placeholder://recent-korea-minyo.wav',
-    remixable: true,
+    remixable: false,
   },
 ];
 

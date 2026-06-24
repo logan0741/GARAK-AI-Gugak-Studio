@@ -650,11 +650,13 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
       return summary(screenId, '마이 / 설정', accountLabel(state), '로그인은 내 곡을 불러올 때만 사용해요.', [
         '로그인하고 내 곡 불러오기',
         '언어 변경',
+        '보관함 관리',
       ]);
     case 'S23':
       return summary(screenId, '로그인 / 보관함 동기화', '선택 동기화', '로컬 작업을 유지한 채 계정 곡을 불러와요.', [
         '로그인',
         '동기화',
+        '선택해서 가져오기',
         '건너뛰기',
       ]);
     case 'S02':
@@ -969,6 +971,11 @@ function createPracticeResultAndRoute(
 
 function remixSharedRecording(state: GarakProductState): GarakProductState {
   const recording = getSelectedSharedRecording(state);
+
+  if (!recording.remixable) {
+    return state;
+  }
+
   const nextCounters = incrementCounters(state.counters, ['work', 'track']);
   const createdAt = state.now();
   const work: Work = {

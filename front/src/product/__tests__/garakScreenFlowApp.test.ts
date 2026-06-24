@@ -95,8 +95,10 @@ test('connects S23 login sync preview and actions to library data', () => {
 test('connects S22 settings actions to language and library management', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
 
-  expect(source).toMatch(/label="언어 변경"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S02' \}\)\}/);
-  expect(source).toMatch(/label="보관함 관리"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S18' \}\)\}/);
+  expect(source).toContain('getSettingsViewModel');
+  expect(source).toContain('model.actions.changeLanguage');
+  expect(source).toContain('model.actions.manageLibrary');
+  expect(source).toContain('model.actions.loginAndLoadMySongs');
 });
 
 test('connects S02 language choices to the product language state', () => {
@@ -108,7 +110,6 @@ test('connects S02 language choices to the product language state', () => {
   expect(settingsSource).toContain("language: 'ko'");
   expect(settingsSource).toContain("language: 'en'");
   expect(settingsSource).toContain('state.language');
-  expect(settingsSource).toContain('languageLabel');
 });
 
 test('connects S18 library tabs, search, sync label, and empty state CTA', () => {
@@ -308,14 +309,14 @@ test('connects S15 practice controls to practice attempt state actions', () => {
 test('connects shared detail remix and save buttons to library data actions', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 
-  expect(source).toContain('getSharedRecordingById');
+  expect(source).toContain('getSharedDetailViewModel');
   expect(source).toContain("type: 'openSharedRecordingDetail'");
   expect(source).toContain('recordingId: model.hero.recordingId');
   expect(source).toContain('recordingId: card.recordingId');
   expect(source).toContain('firstRecentCard.recordingId');
-  expect(source).toContain("type: 'remixSharedRecording'");
-  expect(source).toContain("type: 'saveSharedRecording'");
-  expect(source).toContain('state.selectedSharedRecordingId');
+  expect(source).toContain('disabled={!model.canRemix}');
+  expect(source).toContain('model.actions.remix');
+  expect(source).toContain('model.actions.save');
   expect(source).not.toContain("type: 'navigate', target: 'S21'");
   expect(source).not.toContain("label=\"리믹스\" tone=\"amber\" onPress={() => dispatch({ type: 'navigate', target: 'S07' })}");
   expect(source).not.toContain("label=\"저장\" onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");

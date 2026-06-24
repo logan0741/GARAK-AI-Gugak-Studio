@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { createInitialGarakProductState } from '../garakProductState';
 import {
+  getSharedDetailViewModel,
   getShareFeedViewModel,
   getSharePrepareAction,
   getSharePrepareViewModel,
@@ -36,6 +37,26 @@ test('builds the Figma share-feed defaults', () => {
     'recent-kpop-demon-hunters',
     'recent-korea-minyo',
   ]);
+});
+
+test('models S21 shared detail remix availability and provenance', () => {
+  const model = getSharedDetailViewModel({
+    ...createInitialGarakProductState(),
+    selectedSharedRecordingId: 'recent-korea-minyo',
+  });
+
+  expect(model).toEqual({
+    title: 'Korea Minyo',
+    instrument: 'gayageum',
+    provenanceLabel: 'Minyo_Archive · 가야금 · 공유 피드 데모',
+    durationLabel: '52초',
+    remixStatusLabel: '저장만 가능',
+    canRemix: false,
+    actions: {
+      remix: undefined,
+      save: { type: 'saveSharedRecording' },
+    },
+  });
 });
 
 test('uses a shared export as the share-feed player item', () => {
