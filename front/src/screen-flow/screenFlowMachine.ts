@@ -46,7 +46,7 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
     case 'addAccompanimentTrack':
       return routeFromScreen(state, 'S10B', 'S07', event.type);
     case 'loginCta':
-      return routeFromScreen(state, 'S22', 'S23', event.type);
+      return routeFromScreens(state, ['S18', 'S22'], 'S23', event.type);
     case 'navigate':
       return pushScreen(state, resolveNavigationTarget(state, event.target));
     case 'back':
@@ -80,6 +80,19 @@ function routeFromScreen(
   eventType: ScreenFlowEvent['type'],
 ): ScreenFlowState {
   if (state.currentScreen !== expectedScreen) {
+    throw new Error(`${eventType} is not available from ${state.currentScreen}`);
+  }
+
+  return pushScreen(state, target);
+}
+
+function routeFromScreens(
+  state: ScreenFlowState,
+  expectedScreens: ImplementedScreenId[],
+  target: ImplementedScreenId,
+  eventType: ScreenFlowEvent['type'],
+): ScreenFlowState {
+  if (!expectedScreens.includes(state.currentScreen)) {
     throw new Error(`${eventType} is not available from ${state.currentScreen}`);
   }
 

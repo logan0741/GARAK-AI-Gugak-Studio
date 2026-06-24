@@ -117,6 +117,8 @@ test('connects S18 library tabs, search, sync label, and empty state CTA', () =>
   expect(source).toContain('TextInput');
   expect(source).toContain("type: 'updateLibrarySearchQuery'");
   expect(source).toContain('model.syncLabel');
+  expect(source).toContain('accessibilityLabel="보관함 동기화"');
+  expect(source).toContain("type: 'loginAndLoadMySongs'");
   expect(source).toContain('model.emptyState');
 });
 

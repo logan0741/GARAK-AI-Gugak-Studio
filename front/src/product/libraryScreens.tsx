@@ -33,7 +33,15 @@ export function LibraryContent({
         <Text style={styles.myLibraryTitleMuted}>나의 GARAK</Text>
         {'\n'}라이브러리
       </Text>
-      <Text style={styles.librarySyncLabel}>{model.syncLabel}</Text>
+      <Pressable
+        accessibilityLabel="보관함 동기화"
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => dispatch({ type: 'loginAndLoadMySongs' })}
+        style={styles.librarySyncButton}
+      >
+        <Text style={styles.librarySyncLabel}>{model.syncLabel}</Text>
+      </Pressable>
 
       <View style={styles.myHeroDeck}>
         {model.heroCards.map((card, index) => (
@@ -669,7 +677,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0,
+  },
+  librarySyncButton: {
+    alignSelf: 'flex-start',
     marginTop: -10,
+    minHeight: 28,
+    justifyContent: 'center',
   },
   myHeroDeck: {
     marginBottom: -10,

@@ -211,11 +211,12 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S18',
     name: 'Library',
     mvpStatus: 'required',
-    primaryCtas: ['openWork', 'listen', 'share', 'more'],
+    primaryCtas: ['openWork', 'listen', 'share', 'more', 'sync'],
     transitions: [
       { action: 'openWork', target: 'S07' },
       { action: 'listen', target: 'S19' },
       { action: 'share', target: 'S17' },
+      { action: 'sync', target: 'S23' },
       { action: 'home', target: 'S01' },
       { action: 'shareFeed', target: 'S20' },
     ],

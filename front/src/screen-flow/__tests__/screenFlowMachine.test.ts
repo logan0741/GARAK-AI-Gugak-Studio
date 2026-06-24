@@ -164,6 +164,18 @@ test('routes S22 login CTA to S23', () => {
   expect(next.history).toEqual(['S01', 'S22']);
 });
 
+test('routes S18 library sync CTA to S23', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S18',
+    history: ['S01'],
+  });
+
+  const next = transitionScreenFlow(state, { type: 'loginCta' });
+
+  expect(next.currentScreen).toBe('S23');
+  expect(next.history).toEqual(['S01', 'S18']);
+});
+
 test('supports a push history stack and back transition', () => {
   const state = createInitialScreenFlowState();
   const library = transitionScreenFlow(state, { type: 'navigate', target: 'S18' });
