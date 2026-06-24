@@ -87,6 +87,7 @@ export type GarakProductAction =
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
   | { type: 'loginAndLoadMySongs' }
+  | { type: 'completeLoginSync' }
   | { type: 'playLibraryItem'; item: ProductPlayerSelection }
   | { type: 'navigate'; target: ImplementedScreenId }
   | { type: 'back' }
@@ -235,6 +236,14 @@ export function applyProductAction(
       return {
         ...state,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'loginCta' }),
+      };
+    case 'completeLoginSync':
+      return {
+        ...state,
+        account: {
+          status: 'loggedIn',
+        },
+        screenFlow: pushTarget(state.screenFlow, 'S18'),
       };
     case 'navigate':
       return {

@@ -136,7 +136,7 @@ export function LoginSyncContent({
       <View style={styles.loginActions}>
         <LoginCapsuleButton
           accessibilityLabel="Google로 로그인"
-          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
+          onPress={() => dispatch({ type: 'completeLoginSync' })}
         >
           <GoogleIcon />
         </LoginCapsuleButton>

@@ -234,3 +234,31 @@ test('routes settings login CTA to S23 while preserving local library state', ()
   expect(state.account.status).toBe('guest');
   expect(getCurrentScreenSummary(state).primaryCtas).toContain('로그인');
 });
+
+test('completes explicit login sync without dropping local library items', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = {
+    ...state,
+    screenFlow: {
+      currentScreen: 'S22',
+      history: ['S01'],
+      mode: 'freeCreation',
+    },
+  };
+  state = applyProductAction(state, { type: 'loginAndLoadMySongs' });
+  state = applyProductAction(state, { type: 'completeLoginSync' });
+
+  expect(state.account.status).toBe('loggedIn');
+  expect(state.library.works).toHaveLength(1);
+  expect(state.library.works[0].id).toBe('work-1');
+  expect(state.screenFlow.currentScreen).toBe('S18');
+});

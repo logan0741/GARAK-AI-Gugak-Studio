@@ -54,6 +54,14 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).not.toContain('GARAK에 오신 것을 환영해요');
 });
 
+test('connects the S23 Google login button to the login sync action', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
+
+  expect(source).toContain('Google로 로그인');
+  expect(source).toContain("type: 'completeLoginSync'");
+  expect(source).not.toContain("accessibilityLabel=\"Google로 로그인\"\n          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
+});
+
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
