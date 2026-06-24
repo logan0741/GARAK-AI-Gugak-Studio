@@ -3,6 +3,7 @@ import {
   AccompanimentTrack,
   ExportedAudio,
   InstrumentId,
+  InstrumentSettingValues,
   InstrumentTrack,
   JangdanPresetId,
   LibrarySections,
@@ -35,6 +36,7 @@ export function autoSaveTakeAsWork(input: {
   recordingUri?: string;
   recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 }): Work {
   const take = createTake({
     id: input.takeId,
@@ -44,6 +46,7 @@ export function autoSaveTakeAsWork(input: {
     recordingUri: input.recordingUri,
     recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
+    instrumentSettings: input.instrumentSettings,
   });
 
   return {
@@ -75,6 +78,7 @@ export function addInstrumentTrack(
     durationBeats: number;
     playheadBeat?: number;
     recordingUri?: string;
+    instrumentSettings?: InstrumentSettingValues;
   },
 ): Work {
   const startedAtBeat = resolveStartBeat(input.playheadBeat);
@@ -84,6 +88,7 @@ export function addInstrumentTrack(
     startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    instrumentSettings: input.instrumentSettings,
   });
 
   return {
@@ -220,6 +225,7 @@ function createTake(input: {
   recordingUri?: string;
   recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 }): Take {
   return {
     id: input.id,
@@ -229,6 +235,7 @@ function createTake(input: {
     durationBeats: input.durationBeats,
     recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
+    instrumentSettings: input.instrumentSettings,
   };
 }
 

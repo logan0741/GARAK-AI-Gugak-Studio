@@ -74,6 +74,11 @@ test('adds an instrument track at the playhead or falls back to the first beat',
     createdAt: '2026-06-18T00:01:00.000Z',
     playheadBeat: 9,
     durationBeats: 2,
+    instrumentSettings: {
+      '타격 민감도': '높음',
+      '타격면 표시': '켬',
+      '기본 음색': '기본',
+    },
   });
 
   const withoutPlayhead = addInstrumentTrack(work, {
@@ -89,6 +94,11 @@ test('adds an instrument track at the playhead or falls back to the first beat',
     id: 'track-2',
     instrument: 'janggu',
     startedAtBeat: 9,
+  });
+  expect(withPlayhead.tracks[1].kind === 'instrument' ? withPlayhead.tracks[1].takes[0].instrumentSettings : undefined).toEqual({
+    '타격 민감도': '높음',
+    '타격면 표시': '켬',
+    '기본 음색': '기본',
   });
   expect(withoutPlayhead.tracks[1]).toMatchObject({
     id: 'track-3',

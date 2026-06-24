@@ -16,8 +16,8 @@ import {
   DaegeumLandscapeStageArtwork,
   GayageumLandscapeStageArtwork,
   InstrumentSelectionArtworkPanel,
+  InstrumentPreviewStageArtwork,
   JangguLandscapeStageArtwork,
-  JangguPreviewStageArtwork,
 } from './garakArtworkPanels';
 import {
   InstrumentBadge,
@@ -47,6 +47,7 @@ import {
   getFreeCreationMixEditorModel,
   type FreeCreationTrackControlModel,
 } from './freeCreationMixEditorModel';
+import { getInstrumentSettingsModel } from './instrumentSettingsModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
@@ -63,10 +64,20 @@ const FUTURE_INSTRUMENT_CHIPS = [
 const JANGGU_FIGMA_BADGE = '장구 Janggu';
 const JANGGU_FIGMA_DESCRIPTION =
   '장구는 한국 전통 음악에서 가장 대표적으로 사용되는 타악기 중 하나로, 가운데가 잘록한 모래시계 모양을 하고 있습니다.';
-const PERFORMANCE_PREVIEW_TOP_CALLOUT =
-  '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.';
-const PERFORMANCE_PREVIEW_BOTTOM_CALLOUT =
-  '연주할 때는 양손으로 궁편과 열편을 손에 쥐고 연주.';
+const PERFORMANCE_PREVIEW_CALLOUTS: Record<InstrumentId, { top: string; bottom: string }> = {
+  gayageum: {
+    top: '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.',
+    bottom: '가야금은 손가락으로 줄을 뜯고 눌러 음색을 조절해요.',
+  },
+  janggu: {
+    top: '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.',
+    bottom: '연주할 때는 양손으로 궁편과 열편을 손에 쥐고 연주.',
+  },
+  daegeum: {
+    top: '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.',
+    bottom: '대금은 운지와 호흡으로 음정과 세기를 조절해요.',
+  },
+};
 
 function isInstrumentTrack(track: Track): track is Extract<Track, { kind: 'instrument' }> {
   return track.kind === 'instrument';
@@ -178,6 +189,7 @@ export function InstrumentSelectContent({
 }
 
 export function InstrumentSettingsContent({
+  state,
   dispatch,
 }: {
   state: GarakProductState;
@@ -185,6 +197,20 @@ export function InstrumentSettingsContent({
 }) {
   const { height } = useWindowDimensions();
   const isCompactHeight = height < 820;
+  const instrumentSettingsModel = getInstrumentSettingsModel(state);
+  const instrumentSettingSummary = instrumentSettingsModel.settingRows
+    .map((row) => `${row.label} ${row.value}`)
+    .join(', ');
+  const instrumentSettingsStartAction = instrumentSettingsModel.isAdjustmentOpen
+    ? instrumentSettingsModel.nextAction
+    : instrumentSettingsModel.primaryAction;
+  const instrumentSettingsStartLabel = instrumentSettingsModel.isAdjustmentOpen
+    ? 'NEXT'
+    : '기본값으로 시작';
+  const instrumentSettingsSecondaryLabel = instrumentSettingsModel.isAdjustmentOpen
+    ? '기본값 유지'
+    : '직접 조정';
+  const performancePreviewCallouts = PERFORMANCE_PREVIEW_CALLOUTS[instrumentSettingsModel.instrument];
 
   return (
     <View style={styles.performancePreviewScreen}>
@@ -199,18 +225,19 @@ export function InstrumentSettingsContent({
       </Text>
       <View
         accessible
-        accessibilityLabel={`${PERFORMANCE_PREVIEW_TOP_CALLOUT} ${PERFORMANCE_PREVIEW_BOTTOM_CALLOUT}`}
+        accessibilityLabel={`${performancePreviewCallouts.top} ${performancePreviewCallouts.bottom}`}
         style={[
           styles.performancePreviewPanel,
           isCompactHeight ? styles.performancePreviewPanelCompact : undefined,
         ]}
       >
         <View style={styles.performancePreviewTopCallout}>
-          <Text style={styles.performancePreviewCalloutText}>{PERFORMANCE_PREVIEW_TOP_CALLOUT}</Text>
+          <Text style={styles.performancePreviewCalloutText}>{performancePreviewCallouts.top}</Text>
         </View>
         <View style={styles.performancePreviewTopLine} />
         <View style={styles.performancePreviewTopDrop} />
-        <JangguPreviewStageArtwork
+        <InstrumentPreviewStageArtwork
+          instrument={instrumentSettingsModel.instrument}
           style={[
             styles.performancePreviewStage,
             isCompactHeight ? styles.performancePreviewStageCompact : undefined,
@@ -219,8 +246,90 @@ export function InstrumentSettingsContent({
         <View style={styles.performancePreviewBottomLead} />
         <View style={styles.performancePreviewBottomDrop} />
         <View style={styles.performancePreviewBottomCallout}>
-          <Text style={styles.performancePreviewCalloutText}>{PERFORMANCE_PREVIEW_BOTTOM_CALLOUT}</Text>
+          <Text style={styles.performancePreviewCalloutText}>{performancePreviewCallouts.bottom}</Text>
         </View>
+      </View>
+      <View style={styles.instrumentSettingsSummaryCard}>
+        <View
+          accessible
+          accessibilityLabel={`${instrumentSettingsModel.instrumentName} 기본 설정. ${instrumentSettingsModel.sampleStatusLabel}. ${instrumentSettingsModel.sampleStatusDescription} ${instrumentSettingSummary}`}
+          style={styles.instrumentSettingsSummaryContent}
+        >
+          <View style={styles.instrumentSettingsSummaryHeader}>
+            <View>
+              <Text style={styles.instrumentSettingsEyebrow}>기본 연주 상태</Text>
+              <Text style={styles.instrumentSettingsTitle}>{instrumentSettingsModel.instrumentName}</Text>
+            </View>
+            <View
+              style={[
+                styles.instrumentSampleStatusPill,
+                instrumentSettingsModel.sampleStatus === 'downloadRequired'
+                  ? styles.instrumentSampleStatusPillWarning
+                  : undefined,
+                instrumentSettingsModel.sampleStatus === 'fallback'
+                  ? styles.instrumentSampleStatusPillFallback
+                  : undefined,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.instrumentSampleStatusText,
+                  instrumentSettingsModel.sampleStatus === 'downloadRequired'
+                    ? styles.instrumentSampleStatusTextWarning
+                    : undefined,
+                ]}
+              >
+                {instrumentSettingsModel.sampleStatusLabel}
+              </Text>
+            </View>
+          </View>
+          {instrumentSettingsModel.notice ? (
+            <Text style={styles.instrumentSettingsNotice}>{instrumentSettingsModel.notice}</Text>
+          ) : null}
+          <Text style={styles.instrumentSettingsDescription}>
+            {instrumentSettingsModel.sampleStatusDescription}
+          </Text>
+          <View style={styles.instrumentSettingsRows}>
+            {instrumentSettingsModel.settingRows.map((row) => (
+              <View key={row.label} style={styles.instrumentSettingsRow}>
+                <Text style={styles.instrumentSettingsRowLabel}>{row.label}</Text>
+                <Text style={styles.instrumentSettingsRowValue}>{row.value}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        {instrumentSettingsModel.isAdjustmentOpen ? (
+          <View style={styles.instrumentSettingsAdjustmentPanel}>
+            {instrumentSettingsModel.settingControls.map((control) => (
+              <View key={control.label} style={styles.instrumentSettingsAdjustmentGroup}>
+                <Text style={styles.instrumentSettingsAdjustmentLabel}>{control.label}</Text>
+                <View style={styles.instrumentSettingsOptionRow}>
+                  {control.options.map((option) => (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: option.isSelected }}
+                      key={option.value}
+                      onPress={() => dispatch(option.selectAction)}
+                      style={[
+                        styles.instrumentSettingsOptionButton,
+                        option.isSelected ? styles.instrumentSettingsOptionButtonActive : undefined,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.instrumentSettingsOptionText,
+                          option.isSelected ? styles.instrumentSettingsOptionTextActive : undefined,
+                        ]}
+                      >
+                        {option.value}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
       <View
         style={[
@@ -229,7 +338,19 @@ export function InstrumentSettingsContent({
         ]}
       >
         <ProgressSteps step={2} />
-        <PrimaryPillButton label="NEXT" onPress={() => dispatch({ type: 'startWithDefaults' })} />
+        <SecondaryPillButton
+          label={instrumentSettingsSecondaryLabel}
+          onPress={() => dispatch(instrumentSettingsModel.secondaryAction)}
+        />
+        <PrimaryPillButton
+          disabled={instrumentSettingsStartAction === undefined}
+          label={instrumentSettingsStartLabel}
+          onPress={() =>
+            instrumentSettingsStartAction === undefined
+              ? undefined
+              : dispatch(instrumentSettingsStartAction)
+          }
+        />
       </View>
     </View>
   );
@@ -1443,6 +1564,143 @@ const styles = StyleSheet.create({
   },
   performancePreviewFooterCompact: {
     marginTop: 8,
+  },
+  instrumentSettingsSummaryCard: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: 'rgba(31,32,46,0.08)',
+    borderRadius: 22,
+    borderWidth: 1,
+    gap: 10,
+    marginTop: 14,
+    padding: 16,
+  },
+  instrumentSettingsSummaryContent: {
+    gap: 10,
+  },
+  instrumentSettingsSummaryHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  instrumentSettingsEyebrow: {
+    color: GARAK_COLORS.brandAmber,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 15,
+  },
+  instrumentSettingsTitle: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 23,
+    marginTop: 2,
+  },
+  instrumentSampleStatusPill: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceSoft,
+    borderRadius: 15,
+    justifyContent: 'center',
+    minHeight: 30,
+    paddingHorizontal: 12,
+  },
+  instrumentSampleStatusPillWarning: {
+    backgroundColor: 'rgba(190,30,30,0.12)',
+  },
+  instrumentSampleStatusPillFallback: {
+    backgroundColor: 'rgba(229,145,0,0.16)',
+  },
+  instrumentSampleStatusText: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  instrumentSampleStatusTextWarning: {
+    color: GARAK_COLORS.brandRed,
+  },
+  instrumentSettingsNotice: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0,
+    lineHeight: 17,
+  },
+  instrumentSettingsDescription: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 17,
+  },
+  instrumentSettingsRows: {
+    gap: 8,
+  },
+  instrumentSettingsRow: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderRadius: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 38,
+    paddingHorizontal: 12,
+  },
+  instrumentSettingsRowLabel: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  instrumentSettingsRowValue: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  instrumentSettingsAdjustmentPanel: {
+    borderTopColor: 'rgba(31,32,46,0.12)',
+    borderTopWidth: 1,
+    gap: 12,
+    paddingTop: 2,
+  },
+  instrumentSettingsAdjustmentGroup: {
+    gap: 7,
+  },
+  instrumentSettingsAdjustmentLabel: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  instrumentSettingsOptionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+  instrumentSettingsOptionButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(31,32,46,0.12)',
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 30,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+  },
+  instrumentSettingsOptionButtonActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderColor: GARAK_COLORS.brandNavy,
+  },
+  instrumentSettingsOptionText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  instrumentSettingsOptionTextActive: {
+    color: GARAK_COLORS.surfaceCard,
   },
   landscapePerformanceStack: {
     flex: 1,

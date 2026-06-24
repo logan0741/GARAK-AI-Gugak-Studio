@@ -1,4 +1,5 @@
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import type { InstrumentId } from '../studio/studioTypes';
 import { GARAK_RADIUS } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { ArtworkImagePanel } from './garakUi';
@@ -7,6 +8,18 @@ type QuickAccessHandlers = {
   onLibrary: () => void;
   onHome: () => void;
   onShare: () => void;
+};
+
+const FREE_PLAY_STAGE_ASSETS: Record<InstrumentId, number> = {
+  gayageum: GARAK_SCREEN_ASSETS.creation.gayageumFreePlayLandscapeStage,
+  janggu: GARAK_SCREEN_ASSETS.creation.jangguFreePlayLandscapeStage,
+  daegeum: GARAK_SCREEN_ASSETS.creation.daegeumFreePlayLandscapeStage,
+};
+
+const FREE_PLAY_STAGE_LABELS: Record<InstrumentId, string> = {
+  gayageum: '가야금 자유연주 화면 미리보기',
+  janggu: '장구 자유연주 화면 미리보기',
+  daegeum: '대금 자유연주 화면 미리보기',
 };
 
 export function InstrumentSelectionArtworkPanel({ style }: { style?: StyleProp<ViewStyle> }) {
@@ -58,6 +71,23 @@ export function JangguPreviewStageArtwork({ style }: { style?: StyleProp<ViewSty
     <ArtworkImagePanel
       accessibilityLabel="장구 자유연주 화면 미리보기"
       source={GARAK_SCREEN_ASSETS.creation.jangguFreePlayLandscapeStage}
+      style={[styles.jangguPreviewStage, style]}
+      imageStyle={styles.jangguPreviewStageImage}
+    />
+  );
+}
+
+export function InstrumentPreviewStageArtwork({
+  instrument,
+  style,
+}: {
+  instrument: InstrumentId;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <ArtworkImagePanel
+      accessibilityLabel={FREE_PLAY_STAGE_LABELS[instrument]}
+      source={FREE_PLAY_STAGE_ASSETS[instrument]}
       style={[styles.jangguPreviewStage, style]}
       imageStyle={styles.jangguPreviewStageImage}
     />

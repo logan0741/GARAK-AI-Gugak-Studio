@@ -183,15 +183,33 @@ test('uses the Figma instrument selection design for the free-creation instrumen
 
 test('uses the Figma performance preview design before entering free play', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const instrumentSettingsSource = source.slice(
+    source.indexOf('export function InstrumentSettingsContent'),
+    source.indexOf('export function FreePlayContent'),
+  );
 
-  expect(source).toContain('연주 할 화면');
-  expect(source).toContain('미리 볼 수 있어요');
+  expect(source).toContain('getInstrumentSettingsModel');
   expect(source).toContain('연주를 시작하고 녹음하고');
   expect(source).toContain('양손으로 궁편과 열편을');
-  expect(source).toContain('JangguPreviewStageArtwork');
-  expect(source).toContain('ProgressSteps step={2}');
-  expect(source).toContain('startWithDefaults');
-  expect(source).not.toContain('직접 조정');
+  expect(instrumentSettingsSource).toContain('연주 할 화면');
+  expect(instrumentSettingsSource).toContain('미리 볼 수 있어요');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.instrumentName');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.sampleStatusLabel');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.settingRows.map');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.settingControls.map');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.isAdjustmentOpen');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.secondaryAction');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.notice');
+  expect(instrumentSettingsSource).toContain('직접 조정');
+  expect(instrumentSettingsSource).toContain('NEXT');
+  expect(instrumentSettingsSource).toContain('InstrumentPreviewStageArtwork');
+  expect(instrumentSettingsSource).toContain('instrument={instrumentSettingsModel.instrument}');
+  expect(instrumentSettingsSource).toContain('ProgressSteps step={2}');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsStartAction');
+  expect(instrumentSettingsSource).toContain('disabled={instrumentSettingsStartAction === undefined}');
+  expect(instrumentSettingsSource).toContain('dispatch(instrumentSettingsStartAction)');
+  expect(instrumentSettingsSource).not.toContain('BPM');
+  expect(instrumentSettingsSource).not.toContain('장단');
 });
 
 test('uses the Figma gayageum stage for landscape free play', () => {

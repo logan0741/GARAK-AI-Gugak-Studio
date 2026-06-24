@@ -32,6 +32,11 @@ import {
   getPracticeSongTitle,
   PracticeSong,
 } from './productFixtures';
+import {
+  getDefaultInstrumentSettingValues,
+  resolveInstrumentSettingValues,
+  type InstrumentSettingValueMap,
+} from './instrumentSettingsConfig';
 
 export type AccountState = {
   status: 'guest' | 'loggedIn';
@@ -65,6 +70,18 @@ export type TrackAddNotice = 'importLocked';
 export type TrackAddSelection = 'instrument';
 
 export type InstrumentSelectNotice = 'futureInstrument';
+
+export type InstrumentSampleStatus = 'ready' | 'fallback' | 'downloadRequired';
+
+export type InstrumentSettingsNotice = 'sampleRequired';
+
+export type InstrumentSettingSelections = Partial<Record<InstrumentId, InstrumentSettingValueMap>>;
+
+export type ActiveInstrumentSettings = {
+  instrument: InstrumentId;
+  values: InstrumentSettingValueMap;
+  source: 'default' | 'adjusted';
+};
 
 export type PracticeAttemptStatus = 'ready' | 'playing' | 'paused' | 'completed';
 
@@ -100,6 +117,11 @@ export type GarakProductState = {
   freePlayRecordingSetup?: RecordingSetup;
   freePlayNotice?: FreePlayNotice;
   instrumentSelectNotice?: InstrumentSelectNotice;
+  instrumentSampleStatuses: Record<InstrumentId, InstrumentSampleStatus>;
+  instrumentSettingsNotice?: InstrumentSettingsNotice;
+  instrumentSettingsAdjustmentOpen?: boolean;
+  instrumentSettingSelections: InstrumentSettingSelections;
+  activeInstrumentSettings?: ActiveInstrumentSettings;
   trackAddNotice?: TrackAddNotice;
   trackAddSelection?: TrackAddSelection;
   workSaveStatus?: 'saved';
@@ -135,6 +157,10 @@ export type GarakProductAction =
   | { type: 'selectInstrument'; instrument: InstrumentId }
   | { type: 'showFutureInstrumentNotice' }
   | { type: 'startWithDefaults' }
+  | { type: 'openInstrumentSettingsAdjustment' }
+  | { type: 'cancelInstrumentSettingsAdjustment' }
+  | { type: 'adjustInstrumentSetting'; instrument: InstrumentId; label: string; value: string }
+  | { type: 'startWithAdjustedSettings' }
   | { type: 'openFreePlayRecordingSetup' }
   | { type: 'selectFreePlayRecordingPreset'; presetId: JangdanPresetId }
   | { type: 'adjustFreePlayRecordingBpm'; delta: number }
@@ -224,6 +250,12 @@ export function createInitialGarakProductState(input: { now?: () => string } = {
     libraryTab: 'works',
     librarySearchQuery: '',
     workPlayheadBeat: 1,
+    instrumentSampleStatuses: {
+      gayageum: 'ready',
+      janggu: 'ready',
+      daegeum: 'ready',
+    },
+    instrumentSettingSelections: {},
     counters: {
       work: 0,
       track: 0,
@@ -321,6 +353,8 @@ export function applyProductAction(
         ...state,
         selectedInstrument: action.instrument,
         instrumentSelectNotice: undefined,
+        instrumentSettingsNotice: undefined,
+        instrumentSettingsAdjustmentOpen: undefined,
         practiceAttempt: undefined,
       };
     case 'showFutureInstrumentNotice':
@@ -329,15 +363,19 @@ export function applyProductAction(
         instrumentSelectNotice: 'futureInstrument',
       };
     case 'startWithDefaults':
+      return startFreePlayWithInstrumentSettings(state, 'default');
+    case 'openInstrumentSettingsAdjustment':
       return {
         ...state,
-        selectedInstrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
-        instrumentSelectNotice: undefined,
-        pendingFreePlayTake: undefined,
-        freePlayRecordingSetup: undefined,
-        freePlayNotice: undefined,
-        screenFlow: pushTarget(state.screenFlow, 'S05'),
+        instrumentSettingsAdjustmentOpen: true,
+        instrumentSettingsNotice: undefined,
       };
+    case 'cancelInstrumentSettingsAdjustment':
+      return cancelInstrumentSettingsAdjustment(state);
+    case 'adjustInstrumentSetting':
+      return adjustInstrumentSetting(state, action);
+    case 'startWithAdjustedSettings':
+      return startFreePlayWithInstrumentSettings(state, 'adjusted');
     case 'openFreePlayRecordingSetup':
       return {
         ...state,
@@ -649,6 +687,88 @@ export function applyProductAction(
   }
 }
 
+function startFreePlayWithInstrumentSettings(
+  state: GarakProductState,
+  source: ActiveInstrumentSettings['source'],
+): GarakProductState {
+  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const sampleStatus = state.instrumentSampleStatuses[instrument];
+
+  if (sampleStatus === 'downloadRequired') {
+    return {
+      ...state,
+      selectedInstrument: instrument,
+      instrumentSettingsNotice: 'sampleRequired',
+    };
+  }
+
+  return {
+    ...state,
+    selectedInstrument: instrument,
+    activeInstrumentSettings: {
+      instrument,
+      values:
+        source === 'default'
+          ? getDefaultInstrumentSettingValues(instrument)
+          : resolveInstrumentSettingValues(
+              instrument,
+              state.instrumentSettingSelections[instrument],
+            ),
+      source,
+    },
+    instrumentSelectNotice: undefined,
+    instrumentSettingsNotice: undefined,
+    instrumentSettingsAdjustmentOpen: undefined,
+    pendingFreePlayTake: undefined,
+    freePlayRecordingSetup: undefined,
+    freePlayNotice: undefined,
+    screenFlow: pushTarget(state.screenFlow, 'S05'),
+  };
+}
+
+function adjustInstrumentSetting(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'adjustInstrumentSetting' }>,
+): GarakProductState {
+  return {
+    ...state,
+    instrumentSettingSelections: {
+      ...state.instrumentSettingSelections,
+      [action.instrument]: {
+        ...state.instrumentSettingSelections[action.instrument],
+        [action.label]: action.value,
+      },
+    },
+    instrumentSettingsNotice: undefined,
+  };
+}
+
+function cancelInstrumentSettingsAdjustment(state: GarakProductState): GarakProductState {
+  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const {
+    [instrument]: _discardedSelection,
+    ...remainingSelections
+  } = state.instrumentSettingSelections;
+
+  return {
+    ...state,
+    instrumentSettingSelections: remainingSelections,
+    instrumentSettingsAdjustmentOpen: false,
+    instrumentSettingsNotice: undefined,
+  };
+}
+
+function getRecordingInstrumentSettings(
+  state: GarakProductState,
+  instrument: InstrumentId,
+): InstrumentSettingValueMap {
+  if (state.activeInstrumentSettings?.instrument === instrument) {
+    return state.activeInstrumentSettings.values;
+  }
+
+  return getDefaultInstrumentSettingValues(instrument);
+}
+
 export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary {
   const screenId = state.screenFlow.currentScreen;
 
@@ -675,10 +795,15 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         ['Next'],
       );
     case 'S04A':
-      return summary(screenId, '연주 기본 설정', getInstrumentLabel(state), '초보자는 기본값으로 바로 시작할 수 있어요.', [
-        '기본값으로 시작',
-        '직접 조정',
-      ]);
+      return summary(
+        screenId,
+        '연주 기본 설정',
+        getInstrumentLabel(state),
+        state.instrumentSettingsNotice === 'sampleRequired'
+          ? '필수 샘플 준비 후 연주를 시작할 수 있어요.'
+          : '초보자는 기본값으로 바로 시작할 수 있어요.',
+        ['기본값으로 시작', '직접 조정', 'Next'],
+      );
     case 'S05':
       return summary(
         screenId,
@@ -808,6 +933,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
   const now = state.now();
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const takeEvents = events ?? state.pendingFreePlayTake.events;
+  const instrumentSettings = getRecordingInstrumentSettings(state, instrument);
   const work = autoSaveTakeAsWork({
     workId: `work-${nextCounters.work}`,
     trackId: `track-${nextCounters.track}`,
@@ -818,6 +944,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     createdAt: now,
     startedAtBeat: 1,
     durationBeats: 4,
+    instrumentSettings,
     recordingSetup: state.pendingFreePlayTake.recordingSetup,
     liveJangdanGuide: state.pendingLiveJangdanGuide
       ? {
@@ -1031,14 +1158,16 @@ function applyInstrumentTrack(
 
   const nextCounters = incrementCounters(state.counters, ['track', 'take']);
   const now = state.now();
+  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const nextWork = addInstrumentTrack(currentWork, {
     trackId: `track-${nextCounters.track}`,
     takeId: `take-${nextCounters.take}`,
-    instrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
+    instrument,
     events: takeEvents,
     createdAt: now,
     durationBeats: 4,
     playheadBeat: playheadBeat ?? state.workPlayheadBeat,
+    instrumentSettings: getRecordingInstrumentSettings(state, instrument),
   });
 
   return {

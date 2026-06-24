@@ -50,6 +50,36 @@ test('uses the visible default free-creation instrument when starting with defau
   expect(getCurrentScreenSummary(state).title).toBe('장구 자유연주');
 });
 
+test('saves S04A adjusted instrument settings on the recorded free-play take', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-24T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'openInstrumentSettingsAdjustment' });
+  state = applyProductAction(state, {
+    type: 'adjustInstrumentSetting',
+    instrument: 'janggu',
+    label: '타격 민감도',
+    value: '높음',
+  });
+  state = applyProductAction(state, { type: 'startWithAdjustedSettings' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  const firstTrack = state.library.works[0].tracks[0];
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(firstTrack.kind === 'instrument' ? firstTrack.takes[0].instrumentSettings : undefined).toEqual({
+    '타격 민감도': '높음',
+    '타격면 표시': '켬',
+    '기본 음색': '기본',
+  });
+});
+
 test('keeps locked future instruments unselected and shows an update notice', () => {
   let state = createInitialGarakProductState();
 

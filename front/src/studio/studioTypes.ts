@@ -23,6 +23,8 @@ export type RecordingSetup = {
   beatUnit: string;
 };
 
+export type InstrumentSettingValues = Record<string, string>;
+
 export type Take = {
   id: string;
   events: PerformanceEvent[];
@@ -31,6 +33,7 @@ export type Take = {
   durationBeats: number;
   recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 };
 
 export type InstrumentTrack = {
