@@ -37,6 +37,7 @@ import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import {
   GarakScreenFrameMode,
   getGarakScreenFrameConfig,
+  usesImmersivePortraitScreen,
   usesEmbeddedLandscapeArtworkHeader,
 } from './garakScreenFrame';
 import { GarakWordmark } from './garakUi';
@@ -52,6 +53,12 @@ export function GarakScreenFlowApp() {
   const frameConfig = getGarakScreenFrameConfig(currentScreen);
   const isLandscapeFrame = frameConfig.mode === 'landscape';
   const usesEmbeddedHeader = isLandscapeFrame && usesEmbeddedLandscapeArtworkHeader(currentScreen);
+  const usesImmersiveFrame = frameConfig.mode === 'portrait' && usesImmersivePortraitScreen(currentScreen);
+  const contentStyle = isLandscapeFrame
+    ? styles.landscapeContent
+    : usesImmersiveFrame
+      ? styles.immersiveContent
+      : undefined;
 
   function dispatch(action: GarakProductAction) {
     setState((current) => applyProductAction(current, action));
@@ -61,7 +68,7 @@ export function GarakScreenFlowApp() {
     <SafeAreaProvider style={styles.provider}>
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
       <View style={[styles.appFrame, isLandscapeFrame ? styles.landscapeFrame : styles.phoneFrame]}>
-        {!usesEmbeddedHeader ? (
+        {!usesEmbeddedHeader && !usesImmersiveFrame ? (
           <View style={[styles.header, isLandscapeFrame ? styles.landscapeHeader : undefined]}>
             <View style={[styles.headerLeftSlot, isLibrary ? styles.headerWideSlot : undefined]}>
               {isHome ? (
@@ -133,7 +140,7 @@ export function GarakScreenFlowApp() {
             {renderScreenContent(state, dispatch, frameConfig.mode)}
           </ScrollView>
         ) : (
-          <View key={currentScreen} style={[styles.content, styles.landscapeContent]}>
+          <View key={currentScreen} style={[styles.content, contentStyle]}>
             {renderScreenContent(state, dispatch, frameConfig.mode)}
           </View>
         )}
@@ -292,6 +299,13 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
     paddingHorizontal: 28,
     paddingTop: 12,
+  },
+  immersiveContent: {
+    flex: 1,
+    gap: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   homeContent: {
     paddingTop: 69,

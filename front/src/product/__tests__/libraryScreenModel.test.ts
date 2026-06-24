@@ -87,6 +87,9 @@ test('builds the player detail from the selected my-library item', () => {
   });
   expect(getMyLibraryPlayerViewModel(state)).toMatchObject({
     editWorkId: 'work-1',
+    elapsedLabel: '0:13',
+    remainingLabel: '-3:01',
+    showsAirPlay: true,
     sourceKind: 'work',
     title: state.library.works[0].title,
   });

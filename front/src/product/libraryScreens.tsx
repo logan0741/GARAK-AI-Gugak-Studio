@@ -1,5 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GARAK_COLORS } from './garakDesignSystem';
+import { GarakLogo } from './GarakLogo';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
@@ -9,10 +10,7 @@ import {
   MyLibraryPlaylistRow,
 } from './libraryScreenModel';
 import {
-  MiniTrackPlayer,
   QuickAccessNav,
-  ScreenHeading,
-  SecondaryPillButton,
   garakCardShadow,
 } from './garakUi';
 
@@ -71,7 +69,6 @@ export function LibraryContent({
 
 export function PlayerDetailContent({
   state,
-  dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
@@ -79,28 +76,62 @@ export function PlayerDetailContent({
   const player = getMyLibraryPlayerViewModel(state);
 
   return (
-    <View style={styles.stack}>
-      <ScreenHeading title="가락 미리듣기" compact />
-      <MiniTrackPlayer title={player.title} tone="navy" />
-      <View style={styles.detailCard}>
-        <Text style={styles.rowTitle}>{player.title}</Text>
-        <Text style={styles.rowMeta}>{player.meta}</Text>
-        <View style={styles.waveform}>
-          {Array.from({ length: 18 }, (_, index) => (
-            <View key={index} style={[styles.wave, { height: 8 + (index % 5) * 8 }]} />
-          ))}
-        </View>
+    <View
+      accessibilityLabel={`${player.title} 재생 화면`}
+      style={styles.playingScreen}
+    >
+      <View style={styles.playingBackdropLine} />
+      <View style={styles.playingBackdropShelf}>
+        <View style={[styles.playingBackdropTile, styles.playingBackdropTileMuted]} />
+        <View style={[styles.playingBackdropTile, styles.playingBackdropTileRed]} />
+        <View style={[styles.playingBackdropTile, styles.playingBackdropTileDark]} />
       </View>
-      <View style={styles.buttonRow}>
-        <SecondaryPillButton
-          label="편집으로 열기"
-          onPress={() =>
-            player.editWorkId !== undefined
-              ? dispatch({ type: 'openWork', workId: player.editWorkId })
-              : dispatch({ type: 'navigate', target: 'S07' })
-          }
-        />
-        <SecondaryPillButton label="공유" onPress={() => dispatch({ type: 'navigate', target: 'S17' })} />
+      <View style={styles.playingPanel}>
+        <View style={styles.playingCover}>
+          <GarakLogo variant="light" width={156} />
+          <View style={styles.playingCoverBadge}>
+            <WaveformGlyph tone="red" />
+          </View>
+        </View>
+        <View style={styles.playingTitleRow}>
+          <Text numberOfLines={1} style={styles.playingTitle}>
+            {player.title}
+          </Text>
+          <Text style={styles.playingMore}>·····</Text>
+        </View>
+        <View style={styles.playingProgress}>
+          <View style={styles.playingProgressFill} />
+        </View>
+        <View style={styles.playingTimeRow}>
+          <Text style={styles.playingTime}>{player.elapsedLabel}</Text>
+          <Text style={styles.playingTime}>{player.remainingLabel}</Text>
+        </View>
+        <View style={styles.playingControls}>
+          <Pressable accessibilityLabel="즐겨찾기" accessibilityRole="button" style={styles.playingIconButton}>
+            <Text style={styles.playingStar}>☆</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="이전" accessibilityRole="button" style={styles.playingIconButton}>
+            <Text style={styles.playingSkip}>◀◀</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="재생" accessibilityRole="button" style={styles.playingPlayButton}>
+            <Text style={styles.playingPlay}>▶</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="다음" accessibilityRole="button" style={styles.playingIconButton}>
+            <Text style={styles.playingSkip}>▶▶</Text>
+          </Pressable>
+        </View>
+        <View style={styles.playingVolumeRow}>
+          <SpeakerGlyph quiet />
+          <View style={styles.playingVolumeTrack}>
+            <View style={styles.playingVolumeFill} />
+          </View>
+          <SpeakerGlyph />
+        </View>
+        {player.showsAirPlay ? (
+          <Pressable accessibilityLabel="AirPlay" accessibilityRole="button" style={styles.playingAirPlay}>
+            <Text style={styles.playingAirPlayText}>◎ AirPlay</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -217,7 +248,13 @@ function MyLibraryPlaylistRowView({
   );
 }
 
-function WaveformGlyph({ light = false }: { light?: boolean }) {
+function WaveformGlyph({
+  light = false,
+  tone = 'default',
+}: {
+  light?: boolean;
+  tone?: 'default' | 'red';
+}) {
   return (
     <View style={styles.waveformGlyph}>
       {Array.from({ length: 6 }, (_, index) => (
@@ -225,11 +262,30 @@ function WaveformGlyph({ light = false }: { light?: boolean }) {
           key={index}
           style={[
             styles.waveformGlyphBar,
-            light ? styles.waveformGlyphBarLight : styles.waveformGlyphBarMuted,
+            tone === 'red'
+              ? styles.waveformGlyphBarRed
+              : light
+                ? styles.waveformGlyphBarLight
+                : styles.waveformGlyphBarMuted,
             { height: 8 + ((index * 7) % 18) },
           ]}
         />
       ))}
+    </View>
+  );
+}
+
+function SpeakerGlyph({ quiet = false }: { quiet?: boolean }) {
+  return (
+    <View style={styles.speakerGlyph}>
+      <View style={styles.speakerGlyphCone} />
+      <View style={styles.speakerGlyphBody} />
+      {!quiet ? (
+        <>
+          <View style={[styles.speakerWave, styles.speakerWaveOne]} />
+          <View style={[styles.speakerWave, styles.speakerWaveTwo]} />
+        </>
+      ) : null}
     </View>
   );
 }
@@ -267,8 +323,245 @@ function openLibraryPlayable(
 }
 
 const styles = StyleSheet.create({
-  stack: {
+  playingScreen: {
+    alignItems: 'center',
+    backgroundColor: '#181818',
+    flex: 1,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+    width: '100%',
+  },
+  playingBackdropLine: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    height: 1,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 232,
+  },
+  playingBackdropShelf: {
+    alignItems: 'center',
+    backgroundColor: '#101010',
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopWidth: 1,
+    bottom: 0,
+    flexDirection: 'row',
     gap: 18,
+    height: 143,
+    justifyContent: 'center',
+    left: 0,
+    opacity: 0.72,
+    position: 'absolute',
+    right: 0,
+  },
+  playingBackdropTile: {
+    borderRadius: 20,
+    height: 78,
+    width: 78,
+  },
+  playingBackdropTileMuted: {
+    backgroundColor: 'rgba(92,92,92,0.46)',
+  },
+  playingBackdropTileRed: {
+    backgroundColor: 'rgba(186,28,25,0.42)',
+  },
+  playingBackdropTileDark: {
+    backgroundColor: 'rgba(55,55,55,0.58)',
+  },
+  playingPanel: {
+    alignItems: 'center',
+    backgroundColor: '#555553',
+    borderColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 31,
+    borderWidth: 1,
+    maxWidth: 315,
+    minHeight: 546,
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    width: '79%',
+    ...garakCardShadow,
+  },
+  playingCover: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    aspectRatio: 1,
+    backgroundColor: GARAK_COLORS.brandRed,
+    borderRadius: 8,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  playingCoverBadge: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    width: 36,
+  },
+  playingTitleRow: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 15,
+  },
+  playingTitle: {
+    color: GARAK_COLORS.surfaceCard,
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 0,
+    lineHeight: 25,
+  },
+  playingMore: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 1,
+    lineHeight: 18,
+  },
+  playingProgress: {
+    alignSelf: 'stretch',
+    backgroundColor: '#D6D6D6',
+    borderRadius: 3,
+    height: 6,
+    marginTop: 26,
+    overflow: 'hidden',
+  },
+  playingProgressFill: {
+    backgroundColor: '#F4F4F4',
+    borderRadius: 3,
+    height: 6,
+    width: '7%',
+  },
+  playingTimeRow: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 7,
+  },
+  playingTime: {
+    color: '#D6D6D6',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  playingControls: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 21,
+  },
+  playingIconButton: {
+    alignItems: 'center',
+    height: 46,
+    justifyContent: 'center',
+    width: 46,
+  },
+  playingPlayButton: {
+    alignItems: 'center',
+    height: 54,
+    justifyContent: 'center',
+    width: 54,
+  },
+  playingStar: {
+    color: '#DADADA',
+    fontSize: 37,
+    fontWeight: '400',
+    lineHeight: 40,
+  },
+  playingSkip: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  playingPlay: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 43,
+    fontWeight: '900',
+    lineHeight: 48,
+  },
+  playingVolumeRow: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
+  playingVolumeTrack: {
+    backgroundColor: '#ABADB1',
+    borderRadius: 4,
+    flex: 1,
+    height: 7,
+    overflow: 'hidden',
+  },
+  playingVolumeFill: {
+    backgroundColor: '#BFC0C4',
+    borderRadius: 4,
+    height: 7,
+    width: '98%',
+  },
+  playingAirPlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(62,62,62,0.9)',
+    borderRadius: 17,
+    justifyContent: 'center',
+    marginTop: 22,
+    minHeight: 34,
+    paddingHorizontal: 18,
+  },
+  playingAirPlayText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  speakerGlyph: {
+    height: 24,
+    position: 'relative',
+    width: 22,
+  },
+  speakerGlyphCone: {
+    backgroundColor: '#B8B9BC',
+    height: 12,
+    left: 3,
+    position: 'absolute',
+    top: 6,
+    transform: [{ rotate: '45deg' }],
+    width: 12,
+  },
+  speakerGlyphBody: {
+    backgroundColor: '#B8B9BC',
+    borderRadius: 2,
+    height: 10,
+    left: 0,
+    position: 'absolute',
+    top: 7,
+    width: 7,
+  },
+  speakerWave: {
+    borderColor: '#B8B9BC',
+    borderLeftWidth: 0,
+    borderRadius: 12,
+    borderRightWidth: 2,
+    borderTopWidth: 2,
+    height: 15,
+    position: 'absolute',
+    right: 0,
+    top: 4,
+    width: 9,
+  },
+  speakerWaveOne: {
+    right: 2,
+    width: 7,
+  },
+  speakerWaveTwo: {
+    right: -2,
+    width: 11,
   },
   myLibraryStack: {
     gap: 18,
@@ -472,38 +765,10 @@ const styles = StyleSheet.create({
   waveformGlyphBarLight: {
     backgroundColor: GARAK_COLORS.surfaceCard,
   },
+  waveformGlyphBarRed: {
+    backgroundColor: GARAK_COLORS.brandRed,
+  },
   myQuickAccess: {
     marginTop: 0,
-  },
-  rowTitle: {
-    color: GARAK_COLORS.textPrimary,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  rowMeta: {
-    color: GARAK_COLORS.textSecondary,
-    fontSize: 12,
-    marginTop: 5,
-  },
-  detailCard: {
-    backgroundColor: GARAK_COLORS.surfaceCard,
-    borderRadius: 24,
-    gap: 16,
-    padding: 20,
-  },
-  waveform: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 5,
-    height: 58,
-  },
-  wave: {
-    backgroundColor: GARAK_COLORS.brandAmber,
-    borderRadius: 4,
-    flex: 1,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 10,
   },
 });

@@ -35,6 +35,9 @@ export type MyLibraryPlayerViewModel = {
   title: string;
   meta: string;
   sourceKind: MyLibraryPlaylistRow['kind'];
+  elapsedLabel: string;
+  remainingLabel: string;
+  showsAirPlay: boolean;
   editWorkId?: string;
 };
 
@@ -258,6 +261,7 @@ function createWorkPlayerViewModel(work: Work): MyLibraryPlayerViewModel {
     title: work.title,
     meta: `사용 악기 ${formatWorkInstrumentNames(work)} · ${formatLibraryDate(work.updatedAt || work.createdAt)}`,
     sourceKind: 'work',
+    ...FIGMA_PLAYING_PLAYER_STATE,
     editWorkId: work.id,
   };
 }
@@ -267,6 +271,7 @@ function createExportedAudioPlayerViewModel(audio: ExportedAudio): MyLibraryPlay
     title: audio.title,
     meta: `사용 악기 ${audio.instrumentNames.join(', ') || '가야금'} · ${formatDuration(audio.durationSeconds)}`,
     sourceKind: 'exportedAudio',
+    ...FIGMA_PLAYING_PLAYER_STATE,
     editWorkId: audio.workId,
   };
 }
@@ -276,6 +281,7 @@ function createPracticeResultPlayerViewModel(result: PracticeResult): MyLibraryP
     title: `${formatPracticeSongTitle(result.songId)} 연습`,
     meta: `사용 악기 ${getInstrumentName(result.instrument)} · 정확도 ${result.accuracyScore}점`,
     sourceKind: 'practiceResult',
+    ...FIGMA_PLAYING_PLAYER_STATE,
   };
 }
 
@@ -284,8 +290,15 @@ function createDemoPlayerViewModel(title: string): MyLibraryPlayerViewModel {
     title,
     meta: '사용 악기 가야금',
     sourceKind: 'demo',
+    ...FIGMA_PLAYING_PLAYER_STATE,
   };
 }
+
+const FIGMA_PLAYING_PLAYER_STATE = {
+  elapsedLabel: '0:13',
+  remainingLabel: '-3:01',
+  showsAirPlay: true,
+} as const;
 
 function formatWorkInstrumentNames(work: Work): string {
   const names = work.tracks

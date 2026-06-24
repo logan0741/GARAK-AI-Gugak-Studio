@@ -6,6 +6,7 @@ import {
   getGarakScreenFrameConfig,
   PERFORMANCE_LANDSCAPE_SCREEN_IDS,
   usesEmbeddedLandscapeArtworkHeader,
+  usesImmersivePortraitScreen,
 } from '../garakScreenFrame';
 
 const testDir = dirname(fileURLToPath(import.meta.url));
@@ -39,4 +40,10 @@ test('uses the embedded Figma header only on the free-play landscape artwork scr
   expect(usesEmbeddedLandscapeArtworkHeader('S09')).toBe(false);
   expect(usesEmbeddedLandscapeArtworkHeader('S15')).toBe(false);
   expect(usesEmbeddedLandscapeArtworkHeader('S07')).toBe(false);
+});
+
+test('uses an immersive portrait frame for the Figma playing screen', () => {
+  expect(getGarakScreenFrameConfig('S19')).toEqual({ mode: 'portrait', scrollable: false });
+  expect(usesImmersivePortraitScreen('S19')).toBe(true);
+  expect(usesImmersivePortraitScreen('S18')).toBe(false);
 });
