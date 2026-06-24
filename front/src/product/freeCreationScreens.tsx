@@ -1204,6 +1204,9 @@ function JangdanPresetPanel({
         description="AI 생성 오디오가 아니라 로컬 장단 프리셋을 미리듣고 수락하는 흐름입니다."
       />
       <MiniTrackPlayer title={model.miniPlayerTitle} tone="amber" />
+      {model.workContextLabel ? (
+        <Text style={styles.recommendationMessage}>{model.workContextLabel}</Text>
+      ) : null}
       {model.recommendationMessage ? (
         <Text style={styles.recommendationMessage}>{model.recommendationMessage}</Text>
       ) : null}

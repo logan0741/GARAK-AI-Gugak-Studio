@@ -40,6 +40,7 @@ test('models S10B recommendation from current work events with manual fallback p
   expect(readyModel.recommendationStatus).toBe('ready');
   expect(readyModel.recommendedPreset?.id).toBe('semachi');
   expect(readyModel.miniPlayerTitle).toBe('AI 추천: 세마치');
+  expect(readyModel.workContextLabel).toBe('현재 작업 · 가야금 작업 1');
   expect(readyModel.acceptedPreset.id).toBe('semachi');
   expect(readyModel.acceptedPreset.defaultBpm).toBe(84);
   expect(readyModel.manualPresets.map((preset) => preset.id)).toEqual(

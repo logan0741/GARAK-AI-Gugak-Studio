@@ -65,6 +65,7 @@ test('connects S10 jangdan preset previews without applying the preset', () => {
   expect(source).toContain("type: 'turnOffLiveJangdanGuide'");
   expect(source).toContain("type: 'cancelAccompanimentTrack'");
   expect(source).toContain('model.previewingPresetId');
+  expect(source).toContain('model.workContextLabel');
   expect(source).toContain('model.bpmValueLabel');
   expect(source).toContain('model.volumeValueLabel');
   expect(source).toContain('dispatch(model.decreaseBpmAction)');

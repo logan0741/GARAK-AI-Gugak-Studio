@@ -11,6 +11,7 @@ export type JangdanPresetPanelModel = {
   recommendedPreset?: JangdanPreset;
   recommendationMessage?: string;
   miniPlayerTitle: string;
+  workContextLabel?: string;
   acceptedPreset: JangdanPreset;
   acceptedBpm: number;
   acceptedVolume: number;
@@ -66,6 +67,7 @@ export function getJangdanPresetPanelModel(
       recommendationStatus: 'insufficient-data',
       recommendationMessage: INSUFFICIENT_JANGDAN_RECOMMENDATION_COPY,
       miniPlayerTitle: 'AI 추천 준비 중',
+      workContextLabel: createWorkContextLabel(currentWork?.title),
       acceptedPreset: previewingPreset ?? defaultPreset,
       previewing: state.previewingJangdanPreset?.mode === mode ? state.previewingJangdanPreset : undefined,
       previewingPresetId,
@@ -81,6 +83,7 @@ export function getJangdanPresetPanelModel(
     recommendationStatus: 'ready',
     recommendedPreset,
     miniPlayerTitle: `AI 추천: ${recommendedPreset.name}`,
+    workContextLabel: createWorkContextLabel(currentWork?.title),
     acceptedPreset: previewingPreset ?? recommendedPreset,
     previewing: state.previewingJangdanPreset?.mode === mode ? state.previewingJangdanPreset : undefined,
     previewingPresetId,
@@ -91,12 +94,17 @@ function isInstrumentTrack(track: Track): track is InstrumentTrack {
   return track.kind === 'instrument';
 }
 
+function createWorkContextLabel(workTitle?: string): string {
+  return workTitle === undefined ? '현재 작업 없음' : `현재 작업 · ${workTitle}`;
+}
+
 function createJangdanPresetPanelModel(input: {
   mode: JangdanPresetPreviewMode;
   recommendationStatus: JangdanPresetPanelModel['recommendationStatus'];
   recommendedPreset?: JangdanPreset;
   recommendationMessage?: string;
   miniPlayerTitle: string;
+  workContextLabel?: string;
   acceptedPreset: JangdanPreset;
   previewing?: GarakProductState['previewingJangdanPreset'];
   previewingPresetId?: JangdanPresetId;
@@ -114,6 +122,7 @@ function createJangdanPresetPanelModel(input: {
     recommendedPreset: input.recommendedPreset,
     recommendationMessage: input.recommendationMessage,
     miniPlayerTitle: input.miniPlayerTitle,
+    workContextLabel: input.workContextLabel,
     acceptedPreset: input.acceptedPreset,
     acceptedBpm,
     acceptedVolume,
