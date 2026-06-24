@@ -54,6 +54,10 @@ function isInstrumentTrack(track: Track): track is Extract<Track, { kind: 'instr
   return track.kind === 'instrument';
 }
 
+function isAccompanimentTrack(track: Track): track is Extract<Track, { kind: 'accompaniment' }> {
+  return track.kind === 'accompaniment';
+}
+
 function getNextTrackInstrument(existingInstruments: InstrumentId[]): InstrumentId {
   return (
     INSTRUMENT_CHIP_ORDER.find((instrument) => !existingInstruments.includes(instrument)) ??
@@ -282,11 +286,19 @@ export function FreePlayContent({
 }
 
 export function TrackLayerEditorContent({
+  state,
   dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const work = state.library.works.find((item) => item.id === state.currentWorkId);
+  const hasAccompanimentTrack = work?.tracks.some(isAccompanimentTrack) ?? false;
+
+  if (hasAccompanimentTrack) {
+    return <FreeCreationCompletedPreviewContent state={state} dispatch={dispatch} />;
+  }
+
   return (
     <View style={styles.freeCreationMixScreen}>
       <View style={styles.freeCreationPlayerDeck} accessible accessibilityLabel="My Janggu 재생 미리보기">
@@ -331,6 +343,88 @@ export function TrackLayerEditorContent({
         >
           <ShareOutlineGlyph />
           <Text style={styles.freeCreationShareButtonText}>{'Save & Share project'}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function FreeCreationCompletedPreviewContent({
+  state,
+  dispatch,
+}: {
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
+  const work = state.library.works.find((item) => item.id === state.currentWorkId);
+  const instrumentTracks = work?.tracks.filter(isInstrumentTrack) ?? [];
+  const firstInstrument = instrumentTracks[0]?.instrument ?? state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const secondInstrument = instrumentTracks[1]?.instrument ?? getNextTrackInstrument([firstInstrument]);
+  const firstInstrumentTrackLabel = `Track 1 : ${getInstrumentName(firstInstrument)}`;
+  const secondInstrumentTrackLabel = `Track 2 : ${getInstrumentName(secondInstrument)}`;
+
+  return (
+    <View style={styles.freeCreationCompletedPreviewScreen}>
+      <Text style={styles.freeCreationCompletedTitle}>
+        <Text style={styles.freeCreationCompletedTitleStrong}>가락</Text> 미리듣기
+      </Text>
+
+      <View style={styles.freeCreationCompletedPlayerDeck} accessible accessibilityLabel="My Arirang 재생 미리보기">
+        <View style={styles.freeCreationPlayerShadowBack} />
+        <View style={styles.freeCreationPlayerShadowFront} />
+        <View style={styles.freeCreationCompletedPlayerCard}>
+          <View style={styles.freeCreationCompletedPlayerTitleRow}>
+            <Text numberOfLines={1} style={styles.freeCreationCompletedPlayerTitle}>
+              My Arirang
+            </Text>
+            <View style={styles.freeCreationCompletedEditGlyph} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <View style={styles.freeCreationCompletedEditGlyphLine} />
+              <View style={styles.freeCreationCompletedEditGlyphTip} />
+            </View>
+          </View>
+          <View style={styles.freeCreationCompletedPlayerProgress}>
+            <View style={styles.freeCreationPlayerProgressFill} />
+          </View>
+          <MixPlayerControls />
+        </View>
+      </View>
+
+      <View style={styles.freeCreationCompletedPanel}>
+        <TrackAddWaveformGlyph />
+        <Text style={styles.freeCreationCompletedCopy}>
+          연주 한 트랙들과 생성 한 AI 반주로{'\n'}
+          <Text style={styles.freeCreationCompletedCopyStrong}>나만의 가락</Text>을 완성해요.
+        </Text>
+
+        <View
+          accessible
+          accessibilityLabel="AI 반주 : 아리랑"
+          style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedAccompanimentButton]}
+        >
+          <Text style={styles.freeCreationCompletedTrackButtonText}>AI 반주 : 아리랑</Text>
+        </View>
+        <View
+          accessible
+          accessibilityLabel={secondInstrumentTrackLabel}
+          style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedSecondTrackButton]}
+        >
+          <Text style={styles.freeCreationCompletedTrackButtonText}>{secondInstrumentTrackLabel}</Text>
+        </View>
+        <View
+          accessible
+          accessibilityLabel={firstInstrumentTrackLabel}
+          style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedFirstTrackButton]}
+        >
+          <Text style={styles.freeCreationCompletedTrackButtonText}>{firstInstrumentTrackLabel}</Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="완성한 가락 내보내기"
+          onPress={() => dispatch({ type: 'exportCurrentWork' })}
+          style={styles.freeCreationCompletedGoButton}
+        >
+          <Text style={styles.freeCreationTrackAddGoButtonText}>GO</Text>
         </Pressable>
       </View>
     </View>
@@ -921,9 +1015,30 @@ const styles = StyleSheet.create({
     gap: 25,
     marginTop: 108,
   },
+  freeCreationCompletedPreviewScreen: {
+    marginTop: 50,
+  },
+  freeCreationCompletedTitle: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 28,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 34,
+  },
+  freeCreationCompletedTitleStrong: {
+    color: GARAK_COLORS.textSecondary,
+    fontWeight: '600',
+  },
   freeCreationPlayerDeck: {
     alignSelf: 'center',
     height: 161,
+    position: 'relative',
+    width: '100%',
+  },
+  freeCreationCompletedPlayerDeck: {
+    alignSelf: 'center',
+    height: 161,
+    marginTop: 17,
     position: 'relative',
     width: '100%',
   },
@@ -959,6 +1074,18 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
   },
+  freeCreationCompletedPlayerCard: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: 40,
+    height: 135,
+    left: 0,
+    overflow: 'visible',
+    paddingTop: 32,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
   freeCreationNewBadge: {
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.brandRed,
@@ -984,11 +1111,57 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     maxWidth: 245,
   },
+  freeCreationCompletedPlayerTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    height: 14,
+    justifyContent: 'center',
+  },
+  freeCreationCompletedPlayerTitle: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 12.4,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 14,
+    maxWidth: 108,
+  },
+  freeCreationCompletedEditGlyph: {
+    height: 12,
+    position: 'relative',
+    width: 10,
+  },
+  freeCreationCompletedEditGlyphLine: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    height: 2,
+    left: 1,
+    position: 'absolute',
+    top: 7,
+    transform: [{ rotate: '-58deg' }],
+    width: 10,
+  },
+  freeCreationCompletedEditGlyphTip: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    height: 3,
+    position: 'absolute',
+    right: 0,
+    top: 2,
+    transform: [{ rotate: '-58deg' }],
+    width: 2,
+  },
   freeCreationPlayerProgress: {
     backgroundColor: '#E4E4E4',
     borderRadius: 2,
     height: 3,
     marginTop: 17,
+    overflow: 'hidden',
+    width: 245,
+  },
+  freeCreationCompletedPlayerProgress: {
+    backgroundColor: '#E4E4E4',
+    borderRadius: 2,
+    height: 3,
+    marginTop: 12,
     overflow: 'hidden',
     width: 245,
   },
@@ -1054,6 +1227,20 @@ const styles = StyleSheet.create({
     width: '100%',
     ...garakCardShadow,
   },
+  freeCreationCompletedPanel: {
+    alignSelf: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 40,
+    borderWidth: 1,
+    height: 697,
+    overflow: 'hidden',
+    paddingHorizontal: 18,
+    paddingTop: 49,
+    position: 'relative',
+    width: '100%',
+    ...garakCardShadow,
+  },
   freeCreationWaveform: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -1087,6 +1274,59 @@ const styles = StyleSheet.create({
   freeCreationMixCopyStrong: {
     color: GARAK_COLORS.textSecondary,
     fontWeight: '500',
+  },
+  freeCreationCompletedCopy: {
+    color: '#656565',
+    fontSize: 13.36,
+    fontWeight: '300',
+    letterSpacing: 0,
+    lineHeight: 16.2,
+    marginTop: 20,
+    width: 278,
+  },
+  freeCreationCompletedCopyStrong: {
+    color: '#656565',
+    fontWeight: '500',
+  },
+  freeCreationCompletedTrackButton: {
+    alignItems: 'center',
+    borderRadius: 126,
+    height: 59,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  freeCreationCompletedAccompanimentButton: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    top: 156,
+  },
+  freeCreationCompletedSecondTrackButton: {
+    backgroundColor: GARAK_COLORS.brandRed,
+    top: 233,
+  },
+  freeCreationCompletedFirstTrackButton: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+    top: 310,
+  },
+  freeCreationCompletedTrackButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    lineHeight: 20,
+    textTransform: 'uppercase',
+  },
+  freeCreationCompletedGoButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: GARAK_RADIUS.pill,
+    height: 48,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 424,
   },
   freeCreationMixButton: {
     alignItems: 'center',

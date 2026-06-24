@@ -20,6 +20,18 @@ test('uses the Figma completed instrument stack for S08 after adding a track', (
   expect(source).toContain('freeCreationAccompanimentLayerAfterInstrument');
 });
 
+test('uses the Figma final free-creation preview after adding AI accompaniment', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('hasAccompanimentTrack');
+  expect(source).toContain('freeCreationCompletedPreviewScreen');
+  expect(source).toContain('freeCreationCompletedTitleStrong');
+  expect(source).toContain('미리듣기');
+  expect(source).toContain('My Arirang');
+  expect(source).toContain('AI 반주 : 아리랑');
+  expect(source).toContain('freeCreationCompletedAccompanimentButton');
+});
+
 test('uses the Figma home hero copy in the home screen accessibility contract', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
