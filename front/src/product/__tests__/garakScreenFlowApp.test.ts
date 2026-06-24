@@ -156,6 +156,13 @@ test('connects S17 share publishing to the selected share target state', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 
   expect(source).toContain("type: 'publishShareTarget'");
+  expect(source).toContain("type: 'previewShareTarget'");
+  expect(source).toContain("type: 'back'");
+  expect(source).toContain('durationLabel');
+  expect(source).toContain('instrumentLabel');
+  expect(source).toContain('sourceLabel');
+  expect(source).toContain('미리듣기');
+  expect(source).toContain('취소');
   expect(source).not.toContain("label=\"공유하기\"\n          onPress={() => dispatch({ type: 'navigate', target: 'S20' })}");
 });
 

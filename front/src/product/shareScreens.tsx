@@ -30,26 +30,66 @@ export function SharePrepareContent({
   dispatch: ProductDispatch;
 }) {
   const model = getSharePrepareViewModel(state);
+  const previewButtonLabel = model.isPreviewing ? '미리듣는 중' : '미리듣기';
 
   return (
     <View style={styles.stack}>
       <ScreenHeading title={'나의 GARAK\n공유하기'} />
       <View style={styles.prepareCard}>
         <MiniTrackPlayer title={model.title} tone="navy" />
+        <View style={styles.prepareWaveformPreview}>
+          {Array.from({ length: 18 }, (_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.prepareWaveformBar,
+                index % 3 === 0 ? styles.prepareWaveformBarTall : undefined,
+                model.isPreviewing && index < 7 ? styles.prepareWaveformBarActive : undefined,
+              ]}
+            />
+          ))}
+        </View>
+        <View style={styles.prepareMetaGrid}>
+          <PrepareMeta label="길이" value={model.durationLabel} />
+          <PrepareMeta label="사용 악기" value={model.instrumentLabel} />
+          <PrepareMeta label="출처" value={model.sourceLabel} />
+        </View>
         <Text style={styles.bodyText}>{model.description}</Text>
       </View>
-      <View style={styles.buttonRow}>
+      <View style={[styles.buttonRow, styles.prepareButtonGrid]}>
+        <SecondaryPillButton
+          disabled={!model.canShare}
+          label={previewButtonLabel}
+          onPress={() => dispatch({ type: 'previewShareTarget' })}
+          style={styles.prepareActionButton}
+        />
         <SecondaryPillButton
           disabled={!model.canShare}
           label="공유하기"
           onPress={() => dispatch({ type: 'publishShareTarget' })}
+          style={styles.prepareActionButton}
         />
         <SecondaryPillButton
           disabled={!model.canShare}
           label="저장만 하기"
           onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
+          style={styles.prepareActionButton}
+        />
+        <SecondaryPillButton
+          label="취소"
+          onPress={() => dispatch({ type: 'back' })}
+          style={styles.prepareActionButton}
         />
       </View>
+    </View>
+  );
+}
+
+function PrepareMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.prepareMetaRow}>
+      <Text style={styles.prepareMetaLabel}>{label}</Text>
+      <Text numberOfLines={1} style={styles.prepareMetaValue}>{value}</Text>
     </View>
   );
 }
@@ -594,6 +634,56 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     gap: 18,
     padding: 18,
+  },
+  prepareWaveformPreview: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceSoft,
+    borderRadius: 18,
+    flexDirection: 'row',
+    gap: 5,
+    height: 86,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  prepareWaveformBar: {
+    backgroundColor: 'rgba(25,27,43,0.28)',
+    borderRadius: 5,
+    height: 28,
+    width: 7,
+  },
+  prepareWaveformBarTall: {
+    height: 46,
+  },
+  prepareWaveformBarActive: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+  },
+  prepareMetaGrid: {
+    gap: 9,
+  },
+  prepareMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  prepareMetaLabel: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  prepareMetaValue: {
+    color: GARAK_COLORS.textPrimary,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'right',
+  },
+  prepareButtonGrid: {
+    flexWrap: 'wrap',
+  },
+  prepareActionButton: {
+    flexBasis: '47%',
+    flexGrow: 1,
   },
   bodyText: {
     color: GARAK_COLORS.textSecondary,

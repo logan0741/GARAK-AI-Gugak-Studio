@@ -1,6 +1,6 @@
 import { ExportedAudio, PracticeResult } from '../studio/studioTypes';
 import type { GarakProductAction, GarakProductState } from './garakProductState';
-import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
+import { getInstrumentName, getPracticeSongTitle, PRACTICE_SONGS } from './productFixtures';
 
 export type ShareFeedCategory = {
   label: string;
@@ -40,6 +40,10 @@ export type SharePrepareViewModel = {
   canShare: boolean;
   title: string;
   description: string;
+  durationLabel: string;
+  instrumentLabel: string;
+  sourceLabel: string;
+  isPreviewing: boolean;
 };
 
 const SHARE_FEED_CATEGORIES = ['Hot', 'K-pop', 'K-Drama OST', 'K-Minyo', 'Arirang'] as const;
@@ -92,21 +96,38 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
       canShare: false,
       title: '공유 대상 없음',
       description: '작업을 내보내거나 따라하기 결과를 저장하면 공유할 수 있습니다.',
+      durationLabel: '준비 전',
+      instrumentLabel: '사용 악기 없음',
+      sourceLabel: '공유 대상 없음',
+      isPreviewing: false,
     };
   }
 
   if (shareTarget.kind === 'exported_audio') {
+    const durationLabel = formatSeconds(shareTarget.durationSeconds);
+    const instrumentLabel = formatExportedInstrumentNames(shareTarget);
+
     return {
       canShare: true,
       title: shareTarget.title,
-      description: `${formatSeconds(shareTarget.durationSeconds)} · ${formatExportedInstrumentNames(shareTarget)} · 내보낸 음원`,
+      description: `${durationLabel} · ${instrumentLabel} · 내보낸 음원`,
+      durationLabel,
+      instrumentLabel,
+      sourceLabel: shareTarget.sourceLabel ?? (shareTarget.workId === undefined ? '내보낸 음원' : '출처 작업'),
+      isPreviewing: state.sharePreviewStatus === 'playing',
     };
   }
+
+  const instrumentLabel = getInstrumentName(shareTarget.instrument);
 
   return {
     canShare: true,
     title: `${getPracticeSongTitle(shareTarget.songId)} 연습 결과`,
-    description: `${getInstrumentName(shareTarget.instrument)} · 정확도 ${shareTarget.accuracyScore}% · 따라하기 결과`,
+    description: `${instrumentLabel} · 정확도 ${shareTarget.accuracyScore}% · 따라하기 결과`,
+    durationLabel: getPracticeSongDurationLabel(shareTarget.songId),
+    instrumentLabel,
+    sourceLabel: '따라하기 결과',
+    isPreviewing: state.sharePreviewStatus === 'playing',
   };
 }
 
@@ -148,6 +169,12 @@ function formatExportedInstrumentNames(audio: ExportedAudio): string {
   const names = audio.instrumentNames.map((name) => name.trim()).filter((name) => name.length > 0);
 
   return names.length > 0 ? names.join(', ') : '사용 악기 없음';
+}
+
+function getPracticeSongDurationLabel(songId: string): string {
+  const song = PRACTICE_SONGS.find((item) => item.id === songId);
+
+  return song === undefined ? '길이 정보 없음' : formatSeconds(song.durationSeconds);
 }
 
 function getShareablePlayer(state: GarakProductState): ShareFeedPlayer {

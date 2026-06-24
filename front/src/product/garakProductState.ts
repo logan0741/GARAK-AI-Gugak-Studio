@@ -71,6 +71,7 @@ export type GarakProductState = {
   previewingPracticeSongId?: PracticeSong['id'];
   currentWorkId?: string;
   selectedPlayerItem?: ProductPlayerSelection;
+  sharePreviewStatus?: 'playing';
   pendingFreePlayTake?: PendingFreePlayTake;
   freePlayNotice?: FreePlayNotice;
   practiceAttempt?: PracticeAttempt;
@@ -116,6 +117,7 @@ export type GarakProductAction =
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
   | { type: 'shareSelectedPlayerItem' }
+  | { type: 'previewShareTarget' }
   | { type: 'publishShareTarget' }
   | { type: 'remixSharedRecording' }
   | { type: 'saveSharedRecording' }
@@ -302,6 +304,11 @@ export function applyProductAction(
       return createPracticeResultAndRoute(state, 'S17');
     case 'shareSelectedPlayerItem':
       return shareSelectedPlayerItem(state);
+    case 'previewShareTarget':
+      return {
+        ...state,
+        sharePreviewStatus: 'playing',
+      };
     case 'publishShareTarget':
       return publishShareTarget(state);
     case 'remixSharedRecording':
@@ -326,6 +333,7 @@ export function applyProductAction(
         return {
           ...state,
           practiceAttempt: createReadyPracticeAttempt(state),
+          sharePreviewStatus: undefined,
           screenFlow: transitionScreenFlow(state.screenFlow, {
             type: 'navigate',
             target: action.target,
@@ -335,6 +343,7 @@ export function applyProductAction(
 
       return {
         ...state,
+        sharePreviewStatus: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, {
           type: 'navigate',
           target: action.target,
@@ -343,6 +352,7 @@ export function applyProductAction(
     case 'back':
       return {
         ...state,
+        sharePreviewStatus: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'back' }),
       };
   }
@@ -750,6 +760,7 @@ function createPracticeResultAndRoute(
       kind: 'practiceResult',
       practiceResultId: result.id,
     },
+    sharePreviewStatus: undefined,
     screenFlow: pushTarget(state.screenFlow, target),
   };
 }
@@ -834,6 +845,7 @@ function publishShareTarget(state: GarakProductState): GarakProductState {
   if (target.kind === 'exportedAudio') {
     return {
       ...state,
+      sharePreviewStatus: undefined,
       library: {
         ...state.library,
         exportedAudios: state.library.exportedAudios.map((audio) =>
@@ -847,6 +859,7 @@ function publishShareTarget(state: GarakProductState): GarakProductState {
 
   return {
     ...state,
+    sharePreviewStatus: undefined,
     library: {
       ...state.library,
       practiceResults: state.library.practiceResults.map((result) =>
@@ -868,6 +881,7 @@ function shareSelectedPlayerItem(state: GarakProductState): GarakProductState {
   return {
     ...state,
     selectedPlayerItem: target,
+    sharePreviewStatus: undefined,
     screenFlow: pushTarget(state.screenFlow, 'S17'),
   };
 }

@@ -476,6 +476,31 @@ test('publishes the selected exported audio from S17 and marks it shared', () =>
   });
 });
 
+test('previews the selected S17 share target without publishing it', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S17' });
+  state = applyProductAction(state, { type: 'previewShareTarget' });
+
+  expect(state.screenFlow.currentScreen).toBe('S17');
+  expect(state.sharePreviewStatus).toBe('playing');
+  expect(state.library.exportedAudios[0].shareState).toBe('ready');
+
+  state = applyProductAction(state, { type: 'publishShareTarget' });
+
+  expect(state.screenFlow.currentScreen).toBe('S20');
+  expect(state.sharePreviewStatus).toBeUndefined();
+});
+
 test('opens S17 from the S19 player for the selected exported audio', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

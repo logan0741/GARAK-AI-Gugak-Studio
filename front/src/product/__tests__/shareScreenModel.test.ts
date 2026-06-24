@@ -244,6 +244,10 @@ test('prepares the selected exported audio as the S17 share target', () => {
     canShare: true,
     title: '장구 작업 1 내보내기',
     description: '42초 · 장구, 가야금 · 내보낸 음원',
+    durationLabel: '42초',
+    instrumentLabel: '장구, 가야금',
+    sourceLabel: '출처 작업',
+    isPreviewing: false,
   });
 });
 
@@ -306,6 +310,42 @@ test('prepares the latest practice result when S17 is opened from practice shari
     canShare: true,
     title: '아리랑 연습 결과',
     description: '가야금 · 정확도 82% · 따라하기 결과',
+    durationLabel: '45초',
+    instrumentLabel: '가야금',
+    sourceLabel: '따라하기 결과',
+    isPreviewing: false,
+  });
+});
+
+test('marks S17 share target preview as playing', () => {
+  const state = createInitialGarakProductState();
+
+  const model = getSharePrepareViewModel({
+    ...state,
+    sharePreviewStatus: 'playing',
+    selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio',
+          workId: 'work-1',
+          title: '미리듣기 내보내기',
+          durationSeconds: 24,
+          instrumentNames: ['장구'],
+          createdAt: '2026-06-18T00:00:00.000Z',
+          audioUri: 'placeholder://export-1.wav',
+          shareState: 'ready',
+        },
+      ],
+    },
+  });
+
+  expect(model).toMatchObject({
+    canShare: true,
+    isPreviewing: true,
+    title: '미리듣기 내보내기',
   });
 });
 
@@ -394,6 +434,10 @@ test('does not prepare an auto-saved work as a direct S17 share target', () => {
     canShare: false,
     title: '공유 대상 없음',
     description: '작업을 내보내거나 따라하기 결과를 저장하면 공유할 수 있습니다.',
+    durationLabel: '준비 전',
+    instrumentLabel: '사용 악기 없음',
+    sourceLabel: '공유 대상 없음',
+    isPreviewing: false,
   });
 });
 
