@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { InstrumentId } from '../studio/studioTypes';
 import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
@@ -30,6 +30,19 @@ import {
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
+const FIGMA_INSTRUMENT_CHIP_WIDTH: Record<InstrumentId, number> = {
+  janggu: 48,
+  gayageum: 62,
+  daegeum: 47,
+};
+const FUTURE_INSTRUMENT_CHIPS = [
+  { id: 'future-rhythm', width: 48 },
+  { id: 'future-string', width: 73 },
+  { id: 'future-wind', width: 73 },
+] as const;
+const JANGGU_FIGMA_BADGE = '장구 Janggu';
+const JANGGU_FIGMA_DESCRIPTION =
+  '장구는 한국 전통 음악에서 가장 대표적으로 사용되는 타악기 중 하나로, 가운데가 잘록한 모래시계 모양을 하고 있습니다.';
 
 export function HomeScreenContent({
   dispatch,
@@ -64,6 +77,8 @@ export function InstrumentSelectContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const { height } = useWindowDimensions();
+  const isCompactHeight = height < 820;
   const selectedInstrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
 
   function confirmSelectionAndContinue() {
@@ -75,14 +90,28 @@ export function InstrumentSelectContent({
   }
 
   return (
-    <View style={styles.screenStack}>
-      <ScreenHeading title={'연주 할 악기를\n선택해요.'} />
+    <View style={styles.instrumentSelectScreen}>
+      <Text style={[styles.instrumentSelectTitle, isCompactHeight ? styles.instrumentSelectTitleCompact : undefined]}>
+        연주 할 <Text style={styles.instrumentSelectTitleStrong}>악기</Text>를{'\n'}선택해요.
+      </Text>
       <InstrumentChipRow
+        variant="figma"
         selectedInstrument={selectedInstrument}
         onSelect={(instrument) => dispatch({ type: 'selectInstrument', instrument })}
       />
       {selectedInstrument === DEFAULT_FREE_CREATION_INSTRUMENT ? (
-        <InstrumentSelectionArtworkPanel />
+        <View
+          accessible
+          accessibilityLabel={`${JANGGU_FIGMA_BADGE}. ${JANGGU_FIGMA_DESCRIPTION}`}
+          style={[
+            styles.instrumentSelectArtworkWrap,
+            isCompactHeight ? styles.instrumentSelectArtworkWrapCompact : undefined,
+          ]}
+        >
+          <InstrumentSelectionArtworkPanel
+            style={isCompactHeight ? styles.instrumentSelectArtworkCompact : undefined}
+          />
+        </View>
       ) : (
         <View style={styles.instrumentPreviewCard}>
           <InstrumentVisual instrument={selectedInstrument} />
@@ -93,11 +122,13 @@ export function InstrumentSelectContent({
           </Text>
         </View>
       )}
-      <ProgressSteps step={0} />
-      <PrimaryPillButton
-        label="Next"
-        onPress={confirmSelectionAndContinue}
-      />
+      <View style={[styles.instrumentSelectFooter, isCompactHeight ? styles.instrumentSelectFooterCompact : undefined]}>
+        <ProgressSteps step={0} />
+        <PrimaryPillButton
+          label="NEXT"
+          onPress={confirmSelectionAndContinue}
+        />
+      </View>
     </View>
   );
 }
@@ -342,12 +373,14 @@ function JangdanPresetPanel({ mode, dispatch }: { mode: 'live' | 'track'; dispat
 function InstrumentChipRow({
   selectedInstrument,
   onSelect,
+  variant = 'wrap',
 }: {
   selectedInstrument: InstrumentId;
   onSelect: (instrument: InstrumentId) => void;
+  variant?: 'wrap' | 'figma';
 }) {
-  return (
-    <View style={styles.instrumentChips}>
+  const chipContent = (
+    <>
       {INSTRUMENT_CHIP_ORDER.map((instrumentId) => {
         const instrument = MVP_INSTRUMENTS.find((item) => item.id === instrumentId);
 
@@ -361,19 +394,75 @@ function InstrumentChipRow({
             accessibilityState={{ selected: selectedInstrument === instrument.id }}
             key={instrument.id}
             onPress={() => onSelect(instrument.id)}
-            style={[styles.instrumentChip, selectedInstrument === instrument.id ? styles.instrumentChipActive : undefined]}
+            style={[
+              styles.instrumentChip,
+              variant === 'figma'
+                ? [styles.instrumentChipFigma, { width: FIGMA_INSTRUMENT_CHIP_WIDTH[instrument.id] }]
+                : undefined,
+              selectedInstrument === instrument.id ? styles.instrumentChipActive : undefined,
+            ]}
           >
-            <Text style={[styles.instrumentChipText, selectedInstrument === instrument.id ? styles.instrumentChipTextActive : undefined]}>
+            <Text
+              style={[
+                styles.instrumentChipText,
+                variant === 'figma' ? styles.instrumentChipTextFigma : undefined,
+                selectedInstrument === instrument.id ? styles.instrumentChipTextActive : undefined,
+              ]}
+            >
               {instrument.name}
             </Text>
           </Pressable>
         );
       })}
-      {Array.from({ length: LOCKED_FUTURE_INSTRUMENT_SLOTS }, (_, index) => (
-        <View key={index} style={[styles.instrumentChip, styles.instrumentChipLocked]}>
-          <Text style={styles.instrumentChipLockedText}>잠금</Text>
-        </View>
-      ))}
+      {variant === 'figma'
+        ? FUTURE_INSTRUMENT_CHIPS.map((chip) => (
+            <View
+              accessibilityLabel="준비 중인 악기"
+              key={chip.id}
+              style={[
+                styles.instrumentChip,
+                styles.instrumentChipFigma,
+                styles.instrumentChipLockedFigma,
+                { width: chip.width },
+              ]}
+            >
+              <LockGlyph />
+            </View>
+          ))
+        : Array.from({ length: LOCKED_FUTURE_INSTRUMENT_SLOTS }, (_, index) => (
+            <View key={index} style={[styles.instrumentChip, styles.instrumentChipLocked]}>
+              <Text style={styles.instrumentChipLockedText}>잠금</Text>
+            </View>
+          ))}
+    </>
+  );
+
+  if (variant === 'figma') {
+    return (
+      <ScrollView
+        bounces={false}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.instrumentChipScroller}
+        contentContainerStyle={styles.instrumentChipScrollerContent}
+      >
+        {chipContent}
+      </ScrollView>
+    );
+  }
+
+  return (
+    <View style={styles.instrumentChips}>
+      {chipContent}
+    </View>
+  );
+}
+
+function LockGlyph() {
+  return (
+    <View style={styles.lockGlyph}>
+      <View style={styles.lockGlyphShackle} />
+      <View style={styles.lockGlyphBody} />
     </View>
   );
 }
@@ -402,6 +491,42 @@ function ModeButton({
 const styles = StyleSheet.create({
   screenStack: {
     gap: 18,
+  },
+  instrumentSelectScreen: {
+    gap: 0,
+  },
+  instrumentSelectTitle: {
+    color: '#606060',
+    fontSize: 28,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 34,
+    marginTop: 27,
+  },
+  instrumentSelectTitleCompact: {
+    fontSize: 27,
+    lineHeight: 32,
+    marginTop: 14,
+  },
+  instrumentSelectTitleStrong: {
+    color: '#191919',
+    fontWeight: '800',
+  },
+  instrumentSelectArtworkWrap: {
+    marginTop: 18,
+  },
+  instrumentSelectArtworkWrapCompact: {
+    marginTop: 13,
+  },
+  instrumentSelectArtworkCompact: {
+    height: 389,
+  },
+  instrumentSelectFooter: {
+    gap: 13,
+    marginTop: 15,
+  },
+  instrumentSelectFooterCompact: {
+    marginTop: 8,
   },
   landscapePerformanceStack: {
     flex: 1,
@@ -586,6 +711,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  instrumentChipScroller: {
+    marginRight: -24,
+    marginTop: 41,
+  },
+  instrumentChipScrollerContent: {
+    flexDirection: 'row',
+    gap: 7,
+    paddingRight: 24,
+  },
   instrumentChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -600,24 +734,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 10,
   },
+  instrumentChipFigma: {
+    minWidth: 0,
+    paddingHorizontal: 0,
+  },
   instrumentChipActive: {
     backgroundColor: GARAK_COLORS.brandNavy,
   },
   instrumentChipLocked: {
     backgroundColor: GARAK_COLORS.surfaceSoft,
   },
+  instrumentChipLockedFigma: {
+    backgroundColor: '#ACACAC',
+  },
   instrumentChipText: {
     color: '#ACACAC',
     fontSize: 12,
     fontWeight: '800',
   },
+  instrumentChipTextFigma: {
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0,
+  },
   instrumentChipTextActive: {
     color: GARAK_COLORS.surfaceCard,
+    fontWeight: '800',
   },
   instrumentChipLockedText: {
     color: '#ACACAC',
     fontSize: 12,
     fontWeight: '800',
+  },
+  lockGlyph: {
+    alignItems: 'center',
+    height: 13,
+    justifyContent: 'flex-end',
+    width: 11,
+  },
+  lockGlyphShackle: {
+    borderColor: GARAK_COLORS.surfaceCard,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderWidth: 1.5,
+    height: 7,
+    marginBottom: -2,
+    width: 7,
+  },
+  lockGlyphBody: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 2,
+    height: 7,
+    width: 10,
   },
   presetStack: {
     gap: 10,

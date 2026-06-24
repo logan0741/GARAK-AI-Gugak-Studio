@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { GARAK_RADIUS } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { ArtworkImagePanel } from './garakUi';
@@ -9,12 +9,12 @@ type QuickAccessHandlers = {
   onShare: () => void;
 };
 
-export function InstrumentSelectionArtworkPanel() {
+export function InstrumentSelectionArtworkPanel({ style }: { style?: StyleProp<ViewStyle> }) {
   return (
     <ArtworkImagePanel
       accessibilityLabel="장구 악기 선택 미리보기"
       source={GARAK_SCREEN_ASSETS.creation.jangguInstrumentPanel}
-      style={styles.instrumentPanel}
+      style={[styles.instrumentPanel, style]}
       imageStyle={styles.roundedHeroImage}
     />
   );

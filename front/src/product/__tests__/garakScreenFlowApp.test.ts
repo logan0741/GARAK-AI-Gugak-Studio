@@ -30,3 +30,16 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).toContain("target: 'S04'");
   expect(source).not.toContain('GARAK에 오신 것을 환영해요');
 });
+
+test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('연주 할');
+  expect(source).toContain('악기');
+  expect(source).toContain('장구 Janggu');
+  expect(source).toContain('장구는 한국 전통 음악에서');
+  expect(source).toContain('InstrumentSelectionArtworkPanel');
+  expect(source).toContain('FUTURE_INSTRUMENT_CHIPS');
+  expect(source).toContain('NEXT');
+  expect(source).not.toContain('연주 & 녹음');
+});
