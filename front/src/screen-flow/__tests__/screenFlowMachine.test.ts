@@ -84,6 +84,13 @@ test('keeps settings and login sync primary CTAs aligned with the screen-flow do
   );
 });
 
+test('documents S23 skip as returning to the entry surface', () => {
+  expect(implementedScreenDefinitions.S23.transitions).toContainEqual({
+    action: 'skip',
+    target: 'previous',
+  });
+});
+
 test('routes S01 Next to S04 when free creation mode is selected', () => {
   const state = transitionScreenFlow(createInitialScreenFlowState(), {
     type: 'selectMode',

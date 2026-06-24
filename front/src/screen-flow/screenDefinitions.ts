@@ -31,9 +31,11 @@ export type ScreenId = ImplementedScreenId | ExcludedScreenId;
 export type ScreenFlowMode = 'freeCreation' | 'practice';
 export type ScreenMvpStatus = 'required' | 'recommended';
 
+export type ScreenTransitionTarget = ImplementedScreenId | 'previous';
+
 export type ScreenTransitionDefinition = {
   action: string;
-  target: ImplementedScreenId;
+  target: ScreenTransitionTarget;
 };
 
 export type ScreenDefinition = {
@@ -276,7 +278,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     transitions: [
       { action: 'sync', target: 'S18' },
       { action: 'importSelected', target: 'S18' },
-      { action: 'skip', target: 'S22' },
+      { action: 'skip', target: 'previous' },
     ],
   },
 };
@@ -301,7 +303,9 @@ export const excludedScreenDefinitions: Record<ExcludedScreenId, ExcludedScreenD
 
 const directNavigationTargetSet = new Set<ImplementedScreenId>(
   Object.values(implementedScreenDefinitions).flatMap((definition) =>
-    definition.transitions.map((transition) => transition.target),
+    definition.transitions.flatMap((transition) =>
+      isImplementedScreenId(transition.target) ? [transition.target] : [],
+    ),
   ),
 );
 
