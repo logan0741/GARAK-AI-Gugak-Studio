@@ -390,7 +390,7 @@ export function applyProductAction(
     case 'openFreePlayRecordingSetup':
       return {
         ...state,
-        freePlayRecordingSetup: state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
+        freePlayRecordingSetup: state.freePlayRecordingSetup ?? createRecordingSetupSuggestion(state),
         freePlayNotice: undefined,
       };
     case 'selectFreePlayRecordingPreset':
@@ -1005,6 +1005,14 @@ function freePlayDescription(state: GarakProductState): string {
 function createDefaultRecordingSetup(): RecordingSetup {
   const preset = JANGDAN_PRESETS[0];
   return createRecordingSetup(preset.id, preset.defaultBpm);
+}
+
+function createRecordingSetupSuggestion(state: GarakProductState): RecordingSetup {
+  if (state.pendingLiveJangdanGuide !== undefined) {
+    return createRecordingSetup(state.pendingLiveJangdanGuide.presetId, state.pendingLiveJangdanGuide.bpm);
+  }
+
+  return createDefaultRecordingSetup();
 }
 
 function createRecordingSetup(presetId: JangdanPresetId, bpm?: number): RecordingSetup {

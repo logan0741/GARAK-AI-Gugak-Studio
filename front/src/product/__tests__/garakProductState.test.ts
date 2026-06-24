@@ -316,6 +316,39 @@ test('keeps live jangdan guide separate from accompaniment track creation', () =
   });
 });
 
+test('uses the applied live jangdan guide as the S05 recording setup suggestion', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'openLiveJangdanGuide' });
+  state = applyProductAction(state, {
+    type: 'applyLiveJangdanGuide',
+    presetId: 'jungmori',
+    bpm: 76,
+    volume: 0.55,
+  });
+
+  state = applyProductAction(state, { type: 'openFreePlayRecordingSetup' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.pendingLiveJangdanGuide).toEqual({
+    presetId: 'jungmori',
+    bpm: 76,
+    volume: 0.55,
+  });
+  expect(state.freePlayRecordingSetup).toEqual({
+    presetId: 'jungmori',
+    bpm: 76,
+    beatUnit: '♩',
+  });
+});
+
 test('saves the current S07 work locally without exporting share audio', () => {
   const timestamps = [
     '2026-06-18T00:00:00.000Z',
