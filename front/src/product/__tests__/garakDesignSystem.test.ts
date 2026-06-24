@@ -1,10 +1,18 @@
+import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vitest';
 import {
+  GARAK_AUTH_BUTTON_LAYOUT,
   FIGMA_DESIGN_FRAME_AUDIT,
   FIGMA_IMPLEMENTATION_MAP,
   GARAK_COLORS,
+  GARAK_ONBOARDING_LOGOS,
   getFigmaMappedScreenIds,
 } from '../garakDesignSystem';
+
+const testDir = dirname(fileURLToPath(import.meta.url));
+const brandAssetsDir = resolve(testDir, '../../../assets/brand');
 
 test('uses exact Figma design-system color tokens', () => {
   expect(GARAK_COLORS.brandNavy).toBe('#1A1C2D');
@@ -25,4 +33,42 @@ test('keeps product-constrained Figma elements explicit', () => {
   expect(
     FIGMA_IMPLEMENTATION_MAP.find((item) => item.figmaName === '로그인')?.constraint,
   ).toContain('첫 실행 관문 아님');
+});
+
+test('uses the Figma login button geometry for S23 auth actions', () => {
+  expect(GARAK_AUTH_BUTTON_LAYOUT).toEqual({
+    buttonHeight: 60,
+    buttonWidth: 346,
+    cornerRadius: 30,
+    gap: 15,
+    googleIconSize: 24,
+  });
+});
+
+test('maps the three onboarding logo SVGs to the documented brand surfaces', () => {
+  expect(GARAK_ONBOARDING_LOGOS).toEqual([
+    {
+      fileName: 'logo1.svg',
+      backgroundColor: GARAK_COLORS.surfaceCanvas,
+      logoColor: GARAK_COLORS.brandRed,
+    },
+    {
+      fileName: 'logo2.svg',
+      backgroundColor: GARAK_COLORS.brandNavy,
+      logoColor: GARAK_COLORS.brandAmber,
+    },
+    {
+      fileName: 'logo3.svg',
+      backgroundColor: GARAK_COLORS.brandRed,
+      logoColor: GARAK_COLORS.surfaceCanvas,
+    },
+  ]);
+});
+
+test('ships the three onboarding logo SVG assets', () => {
+  expect(GARAK_ONBOARDING_LOGOS.map(({ fileName }) => existsSync(resolve(brandAssetsDir, fileName)))).toEqual([
+    true,
+    true,
+    true,
+  ]);
 });

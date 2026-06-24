@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { InstrumentId } from '../studio/studioTypes';
 import { GARAK_COLORS, GARAK_LAYOUT, GARAK_RADIUS } from './garakDesignSystem';
+import { GarakLogo } from './GarakLogo';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { getInstrumentName } from './productFixtures';
 
@@ -20,12 +21,7 @@ type ButtonTone = 'navy' | 'red' | 'amber' | 'light' | 'outline';
 export function GarakWordmark({ small = false }: { small?: boolean }) {
   return (
     <View style={styles.wordmarkWrap}>
-      <Image
-        accessibilityLabel="GARAK"
-        resizeMode="contain"
-        source={GARAK_SCREEN_ASSETS.brand.wordmark}
-        style={[styles.wordmarkImage, small ? styles.wordmarkImageSmall : undefined]}
-      />
+      <GarakLogo width={small ? 101 : 112} />
     </View>
   );
 }

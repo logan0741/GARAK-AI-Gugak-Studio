@@ -34,6 +34,32 @@ export const GARAK_LAYOUT = {
   headerIconSize: 34,
 } as const;
 
+export const GARAK_AUTH_BUTTON_LAYOUT = {
+  buttonHeight: 60,
+  buttonWidth: 346,
+  cornerRadius: 30,
+  gap: 15,
+  googleIconSize: 24,
+} as const;
+
+export const GARAK_ONBOARDING_LOGOS = [
+  {
+    fileName: 'logo1.svg',
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    logoColor: GARAK_COLORS.brandRed,
+  },
+  {
+    fileName: 'logo2.svg',
+    backgroundColor: GARAK_COLORS.brandNavy,
+    logoColor: GARAK_COLORS.brandAmber,
+  },
+  {
+    fileName: 'logo3.svg',
+    backgroundColor: GARAK_COLORS.brandRed,
+    logoColor: GARAK_COLORS.surfaceCanvas,
+  },
+] as const;
+
 export type FigmaImplementationStatus = 'implemented' | 'adapted' | 'deferred' | 'excluded';
 
 export type FigmaImplementationMapItem = {
