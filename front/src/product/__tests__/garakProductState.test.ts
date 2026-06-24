@@ -527,6 +527,78 @@ test('uses the S07 playhead beat when adding new instrument and accompaniment tr
   });
 });
 
+test('edits S07 work track mix controls without leaving the editor', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'saveCurrentWork' });
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
+  state = applyProductAction(state, {
+    type: 'addAccompanimentTrack',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.7,
+  });
+
+  state = applyProductAction(state, {
+    type: 'adjustWorkTrackVolume',
+    trackId: 'track-1',
+    delta: -0.25,
+  });
+  state = applyProductAction(state, { type: 'toggleWorkTrackMute', trackId: 'track-1' });
+  state = applyProductAction(state, { type: 'toggleWorkTrackSolo', trackId: 'track-2' });
+  state = applyProductAction(state, { type: 'deleteWorkTrack', trackId: 'track-2' });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.workSaveStatus).toBeUndefined();
+  expect(state.library.works[0].tracks).toHaveLength(1);
+  expect(state.library.works[0].tracks[0]).toMatchObject({
+    id: 'track-1',
+    volume: 0.75,
+    mute: true,
+    solo: false,
+  });
+});
+
+test('keeps S07 work track edits no-op when they would not change the work', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'saveCurrentWork' });
+
+  const savedWork = state.library.works[0];
+
+  state = applyProductAction(state, {
+    type: 'adjustWorkTrackVolume',
+    trackId: 'track-1',
+    delta: 0.1,
+  });
+  state = applyProductAction(state, { type: 'deleteWorkTrack', trackId: 'track-1' });
+
+  expect(state.workSaveStatus).toBe('saved');
+  expect(state.library.works[0]).toBe(savedWork);
+  expect(state.library.works[0].tracks).toHaveLength(1);
+  expect(state.library.works[0].tracks[0]).toMatchObject({
+    id: 'track-1',
+    volume: 1,
+  });
+});
+
 test('does not add an S09 instrument track until a take has recorded events', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

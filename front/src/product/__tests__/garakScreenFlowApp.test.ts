@@ -28,11 +28,12 @@ test('uses the completed free-creation preview with live work and jangdan data',
   expect(source).toContain('freeCreationCompletedTitleStrong');
   expect(source).toContain('미리듣기');
   expect(source).toContain('getFreeCreationCompletedPreviewModel');
+  expect(source).toContain('const mixEditorModel = getFreeCreationMixEditorModel(state);');
   expect(source).toContain('previewModel.playerTitle');
-  expect(source).toContain('previewModel.accompanimentTrackLabel');
+  expect(source).toContain('trackControls={mixEditorModel.trackControls}');
+  expect(source).toContain('freeCreationCompletedTrackControlScroller');
   expect(source).toContain('previewModel.saveAction');
   expect(source).toContain('previewModel.saveStatusLabel');
-  expect(source).toContain('freeCreationCompletedAccompanimentButton');
   expect(source).toContain("dispatch(previewModel.saveAction)");
 });
 
@@ -268,6 +269,15 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
   expect(source).toContain('mixEditorModel.playheadBeatLabel');
   expect(source).toContain('dispatch(mixEditorModel.decreasePlayheadAction)');
   expect(source).toContain('dispatch(mixEditorModel.increasePlayheadAction)');
+  expect(source).toContain('TrackControlStack trackControls={mixEditorModel.trackControls}');
+  expect(source).toContain('dispatch(trackControl.decreaseVolumeAction)');
+  expect(source).toContain('dispatch(trackControl.increaseVolumeAction)');
+  expect(source).toContain('dispatch(trackControl.toggleMuteAction)');
+  expect(source).toContain('dispatch(trackControl.toggleSoloAction)');
+  expect(source).toContain('dispatch(trackControl.deleteAction)');
+  expect(source).toContain('disabled={!trackControl.canDelete}');
+  expect(source).toContain('TrackControlStack');
+  expect(source).toContain('freeCreationCompletedTrackControlScroller');
   expect(source).toContain('Mix');
   expect(source).toContain('작업 저장');
   expect(source).toContain('Save & Share project');

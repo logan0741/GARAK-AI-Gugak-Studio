@@ -1,4 +1,13 @@
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  type StyleProp,
+  type ViewStyle,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import type { InstrumentId, Track } from '../studio/studioTypes';
 import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
@@ -34,7 +43,10 @@ import {
   type JangdanPresetPanelMode,
 } from './jangdanPresetPanelModel';
 import { getFreeCreationCompletedPreviewModel } from './freeCreationCompletedPreviewModel';
-import { getFreeCreationMixEditorModel } from './freeCreationMixEditorModel';
+import {
+  getFreeCreationMixEditorModel,
+  type FreeCreationTrackControlModel,
+} from './freeCreationMixEditorModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
@@ -498,6 +510,8 @@ export function TrackLayerEditorContent({
           <Text style={styles.freeCreationMixButtonText}>Mix</Text>
         </Pressable>
 
+        <TrackControlStack trackControls={mixEditorModel.trackControls} dispatch={dispatch} />
+
         {mixEditorModel.saveAction ? (
           <Pressable
             accessibilityRole="button"
@@ -531,6 +545,7 @@ function FreeCreationCompletedPreviewContent({
   dispatch: ProductDispatch;
 }) {
   const previewModel = getFreeCreationCompletedPreviewModel(state);
+  const mixEditorModel = getFreeCreationMixEditorModel(state);
 
   return (
     <View style={styles.freeCreationCompletedPreviewScreen}>
@@ -569,27 +584,11 @@ function FreeCreationCompletedPreviewContent({
           <Text style={styles.freeCreationCompletedCopyStrong}>나만의 가락</Text>을 완성해요.
         </Text>
 
-        <View
-          accessible
-          accessibilityLabel={previewModel.accompanimentTrackLabel}
-          style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedAccompanimentButton]}
-        >
-          <Text style={styles.freeCreationCompletedTrackButtonText}>{previewModel.accompanimentTrackLabel}</Text>
-        </View>
-        <View
-          accessible
-          accessibilityLabel={previewModel.secondInstrumentTrackLabel}
-          style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedSecondTrackButton]}
-        >
-          <Text style={styles.freeCreationCompletedTrackButtonText}>{previewModel.secondInstrumentTrackLabel}</Text>
-        </View>
-        <View
-          accessible
-          accessibilityLabel={previewModel.firstInstrumentTrackLabel}
-          style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedFirstTrackButton]}
-        >
-          <Text style={styles.freeCreationCompletedTrackButtonText}>{previewModel.firstInstrumentTrackLabel}</Text>
-        </View>
+        <TrackControlStack
+          trackControls={mixEditorModel.trackControls}
+          dispatch={dispatch}
+          style={styles.freeCreationCompletedTrackControlScroller}
+        />
 
         {previewModel.saveAction ? (
           <Pressable
@@ -612,6 +611,110 @@ function FreeCreationCompletedPreviewContent({
         </Pressable>
       </View>
     </View>
+  );
+}
+
+function TrackControlStack({
+  trackControls,
+  dispatch,
+  style,
+}: {
+  trackControls: FreeCreationTrackControlModel[];
+  dispatch: ProductDispatch;
+  style?: StyleProp<ViewStyle>;
+}) {
+  if (trackControls.length === 0) {
+    return null;
+  }
+
+  return (
+    <ScrollView
+      style={[styles.freeCreationTrackControlScroller, style]}
+      contentContainerStyle={styles.freeCreationTrackControlStack}
+      nestedScrollEnabled
+      showsVerticalScrollIndicator={false}
+    >
+      {trackControls.map((trackControl) => (
+        <View
+          key={trackControl.trackId}
+          style={styles.freeCreationTrackControlRow}
+          accessible
+          accessibilityLabel={`${trackControl.label} ${trackControl.volumeLabel}`}
+        >
+          <Text numberOfLines={1} style={styles.freeCreationTrackControlLabel}>
+            {trackControl.label}
+          </Text>
+          <Pressable
+            accessibilityLabel={`${trackControl.label} 볼륨 낮추기`}
+            accessibilityRole="button"
+            onPress={() => dispatch(trackControl.decreaseVolumeAction)}
+            style={styles.freeCreationTrackControlIconButton}
+          >
+            <Text style={styles.freeCreationTrackControlIconText}>-</Text>
+          </Pressable>
+          <Text style={styles.freeCreationTrackControlVolume}>{trackControl.volumeLabel}</Text>
+          <Pressable
+            accessibilityLabel={`${trackControl.label} 볼륨 높이기`}
+            accessibilityRole="button"
+            onPress={() => dispatch(trackControl.increaseVolumeAction)}
+            style={styles.freeCreationTrackControlIconButton}
+          >
+            <Text style={styles.freeCreationTrackControlIconText}>+</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={`${trackControl.label} 음소거`}
+            accessibilityRole="button"
+            accessibilityState={{ selected: trackControl.isMuted }}
+            onPress={() => dispatch(trackControl.toggleMuteAction)}
+            style={[
+              styles.freeCreationTrackControlToggle,
+              trackControl.isMuted ? styles.freeCreationTrackControlToggleActive : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.freeCreationTrackControlToggleText,
+                trackControl.isMuted ? styles.freeCreationTrackControlToggleTextActive : undefined,
+              ]}
+            >
+              M
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={`${trackControl.label} 솔로`}
+            accessibilityRole="button"
+            accessibilityState={{ selected: trackControl.isSoloed }}
+            onPress={() => dispatch(trackControl.toggleSoloAction)}
+            style={[
+              styles.freeCreationTrackControlToggle,
+              trackControl.isSoloed ? styles.freeCreationTrackControlToggleActive : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.freeCreationTrackControlToggleText,
+                trackControl.isSoloed ? styles.freeCreationTrackControlToggleTextActive : undefined,
+              ]}
+            >
+              S
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={`${trackControl.label} 삭제`}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !trackControl.canDelete }}
+            disabled={!trackControl.canDelete}
+            onPress={() => dispatch(trackControl.deleteAction)}
+            style={[
+              styles.freeCreationTrackControlIconButton,
+              !trackControl.canDelete ? styles.freeCreationTrackControlIconButtonDisabled : undefined,
+            ]}
+          >
+            <Text style={styles.freeCreationTrackControlIconText}>X</Text>
+          </Pressable>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
@@ -1656,35 +1759,6 @@ const styles = StyleSheet.create({
     color: '#656565',
     fontWeight: '500',
   },
-  freeCreationCompletedTrackButton: {
-    alignItems: 'center',
-    borderRadius: 126,
-    height: 59,
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-  },
-  freeCreationCompletedAccompanimentButton: {
-    backgroundColor: GARAK_COLORS.brandNavy,
-    top: 156,
-  },
-  freeCreationCompletedSecondTrackButton: {
-    backgroundColor: GARAK_COLORS.brandRed,
-    top: 233,
-  },
-  freeCreationCompletedFirstTrackButton: {
-    backgroundColor: GARAK_COLORS.brandAmber,
-    top: 310,
-  },
-  freeCreationCompletedTrackButtonText: {
-    color: GARAK_COLORS.surfaceCard,
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.7,
-    lineHeight: 20,
-    textTransform: 'uppercase',
-  },
   freeCreationCompletedSaveButton: {
     alignItems: 'center',
     borderColor: 'rgba(31,32,46,0.24)',
@@ -1731,6 +1805,90 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0,
     lineHeight: 32,
+  },
+  freeCreationTrackControlScroller: {
+    left: 27,
+    maxHeight: 106,
+    position: 'absolute',
+    right: 28,
+    top: 224,
+  },
+  freeCreationCompletedTrackControlScroller: {
+    left: 0,
+    maxHeight: 151,
+    right: 0,
+    top: 156,
+  },
+  freeCreationTrackControlStack: {
+    gap: 8,
+    paddingBottom: 2,
+  },
+  freeCreationTrackControlRow: {
+    alignItems: 'center',
+    borderColor: 'rgba(31,32,46,0.14)',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    height: 45,
+    paddingHorizontal: 10,
+  },
+  freeCreationTrackControlLabel: {
+    color: GARAK_COLORS.textSecondary,
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0,
+    minWidth: 0,
+  },
+  freeCreationTrackControlIconButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceSoft,
+    borderRadius: 12,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  freeCreationTrackControlIconButtonDisabled: {
+    opacity: 0.35,
+  },
+  freeCreationTrackControlIconText: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 16,
+  },
+  freeCreationTrackControlVolume: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0,
+    minWidth: 32,
+    textAlign: 'center',
+  },
+  freeCreationTrackControlToggle: {
+    alignItems: 'center',
+    borderColor: 'rgba(31,32,46,0.18)',
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  freeCreationTrackControlToggleActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderColor: GARAK_COLORS.brandNavy,
+  },
+  freeCreationTrackControlToggleText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 14,
+  },
+  freeCreationTrackControlToggleTextActive: {
+    color: GARAK_COLORS.surfaceCard,
   },
   freeCreationSaveButton: {
     alignItems: 'center',

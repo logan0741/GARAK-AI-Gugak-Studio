@@ -18,6 +18,7 @@ import {
   JangdanPresetId,
   PracticeResult,
   RecordingSetup,
+  Track,
   Work,
 } from '../studio/studioTypes';
 import {
@@ -138,6 +139,10 @@ export type GarakProductAction =
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | { type: 'setWorkPlayheadBeat'; beat: number }
+  | { type: 'adjustWorkTrackVolume'; trackId: string; delta: number }
+  | { type: 'toggleWorkTrackMute'; trackId: string }
+  | { type: 'toggleWorkTrackSolo'; trackId: string }
+  | { type: 'deleteWorkTrack'; trackId: string }
   | { type: 'openLayerEditor' }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
@@ -374,6 +379,23 @@ export function applyProductAction(
         ...state,
         workPlayheadBeat: normalizeWorkPlayheadBeat(action.beat),
       };
+    case 'adjustWorkTrackVolume':
+      return updateCurrentWorkTrack(state, action.trackId, (track) => {
+        const volume = clampTrackVolume(track.volume + action.delta);
+        return volume === track.volume ? track : { ...track, volume };
+      });
+    case 'toggleWorkTrackMute':
+      return updateCurrentWorkTrack(state, action.trackId, (track) => ({
+        ...track,
+        mute: !track.mute,
+      }));
+    case 'toggleWorkTrackSolo':
+      return updateCurrentWorkTrack(state, action.trackId, (track) => ({
+        ...track,
+        solo: !track.solo,
+      }));
+    case 'deleteWorkTrack':
+      return deleteCurrentWorkTrack(state, action.trackId);
     case 'openLayerEditor':
       return openLayerEditor(state);
     case 'openLiveJangdanGuide':
@@ -1045,6 +1067,73 @@ function applyAccompanimentTrack(
     ...nextState,
     previewingJangdanPreset: undefined,
   };
+}
+
+function updateCurrentWorkTrack(
+  state: GarakProductState,
+  trackId: string,
+  updateTrack: (track: Track) => Track,
+): GarakProductState {
+  const currentWork = findCurrentWork(state);
+  if (currentWork === undefined) {
+    return state;
+  }
+
+  let changed = false;
+  const tracks = currentWork.tracks.map((track) => {
+    if (track.id !== trackId) {
+      return track;
+    }
+
+    const nextTrack = updateTrack(track);
+    changed = nextTrack !== track;
+    return nextTrack;
+  });
+
+  if (!changed) {
+    return state;
+  }
+
+  return replaceCurrentWork(
+    state,
+    {
+      ...currentWork,
+      updatedAt: state.now(),
+      tracks,
+    },
+    state.counters,
+    state.screenFlow,
+  );
+}
+
+function deleteCurrentWorkTrack(state: GarakProductState, trackId: string): GarakProductState {
+  const currentWork = findCurrentWork(state);
+  if (
+    currentWork === undefined ||
+    currentWork.tracks.length <= 1 ||
+    !currentWork.tracks.some((track) => track.id === trackId)
+  ) {
+    return state;
+  }
+
+  return replaceCurrentWork(
+    state,
+    {
+      ...currentWork,
+      updatedAt: state.now(),
+      tracks: currentWork.tracks.filter((track) => track.id !== trackId),
+    },
+    state.counters,
+    state.screenFlow,
+  );
+}
+
+function clampTrackVolume(volume: number): number {
+  if (!Number.isFinite(volume)) {
+    return 0;
+  }
+
+  return Math.min(1, Math.max(0, Math.round(volume * 100) / 100));
 }
 
 function exportCurrentWork(state: GarakProductState): GarakProductState {
