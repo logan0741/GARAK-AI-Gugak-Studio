@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vitest';
@@ -11,6 +12,12 @@ import {
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const productAssetsDir = resolve(testDir, '../../../assets/product');
+
+const getProductAssetSha256 = (assetName: string) =>
+  createHash('sha256')
+    .update(readFileSync(resolve(productAssetsDir, assetName)))
+    .digest('hex')
+    .toUpperCase();
 
 test('uses a landscape non-scroll frame for performance-focused screens', () => {
   expect(PERFORMANCE_LANDSCAPE_SCREEN_IDS).toEqual(['S05', 'S09', 'S15']);
@@ -32,7 +39,12 @@ test('keeps setup, editing, guide, and library screens in the portrait scroll fr
 });
 
 test('ships the Figma janggu stage bitmap for the landscape free-play surface', () => {
-  expect(existsSync(resolve(productAssetsDir, 'creation-free-play-janggu-stage.png'))).toBe(true);
+  const assetName = 'creation-free-play-janggu-stage.png';
+
+  expect(existsSync(resolve(productAssetsDir, assetName))).toBe(true);
+  expect(getProductAssetSha256(assetName)).toBe(
+    '934C2B42CA983BD3C209613958F0A21DD9D57E2CE7426931F321AB43B467FF2A',
+  );
 });
 
 test('ships the Figma gayageum stage bitmap for the landscape free-play surface', () => {
