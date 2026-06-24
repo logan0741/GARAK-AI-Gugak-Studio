@@ -62,6 +62,13 @@ test('connects the S23 Google login button to the login sync action', () => {
   expect(source).not.toContain("accessibilityLabel=\"Google로 로그인\"\n          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
 });
 
+test('connects S22 settings actions to language and library management', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
+
+  expect(source).toMatch(/label="언어 변경"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S02' \}\)\}/);
+  expect(source).toMatch(/label="보관함 관리"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S18' \}\)\}/);
+});
+
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 

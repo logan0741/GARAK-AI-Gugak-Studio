@@ -100,6 +100,16 @@ export function SettingsContent({
         <SettingRow label="로컬 작업" value={`${state.library.works.length}개`} />
         <SettingRow label="언어" value="한국어" />
       </View>
+      <View style={styles.settingsActionRow}>
+        <SettingsActionButton
+          label="언어 변경"
+          onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
+        />
+        <SettingsActionButton
+          label="보관함 관리"
+          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
+        />
+      </View>
       <PrimaryPillButton
         label="로그인하고 내 곡 불러오기"
         onPress={() => dispatch({ type: 'loginAndLoadMySongs' })}
@@ -206,6 +216,18 @@ function SettingRow({ label, value }: { label: string; value: string }) {
       <Text style={styles.settingLabel}>{label}</Text>
       <Text style={styles.settingValue}>{value}</Text>
     </View>
+  );
+}
+
+function SettingsActionButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.settingsActionButton, pressed ? styles.pressedCapsuleButton : undefined]}
+    >
+      <Text style={styles.settingsActionText}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -361,6 +383,27 @@ const styles = StyleSheet.create({
     color: GARAK_COLORS.textSecondary,
     fontSize: 13,
     fontWeight: '700',
+  },
+  settingsActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  settingsActionButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: GARAK_COLORS.lineSoft,
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 46,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    ...garakCardShadow,
+  },
+  settingsActionText: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
   },
   loginHero: {
     alignItems: 'center',
