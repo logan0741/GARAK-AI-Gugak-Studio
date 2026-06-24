@@ -287,9 +287,11 @@ test('connects shared detail remix and save buttons to library data actions', ()
   expect(source).toContain("type: 'openSharedRecordingDetail'");
   expect(source).toContain('recordingId: model.hero.recordingId');
   expect(source).toContain('recordingId: card.recordingId');
+  expect(source).toContain('firstRecentCard.recordingId');
   expect(source).toContain("type: 'remixSharedRecording'");
   expect(source).toContain("type: 'saveSharedRecording'");
   expect(source).toContain('state.selectedSharedRecordingId');
+  expect(source).not.toContain("type: 'navigate', target: 'S21'");
   expect(source).not.toContain("label=\"리믹스\" tone=\"amber\" onPress={() => dispatch({ type: 'navigate', target: 'S07' })}");
   expect(source).not.toContain("label=\"저장\" onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
 });

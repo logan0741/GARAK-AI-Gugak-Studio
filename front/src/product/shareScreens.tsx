@@ -103,6 +103,7 @@ export function ShareFeedContent({
 }) {
   const model = getShareFeedViewModel(state);
   const sharePrepareAction = getSharePrepareAction(state);
+  const firstRecentCard = model.recentCards[0];
 
   return (
     <View style={styles.shareFeedStack}>
@@ -197,7 +198,16 @@ export function ShareFeedContent({
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => dispatch({ type: 'navigate', target: 'S21' })}
+        accessibilityState={{ disabled: firstRecentCard === undefined }}
+        disabled={firstRecentCard === undefined}
+        onPress={() => {
+          if (firstRecentCard !== undefined) {
+            dispatch({
+              type: 'openSharedRecordingDetail',
+              recordingId: firstRecentCard.recordingId,
+            });
+          }
+        }}
         style={styles.shareRecentHeaderRow}
       >
         <Text style={styles.sectionTitle}>최근 재생한 GARAK</Text>
