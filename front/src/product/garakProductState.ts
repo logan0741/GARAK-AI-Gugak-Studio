@@ -23,6 +23,7 @@ import {
   DEFAULT_FREE_CREATION_INSTRUMENT,
   FEATURED_SHARED_RECORDING,
   GARAK_BRAND,
+  PRACTICE_SONGS,
   getInstrumentName,
   getPracticeSongTitle,
   PracticeSong,
@@ -50,6 +51,18 @@ export type PendingFreePlayTake = {
 
 export type FreePlayNotice = 'missingTake';
 
+export type PracticeAttemptStatus = 'ready' | 'playing' | 'paused' | 'completed';
+
+export type PracticeAttempt = {
+  songId: PracticeSong['id'];
+  instrument: InstrumentId;
+  status: PracticeAttemptStatus;
+  startedAt?: string;
+  completedAt?: string;
+  inputEvents: PerformanceEvent[];
+  timingErrorsMs: number[];
+};
+
 export type GarakProductState = {
   screenFlow: ScreenFlowState;
   selectedMode: ScreenFlowMode;
@@ -59,6 +72,7 @@ export type GarakProductState = {
   selectedPlayerItem?: ProductPlayerSelection;
   pendingFreePlayTake?: PendingFreePlayTake;
   freePlayNotice?: FreePlayNotice;
+  practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
     bpm: number;
@@ -93,6 +107,9 @@ export type GarakProductAction =
   | { type: 'exportCurrentWork' }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeInstrument'; instrument: InstrumentId }
+  | { type: 'startPractice' }
+  | { type: 'pausePractice' }
+  | { type: 'restartPractice' }
   | { type: 'finishPractice' }
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
@@ -174,6 +191,10 @@ export function applyProductAction(
         }),
       };
     case 'next':
+      if (state.screenFlow.currentScreen === 'S14') {
+        return startPracticePerformanceScreen(state);
+      }
+
       return {
         ...state,
         screenFlow: routeProductNext(state),
@@ -182,6 +203,7 @@ export function applyProductAction(
       return {
         ...state,
         selectedInstrument: action.instrument,
+        practiceAttempt: undefined,
       };
     case 'startWithDefaults':
       return {
@@ -242,18 +264,23 @@ export function applyProductAction(
       return {
         ...state,
         selectedPracticeSongId: action.songId,
+        practiceAttempt: undefined,
         screenFlow: pushTarget(state.screenFlow, 'S14'),
       };
     case 'selectPracticeInstrument':
       return {
         ...state,
         selectedInstrument: action.instrument,
+        practiceAttempt: undefined,
       };
+    case 'startPractice':
+      return startPracticeAttempt(state);
+    case 'pausePractice':
+      return pausePracticeAttempt(state);
+    case 'restartPractice':
+      return restartPracticeAttempt(state);
     case 'finishPractice':
-      return {
-        ...state,
-        screenFlow: pushTarget(state.screenFlow, 'S16'),
-      };
+      return finishPractice(state);
     case 'savePracticeResult':
       return savePracticeResult(state);
     case 'sharePracticeResult':
@@ -280,6 +307,17 @@ export function applyProductAction(
         screenFlow: pushTarget(state.screenFlow, 'S18'),
       };
     case 'navigate':
+      if (action.target === 'S15') {
+        return {
+          ...state,
+          practiceAttempt: createReadyPracticeAttempt(state),
+          screenFlow: transitionScreenFlow(state.screenFlow, {
+            type: 'navigate',
+            target: action.target,
+          }),
+        };
+      }
+
       return {
         ...state,
         screenFlow: transitionScreenFlow(state.screenFlow, {
@@ -370,11 +408,13 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '대금',
       ]);
     case 'S15':
-      return summary(screenId, '따라하기 연주', selectedSongLabel(state), '가이드 하이라이트에 맞춰 연주해요.', [
-        '시작',
-        '완주',
-        '중단',
-      ]);
+      return summary(
+        screenId,
+        '따라하기 연주',
+        selectedSongLabel(state),
+        practiceAttemptDescription(state),
+        ['시작', '일시정지', '완주', '다시 시작'],
+      );
     case 'S16':
       return summary(screenId, '결과 / AI 피드백', selectedSongLabel(state), '정확도와 로컬 피드백을 확인해요.', [
         '다시 연주',
@@ -497,6 +537,80 @@ function routeProductNext(state: GarakProductState): ScreenFlowState {
   }
 
   return state.screenFlow;
+}
+
+function startPracticePerformanceScreen(state: GarakProductState): GarakProductState {
+  return {
+    ...state,
+    practiceAttempt: createReadyPracticeAttempt(state),
+    screenFlow: pushTarget(state.screenFlow, 'S15'),
+  };
+}
+
+function createReadyPracticeAttempt(state: GarakProductState): PracticeAttempt {
+  const songId = state.selectedPracticeSongId ?? 'arirang';
+  const song = PRACTICE_SONGS.find((item) => item.id === songId) ?? PRACTICE_SONGS[0];
+
+  return {
+    songId,
+    instrument: state.selectedInstrument ?? song.recommendedInstrument,
+    status: 'ready',
+    inputEvents: [],
+    timingErrorsMs: [],
+  };
+}
+
+function startPracticeAttempt(state: GarakProductState): GarakProductState {
+  const attempt = state.practiceAttempt ?? createReadyPracticeAttempt(state);
+
+  return {
+    ...state,
+    practiceAttempt: {
+      ...attempt,
+      status: 'playing',
+      startedAt: attempt.startedAt ?? state.now(),
+    },
+  };
+}
+
+function pausePracticeAttempt(state: GarakProductState): GarakProductState {
+  if (state.practiceAttempt?.status !== 'playing') {
+    return state;
+  }
+
+  return {
+    ...state,
+    practiceAttempt: {
+      ...state.practiceAttempt,
+      status: 'paused',
+    },
+  };
+}
+
+function restartPracticeAttempt(state: GarakProductState): GarakProductState {
+  return {
+    ...state,
+    practiceAttempt: {
+      ...createReadyPracticeAttempt(state),
+      status: 'playing',
+      startedAt: state.now(),
+    },
+  };
+}
+
+function finishPractice(state: GarakProductState): GarakProductState {
+  const attempt = state.practiceAttempt ?? createReadyPracticeAttempt(state);
+
+  return {
+    ...state,
+    practiceAttempt: {
+      ...attempt,
+      status: 'completed',
+      startedAt: attempt.startedAt ?? state.now(),
+      completedAt: state.now(),
+    },
+    screenFlow: pushTarget(state.screenFlow, 'S16'),
+  };
 }
 
 function applyInstrumentTrack(
@@ -859,6 +973,20 @@ function selectedSongLabel(state: GarakProductState): string {
   return state.selectedPracticeSongId === undefined
     ? '민요'
     : getPracticeSongTitle(state.selectedPracticeSongId);
+}
+
+function practiceAttemptDescription(state: GarakProductState): string {
+  switch (state.practiceAttempt?.status) {
+    case 'playing':
+      return '가이드 하이라이트에 맞춰 연주를 기록하고 있어요.';
+    case 'paused':
+      return '연습이 일시정지되었어요. 다시 시작하면 처음부터 기록합니다.';
+    case 'completed':
+      return '완주 기록이 준비되었어요. 결과 화면에서 피드백을 확인해요.';
+    case 'ready':
+    default:
+      return '가이드 하이라이트에 맞춰 연주를 시작해요.';
+  }
 }
 
 function currentWorkTitle(state: GarakProductState): string {

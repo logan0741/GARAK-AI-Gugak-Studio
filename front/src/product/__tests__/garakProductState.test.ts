@@ -265,6 +265,73 @@ test('keeps S14 on instrument selection until Next starts practice performance',
   expect(state.screenFlow.currentScreen).toBe('S15');
 });
 
+test('starts S15 with a ready practice attempt for the selected song and instrument', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'practice' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'arirang' });
+  state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'next' });
+
+  expect(state.screenFlow.currentScreen).toBe('S15');
+  expect(state.practiceAttempt).toEqual({
+    songId: 'arirang',
+    instrument: 'daegeum',
+    status: 'ready',
+    inputEvents: [],
+    timingErrorsMs: [],
+  });
+});
+
+test('records S15 practice start, pause, restart, and completion without creating a free-creation work', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'practice' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'doraji' });
+  state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+
+  state = applyProductAction(state, { type: 'startPractice' });
+  expect(state.practiceAttempt).toMatchObject({
+    songId: 'doraji',
+    instrument: 'janggu',
+    status: 'playing',
+    startedAt: '2026-06-18T00:00:00.000Z',
+  });
+  expect(state.screenFlow.currentScreen).toBe('S15');
+
+  state = applyProductAction(state, { type: 'pausePractice' });
+  expect(state.practiceAttempt?.status).toBe('paused');
+  expect(state.screenFlow.currentScreen).toBe('S15');
+
+  state = applyProductAction(state, { type: 'restartPractice' });
+  expect(state.practiceAttempt).toMatchObject({
+    songId: 'doraji',
+    instrument: 'janggu',
+    status: 'playing',
+    startedAt: '2026-06-18T00:00:00.000Z',
+    inputEvents: [],
+    timingErrorsMs: [],
+  });
+
+  state = applyProductAction(state, { type: 'finishPractice' });
+
+  expect(state.screenFlow.currentScreen).toBe('S16');
+  expect(state.practiceAttempt).toMatchObject({
+    songId: 'doraji',
+    instrument: 'janggu',
+    status: 'completed',
+    completedAt: '2026-06-18T00:00:00.000Z',
+  });
+  expect(state.library.works).toHaveLength(0);
+});
+
 test('routes settings login CTA to S23 while preserving local library state', () => {
   let state = createInitialGarakProductState();
 

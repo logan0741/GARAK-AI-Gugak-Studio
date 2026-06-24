@@ -98,6 +98,35 @@ export function PracticePerformanceContent({
   const song = PRACTICE_SONGS.find((item) => item.id === state.selectedPracticeSongId) ?? PRACTICE_SONGS[0];
   const instrument = state.selectedInstrument ?? song.recommendedInstrument;
   const isLandscapeFrame = frameMode === 'landscape';
+  const practiceAttempt = state.practiceAttempt;
+  const practiceStatus = practiceAttempt?.status ?? 'ready';
+  const practiceControlLabel =
+    practiceStatus === 'playing' ? '일시정지' : practiceStatus === 'paused' ? '다시 시작' : '시작';
+  const practiceStatusText =
+    practiceStatus === 'playing'
+      ? '연습 기록 중'
+      : practiceStatus === 'paused'
+        ? '일시정지'
+        : practiceStatus === 'completed'
+          ? '완주 완료'
+          : '가이드 준비 완료';
+  const practiceGuideText =
+    practiceStatus === 'paused'
+      ? '다시 시작하면 처음부터 기록합니다.'
+      : `현재 위치 2/6 · 다음 입력 ${getInstrumentName(instrument)}`;
+  const handlePrimaryPracticeAction = () => {
+    if (practiceStatus === 'playing') {
+      dispatch({ type: 'pausePractice' });
+      return;
+    }
+
+    if (practiceStatus === 'paused') {
+      dispatch({ type: 'restartPractice' });
+      return;
+    }
+
+    dispatch({ type: 'startPractice' });
+  };
 
   return (
     <View style={[styles.stack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
@@ -112,7 +141,22 @@ export function PracticePerformanceContent({
           ))}
         </View>
       </View>
-      <PrimaryPillButton label="완주" onPress={() => dispatch({ type: 'finishPractice' })} />
+      <View style={styles.practiceStatusPanel}>
+        <Text style={styles.practiceStatusText}>{practiceStatusText}</Text>
+        <Text style={styles.bodyText}>{practiceGuideText}</Text>
+      </View>
+      <View style={[styles.buttonRow, styles.practiceControlRow]}>
+        <PrimaryPillButton
+          label={practiceControlLabel}
+          onPress={handlePrimaryPracticeAction}
+          style={styles.practiceActionButton}
+        />
+        <SecondaryPillButton
+          label="완주"
+          onPress={() => dispatch({ type: 'finishPractice' })}
+          style={styles.practiceActionButton}
+        />
+      </View>
     </View>
   );
 }
@@ -269,6 +313,25 @@ const styles = StyleSheet.create({
   },
   guideCellActive: {
     backgroundColor: GARAK_COLORS.brandAmber,
+  },
+  practiceStatusPanel: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 18,
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  practiceStatusText: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  practiceControlRow: {
+    flexWrap: 'wrap',
+  },
+  practiceActionButton: {
+    flexBasis: '47%',
+    flexGrow: 1,
   },
   resultPanel: {
     alignItems: 'center',

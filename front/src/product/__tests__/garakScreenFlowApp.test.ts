@@ -181,6 +181,19 @@ test('keeps S14 instrument selection separate from the Next action', () => {
   expect(selectInstrumentReducerCase).not.toContain("pushTarget(state.screenFlow, 'S15')");
 });
 
+test('connects S15 practice controls to practice attempt state actions', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/practiceScreens.tsx'), 'utf8');
+
+  expect(source).toContain('practiceAttempt');
+  expect(source).toMatch(/label=\{practiceControlLabel\}\s+onPress=\{handlePrimaryPracticeAction\}/);
+  expect(source).toContain("type: 'startPractice'");
+  expect(source).toContain("type: 'pausePractice'");
+  expect(source).toContain("type: 'restartPractice'");
+  expect(source).toContain("type: 'finishPractice'");
+  expect(source).toContain('일시정지');
+  expect(source).toContain('다시 시작');
+});
+
 test('connects shared detail remix and save buttons to library data actions', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 
