@@ -301,6 +301,14 @@ test('connects shared detail remix and save buttons to library data actions', ()
   expect(source).not.toContain("label=\"저장\" onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
 });
 
+test('keeps the share quick access tab active on S20', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+
+  expect(source).toContain(
+    '<QuickAccessNav\n          active="share"\n          dark\n          style={styles.shareQuickAccessOverlay}',
+  );
+});
+
 test('uses the Figma stacked track add flow for S08', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 

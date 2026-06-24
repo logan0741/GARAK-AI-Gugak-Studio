@@ -235,7 +235,7 @@ export function ShareFeedContent({
           ))}
         </ScrollView>
         <QuickAccessNav
-          active="library"
+          active="share"
           dark
           style={styles.shareQuickAccessOverlay}
           onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
