@@ -37,6 +37,13 @@ import {
   resolveInstrumentSettingValues,
   type InstrumentSettingValueMap,
 } from './instrumentSettingsConfig';
+import {
+  resolveInstrumentSampleStatuses,
+  type InstrumentSampleReadinessInput,
+  type InstrumentSampleStatus,
+} from './instrumentSampleReadiness';
+
+export type { InstrumentSampleStatus } from './instrumentSampleReadiness';
 
 export type AccountState = {
   status: 'guest' | 'loggedIn';
@@ -70,8 +77,6 @@ export type TrackAddNotice = 'importLocked';
 export type TrackAddSelection = 'instrument';
 
 export type InstrumentSelectNotice = 'futureInstrument';
-
-export type InstrumentSampleStatus = 'ready' | 'fallback' | 'downloadRequired';
 
 export type InstrumentSettingsNotice = 'sampleRequired';
 
@@ -234,7 +239,13 @@ export type ScreenSummary = {
   primaryCtas: string[];
 };
 
-export function createInitialGarakProductState(input: { now?: () => string } = {}): GarakProductState {
+export function createInitialGarakProductState(
+  input: {
+    now?: () => string;
+    sampleManifests?: InstrumentSampleReadinessInput['sampleManifests'];
+    sampleFallbackInstruments?: InstrumentSampleReadinessInput['fallbackInstruments'];
+  } = {},
+): GarakProductState {
   return {
     screenFlow: createInitialScreenFlowState(),
     selectedMode: 'freeCreation',
@@ -250,11 +261,10 @@ export function createInitialGarakProductState(input: { now?: () => string } = {
     libraryTab: 'works',
     librarySearchQuery: '',
     workPlayheadBeat: 1,
-    instrumentSampleStatuses: {
-      gayageum: 'ready',
-      janggu: 'ready',
-      daegeum: 'ready',
-    },
+    instrumentSampleStatuses: resolveInstrumentSampleStatuses({
+      sampleManifests: input.sampleManifests,
+      fallbackInstruments: input.sampleFallbackInstruments,
+    }),
     instrumentSettingSelections: {},
     counters: {
       work: 0,

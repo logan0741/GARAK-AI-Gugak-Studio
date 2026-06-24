@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test } from 'vitest';
+import {
+  PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
+  PRODUCT_SAMPLE_MANIFESTS,
+} from '../productSampleReadinessConfig';
+import { resolveInstrumentSampleStatuses } from '../instrumentSampleReadiness';
 
 test('does not render a mocked OS status bar in the app shell', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
@@ -8,6 +13,22 @@ test('does not render a mocked OS status bar in the app shell', () => {
   expect(source).not.toContain('9:41');
   expect(source).not.toContain('styles.statusBar');
   expect(source).not.toContain('homeIndicator');
+});
+
+test('wires bundled sample readiness into the product app entry point', () => {
+  const source = readFileSync(resolve(process.cwd(), 'app/index.tsx'), 'utf8');
+  const statuses = resolveInstrumentSampleStatuses({
+    sampleManifests: PRODUCT_SAMPLE_MANIFESTS,
+    fallbackInstruments: PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
+  });
+
+  expect(source).toContain('PRODUCT_SAMPLE_MANIFESTS');
+  expect(source).toContain('PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS');
+  expect(statuses).toEqual({
+    gayageum: 'ready',
+    janggu: 'fallback',
+    daegeum: 'fallback',
+  });
 });
 
 test('uses the Figma completed instrument stack for S08 after adding a track', () => {
@@ -167,6 +188,10 @@ test('connects S19 player playback to selected library item state', () => {
 
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const instrumentSelectSource = source.slice(
+    source.indexOf('export function InstrumentSelectContent'),
+    source.indexOf('export function InstrumentSettingsContent'),
+  );
 
   expect(source).toContain('연주 할');
   expect(source).toContain('악기');
@@ -179,6 +204,10 @@ test('uses the Figma instrument selection design for the free-creation instrumen
   expect(source).toContain('새로운 악기가 업데이트될 예정이에요');
   expect(source).toContain('NEXT');
   expect(source).not.toContain('연주 & 녹음');
+  expect(instrumentSelectSource).toContain('instrumentSelectSampleModel');
+  expect(instrumentSelectSource).toContain('instrumentSelectSampleModel.sampleStatusLabel');
+  expect(instrumentSelectSource).toContain('instrumentSelectSampleModel.sampleStatusDescription');
+  expect(instrumentSelectSource).toContain('styles.instrumentSelectSampleStatusRow');
 });
 
 test('uses the Figma performance preview design before entering free play', () => {

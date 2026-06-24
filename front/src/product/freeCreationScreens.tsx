@@ -131,6 +131,10 @@ export function InstrumentSelectContent({
   const { height } = useWindowDimensions();
   const isCompactHeight = height < 820;
   const selectedInstrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const instrumentSelectSampleModel = getInstrumentSettingsModel({
+    ...state,
+    selectedInstrument,
+  });
 
   function confirmSelectionAndContinue() {
     if (state.selectedInstrument === undefined) {
@@ -154,10 +158,41 @@ export function InstrumentSelectContent({
       {state.instrumentSelectNotice === 'futureInstrument' ? (
         <Text style={styles.instrumentSelectNotice}>새로운 악기가 업데이트될 예정이에요.</Text>
       ) : null}
+      <View
+        accessible
+        accessibilityLabel={`${instrumentSelectSampleModel.instrumentName} 샘플 상태. ${instrumentSelectSampleModel.sampleStatusLabel}. ${instrumentSelectSampleModel.sampleStatusDescription}`}
+        style={styles.instrumentSelectSampleStatusRow}
+      >
+        <View
+          style={[
+            styles.instrumentSampleStatusPill,
+            instrumentSelectSampleModel.sampleStatus === 'downloadRequired'
+              ? styles.instrumentSampleStatusPillWarning
+              : undefined,
+            instrumentSelectSampleModel.sampleStatus === 'fallback'
+              ? styles.instrumentSampleStatusPillFallback
+              : undefined,
+          ]}
+        >
+          <Text
+            style={[
+              styles.instrumentSampleStatusText,
+              instrumentSelectSampleModel.sampleStatus === 'downloadRequired'
+                ? styles.instrumentSampleStatusTextWarning
+                : undefined,
+            ]}
+          >
+            {instrumentSelectSampleModel.sampleStatusLabel}
+          </Text>
+        </View>
+        <Text style={styles.instrumentSelectSampleStatusDescription}>
+          {instrumentSelectSampleModel.sampleStatusDescription}
+        </Text>
+      </View>
       {selectedInstrument === DEFAULT_FREE_CREATION_INSTRUMENT ? (
         <View
           accessible
-          accessibilityLabel={`${JANGGU_FIGMA_BADGE}. ${JANGGU_FIGMA_DESCRIPTION}`}
+          accessibilityLabel={`${JANGGU_FIGMA_BADGE}. ${JANGGU_FIGMA_DESCRIPTION}. ${instrumentSelectSampleModel.sampleStatusLabel}. ${instrumentSelectSampleModel.sampleStatusDescription}`}
           style={[
             styles.instrumentSelectArtworkWrap,
             isCompactHeight ? styles.instrumentSelectArtworkWrapCompact : undefined,
@@ -168,7 +203,11 @@ export function InstrumentSelectContent({
           />
         </View>
       ) : (
-        <View style={styles.instrumentPreviewCard}>
+        <View
+          accessible
+          accessibilityLabel={`${instrumentSelectSampleModel.instrumentName}. ${MVP_INSTRUMENTS.find((item) => item.id === selectedInstrument)?.description ?? ''} ${instrumentSelectSampleModel.sampleStatusLabel}. ${instrumentSelectSampleModel.sampleStatusDescription}`}
+          style={styles.instrumentPreviewCard}
+        >
           <InstrumentVisual instrument={selectedInstrument} />
           <InstrumentBadge instrument={selectedInstrument} />
           <Text style={styles.instrumentDescription}>
@@ -1434,11 +1473,26 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  instrumentSelectSampleStatusRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  instrumentSelectSampleStatusDescription: {
+    color: GARAK_COLORS.textSecondary,
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 15,
+    minWidth: 0,
+  },
   instrumentSelectArtworkWrap: {
-    marginTop: 18,
+    marginTop: 12,
   },
   instrumentSelectArtworkWrapCompact: {
-    marginTop: 13,
+    marginTop: 9,
   },
   instrumentSelectArtworkCompact: {
     height: 389,

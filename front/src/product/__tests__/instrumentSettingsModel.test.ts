@@ -5,14 +5,14 @@ import { getInstrumentSettingsModel } from '../instrumentSettingsModel';
 
 test('models S04A default settings and sample readiness for the selected instrument', () => {
   const state = {
-    ...createInitialGarakProductState(),
+    ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu', 'daegeum'] }),
     selectedInstrument: 'daegeum' as const,
   };
 
   expect(getInstrumentSettingsModel(state)).toMatchObject({
     instrumentName: '대금',
-    sampleStatusLabel: '샘플 준비 완료',
-    sampleStatusDescription: '기본 연주 상태로 바로 시작할 수 있어요.',
+    sampleStatusLabel: '기본 샘플 사용 중',
+    sampleStatusDescription: '고급 샘플 없이도 기본 연주로 시작할 수 있어요.',
     primaryAction: { type: 'startWithDefaults' },
     settingRows: [
       { label: '운지 입력 방식', value: '기본 운지' },
@@ -72,7 +72,7 @@ test('blocks S04A start when the selected instrument requires a sample download'
 
 test('opens direct adjustment on S04A and exposes Next for adjusted settings', () => {
   const state = {
-    ...createInitialGarakProductState(),
+    ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu', 'daegeum'] }),
     selectedInstrument: 'janggu' as const,
     screenFlow: {
       currentScreen: 'S04A' as const,

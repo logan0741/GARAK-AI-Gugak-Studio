@@ -18,6 +18,7 @@ import {
   GarakProductAction,
   GarakProductState,
 } from './garakProductState';
+import type { InstrumentSampleReadinessInput } from './instrumentSampleReadiness';
 import { LibraryContent, PlayerDetailContent } from './libraryScreens';
 import {
   PracticeInstrumentSelectContent,
@@ -42,8 +43,21 @@ import {
 } from './garakScreenFrame';
 import { GarakWordmark } from './garakUi';
 
-export function GarakScreenFlowApp() {
-  const [state, setState] = useState(() => createInitialGarakProductState());
+export type GarakScreenFlowAppProps = {
+  sampleManifests?: InstrumentSampleReadinessInput['sampleManifests'];
+  sampleFallbackInstruments?: InstrumentSampleReadinessInput['fallbackInstruments'];
+};
+
+export function GarakScreenFlowApp({
+  sampleManifests,
+  sampleFallbackInstruments,
+}: GarakScreenFlowAppProps = {}) {
+  const [state, setState] = useState(() =>
+    createInitialGarakProductState({
+      sampleManifests,
+      sampleFallbackInstruments,
+    }),
+  );
   const currentScreen = state.screenFlow.currentScreen;
   const isHome = currentScreen === 'S01';
   const isLibrary = currentScreen === 'S18';

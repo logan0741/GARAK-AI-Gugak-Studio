@@ -1,10 +1,26 @@
 import { expect, test } from 'vitest';
 import {
   applyProductAction,
-  createInitialGarakProductState,
+  createInitialGarakProductState as createBaseInitialGarakProductState,
   getCurrentScreenSummary,
 } from '../garakProductState';
 import type { PerformanceEvent } from '../../domain/performanceEvent';
+import {
+  PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
+  PRODUCT_SAMPLE_MANIFESTS,
+} from '../productSampleReadinessConfig';
+
+type CreateInitialGarakProductStateInput = NonNullable<
+  Parameters<typeof createBaseInitialGarakProductState>[0]
+>;
+
+function createInitialGarakProductState(input: CreateInitialGarakProductStateInput = {}) {
+  return createBaseInitialGarakProductState({
+    ...input,
+    sampleManifests: input.sampleManifests ?? PRODUCT_SAMPLE_MANIFESTS,
+    sampleFallbackInstruments: input.sampleFallbackInstruments ?? PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
+  });
+}
 
 function completeRecordedFreePlay(state: ReturnType<typeof createInitialGarakProductState>) {
   state = applyProductAction(state, { type: 'startPerformanceRecording' });
