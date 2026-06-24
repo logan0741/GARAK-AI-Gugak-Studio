@@ -846,6 +846,27 @@ test('does not remix an S21 shared recording when remixing is unavailable', () =
   expect(state.library.works).toHaveLength(0);
 });
 
+test('plays and pauses the selected S21 shared recording without changing the detail screen', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, {
+    type: 'openSharedRecordingDetail',
+    recordingId: 'recent-kdrama-ost',
+  });
+  state = applyProductAction(state, { type: 'playSelectedSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S21');
+  expect(state.playingSharedRecordingId).toBe('recent-kdrama-ost');
+
+  state = applyProductAction(state, { type: 'pauseSelectedSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S21');
+  expect(state.playingSharedRecordingId).toBeUndefined();
+});
+
 test('publishes the selected exported audio from S17 and marks it shared', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

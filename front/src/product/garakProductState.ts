@@ -84,6 +84,7 @@ export type GarakProductState = {
   currentWorkId?: string;
   selectedPlayerItem?: ProductPlayerSelection;
   selectedSharedRecordingId?: SharedRecording['id'];
+  playingSharedRecordingId?: SharedRecording['id'];
   sharePreviewStatus?: 'playing';
   libraryTab: ProductLibraryTab;
   librarySearchQuery: string;
@@ -161,6 +162,8 @@ export type GarakProductAction =
   | { type: 'previewShareTarget' }
   | { type: 'publishShareTarget' }
   | { type: 'openSharedRecordingDetail'; recordingId: SharedRecording['id'] }
+  | { type: 'playSelectedSharedRecording' }
+  | { type: 'pauseSelectedSharedRecording' }
   | { type: 'remixSharedRecording' }
   | { type: 'saveSharedRecording' }
   | { type: 'loginAndLoadMySongs' }
@@ -464,8 +467,19 @@ export function applyProductAction(
       return {
         ...state,
         selectedSharedRecordingId: action.recordingId,
+        playingSharedRecordingId: undefined,
         sharePreviewStatus: undefined,
         screenFlow: pushTarget(state.screenFlow, 'S21'),
+      };
+    case 'playSelectedSharedRecording':
+      return {
+        ...state,
+        playingSharedRecordingId: getSelectedSharedRecording(state).id,
+      };
+    case 'pauseSelectedSharedRecording':
+      return {
+        ...state,
+        playingSharedRecordingId: undefined,
       };
     case 'remixSharedRecording':
       return remixSharedRecording(state);

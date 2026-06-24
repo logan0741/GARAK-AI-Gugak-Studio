@@ -361,6 +361,8 @@ export function SharedDetailContent({
   dispatch: ProductDispatch;
 }) {
   const model = getSharedDetailViewModel(state);
+  const playbackAction = model.isPlaying ? model.actions.pause : model.actions.play;
+  const playbackLabel = model.isPlaying ? '일시정지' : '재생';
 
   return (
     <View style={styles.stack}>
@@ -373,6 +375,15 @@ export function SharedDetailContent({
         {model.provenanceLabel} · {model.durationLabel} · {model.remixStatusLabel}
       </Text>
       <View style={styles.buttonRow}>
+        <PrimaryPillButton
+          label={playbackLabel}
+          onPress={() => {
+            if (playbackAction !== undefined) {
+              dispatch(playbackAction);
+            }
+          }}
+          style={styles.rowPrimary}
+        />
         <PrimaryPillButton
           label="리믹스"
           tone="amber"

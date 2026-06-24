@@ -64,7 +64,10 @@ export type SharedDetailViewModel = {
   durationLabel: string;
   remixStatusLabel: string;
   canRemix: boolean;
+  isPlaying: boolean;
   actions: {
+    play?: GarakProductAction;
+    pause?: GarakProductAction;
     remix?: GarakProductAction;
     save: GarakProductAction;
   };
@@ -163,6 +166,7 @@ export function getSharePrepareAction(state: GarakProductState): GarakProductAct
 export function getSharedDetailViewModel(state: GarakProductState): SharedDetailViewModel {
   const recording = getSharedRecordingById(state.selectedSharedRecordingId);
   const instrumentName = getInstrumentName(recording.instrument);
+  const isPlaying = state.playingSharedRecordingId === recording.id;
 
   return {
     title: recording.title,
@@ -171,7 +175,10 @@ export function getSharedDetailViewModel(state: GarakProductState): SharedDetail
     durationLabel: formatSeconds(recording.durationSeconds),
     remixStatusLabel: recording.remixable ? '리믹스 가능' : '저장만 가능',
     canRemix: recording.remixable,
+    isPlaying,
     actions: {
+      play: isPlaying ? undefined : { type: 'playSelectedSharedRecording' },
+      pause: isPlaying ? { type: 'pauseSelectedSharedRecording' } : undefined,
       remix: recording.remixable ? { type: 'remixSharedRecording' } : undefined,
       save: { type: 'saveSharedRecording' },
     },

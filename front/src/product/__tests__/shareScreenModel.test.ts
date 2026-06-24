@@ -58,9 +58,29 @@ test('models S21 shared detail remix availability and provenance', () => {
     durationLabel: '52초',
     remixStatusLabel: '저장만 가능',
     canRemix: false,
+    isPlaying: false,
     actions: {
+      play: { type: 'playSelectedSharedRecording' },
+      pause: undefined,
       remix: undefined,
       save: { type: 'saveSharedRecording' },
+    },
+  });
+});
+
+test('marks the selected S21 shared recording as playing', () => {
+  const model = getSharedDetailViewModel({
+    ...createInitialGarakProductState(),
+    selectedSharedRecordingId: 'recent-korea-minyo',
+    playingSharedRecordingId: 'recent-korea-minyo',
+  });
+
+  expect(model).toMatchObject({
+    title: 'Korea Minyo',
+    isPlaying: true,
+    actions: {
+      play: undefined,
+      pause: { type: 'pauseSelectedSharedRecording' },
     },
   });
 });

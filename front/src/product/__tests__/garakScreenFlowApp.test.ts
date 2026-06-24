@@ -325,6 +325,17 @@ test('connects shared detail remix and save buttons to library data actions', ()
   expect(source).not.toContain("label=\"저장\" onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
 });
 
+test('connects S21 shared detail playback to selected recording state', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+
+  expect(source).toContain('model.isPlaying');
+  expect(source).toContain('playbackAction');
+  expect(source).toContain('playbackLabel');
+  expect(source).toContain('재생');
+  expect(source).toContain('일시정지');
+  expect(source).toContain('dispatch(playbackAction)');
+});
+
 test('keeps the share quick access tab active on S20', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 
