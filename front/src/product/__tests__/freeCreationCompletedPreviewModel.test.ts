@@ -40,6 +40,7 @@ test('uses current work title and accepted jangdan preset in the completed free-
   expect(getFreeCreationCompletedPreviewModel(state)).toMatchObject({
     playerTitle: '장구 작업 7',
     playerAccessibilityLabel: '장구 작업 7 재생 미리보기',
+    completionSubjectLabel: '장구 작업 7',
     accompanimentTrackLabel: 'AI 반주 : 중모리',
     firstInstrumentTrackLabel: 'Track 1 : 장구',
     secondInstrumentTrackLabel: 'Track 2 : 가야금',

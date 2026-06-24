@@ -741,7 +741,7 @@ function FreeCreationCompletedPreviewContent({
         <TrackAddWaveformGlyph />
         <Text style={styles.freeCreationCompletedCopy}>
           연주 한 트랙들과 생성 한 AI 반주로{'\n'}
-          <Text style={styles.freeCreationCompletedCopyStrong}>나만의 가락</Text>을 완성해요.
+          <Text style={styles.freeCreationCompletedCopyStrong}>{previewModel.completionSubjectLabel}</Text>을 완성해요.
         </Text>
 
         <TrackControlStack

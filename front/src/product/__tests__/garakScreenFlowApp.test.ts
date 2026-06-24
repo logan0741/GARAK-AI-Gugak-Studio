@@ -51,6 +51,7 @@ test('uses the completed free-creation preview with live work and jangdan data',
   expect(source).toContain('getFreeCreationCompletedPreviewModel');
   expect(source).toContain('const mixEditorModel = getFreeCreationMixEditorModel(state);');
   expect(source).toContain('previewModel.playerTitle');
+  expect(source).toContain('previewModel.completionSubjectLabel');
   expect(source).toContain('trackControls={mixEditorModel.trackControls}');
   expect(source).toContain('freeCreationCompletedTrackControlScroller');
   expect(source).toContain('previewModel.saveAction');

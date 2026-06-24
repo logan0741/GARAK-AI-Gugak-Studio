@@ -11,6 +11,7 @@ const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
 export type FreeCreationCompletedPreviewModel = {
   playerTitle: string;
   playerAccessibilityLabel: string;
+  completionSubjectLabel: string;
   accompanimentTrackLabel: string;
   firstInstrumentTrackLabel: string;
   secondInstrumentTrackLabel: string;
@@ -35,6 +36,7 @@ export function getFreeCreationCompletedPreviewModel(
   return {
     playerTitle,
     playerAccessibilityLabel: `${playerTitle} 재생 미리보기`,
+    completionSubjectLabel: playerTitle,
     accompanimentTrackLabel: `AI 반주 : ${accompanimentPreset.name}`,
     firstInstrumentTrackLabel: `Track 1 : ${getInstrumentName(firstInstrument)}`,
     secondInstrumentTrackLabel: `Track 2 : ${getInstrumentName(secondInstrument)}`,
