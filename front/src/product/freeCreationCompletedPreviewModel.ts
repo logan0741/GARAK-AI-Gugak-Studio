@@ -1,5 +1,5 @@
 import type { InstrumentId, Track } from '../studio/studioTypes';
-import type { GarakProductState } from './garakProductState';
+import type { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   DEFAULT_FREE_CREATION_INSTRUMENT,
   JANGDAN_PRESETS,
@@ -14,6 +14,8 @@ export type FreeCreationCompletedPreviewModel = {
   accompanimentTrackLabel: string;
   firstInstrumentTrackLabel: string;
   secondInstrumentTrackLabel: string;
+  saveAction?: GarakProductAction;
+  saveStatusLabel: string;
 };
 
 export function getFreeCreationCompletedPreviewModel(
@@ -36,6 +38,8 @@ export function getFreeCreationCompletedPreviewModel(
     accompanimentTrackLabel: `AI 반주 : ${accompanimentPreset.name}`,
     firstInstrumentTrackLabel: `Track 1 : ${getInstrumentName(firstInstrument)}`,
     secondInstrumentTrackLabel: `Track 2 : ${getInstrumentName(secondInstrument)}`,
+    saveAction: work === undefined ? undefined : { type: 'saveCurrentWork' },
+    saveStatusLabel: state.workSaveStatus === 'saved' ? '저장됨' : '작업 저장',
   };
 }
 

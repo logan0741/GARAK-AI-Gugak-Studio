@@ -186,6 +186,44 @@ test('keeps live jangdan guide separate from accompaniment track creation', () =
   });
 });
 
+test('saves the current S07 work locally without exporting share audio', () => {
+  const timestamps = [
+    '2026-06-18T00:00:00.000Z',
+    '2026-06-18T00:01:00.000Z',
+  ];
+  let tick = 0;
+  let state = createInitialGarakProductState({
+    now: () => timestamps[Math.min(tick++, timestamps.length - 1)],
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+
+  const currentWorkId = state.currentWorkId;
+  const savedState = applyProductAction(state, { type: 'saveCurrentWork' });
+
+  expect(savedState.screenFlow.currentScreen).toBe('S07');
+  expect(savedState.currentWorkId).toBe(currentWorkId);
+  expect(savedState.library.exportedAudios).toHaveLength(0);
+  expect(savedState.library.works[0]).toMatchObject({
+    id: currentWorkId,
+    updatedAt: '2026-06-18T00:01:00.000Z',
+    syncState: 'local_only',
+  });
+  expect(savedState.workSaveStatus).toBe('saved');
+
+  let newWorkState = applyProductAction(savedState, { type: 'back' });
+  newWorkState = applyProductAction(newWorkState, { type: 'startPerformanceRecording' });
+  newWorkState = applyProductAction(newWorkState, { type: 'completePerformance' });
+
+  expect(newWorkState.currentWorkId).not.toBe(currentWorkId);
+  expect(newWorkState.workSaveStatus).toBeUndefined();
+});
+
 test('previews a jangdan preset without mutating live guide or work tracks', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

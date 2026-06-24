@@ -30,7 +30,10 @@ test('uses the completed free-creation preview with live work and jangdan data',
   expect(source).toContain('getFreeCreationCompletedPreviewModel');
   expect(source).toContain('previewModel.playerTitle');
   expect(source).toContain('previewModel.accompanimentTrackLabel');
+  expect(source).toContain('previewModel.saveAction');
+  expect(source).toContain('previewModel.saveStatusLabel');
   expect(source).toContain('freeCreationCompletedAccompanimentButton');
+  expect(source).toContain("dispatch(previewModel.saveAction)");
 });
 
 test('connects S10 jangdan preset previews without applying the preset', () => {
@@ -244,9 +247,13 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
   expect(source).toContain('getFreeCreationMixEditorModel');
   expect(source).toContain('mixEditorModel.playerTitle');
   expect(source).toContain('mixEditorModel.playerAccessibilityLabel');
+  expect(source).toContain('mixEditorModel.saveAction');
+  expect(source).toContain('mixEditorModel.saveStatusLabel');
   expect(source).toContain('Mix');
+  expect(source).toContain('작업 저장');
   expect(source).toContain('Save & Share project');
   expect(source).toContain("type: 'addTrack'");
+  expect(source).toContain("dispatch(mixEditorModel.saveAction)");
   expect(source).toContain("type: 'exportCurrentWork'");
   expect(source).not.toContain('TrackPill label="트랙 추가하기"');
   expect(source).not.toContain('My Janggu');

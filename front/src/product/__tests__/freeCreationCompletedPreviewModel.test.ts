@@ -43,5 +43,14 @@ test('uses current work title and accepted jangdan preset in the completed free-
     accompanimentTrackLabel: 'AI 반주 : 중모리',
     firstInstrumentTrackLabel: 'Track 1 : 장구',
     secondInstrumentTrackLabel: 'Track 2 : 가야금',
+    saveAction: { type: 'saveCurrentWork' },
+    saveStatusLabel: '작업 저장',
   });
+
+  expect(
+    getFreeCreationCompletedPreviewModel({
+      ...state,
+      workSaveStatus: 'saved',
+    }).saveStatusLabel,
+  ).toBe('저장됨');
 });

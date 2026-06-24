@@ -400,6 +400,17 @@ export function TrackLayerEditorContent({
           <Text style={styles.freeCreationMixButtonText}>Mix</Text>
         </Pressable>
 
+        {mixEditorModel.saveAction ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="작업 저장"
+            onPress={() => mixEditorModel.saveAction && dispatch(mixEditorModel.saveAction)}
+            style={styles.freeCreationSaveButton}
+          >
+            <Text style={styles.freeCreationSaveButtonText}>{mixEditorModel.saveStatusLabel}</Text>
+          </Pressable>
+        ) : null}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="프로젝트 저장 및 공유"
@@ -481,6 +492,17 @@ function FreeCreationCompletedPreviewContent({
         >
           <Text style={styles.freeCreationCompletedTrackButtonText}>{previewModel.firstInstrumentTrackLabel}</Text>
         </View>
+
+        {previewModel.saveAction ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="작업 저장"
+            onPress={() => previewModel.saveAction && dispatch(previewModel.saveAction)}
+            style={styles.freeCreationCompletedSaveButton}
+          >
+            <Text style={styles.freeCreationCompletedSaveButtonText}>{previewModel.saveStatusLabel}</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -1520,6 +1542,24 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textTransform: 'uppercase',
   },
+  freeCreationCompletedSaveButton: {
+    alignItems: 'center',
+    borderColor: 'rgba(31,32,46,0.24)',
+    borderRadius: GARAK_RADIUS.pill,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 371,
+  },
+  freeCreationCompletedSaveButtonText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0,
+  },
   freeCreationCompletedGoButton: {
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.brandNavy,
@@ -1548,6 +1588,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0,
     lineHeight: 32,
+  },
+  freeCreationSaveButton: {
+    alignItems: 'center',
+    borderColor: 'rgba(31,32,46,0.24)',
+    borderRadius: GARAK_RADIUS.pill,
+    borderWidth: 1,
+    bottom: 127,
+    height: 42,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  freeCreationSaveButtonText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0,
   },
   freeCreationShareButton: {
     alignItems: 'center',

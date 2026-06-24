@@ -93,6 +93,7 @@ export type GarakProductState = {
   freePlayNotice?: FreePlayNotice;
   instrumentSelectNotice?: InstrumentSelectNotice;
   trackAddNotice?: TrackAddNotice;
+  workSaveStatus?: 'saved';
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
@@ -148,6 +149,7 @@ export type GarakProductAction =
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
   | { type: 'cancelAccompanimentTrack' }
+  | { type: 'saveCurrentWork' }
   | { type: 'exportCurrentWork' }
   | { type: 'previewPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
@@ -246,6 +248,7 @@ export function applyProductAction(
       return {
         ...state,
         currentWorkId: action.workId,
+        workSaveStatus: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, {
           type: 'navigate',
           target: 'S07',
@@ -419,6 +422,8 @@ export function applyProductAction(
       };
     case 'addAccompanimentTrack':
       return applyAccompanimentTrack(state, action);
+    case 'saveCurrentWork':
+      return saveCurrentWork(state);
     case 'cancelAccompanimentTrack':
       return {
         ...state,
@@ -740,6 +745,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     currentWorkId: work.id,
     pendingFreePlayTake: undefined,
     freePlayNotice: undefined,
+    workSaveStatus: undefined,
     pendingLiveJangdanGuide: undefined,
     library: {
       ...state.library,
@@ -967,6 +973,28 @@ function exportCurrentWork(state: GarakProductState): GarakProductState {
   };
 }
 
+function saveCurrentWork(state: GarakProductState): GarakProductState {
+  const currentWork = findCurrentWork(state);
+  if (currentWork === undefined) {
+    return state;
+  }
+
+  const savedWork: Work = {
+    ...currentWork,
+    updatedAt: state.now(),
+    syncState: 'local_only',
+  };
+
+  return {
+    ...state,
+    library: {
+      ...state.library,
+      works: state.library.works.map((work) => (work.id === savedWork.id ? savedWork : work)),
+    },
+    workSaveStatus: 'saved',
+  };
+}
+
 function savePracticeResult(state: GarakProductState): GarakProductState {
   return createPracticeResultAndRoute(state, 'S18');
 }
@@ -1039,6 +1067,7 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
     ...state,
     counters: nextCounters,
     currentWorkId: work.id,
+    workSaveStatus: undefined,
     library: {
       ...state.library,
       works: [...state.library.works, work],
@@ -1144,6 +1173,7 @@ function openSelectedPlayerEditor(state: GarakProductState): GarakProductState {
   return {
     ...state,
     currentWorkId: workId,
+    workSaveStatus: undefined,
     screenFlow: pushTarget(state.screenFlow, 'S07'),
   };
 }
@@ -1252,6 +1282,7 @@ function replaceCurrentWork(
   return {
     ...state,
     counters,
+    workSaveStatus: undefined,
     library: {
       ...state.library,
       works: state.library.works.map((item) => (item.id === work.id ? work : item)),
