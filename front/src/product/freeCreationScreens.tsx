@@ -769,7 +769,8 @@ export function AddTrackContent({
   const secondInstrumentTrack = instrumentTracks[1];
   const primaryInstrument =
     firstInstrumentTrack?.instrument ?? state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
-  const nextTrackInstrument = getNextTrackInstrument(instrumentTracks.map((track) => track.instrument));
+  const suggestedTrackInstrument = getNextTrackInstrument(instrumentTracks.map((track) => track.instrument));
+  const isInstrumentSelectionOpen = state.trackAddSelection === 'instrument';
   const secondInstrumentTrackLabel = secondInstrumentTrack
     ? `Track 2 : ${getInstrumentName(secondInstrumentTrack.instrument)}`
     : undefined;
@@ -819,18 +820,67 @@ export function AddTrackContent({
             </View>
           </View>
         ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="트랙 추가하기"
-            onPress={() => dispatch({ type: 'chooseInstrumentTrack', instrument: nextTrackInstrument })}
-            style={[styles.freeCreationLayerOptionWrap, styles.freeCreationInstrumentLayer]}
-          >
-            <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionRed]}>
-              <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextRed]}>
-                트랙 추가하기
-              </Text>
-            </View>
-          </Pressable>
+          <>
+            {isInstrumentSelectionOpen ? (
+              <View
+                style={[
+                  styles.freeCreationLayerOptionWrap,
+                  styles.freeCreationInstrumentLayer,
+                  styles.freeCreationInstrumentLayerOpen,
+                ]}
+              >
+                <View style={styles.freeCreationInstrumentPickerCard}>
+                  <Text style={styles.freeCreationInstrumentPickerTitle}>추가 악기 선택</Text>
+                  <View style={styles.freeCreationInstrumentPickerChips}>
+                    {MVP_INSTRUMENTS.map((instrument) => {
+                      const isSuggestedInstrument = instrument.id === suggestedTrackInstrument;
+
+                      return (
+                        <Pressable
+                          key={instrument.id}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${getInstrumentName(instrument.id)} 추가 녹음`}
+                          onPress={() =>
+                            dispatch({ type: 'chooseInstrumentTrack', instrument: instrument.id })
+                          }
+                          style={[
+                            styles.freeCreationInstrumentPickerChip,
+                            isSuggestedInstrument
+                              ? styles.freeCreationInstrumentPickerChipSuggested
+                              : undefined,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.freeCreationInstrumentPickerChipText,
+                              isSuggestedInstrument
+                                ? styles.freeCreationInstrumentPickerChipTextSuggested
+                                : undefined,
+                            ]}
+                          >
+                            {getInstrumentName(instrument.id)}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="악기 연주 추가"
+                onPress={() => dispatch({ type: 'openInstrumentTrackSelection' })}
+                style={[styles.freeCreationLayerOptionWrap, styles.freeCreationInstrumentLayer]}
+              >
+                <View style={[styles.freeCreationLayerOptionRotated, styles.freeCreationLayerOptionRed]}>
+                  <Text style={[styles.freeCreationLayerOptionText, styles.freeCreationLayerOptionTextRed]}>
+                    악기 연주 추가
+                  </Text>
+                </View>
+              </Pressable>
+            )}
+          </>
         )}
 
         <Pressable
@@ -2060,6 +2110,10 @@ const styles = StyleSheet.create({
     top: 341,
     zIndex: 2,
   },
+  freeCreationInstrumentLayerOpen: {
+    top: 318,
+    zIndex: 4,
+  },
   freeCreationAddedInstrumentLayer: {
     top: 344,
     zIndex: 2,
@@ -2102,6 +2156,52 @@ const styles = StyleSheet.create({
   },
   freeCreationLayerOptionTextAmber: {
     color: GARAK_COLORS.brandAmber,
+  },
+  freeCreationInstrumentPickerCard: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: GARAK_COLORS.brandRed,
+    borderRadius: 28,
+    borderWidth: 1,
+    gap: 10,
+    minHeight: 96,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    width: 330,
+    ...garakCardShadow,
+  },
+  freeCreationInstrumentPickerTitle: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0,
+    lineHeight: 17,
+    textAlign: 'center',
+  },
+  freeCreationInstrumentPickerChips: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  freeCreationInstrumentPickerChip: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceSoft,
+    borderRadius: 17,
+    minHeight: 32,
+    minWidth: 78,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  freeCreationInstrumentPickerChipSuggested: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+  },
+  freeCreationInstrumentPickerChipText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  freeCreationInstrumentPickerChipTextSuggested: {
+    color: GARAK_COLORS.surfaceCard,
   },
   freeCreationAddedInstrumentTrackButton: {
     alignItems: 'center',

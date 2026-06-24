@@ -62,6 +62,8 @@ export type FreePlayNotice = 'missingTake';
 
 export type TrackAddNotice = 'importLocked';
 
+export type TrackAddSelection = 'instrument';
+
 export type InstrumentSelectNotice = 'futureInstrument';
 
 export type PracticeAttemptStatus = 'ready' | 'playing' | 'paused' | 'completed';
@@ -99,6 +101,7 @@ export type GarakProductState = {
   freePlayNotice?: FreePlayNotice;
   instrumentSelectNotice?: InstrumentSelectNotice;
   trackAddNotice?: TrackAddNotice;
+  trackAddSelection?: TrackAddSelection;
   workSaveStatus?: 'saved';
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
@@ -155,6 +158,7 @@ export type GarakProductAction =
     }
   | { type: 'turnOffLiveJangdanGuide' }
   | { type: 'addTrack' }
+  | { type: 'openInstrumentTrackSelection' }
   | { type: 'showLockedImportTrackNotice' }
   | { type: 'cancelTrackAdd' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
@@ -439,17 +443,26 @@ export function applyProductAction(
       return {
         ...state,
         trackAddNotice: undefined,
+        trackAddSelection: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S08' }),
+      };
+    case 'openInstrumentTrackSelection':
+      return {
+        ...state,
+        trackAddNotice: undefined,
+        trackAddSelection: 'instrument',
       };
     case 'showLockedImportTrackNotice':
       return {
         ...state,
         trackAddNotice: 'importLocked',
+        trackAddSelection: undefined,
       };
     case 'cancelTrackAdd':
       return {
         ...state,
         trackAddNotice: undefined,
+        trackAddSelection: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S08'
             ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
@@ -460,6 +473,7 @@ export function applyProductAction(
         ...state,
         selectedInstrument: action.instrument,
         trackAddNotice: undefined,
+        trackAddSelection: undefined,
         pendingFreePlayTake: undefined,
         freePlayRecordingSetup: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S09' }),
@@ -493,6 +507,7 @@ export function applyProductAction(
       return {
         ...state,
         trackAddNotice: undefined,
+        trackAddSelection: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S10B' }),
       };
     case 'addAccompanimentTrack':

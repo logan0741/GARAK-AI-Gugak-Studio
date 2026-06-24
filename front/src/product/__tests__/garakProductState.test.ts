@@ -445,6 +445,37 @@ test('keeps S08 import locked and lets track add cancel return to the editor', (
   expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeImport);
 });
 
+test('opens S08 additional instrument selection before entering S09', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+
+  const currentWorkId = state.currentWorkId;
+  const selectedInstrumentBefore = state.selectedInstrument;
+
+  state = applyProductAction(state, { type: 'openInstrumentTrackSelection' });
+
+  expect(state.screenFlow.currentScreen).toBe('S08');
+  expect(state.trackAddSelection).toBe('instrument');
+  expect(state.currentWorkId).toBe(currentWorkId);
+  expect(state.selectedInstrument).toBe(selectedInstrumentBefore);
+
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.trackAddSelection).toBeUndefined();
+  expect(state.selectedInstrument).toBe('daegeum');
+  expect(state.currentWorkId).toBe(currentWorkId);
+});
+
 test('adds new tracks at the provided playhead beat', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
