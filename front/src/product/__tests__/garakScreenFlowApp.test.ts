@@ -396,6 +396,7 @@ test('keeps S14 instrument selection separate from the Next action', () => {
 
   expect(source).toContain('selectedPracticeInstrument');
   expect(source).toContain("type: 'selectPracticeInstrument'");
+  expect(source).toContain('practiceInstrumentGuideStatus');
   expect(source).toMatch(/PrimaryPillButton label="NEXT" onPress=\{\(\) => dispatch\(\{ type: 'next' \}\)\}/);
   expect(selectInstrumentReducerCase).toContain('selectedInstrument: action.instrument');
   expect(selectInstrumentReducerCase).not.toContain("pushTarget(state.screenFlow, 'S15')");

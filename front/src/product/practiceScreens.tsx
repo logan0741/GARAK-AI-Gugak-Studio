@@ -84,32 +84,47 @@ export function PracticeInstrumentSelectContent({
   return (
     <View style={styles.stack}>
       <ScreenHeading title={'따라할 악기를\n선택해요.'} description={`${song.title}에 맞춰 연주할 악기를 고릅니다.`} />
-      {MVP_INSTRUMENTS.map((instrument) => (
-        <Pressable
-          accessibilityRole="button"
-          key={instrument.id}
-          onPress={() =>
-            dispatch({ type: 'selectPracticeInstrument', instrument: instrument.id })
-          }
-          style={[
-            styles.instrumentCard,
-            selectedPracticeInstrument === instrument.id ? styles.instrumentCardSelected : undefined,
-          ]}
-        >
-          <View>
-            <Text style={styles.cardTitle}>{instrument.name}</Text>
-            <Text style={styles.bodyText}>따라하기 난이도 보통</Text>
-          </View>
-          <View style={styles.instrumentBadgeRow}>
-            {song.recommendedInstrument === instrument.id ? (
-              <Text style={styles.badge}>추천</Text>
-            ) : null}
-            {selectedPracticeInstrument === instrument.id ? (
-              <Text style={styles.selectedBadge}>선택됨</Text>
-            ) : null}
-          </View>
-        </Pressable>
-      ))}
+      {MVP_INSTRUMENTS.map((instrument) => {
+        const hasInstrumentGuide =
+          song.guideReady && song.supportedInstruments.includes(instrument.id);
+        const practiceInstrumentGuideStatus = hasInstrumentGuide
+          ? '가이드 준비 완료'
+          : '가이드 준비 중';
+
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{
+              disabled: !hasInstrumentGuide,
+              selected: selectedPracticeInstrument === instrument.id,
+            }}
+            disabled={!hasInstrumentGuide}
+            key={instrument.id}
+            onPress={() =>
+              dispatch({ type: 'selectPracticeInstrument', instrument: instrument.id })
+            }
+            style={[
+              styles.instrumentCard,
+              selectedPracticeInstrument === instrument.id ? styles.instrumentCardSelected : undefined,
+              !hasInstrumentGuide ? styles.instrumentCardDisabled : undefined,
+            ]}
+          >
+            <View>
+              <Text style={styles.cardTitle}>{instrument.name}</Text>
+              <Text style={styles.bodyText}>따라하기 난이도 보통</Text>
+              <Text style={styles.practiceInstrumentGuideStatus}>{practiceInstrumentGuideStatus}</Text>
+            </View>
+            <View style={styles.instrumentBadgeRow}>
+              {song.recommendedInstrument === instrument.id ? (
+                <Text style={styles.badge}>추천</Text>
+              ) : null}
+              {selectedPracticeInstrument === instrument.id ? (
+                <Text style={styles.selectedBadge}>선택됨</Text>
+              ) : null}
+            </View>
+          </Pressable>
+        );
+      })}
       <PrimaryPillButton label="NEXT" onPress={() => dispatch({ type: 'next' })} />
     </View>
   );
@@ -298,6 +313,16 @@ const styles = StyleSheet.create({
   },
   instrumentCardSelected: {
     borderColor: GARAK_COLORS.brandAmber,
+  },
+  instrumentCardDisabled: {
+    opacity: 0.6,
+  },
+  practiceInstrumentGuideStatus: {
+    color: GARAK_COLORS.brandAmber,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 17,
+    marginTop: 4,
   },
   cardTitle: {
     color: GARAK_COLORS.textPrimary,
