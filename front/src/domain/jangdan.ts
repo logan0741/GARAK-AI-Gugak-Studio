@@ -1,6 +1,6 @@
 import { PerformanceEvent } from './performanceEvent';
 
-export type JangdanName = 'jungmori' | 'gutgeori' | 'jajinmori';
+export type JangdanName = 'semachi' | 'jungmori' | 'jajinmori';
 
 export type JangdanRecommendation = {
   jangdan: JangdanName;
@@ -68,10 +68,10 @@ export function recommendJangdan(events: PerformanceEvent[]): JangdanRecommendat
   }
 
   return {
-    jangdan: 'gutgeori',
+    jangdan: 'semachi',
     score: 0.7,
     bpmEstimate,
     density,
-    reason: 'medium tempo and density suggest gutgeori',
+    reason: 'medium tempo and density suggest semachi',
   };
 }

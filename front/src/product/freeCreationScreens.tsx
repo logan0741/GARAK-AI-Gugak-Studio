@@ -24,11 +24,14 @@ import {
 } from './garakUi';
 import {
   DEFAULT_FREE_CREATION_INSTRUMENT,
-  JANGDAN_PRESETS,
   LOCKED_FUTURE_INSTRUMENT_SLOTS,
   MVP_INSTRUMENTS,
   getInstrumentName,
 } from './productFixtures';
+import {
+  getJangdanPresetPanelModel,
+  type JangdanPresetPanelMode,
+} from './jangdanPresetPanelModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
@@ -603,16 +606,36 @@ export function ExtraInstrumentRecordContent({
   );
 }
 
-export function LiveJangdanContent({ dispatch }: { dispatch: ProductDispatch }) {
-  return <JangdanPresetPanel mode="live" dispatch={dispatch} />;
+export function LiveJangdanContent({
+  state,
+  dispatch,
+}: {
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
+  return <JangdanPresetPanel mode="live" state={state} dispatch={dispatch} />;
 }
 
-export function AccompanimentTrackContent({ dispatch }: { dispatch: ProductDispatch }) {
-  return <JangdanPresetPanel mode="track" dispatch={dispatch} />;
+export function AccompanimentTrackContent({
+  state,
+  dispatch,
+}: {
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
+  return <JangdanPresetPanel mode="track" state={state} dispatch={dispatch} />;
 }
 
-function JangdanPresetPanel({ mode, dispatch }: { mode: 'live' | 'track'; dispatch: ProductDispatch }) {
-  const defaultPreset = JANGDAN_PRESETS[0];
+function JangdanPresetPanel({
+  mode,
+  state,
+  dispatch,
+}: {
+  mode: JangdanPresetPanelMode;
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
+  const model = getJangdanPresetPanelModel(state, mode);
 
   return (
     <View style={styles.screenStack}>
@@ -620,9 +643,12 @@ function JangdanPresetPanel({ mode, dispatch }: { mode: 'live' | 'track'; dispat
         title={mode === 'live' ? '라이브 장단을\n선택해요.' : '장단 트랙을\n만들어요.'}
         description="AI 생성 오디오가 아니라 로컬 장단 프리셋을 미리듣고 수락하는 흐름입니다."
       />
-      <MiniTrackPlayer title={mode === 'live' ? 'Live Jangdan Guide' : 'AI 추천: 세마치'} tone="amber" />
+      <MiniTrackPlayer title={model.miniPlayerTitle} tone="amber" />
+      {model.recommendationMessage ? (
+        <Text style={styles.recommendationMessage}>{model.recommendationMessage}</Text>
+      ) : null}
       <View style={styles.presetStack}>
-        {JANGDAN_PRESETS.map((preset) => (
+        {model.manualPresets.map((preset) => (
           <View key={preset.id} style={styles.presetRow}>
             <View>
               <Text style={styles.panelTitle}>{preset.name}</Text>
@@ -640,14 +666,14 @@ function JangdanPresetPanel({ mode, dispatch }: { mode: 'live' | 'track'; dispat
           mode === 'live'
             ? dispatch({
                 type: 'applyLiveJangdanGuide',
-                presetId: defaultPreset.id,
-                bpm: defaultPreset.defaultBpm,
+                presetId: model.acceptedPreset.id,
+                bpm: model.acceptedPreset.defaultBpm,
                 volume: 0.6,
               })
             : dispatch({
                 type: 'addAccompanimentTrack',
-                presetId: defaultPreset.id,
-                bpm: defaultPreset.defaultBpm,
+                presetId: model.acceptedPreset.id,
+                bpm: model.acceptedPreset.defaultBpm,
                 volume: 0.7,
               })
         }
@@ -1773,6 +1799,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 72,
     paddingHorizontal: 16,
+  },
+  recommendationMessage: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
   },
   metaText: {
     color: GARAK_COLORS.textSecondary,

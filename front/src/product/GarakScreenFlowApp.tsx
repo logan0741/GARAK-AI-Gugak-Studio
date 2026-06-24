@@ -176,9 +176,9 @@ function renderScreenContent(
     case 'S09':
       return <ExtraInstrumentRecordContent state={state} dispatch={dispatch} frameMode={frameMode} />;
     case 'S10A':
-      return <LiveJangdanContent dispatch={dispatch} />;
+      return <LiveJangdanContent state={state} dispatch={dispatch} />;
     case 'S10B':
-      return <AccompanimentTrackContent dispatch={dispatch} />;
+      return <AccompanimentTrackContent state={state} dispatch={dispatch} />;
     case 'S13':
       return <PracticeSongSelectContent state={state} dispatch={dispatch} />;
     case 'S14':
