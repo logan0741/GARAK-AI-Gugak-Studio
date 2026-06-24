@@ -120,11 +120,13 @@ export type GarakProductAction =
       bpm: number;
       volume: number;
     }
+  | { type: 'turnOffLiveJangdanGuide' }
   | { type: 'addTrack' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
+  | { type: 'cancelAccompanimentTrack' }
   | { type: 'exportCurrentWork' }
   | { type: 'previewPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
@@ -276,6 +278,16 @@ export function applyProductAction(
           volume: action.volume,
         },
       };
+    case 'turnOffLiveJangdanGuide':
+      return {
+        ...state,
+        pendingLiveJangdanGuide: undefined,
+        previewingJangdanPreset: undefined,
+        screenFlow:
+          state.screenFlow.currentScreen === 'S10A'
+            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S05' })
+            : pushTarget(state.screenFlow, 'S05'),
+      };
     case 'addTrack':
       return {
         ...state,
@@ -296,6 +308,15 @@ export function applyProductAction(
       };
     case 'addAccompanimentTrack':
       return applyAccompanimentTrack(state, action);
+    case 'cancelAccompanimentTrack':
+      return {
+        ...state,
+        previewingJangdanPreset: undefined,
+        screenFlow:
+          state.screenFlow.currentScreen === 'S10B'
+            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
+            : pushTarget(state.screenFlow, 'S07'),
+      };
     case 'exportCurrentWork':
       return exportCurrentWork(state);
     case 'previewPracticeSong':

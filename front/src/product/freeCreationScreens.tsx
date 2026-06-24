@@ -711,6 +711,14 @@ function JangdanPresetPanel({
               })
         }
       />
+      <SecondaryPillButton
+        label={mode === 'live' ? '끄기' : '취소'}
+        onPress={() =>
+          mode === 'live'
+            ? dispatch({ type: 'turnOffLiveJangdanGuide' })
+            : dispatch({ type: 'cancelAccompanimentTrack' })
+        }
+      />
     </View>
   );
 }

@@ -184,6 +184,66 @@ test('previews a jangdan preset without mutating live guide or work tracks', () 
   expect(state.library.works[0].tracks).toHaveLength(trackCountBeforePreview + 1);
 });
 
+test('leaves jangdan preset panels without applying pending preview data', () => {
+  let liveState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  liveState = applyProductAction(liveState, { type: 'selectMode', mode: 'freeCreation' });
+  liveState = applyProductAction(liveState, { type: 'next' });
+  liveState = applyProductAction(liveState, { type: 'selectInstrument', instrument: 'gayageum' });
+  liveState = applyProductAction(liveState, { type: 'next' });
+  liveState = applyProductAction(liveState, { type: 'startWithDefaults' });
+  liveState = applyProductAction(liveState, {
+    type: 'applyLiveJangdanGuide',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.6,
+  });
+  liveState = applyProductAction(liveState, { type: 'openLiveJangdanGuide' });
+  liveState = applyProductAction(liveState, {
+    type: 'previewJangdanPreset',
+    mode: 'live',
+    presetId: 'jajinmori',
+    bpm: 112,
+    volume: 0.6,
+  });
+
+  liveState = applyProductAction(liveState, { type: 'turnOffLiveJangdanGuide' });
+
+  expect(liveState.screenFlow.currentScreen).toBe('S05');
+  expect(liveState.pendingLiveJangdanGuide).toBeUndefined();
+  expect(liveState.previewingJangdanPreset).toBeUndefined();
+
+  let trackState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  trackState = applyProductAction(trackState, { type: 'selectMode', mode: 'freeCreation' });
+  trackState = applyProductAction(trackState, { type: 'next' });
+  trackState = applyProductAction(trackState, { type: 'selectInstrument', instrument: 'gayageum' });
+  trackState = applyProductAction(trackState, { type: 'next' });
+  trackState = applyProductAction(trackState, { type: 'startWithDefaults' });
+  trackState = completeRecordedFreePlay(trackState);
+  trackState = applyProductAction(trackState, { type: 'addTrack' });
+  trackState = applyProductAction(trackState, { type: 'chooseAccompanimentTrack' });
+
+  const trackCountBeforeCancel = trackState.library.works[0].tracks.length;
+
+  trackState = applyProductAction(trackState, {
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.7,
+  });
+  trackState = applyProductAction(trackState, { type: 'cancelAccompanimentTrack' });
+
+  expect(trackState.screenFlow.currentScreen).toBe('S07');
+  expect(trackState.previewingJangdanPreset).toBeUndefined();
+  expect(trackState.library.works[0].tracks).toHaveLength(trackCountBeforeCancel);
+});
+
 test('adds new tracks at the provided playhead beat', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

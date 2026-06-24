@@ -37,8 +37,11 @@ test('connects S10 jangdan preset previews without applying the preset', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
   expect(source).toContain("type: 'previewJangdanPreset'");
+  expect(source).toContain("type: 'turnOffLiveJangdanGuide'");
+  expect(source).toContain("type: 'cancelAccompanimentTrack'");
   expect(source).toContain('model.previewingPresetId');
   expect(source).toContain('미리듣는 중');
+  expect(source).toContain("label={mode === 'live' ? '끄기' : '취소'}");
   expect(source).toContain('previewButtonActive');
 });
 
