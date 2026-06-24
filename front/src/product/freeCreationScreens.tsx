@@ -657,17 +657,41 @@ function JangdanPresetPanel({
         <Text style={styles.recommendationMessage}>{model.recommendationMessage}</Text>
       ) : null}
       <View style={styles.presetStack}>
-        {model.manualPresets.map((preset) => (
-          <View key={preset.id} style={styles.presetRow}>
-            <View>
-              <Text style={styles.panelTitle}>{preset.name}</Text>
-              <Text style={styles.metaText}>
-                GARAK 기본 BPM {preset.defaultBpm} · {preset.minBpm}-{preset.maxBpm} · {preset.beatUnit}
-              </Text>
+        {model.manualPresets.map((preset) => {
+          const isPreviewing = model.previewingPresetId === preset.id;
+
+          return (
+            <View key={preset.id} style={styles.presetRow}>
+              <View style={styles.presetRowTextBlock}>
+                <Text style={styles.panelTitle}>{preset.name}</Text>
+                <Text style={styles.metaText}>
+                  GARAK 기본 BPM {preset.defaultBpm} · {preset.minBpm}-{preset.maxBpm} · {preset.beatUnit}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${preset.name} 장단 미리듣기`}
+                onPress={() =>
+                  dispatch({
+                    type: 'previewJangdanPreset',
+                    mode,
+                    presetId: preset.id,
+                    bpm: preset.defaultBpm,
+                    volume: mode === 'live' ? 0.6 : 0.7,
+                  })
+                }
+                style={[
+                  styles.previewButton,
+                  isPreviewing ? styles.previewButtonActive : undefined,
+                ]}
+              >
+                <Text style={[styles.previewText, isPreviewing ? styles.previewTextActive : undefined]}>
+                  {isPreviewing ? '미리듣는 중' : '미리듣기'}
+                </Text>
+              </Pressable>
             </View>
-            <Text style={styles.previewText}>미리듣기</Text>
-          </View>
-        ))}
+          );
+        })}
       </View>
       <PrimaryPillButton
         label={mode === 'live' ? '적용하고 연주로 돌아가기' : '반주 트랙 추가'}
@@ -1820,6 +1844,10 @@ const styles = StyleSheet.create({
     minHeight: 72,
     paddingHorizontal: 16,
   },
+  presetRowTextBlock: {
+    flex: 1,
+    paddingRight: 10,
+  },
   recommendationMessage: {
     color: GARAK_COLORS.textSecondary,
     fontSize: 12,
@@ -1831,9 +1859,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  previewButton: {
+    alignItems: 'center',
+    borderRadius: 14,
+    justifyContent: 'center',
+    minHeight: 30,
+    minWidth: 82,
+    paddingHorizontal: 10,
+  },
+  previewButtonActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+  },
   previewText: {
     color: GARAK_COLORS.brandAmber,
     fontSize: 12,
     fontWeight: '800',
+  },
+  previewTextActive: {
+    color: GARAK_COLORS.surfaceCard,
   },
 });

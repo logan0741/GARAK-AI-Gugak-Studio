@@ -1,5 +1,5 @@
 import { recommendJangdan } from '../domain/jangdan';
-import type { InstrumentTrack, Track } from '../studio/studioTypes';
+import type { InstrumentTrack, JangdanPresetId, Track } from '../studio/studioTypes';
 import type { GarakProductState } from './garakProductState';
 import { JANGDAN_PRESETS } from './productFixtures';
 import type { JangdanPreset } from './productFixtures';
@@ -13,6 +13,7 @@ export type JangdanPresetPanelModel = {
   miniPlayerTitle: string;
   acceptedPreset: JangdanPreset;
   manualPresets: JangdanPreset[];
+  previewingPresetId?: JangdanPresetId;
 };
 
 export const INSUFFICIENT_JANGDAN_RECOMMENDATION_COPY =
@@ -23,6 +24,10 @@ export function getJangdanPresetPanelModel(
   mode: JangdanPresetPanelMode,
 ): JangdanPresetPanelModel {
   const defaultPreset = JANGDAN_PRESETS[0];
+  const previewingPresetId =
+    state.previewingJangdanPreset?.mode === mode
+      ? state.previewingJangdanPreset.presetId
+      : undefined;
 
   if (mode === 'live') {
     return {
@@ -31,6 +36,7 @@ export function getJangdanPresetPanelModel(
       miniPlayerTitle: 'Live Jangdan Guide',
       acceptedPreset: defaultPreset,
       manualPresets: JANGDAN_PRESETS,
+      previewingPresetId,
     };
   }
 
@@ -47,6 +53,7 @@ export function getJangdanPresetPanelModel(
       miniPlayerTitle: 'AI 추천 준비 중',
       acceptedPreset: defaultPreset,
       manualPresets: JANGDAN_PRESETS,
+      previewingPresetId,
     };
   }
 
@@ -60,6 +67,7 @@ export function getJangdanPresetPanelModel(
     miniPlayerTitle: `AI 추천: ${recommendedPreset.name}`,
     acceptedPreset: recommendedPreset,
     manualPresets: JANGDAN_PRESETS,
+    previewingPresetId,
   };
 }
 

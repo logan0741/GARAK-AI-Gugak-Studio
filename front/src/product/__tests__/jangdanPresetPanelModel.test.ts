@@ -57,3 +57,18 @@ test('models S10B recommendation from current work events with manual fallback p
     JANGDAN_PRESETS.map((preset) => preset.id),
   );
 });
+
+test('exposes the previewing jangdan preset only for the active panel mode', () => {
+  let state = createWorkState(plucks([0, 650, 1300, 1950, 2600]));
+
+  state = applyProductAction(state, {
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.7,
+  });
+
+  expect(getJangdanPresetPanelModel(state, 'track').previewingPresetId).toBe('jungmori');
+  expect(getJangdanPresetPanelModel(state, 'live').previewingPresetId).toBeUndefined();
+});

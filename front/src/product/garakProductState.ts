@@ -65,6 +65,8 @@ export type PracticeAttempt = {
   timingErrorsMs: number[];
 };
 
+export type JangdanPresetPreviewMode = 'live' | 'track';
+
 export type GarakProductState = {
   screenFlow: ScreenFlowState;
   selectedMode: ScreenFlowMode;
@@ -80,6 +82,12 @@ export type GarakProductState = {
   freePlayNotice?: FreePlayNotice;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
+    presetId: JangdanPresetId;
+    bpm: number;
+    volume: number;
+  };
+  previewingJangdanPreset?: {
+    mode: JangdanPresetPreviewMode;
     presetId: JangdanPresetId;
     bpm: number;
     volume: number;
@@ -105,6 +113,13 @@ export type GarakProductAction =
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
+  | {
+      type: 'previewJangdanPreset';
+      mode: JangdanPresetPreviewMode;
+      presetId: JangdanPresetId;
+      bpm: number;
+      volume: number;
+    }
   | { type: 'addTrack' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
@@ -248,7 +263,18 @@ export function applyProductAction(
           bpm: action.bpm,
           volume: action.volume,
         },
+        previewingJangdanPreset: undefined,
         screenFlow: pushTarget(state.screenFlow, 'S05'),
+      };
+    case 'previewJangdanPreset':
+      return {
+        ...state,
+        previewingJangdanPreset: {
+          mode: action.mode,
+          presetId: action.presetId,
+          bpm: action.bpm,
+          volume: action.volume,
+        },
       };
     case 'addTrack':
       return {
@@ -704,7 +730,7 @@ function applyAccompanimentTrack(
     playheadBeat: action.playheadBeat,
   });
 
-  return replaceCurrentWork(
+  const nextState = replaceCurrentWork(
     state,
     nextWork,
     nextCounters,
@@ -715,6 +741,11 @@ function applyAccompanimentTrack(
       { type: 'addAccompanimentTrack' },
     ),
   );
+
+  return {
+    ...nextState,
+    previewingJangdanPreset: undefined,
+  };
 }
 
 function exportCurrentWork(state: GarakProductState): GarakProductState {

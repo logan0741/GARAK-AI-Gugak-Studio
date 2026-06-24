@@ -138,6 +138,52 @@ test('keeps live jangdan guide separate from accompaniment track creation', () =
   });
 });
 
+test('previews a jangdan preset without mutating live guide or work tracks', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
+
+  const trackCountBeforePreview = state.library.works[0].tracks.length;
+
+  state = applyProductAction(state, {
+    type: 'previewJangdanPreset',
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.7,
+  });
+
+  expect(state.screenFlow.currentScreen).toBe('S10B');
+  expect(state.previewingJangdanPreset).toEqual({
+    mode: 'track',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.7,
+  });
+  expect(state.pendingLiveJangdanGuide).toBeUndefined();
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforePreview);
+
+  state = applyProductAction(state, {
+    type: 'addAccompanimentTrack',
+    presetId: 'jungmori',
+    bpm: 80,
+    volume: 0.7,
+  });
+
+  expect(state.previewingJangdanPreset).toBeUndefined();
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforePreview + 1);
+});
+
 test('adds new tracks at the provided playhead beat', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

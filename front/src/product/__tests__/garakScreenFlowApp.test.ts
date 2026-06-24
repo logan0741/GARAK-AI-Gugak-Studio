@@ -33,6 +33,15 @@ test('uses the completed free-creation preview with live work and jangdan data',
   expect(source).toContain('freeCreationCompletedAccompanimentButton');
 });
 
+test('connects S10 jangdan preset previews without applying the preset', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain("type: 'previewJangdanPreset'");
+  expect(source).toContain('model.previewingPresetId');
+  expect(source).toContain('미리듣는 중');
+  expect(source).toContain('previewButtonActive');
+});
+
 test('uses the Figma home hero copy in the home screen accessibility contract', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
