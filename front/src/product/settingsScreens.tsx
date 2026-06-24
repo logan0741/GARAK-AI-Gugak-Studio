@@ -1,21 +1,22 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import {
   GARAK_AUTH_BUTTON_LAYOUT,
   GARAK_COLORS,
-  GARAK_ONBOARDING_LOGOS,
 } from './garakDesignSystem';
-import { GarakLogo, GarakLogoVariant } from './GarakLogo';
+import { GarakLogo } from './GarakLogo';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   PrimaryPillButton,
+  ProgressSteps,
   QuickAccessNav,
   ScreenHeading,
   garakCardShadow,
 } from './garakUi';
 
 type ProductDispatch = (action: GarakProductAction) => void;
+const FREE_CREATION_GUIDE_STEPS = ['악기 선택', '연주 & 녹음', '트랙추가', '믹싱', 'AI 반주 추가', '저장 및 공유'] as const;
 
 export function LanguageContent() {
   return (
@@ -28,21 +29,58 @@ export function LanguageContent() {
 }
 
 export function IntroGuideContent({ dispatch }: { state: GarakProductState; dispatch: ProductDispatch }) {
+  const { height } = useWindowDimensions();
+  const isCompactHeight = height < 820;
+
   return (
-    <View style={styles.onboardingStack}>
-      <View style={styles.onboardingHero}>
-        <OnboardingLogoSurface fileName="logo1.svg" size="large" />
-        <View style={styles.onboardingLogoRow}>
-          <OnboardingLogoSurface fileName="logo2.svg" size="small" />
-          <OnboardingLogoSurface fileName="logo3.svg" size="small" />
+    <View style={styles.modeGuideScreen}>
+      <Text style={[styles.modeGuideTitle, isCompactHeight ? styles.modeGuideTitleCompact : undefined]}>
+        원하는 <Text style={styles.modeGuideTitleStrong}>연주모드</Text>를{'\n'}선택해요.
+      </Text>
+      <View style={[styles.modeToggleRow, isCompactHeight ? styles.modeToggleRowCompact : undefined]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: true }}
+          onPress={() => undefined}
+          style={[styles.modeToggleButton, styles.modeToggleButtonActive]}
+        >
+          <Text style={[styles.modeToggleText, styles.modeToggleTextActive]}>자유창작 모드</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: false }}
+          onPress={() => dispatch({ type: 'navigate', target: 'S13' })}
+          style={styles.modeToggleButton}
+        >
+          <Text style={styles.modeToggleText}>따라하기 모드</Text>
+        </Pressable>
+      </View>
+      <View style={[styles.modeGuidePanel, isCompactHeight ? styles.modeGuidePanelCompact : undefined]}>
+        <Text style={styles.modeGuideDescription}>
+          자유창작 모드에서는 악기를{'\n'}자유롭게 연주 할 수 있습니다.
+        </Text>
+        <View style={[styles.modeGuideSteps, isCompactHeight ? styles.modeGuideStepsCompact : undefined]}>
+          {FREE_CREATION_GUIDE_STEPS.map((step, index) => (
+            <View key={step} style={styles.modeGuideStepGroup}>
+              <View style={styles.modeGuideStepPill}>
+                <Text style={styles.modeGuideStepText}>{step}</Text>
+              </View>
+              {index < FREE_CREATION_GUIDE_STEPS.length - 1 ? (
+                <View
+                  style={[
+                    styles.modeGuideStepConnector,
+                    isCompactHeight ? styles.modeGuideStepConnectorCompact : undefined,
+                  ]}
+                />
+              ) : null}
+            </View>
+          ))}
+        </View>
+        <View style={[styles.modeGuideBottom, isCompactHeight ? styles.modeGuideBottomCompact : undefined]}>
+          <ProgressSteps step={0} />
+          <PrimaryPillButton label="NEXT" onPress={() => dispatch({ type: 'navigate', target: 'S04' })} />
         </View>
       </View>
-      <ScreenHeading
-        title="GARAK에 오신 것을 환영해요"
-        compact
-        description="AI와 함께 만드는 나만의 국악을 바로 연주해볼 수 있어요."
-      />
-      <PrimaryPillButton label="다음 단계로" onPress={() => dispatch({ type: 'navigate', target: 'S05' })} />
     </View>
   );
 }
@@ -113,44 +151,6 @@ export function LoginSyncContent({
   );
 }
 
-function OnboardingLogoSurface({
-  fileName,
-  size,
-}: {
-  fileName: (typeof GARAK_ONBOARDING_LOGOS)[number]['fileName'];
-  size: 'large' | 'small';
-}) {
-  const logo = GARAK_ONBOARDING_LOGOS.find((candidate) => candidate.fileName === fileName);
-
-  if (!logo) {
-    return null;
-  }
-
-  return (
-    <View
-      accessibilityLabel={fileName.replace('.svg', '')}
-      style={[
-        styles.onboardingLogoSurface,
-        size === 'large' ? styles.onboardingLogoSurfaceLarge : styles.onboardingLogoSurfaceSmall,
-        { backgroundColor: logo.backgroundColor },
-      ]}
-    >
-      <GarakLogo variant={getLogoVariant(fileName)} width={size === 'large' ? 122 : 82} />
-    </View>
-  );
-}
-
-function getLogoVariant(fileName: (typeof GARAK_ONBOARDING_LOGOS)[number]['fileName']): GarakLogoVariant {
-  switch (fileName) {
-    case 'logo2.svg':
-      return 'amber';
-    case 'logo3.svg':
-      return 'light';
-    case 'logo1.svg':
-      return 'red';
-  }
-}
-
 function LoginCapsuleButton({
   accessibilityLabel,
   children,
@@ -213,31 +213,124 @@ const styles = StyleSheet.create({
   stack: {
     gap: 18,
   },
-  onboardingStack: {
-    gap: 18,
+  modeGuideScreen: {
+    gap: 0,
   },
-  onboardingHero: {
-    gap: 12,
+  modeGuideTitle: {
+    color: '#606060',
+    fontSize: 28,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 34,
+    marginTop: 27,
   },
-  onboardingLogoRow: {
+  modeGuideTitleCompact: {
+    fontSize: 27,
+    lineHeight: 32,
+    marginTop: 18,
+  },
+  modeGuideTitleStrong: {
+    color: '#191919',
+    fontWeight: '800',
+  },
+  modeToggleRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 14,
+    marginTop: 41,
   },
-  onboardingLogoSurface: {
+  modeToggleRowCompact: {
+    marginTop: 30,
+  },
+  modeToggleButton: {
     alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 17,
+    flex: 1,
+    height: 27,
     justifyContent: 'center',
-    overflow: 'hidden',
     ...garakCardShadow,
   },
-  onboardingLogoSurfaceLarge: {
-    borderRadius: 36,
-    minHeight: 220,
-    width: '100%',
+  modeToggleButtonActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
   },
-  onboardingLogoSurfaceSmall: {
-    borderRadius: 24,
-    flex: 1,
-    minHeight: 116,
+  modeToggleText: {
+    color: '#ACACAC',
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0,
+  },
+  modeToggleTextActive: {
+    color: GARAK_COLORS.surfaceCard,
+    fontWeight: '700',
+  },
+  modeGuidePanel: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 40,
+    borderWidth: 1,
+    marginTop: 34,
+    minHeight: 540,
+    paddingHorizontal: 0,
+    paddingTop: 39,
+    ...garakCardShadow,
+  },
+  modeGuidePanelCompact: {
+    marginTop: 22,
+    minHeight: 464,
+    paddingTop: 30,
+  },
+  modeGuideDescription: {
+    color: 'rgba(25,25,25,0.7)',
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 17,
+    textAlign: 'center',
+  },
+  modeGuideSteps: {
+    alignItems: 'center',
+    marginTop: 35,
+  },
+  modeGuideStepsCompact: {
+    marginTop: 26,
+  },
+  modeGuideStepGroup: {
+    alignItems: 'center',
+  },
+  modeGuideStepPill: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(229,145,0,0.3)',
+    borderColor: GARAK_COLORS.brandAmber,
+    borderRadius: 15,
+    borderWidth: 1,
+    height: 29,
+    justifyContent: 'center',
+    width: 116,
+  },
+  modeGuideStepText: {
+    color: '#191919',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+  modeGuideStepConnector: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+    height: 23,
+    width: 3,
+  },
+  modeGuideStepConnectorCompact: {
+    height: 17,
+  },
+  modeGuideBottom: {
+    alignSelf: 'stretch',
+    gap: 13,
+    marginTop: 54,
+  },
+  modeGuideBottomCompact: {
+    marginTop: 26,
   },
   bodyText: {
     color: GARAK_COLORS.textSecondary,
