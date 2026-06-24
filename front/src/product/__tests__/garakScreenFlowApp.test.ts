@@ -69,6 +69,17 @@ test('connects S22 settings actions to language and library management', () => {
   expect(source).toMatch(/label="보관함 관리"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S18' \}\)\}/);
 });
 
+test('connects S18 library tabs, search, sync label, and empty state CTA', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/libraryScreens.tsx'), 'utf8');
+
+  expect(source).toContain('model.tabs.map');
+  expect(source).toContain("type: 'selectLibraryTab'");
+  expect(source).toContain('TextInput');
+  expect(source).toContain("type: 'updateLibrarySearchQuery'");
+  expect(source).toContain('model.syncLabel');
+  expect(source).toContain('model.emptyState');
+});
+
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 

@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { GARAK_COLORS } from './garakDesignSystem';
 import { GarakLogo } from './GarakLogo';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
@@ -32,6 +32,7 @@ export function LibraryContent({
         <Text style={styles.myLibraryTitleMuted}>나의 GARAK</Text>
         {'\n'}라이브러리
       </Text>
+      <Text style={styles.librarySyncLabel}>{model.syncLabel}</Text>
 
       <View style={styles.myHeroDeck}>
         {model.heroCards.map((card, index) => (
@@ -44,9 +45,47 @@ export function LibraryContent({
         ))}
       </View>
 
+      <TextInput
+        accessibilityLabel="보관함 검색"
+        onChangeText={(query) => dispatch({ type: 'updateLibrarySearchQuery', query })}
+        placeholder="검색"
+        placeholderTextColor="#9A9A9A"
+        style={styles.librarySearchInput}
+        value={model.searchQuery}
+      />
+
+      <View style={styles.libraryTabRow}>
+        {model.tabs.map((tab) => (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: tab.active }}
+            key={tab.id}
+            onPress={() => dispatch({ type: 'selectLibraryTab', tab: tab.id })}
+            style={[styles.libraryTabButton, tab.active ? styles.libraryTabButtonActive : undefined]}
+          >
+            <Text style={[styles.libraryTabText, tab.active ? styles.libraryTabTextActive : undefined]}>
+              {tab.label} {tab.count}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       <View style={styles.playlistHeader}>
         <Text style={styles.sectionLabel}>Playlist</Text>
       </View>
+      {model.emptyState !== undefined ? (
+        <View style={styles.libraryEmptyState}>
+          <Text style={styles.libraryEmptyTitle}>{model.emptyState.title}</Text>
+          <Text style={styles.libraryEmptyDescription}>{model.emptyState.description}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => dispatch(model.emptyState!.action)}
+            style={styles.libraryEmptyCta}
+          >
+            <Text style={styles.libraryEmptyCtaText}>{model.emptyState.ctaLabel}</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <View style={styles.myPlaylistList}>
         {model.playlistRows.map((row) => (
           <MyLibraryPlaylistRowView
@@ -563,8 +602,51 @@ const styles = StyleSheet.create({
   myLibraryTitleMuted: {
     color: '#9E9E9E',
   },
+  librarySyncLabel: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0,
+    marginTop: -10,
+  },
   myHeroDeck: {
     marginBottom: -10,
+  },
+  librarySearchInput: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: '#ECECEC',
+    borderRadius: 18,
+    borderWidth: 1,
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+    minHeight: 44,
+    paddingHorizontal: 16,
+  },
+  libraryTabRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  libraryTabButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 16,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 38,
+    paddingHorizontal: 10,
+  },
+  libraryTabButtonActive: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+  },
+  libraryTabText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  libraryTabTextActive: {
+    color: GARAK_COLORS.surfaceCard,
   },
   myHeroCard: {
     borderRadius: 40,
@@ -661,6 +743,35 @@ const styles = StyleSheet.create({
   },
   myPlaylistList: {
     gap: 2,
+  },
+  libraryEmptyState: {
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 4,
+  },
+  libraryEmptyTitle: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  libraryEmptyDescription: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
+  libraryEmptyCta: {
+    alignSelf: 'flex-start',
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: 16,
+    minHeight: 34,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  libraryEmptyCtaText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 12,
+    fontWeight: '800',
   },
   playlistRow: {
     alignItems: 'center',

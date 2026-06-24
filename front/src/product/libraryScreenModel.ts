@@ -1,5 +1,5 @@
 import type { ExportedAudio, PracticeResult, Work } from '../studio/studioTypes';
-import type { GarakProductAction, GarakProductState } from './garakProductState';
+import type { GarakProductAction, GarakProductState, ProductLibraryTab } from './garakProductState';
 import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
 
 export type MyLibraryHeroCard = {
@@ -26,9 +26,27 @@ export type MyLibraryPlaylistRow = {
   practiceResultId?: string;
 };
 
+export type MyLibraryTab = {
+  id: ProductLibraryTab;
+  label: string;
+  active: boolean;
+  count: number;
+};
+
+export type MyLibraryEmptyState = {
+  title: string;
+  description: string;
+  ctaLabel: string;
+  action: GarakProductAction;
+};
+
 export type MyLibraryViewModel = {
   heroCards: MyLibraryHeroCard[];
   playlistRows: MyLibraryPlaylistRow[];
+  tabs: MyLibraryTab[];
+  searchQuery: string;
+  syncLabel: string;
+  emptyState?: MyLibraryEmptyState;
 };
 
 export type MyLibraryPlayerViewModel = {
@@ -99,7 +117,14 @@ const FIGMA_DEMO_PLAYLIST_ROWS: MyLibraryPlaylistRow[] = [
 
 export function getMyLibraryViewModel(state: GarakProductState): MyLibraryViewModel {
   const actualRows = getActualLibraryRows(state);
-  const playlistRows = markFirstRowActive(fillWithDemoRows(actualRows));
+  const activeTab = state.libraryTab;
+  const searchQuery = state.librarySearchQuery.trim();
+  const tabRows = actualRows.filter((row) => rowMatchesLibraryTab(row, activeTab));
+  const filteredRows = filterLibraryRows(tabRows, searchQuery);
+  const shouldFillWithDemoRows = activeTab === 'works' && searchQuery.length === 0;
+  const playlistRows = markFirstRowActive(
+    shouldFillWithDemoRows ? fillWithDemoRows(filteredRows) : filteredRows,
+  );
   const primaryHero = createPrimaryHeroCard(playlistRows[0]);
 
   return {
@@ -119,6 +144,10 @@ export function getMyLibraryViewModel(state: GarakProductState): MyLibraryViewMo
       primaryHero,
     ],
     playlistRows,
+    tabs: createLibraryTabs(state, actualRows),
+    searchQuery: state.librarySearchQuery,
+    syncLabel: createLibrarySyncLabel(state),
+    emptyState: createLibraryEmptyState(state, filteredRows),
   };
 }
 
@@ -265,6 +294,88 @@ function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {
 
     return left.order - right.order;
   });
+}
+
+function rowMatchesLibraryTab(row: ActualLibraryRow, tab: ProductLibraryTab): boolean {
+  return tab === 'works' ? row.kind === 'work' : row.kind === 'exportedAudio' || row.kind === 'practiceResult';
+}
+
+function filterLibraryRows(rows: ActualLibraryRow[], searchQuery: string): ActualLibraryRow[] {
+  if (searchQuery.length === 0) {
+    return rows;
+  }
+
+  const normalizedQuery = searchQuery.toLocaleLowerCase();
+
+  return rows.filter((row) =>
+    [row.title, row.subtitle, row.date, row.kind]
+      .filter((value): value is string => value !== undefined)
+      .some((value) => value.toLocaleLowerCase().includes(normalizedQuery)),
+  );
+}
+
+function createLibraryTabs(state: GarakProductState, rows: ActualLibraryRow[]): MyLibraryTab[] {
+  const worksCount = rows.filter((row) => row.kind === 'work').length;
+  const shareablesCount = rows.filter((row) => row.kind === 'exportedAudio' || row.kind === 'practiceResult').length;
+
+  return [
+    {
+      id: 'works',
+      label: '작업',
+      active: state.libraryTab === 'works',
+      count: worksCount,
+    },
+    {
+      id: 'shareables',
+      label: '내보낸 음원/결과',
+      active: state.libraryTab === 'shareables',
+      count: shareablesCount,
+    },
+  ];
+}
+
+function createLibrarySyncLabel(state: GarakProductState): string {
+  const syncPrefix = state.account.status === 'guest' ? '로컬 저장' : '계정 동기화';
+  const shareableCount = state.library.exportedAudios.length + state.library.practiceResults.length;
+
+  return `${syncPrefix} · 작업 ${state.library.works.length}개 · 내보낸 음원/결과 ${shareableCount}개`;
+}
+
+function createLibraryEmptyState(
+  state: GarakProductState,
+  filteredRows: ActualLibraryRow[],
+): MyLibraryEmptyState | undefined {
+  if (filteredRows.length > 0) {
+    return undefined;
+  }
+
+  if (state.librarySearchQuery.trim().length > 0) {
+    return {
+      title: '검색 결과가 없어요.',
+      description: '다른 곡명, 악기, 날짜로 다시 검색해 보세요.',
+      ctaLabel: '검색 지우기',
+      action: { type: 'updateLibrarySearchQuery', query: '' },
+    };
+  }
+
+  if (state.libraryTab === 'works') {
+    return {
+      title: '아직 만든 작업이 없어요.',
+      description: '첫 연주를 시작하면 자동 저장된 작업이 여기에 표시됩니다.',
+      ctaLabel: '첫 연주 시작하기',
+      action: { type: 'navigate', target: 'S01' },
+    };
+  }
+
+  return {
+    title: '아직 내보낸 음원이 없어요.',
+    description: '최근 작업을 열어 내보내면 공유 가능한 결과가 여기에 표시됩니다.',
+    ctaLabel: state.library.works.length > 0 ? '최근 작업 열기' : '첫 연주 시작하기',
+    action:
+      state.library.works[0] !== undefined
+        ? { type: 'openWork', workId: state.library.works[0].id }
+        : { type: 'navigate', target: 'S01' },
+  };
 }
 
 function fillWithDemoRows(rows: MyLibraryPlaylistRow[]): MyLibraryPlaylistRow[] {

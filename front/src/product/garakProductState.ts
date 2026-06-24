@@ -45,6 +45,8 @@ export type ProductLibraryState = {
   practiceResults: PracticeResult[];
 };
 
+export type ProductLibraryTab = 'works' | 'shareables';
+
 export type PendingFreePlayTake = {
   events: PerformanceEvent[];
 };
@@ -72,6 +74,8 @@ export type GarakProductState = {
   currentWorkId?: string;
   selectedPlayerItem?: ProductPlayerSelection;
   sharePreviewStatus?: 'playing';
+  libraryTab: ProductLibraryTab;
+  librarySearchQuery: string;
   pendingFreePlayTake?: PendingFreePlayTake;
   freePlayNotice?: FreePlayNotice;
   practiceAttempt?: PracticeAttempt;
@@ -123,6 +127,8 @@ export type GarakProductAction =
   | { type: 'saveSharedRecording' }
   | { type: 'loginAndLoadMySongs' }
   | { type: 'completeLoginSync' }
+  | { type: 'selectLibraryTab'; tab: ProductLibraryTab }
+  | { type: 'updateLibrarySearchQuery'; query: string }
   | { type: 'playLibraryItem'; item: ProductPlayerSelection }
   | { type: 'openSelectedPlayerEditor' }
   | { type: 'navigate'; target: ImplementedScreenId }
@@ -149,6 +155,8 @@ export function createInitialGarakProductState(input: { now?: () => string } = {
     account: {
       status: 'guest',
     },
+    libraryTab: 'works',
+    librarySearchQuery: '',
     counters: {
       work: 0,
       track: 0,
@@ -327,6 +335,16 @@ export function applyProductAction(
           status: 'loggedIn',
         },
         screenFlow: pushTarget(state.screenFlow, 'S18'),
+      };
+    case 'selectLibraryTab':
+      return {
+        ...state,
+        libraryTab: action.tab,
+      };
+    case 'updateLibrarySearchQuery':
+      return {
+        ...state,
+        librarySearchQuery: action.query,
       };
     case 'navigate':
       if (action.target === 'S15') {
