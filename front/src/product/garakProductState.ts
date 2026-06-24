@@ -44,6 +44,12 @@ export type ProductLibraryState = {
   practiceResults: PracticeResult[];
 };
 
+export type PendingFreePlayTake = {
+  events: PerformanceEvent[];
+};
+
+export type FreePlayNotice = 'missingTake';
+
 export type GarakProductState = {
   screenFlow: ScreenFlowState;
   selectedMode: ScreenFlowMode;
@@ -51,6 +57,8 @@ export type GarakProductState = {
   selectedPracticeSongId?: PracticeSong['id'];
   currentWorkId?: string;
   selectedPlayerItem?: ProductPlayerSelection;
+  pendingFreePlayTake?: PendingFreePlayTake;
+  freePlayNotice?: FreePlayNotice;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
     bpm: number;
@@ -73,6 +81,7 @@ export type GarakProductAction =
   | { type: 'next' }
   | { type: 'selectInstrument'; instrument: InstrumentId }
   | { type: 'startWithDefaults' }
+  | { type: 'startPerformanceRecording'; events?: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
@@ -178,10 +187,20 @@ export function applyProductAction(
       return {
         ...state,
         selectedInstrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
+        pendingFreePlayTake: undefined,
+        freePlayNotice: undefined,
         screenFlow: pushTarget(state.screenFlow, 'S05'),
       };
+    case 'startPerformanceRecording':
+      return {
+        ...state,
+        pendingFreePlayTake: {
+          events: action.events ?? [],
+        },
+        freePlayNotice: undefined,
+      };
     case 'completePerformance':
-      return completePerformance(state, action.events ?? [defaultPerformanceEvent()]);
+      return completePerformance(state, action.events);
     case 'openLiveJangdanGuide':
       return {
         ...state,
@@ -301,11 +320,15 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '직접 조정',
       ]);
     case 'S05':
-      return summary(screenId, `${getInstrumentLabel(state)} 자유연주`, '녹음', '악기를 직접 연주하고 완료하면 작업으로 자동 저장돼요.', [
+      return summary(
+        screenId,
+        `${getInstrumentLabel(state)} 자유연주`,
         '녹음',
-        '장단',
-        '완료',
-      ]);
+        state.freePlayNotice === 'missingTake'
+          ? '저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.'
+          : '악기를 직접 연주하고 완료하면 작업으로 자동 저장돼요.',
+        ['녹음', '장단', '완료'],
+      );
     case 'S07':
       return summary(screenId, '트랙/레이어 편집', currentWorkTitle(state), '작업 위에 악기와 반주 트랙을 레이어로 쌓아요.', [
         '트랙 추가',
@@ -408,17 +431,25 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
   }
 }
 
-function completePerformance(state: GarakProductState, events: PerformanceEvent[]): GarakProductState {
+function completePerformance(state: GarakProductState, events?: PerformanceEvent[]): GarakProductState {
+  if (state.pendingFreePlayTake === undefined) {
+    return {
+      ...state,
+      freePlayNotice: 'missingTake',
+    };
+  }
+
   const nextCounters = incrementCounters(state.counters, ['work', 'track', 'take']);
   const now = state.now();
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const takeEvents = events ?? state.pendingFreePlayTake.events;
   const work = autoSaveTakeAsWork({
     workId: `work-${nextCounters.work}`,
     trackId: `track-${nextCounters.track}`,
     takeId: `take-${nextCounters.take}`,
     title: `${getInstrumentName(instrument)} 작업 ${nextCounters.work}`,
     instrument,
-    events,
+    events: takeEvents,
     createdAt: now,
     startedAtBeat: 1,
     durationBeats: 4,
@@ -436,6 +467,8 @@ function completePerformance(state: GarakProductState, events: PerformanceEvent[
     ...state,
     counters: nextCounters,
     currentWorkId: work.id,
+    pendingFreePlayTake: undefined,
+    freePlayNotice: undefined,
     pendingLiveJangdanGuide: undefined,
     library: {
       ...state.library,
@@ -816,15 +849,6 @@ function incrementCounters(
   }
 
   return next;
-}
-
-function defaultPerformanceEvent(): PerformanceEvent {
-  return {
-    type: 'string_pluck',
-    tsMs: 0,
-    stringIndex: 1,
-    velocity: 1,
-  };
 }
 
 function getInstrumentLabel(state: GarakProductState): string {

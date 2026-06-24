@@ -5,6 +5,12 @@ import {
   getCurrentScreenSummary,
 } from '../garakProductState';
 
+function completeRecordedFreePlay(state: ReturnType<typeof createInitialGarakProductState>) {
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+
+  return applyProductAction(state, { type: 'completePerformance' });
+}
+
 test('starts on the GARAK home in guest free creation mode', () => {
   const state = createInitialGarakProductState();
   const summary = getCurrentScreenSummary(state);
@@ -43,6 +49,22 @@ test('uses the visible default free-creation instrument when starting with defau
   expect(getCurrentScreenSummary(state).title).toBe('장구 자유연주');
 });
 
+test('keeps S05 in place and shows guidance when completing without a recorded take', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.library.works).toHaveLength(0);
+  expect(state.currentWorkId).toBeUndefined();
+  expect(getCurrentScreenSummary(state).description).toContain('저장할 테이크가 없어요');
+});
+
 test('completes S05 by auto-saving an editable work and opening S07', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -53,7 +75,7 @@ test('completes S05 by auto-saving an editable work and opening S07', () => {
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
 
   expect(state.screenFlow.currentScreen).toBe('S07');
   expect(state.library.works).toHaveLength(1);
@@ -62,6 +84,7 @@ test('completes S05 by auto-saving an editable work and opening S07', () => {
     kind: 'instrument',
     instrument: 'gayageum',
   });
+  expect(state.library.works[0].tracks[0].kind === 'instrument' ? state.library.works[0].tracks[0].takes[0].events : []).toEqual([]);
 });
 
 test('keeps live jangdan guide separate from accompaniment track creation', () => {
@@ -81,7 +104,7 @@ test('keeps live jangdan guide separate from accompaniment track creation', () =
     bpm: 84,
     volume: 0.6,
   });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
 
   const workAfterLiveGuide = state.library.works[0];
   expect(state.screenFlow.currentScreen).toBe('S07');
@@ -125,7 +148,7 @@ test('adds new tracks at the provided playhead beat', () => {
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'addTrack' });
   state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'janggu' });
   state = applyProductAction(state, { type: 'applyInstrumentTrack', playheadBeat: 5 });
@@ -160,7 +183,7 @@ test('opens a selected library work in S07 and sets it current', () => {
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = {
     ...state,
     currentWorkId: undefined,
@@ -263,7 +286,7 @@ test('completes explicit login sync without dropping local library items', () =>
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = {
     ...state,
     screenFlow: {
@@ -357,7 +380,7 @@ test('publishes the selected exported audio from S17 and marks it shared', () =>
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
   state = applyProductAction(state, { type: 'navigate', target: 'S17' });
   state = applyProductAction(state, { type: 'publishShareTarget' });
@@ -383,7 +406,7 @@ test('opens S17 from the S19 player for the selected exported audio', () => {
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
   state = applyProductAction(state, { type: 'shareSelectedPlayerItem' });
 
@@ -404,7 +427,7 @@ test('opens the original work editor from the S19 player when the export has a w
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
   state = applyProductAction(state, { type: 'openSelectedPlayerEditor' });
 

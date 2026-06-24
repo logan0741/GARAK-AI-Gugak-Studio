@@ -121,6 +121,16 @@ test('lets embedded Figma landscape stages own the full viewport', () => {
   expect(freePlaySource).toContain('!usesFigmaLandscapeStage ?');
 });
 
+test('connects S05 recording start separately from completion and missing-take guidance', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain("type: 'startPerformanceRecording'");
+  expect(source).toContain("type: 'completePerformance'");
+  expect(source).toContain("state.freePlayNotice === 'missingTake'");
+  expect(source).toContain('저장할 테이크가 없어요');
+  expect(source).toContain("label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}");
+});
+
 test('uses the Figma free-creation mix and share flow for S07', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 

@@ -7,6 +7,12 @@ import {
   getMyLibraryViewModel,
 } from '../libraryScreenModel';
 
+function completeRecordedFreePlay(state: ReturnType<typeof createInitialGarakProductState>) {
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+
+  return applyProductAction(state, { type: 'completePerformance' });
+}
+
 test('uses the Figma my-screen demo library when there are no saved items', () => {
   const model = getMyLibraryViewModel(createInitialGarakProductState());
 
@@ -44,7 +50,7 @@ test('puts saved works and exports before the demo playlist rows', () => {
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
 
   const model = getMyLibraryViewModel(state);
@@ -126,7 +132,7 @@ test('builds the player detail from the selected my-library item', () => {
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
 
   state = applyProductAction(state, {
@@ -163,7 +169,7 @@ test('exposes S19 player actions without choosing their visual placement', () =>
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
-  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
 
   expect(getMyLibraryPlayerActions(state)).toEqual({

@@ -279,10 +279,19 @@ export function FreePlayContent({
         </View>
       )}
       {!usesFigmaLandscapeStage ? (
-        <View style={[styles.buttonRow, isLandscapeFrame ? styles.landscapeButtonRow : undefined]}>
-          <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
-          <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
-          <PrimaryPillButton label="녹음 완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
+        <View style={styles.freePlayActionArea}>
+          {state.freePlayNotice === 'missingTake' ? (
+            <Text style={styles.freePlayNotice}>저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.</Text>
+          ) : null}
+          <View style={[styles.buttonRow, isLandscapeFrame ? styles.landscapeButtonRow : undefined]}>
+            <SecondaryPillButton
+              label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}
+              onPress={() => dispatch({ type: 'startPerformanceRecording' })}
+            />
+            <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
+            <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
+            <PrimaryPillButton label="완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
+          </View>
         </View>
       ) : null}
     </View>
@@ -1683,8 +1692,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
+  freePlayActionArea: {
+    gap: 10,
+  },
+  freePlayNotice: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    textAlign: 'center',
+  },
   buttonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   landscapeButtonRow: {
