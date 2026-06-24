@@ -113,6 +113,6 @@ export function getInstrumentName(instrument: InstrumentId): string {
   return MVP_INSTRUMENTS.find((item) => item.id === instrument)?.name ?? instrument;
 }
 
-export function getPracticeSongTitle(songId: PracticeSong['id']): string {
+export function getPracticeSongTitle(songId: string): string {
   return PRACTICE_SONGS.find((song) => song.id === songId)?.title ?? songId;
 }

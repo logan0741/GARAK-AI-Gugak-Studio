@@ -1,4 +1,6 @@
+import { ExportedAudio, PracticeResult } from '../studio/studioTypes';
 import { GarakProductState } from './garakProductState';
+import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
 
 export type ShareFeedCategory = {
   label: string;
@@ -32,6 +34,12 @@ export type ShareFeedViewModel = {
   hero: ShareFeedHero;
   player: ShareFeedPlayer;
   recentCards: ShareFeedRecentCard[];
+};
+
+export type SharePrepareViewModel = {
+  canShare: boolean;
+  title: string;
+  description: string;
 };
 
 const SHARE_FEED_CATEGORIES = ['Hot', 'K-pop', 'K-Drama OST', 'K-Minyo', 'Arirang'] as const;
@@ -74,6 +82,66 @@ export function getShareFeedViewModel(state: GarakProductState): ShareFeedViewMo
     player: getShareablePlayer(state),
     recentCards: FIGMA_RECENT_CARDS,
   };
+}
+
+export function getSharePrepareViewModel(state: GarakProductState): SharePrepareViewModel {
+  const shareTarget = getSharePrepareTarget(state);
+
+  if (shareTarget === undefined) {
+    return {
+      canShare: false,
+      title: '공유 대상 없음',
+      description: '작업을 내보내거나 따라하기 결과를 저장하면 공유할 수 있습니다.',
+    };
+  }
+
+  if (shareTarget.kind === 'exported_audio') {
+    return {
+      canShare: true,
+      title: shareTarget.title,
+      description: `${formatSeconds(shareTarget.durationSeconds)} · ${formatExportedInstrumentNames(shareTarget)} · 내보낸 음원`,
+    };
+  }
+
+  return {
+    canShare: true,
+    title: `${getPracticeSongTitle(shareTarget.songId)} 연습 결과`,
+    description: `${getInstrumentName(shareTarget.instrument)} · 정확도 ${shareTarget.accuracyScore}% · 따라하기 결과`,
+  };
+}
+
+function getSharePrepareTarget(state: GarakProductState): ExportedAudio | PracticeResult | undefined {
+  const selectedPlayerItem = state.selectedPlayerItem;
+
+  if (selectedPlayerItem?.kind === 'exportedAudio') {
+    return state.library.exportedAudios.find(
+      (audio) => audio.id === selectedPlayerItem.exportedAudioId,
+    );
+  }
+
+  if (selectedPlayerItem?.kind === 'practiceResult') {
+    return state.library.practiceResults.find(
+      (result) => result.id === selectedPlayerItem.practiceResultId,
+    );
+  }
+
+  if (selectedPlayerItem !== undefined) {
+    return undefined;
+  }
+
+  return [...state.library.exportedAudios, ...state.library.practiceResults].sort(
+    (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
+  )[0];
+}
+
+function formatSeconds(seconds: number): string {
+  return `${seconds}초`;
+}
+
+function formatExportedInstrumentNames(audio: ExportedAudio): string {
+  const names = audio.instrumentNames.map((name) => name.trim()).filter((name) => name.length > 0);
+
+  return names.length > 0 ? names.join(', ') : '사용 악기 없음';
 }
 
 function getShareablePlayer(state: GarakProductState): ShareFeedPlayer {

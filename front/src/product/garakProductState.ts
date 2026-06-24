@@ -556,6 +556,10 @@ function createPracticeResultAndRoute(
       ...state.library,
       practiceResults: [...state.library.practiceResults, result],
     },
+    selectedPlayerItem: {
+      kind: 'practiceResult',
+      practiceResultId: result.id,
+    },
     screenFlow: pushTarget(state.screenFlow, target),
   };
 }

@@ -32,6 +32,7 @@ import {
   getJangdanPresetPanelModel,
   type JangdanPresetPanelMode,
 } from './jangdanPresetPanelModel';
+import { getFreeCreationCompletedPreviewModel } from './freeCreationCompletedPreviewModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const INSTRUMENT_CHIP_ORDER: InstrumentId[] = ['janggu', 'gayageum', 'daegeum'];
@@ -359,12 +360,7 @@ function FreeCreationCompletedPreviewContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const work = state.library.works.find((item) => item.id === state.currentWorkId);
-  const instrumentTracks = work?.tracks.filter(isInstrumentTrack) ?? [];
-  const firstInstrument = instrumentTracks[0]?.instrument ?? state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
-  const secondInstrument = instrumentTracks[1]?.instrument ?? getNextTrackInstrument([firstInstrument]);
-  const firstInstrumentTrackLabel = `Track 1 : ${getInstrumentName(firstInstrument)}`;
-  const secondInstrumentTrackLabel = `Track 2 : ${getInstrumentName(secondInstrument)}`;
+  const previewModel = getFreeCreationCompletedPreviewModel(state);
 
   return (
     <View style={styles.freeCreationCompletedPreviewScreen}>
@@ -372,13 +368,17 @@ function FreeCreationCompletedPreviewContent({
         <Text style={styles.freeCreationCompletedTitleStrong}>가락</Text> 미리듣기
       </Text>
 
-      <View style={styles.freeCreationCompletedPlayerDeck} accessible accessibilityLabel="My Arirang 재생 미리보기">
+      <View
+        style={styles.freeCreationCompletedPlayerDeck}
+        accessible
+        accessibilityLabel={previewModel.playerAccessibilityLabel}
+      >
         <View style={styles.freeCreationPlayerShadowBack} />
         <View style={styles.freeCreationPlayerShadowFront} />
         <View style={styles.freeCreationCompletedPlayerCard}>
           <View style={styles.freeCreationCompletedPlayerTitleRow}>
             <Text numberOfLines={1} style={styles.freeCreationCompletedPlayerTitle}>
-              My Arirang
+              {previewModel.playerTitle}
             </Text>
             <View style={styles.freeCreationCompletedEditGlyph} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
               <View style={styles.freeCreationCompletedEditGlyphLine} />
@@ -401,24 +401,24 @@ function FreeCreationCompletedPreviewContent({
 
         <View
           accessible
-          accessibilityLabel="AI 반주 : 아리랑"
+          accessibilityLabel={previewModel.accompanimentTrackLabel}
           style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedAccompanimentButton]}
         >
-          <Text style={styles.freeCreationCompletedTrackButtonText}>AI 반주 : 아리랑</Text>
+          <Text style={styles.freeCreationCompletedTrackButtonText}>{previewModel.accompanimentTrackLabel}</Text>
         </View>
         <View
           accessible
-          accessibilityLabel={secondInstrumentTrackLabel}
+          accessibilityLabel={previewModel.secondInstrumentTrackLabel}
           style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedSecondTrackButton]}
         >
-          <Text style={styles.freeCreationCompletedTrackButtonText}>{secondInstrumentTrackLabel}</Text>
+          <Text style={styles.freeCreationCompletedTrackButtonText}>{previewModel.secondInstrumentTrackLabel}</Text>
         </View>
         <View
           accessible
-          accessibilityLabel={firstInstrumentTrackLabel}
+          accessibilityLabel={previewModel.firstInstrumentTrackLabel}
           style={[styles.freeCreationCompletedTrackButton, styles.freeCreationCompletedFirstTrackButton]}
         >
-          <Text style={styles.freeCreationCompletedTrackButtonText}>{firstInstrumentTrackLabel}</Text>
+          <Text style={styles.freeCreationCompletedTrackButtonText}>{previewModel.firstInstrumentTrackLabel}</Text>
         </View>
 
         <Pressable

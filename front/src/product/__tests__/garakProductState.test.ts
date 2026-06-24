@@ -218,6 +218,10 @@ test('shares a practice result by creating a shareable target before opening S17
     instrument: 'janggu',
     shareState: 'ready',
   });
+  expect(state.selectedPlayerItem).toEqual({
+    kind: 'practiceResult',
+    practiceResultId: state.library.practiceResults[0].id,
+  });
 });
 
 test('routes settings login CTA to S23 while preserving local library state', () => {

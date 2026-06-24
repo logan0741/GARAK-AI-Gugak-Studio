@@ -2,7 +2,12 @@ import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View }
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState, ProductPlayerSelection } from './garakProductState';
-import { getShareFeedViewModel, ShareFeedPlayer, ShareFeedRecentCard } from './shareScreenModel';
+import {
+  getShareFeedViewModel,
+  getSharePrepareViewModel,
+  ShareFeedPlayer,
+  ShareFeedRecentCard,
+} from './shareScreenModel';
 import {
   InstrumentVisual,
   MiniTrackPlayer,
@@ -22,28 +27,23 @@ export function SharePrepareContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const hasShareable =
-    state.library.exportedAudios.length > 0 || state.library.practiceResults.length > 0;
+  const model = getSharePrepareViewModel(state);
 
   return (
     <View style={styles.stack}>
       <ScreenHeading title={'나의 GARAK\n공유하기'} />
       <View style={styles.prepareCard}>
-        <MiniTrackPlayer title={hasShareable ? 'My Arirang' : '공유 대상 없음'} tone="navy" />
-        <Text style={styles.bodyText}>
-          {hasShareable
-            ? '제목, 길이, 사용 악기를 확인한 뒤 공유할 수 있습니다.'
-            : '작업을 내보내거나 따라하기 결과를 저장하면 공유할 수 있습니다.'}
-        </Text>
+        <MiniTrackPlayer title={model.title} tone="navy" />
+        <Text style={styles.bodyText}>{model.description}</Text>
       </View>
       <View style={styles.buttonRow}>
         <SecondaryPillButton
-          disabled={!hasShareable}
+          disabled={!model.canShare}
           label="공유하기"
           onPress={() => dispatch({ type: 'navigate', target: 'S20' })}
         />
         <SecondaryPillButton
-          disabled={!hasShareable}
+          disabled={!model.canShare}
           label="저장만 하기"
           onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
         />

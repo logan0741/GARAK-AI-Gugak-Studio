@@ -20,15 +20,16 @@ test('uses the Figma completed instrument stack for S08 after adding a track', (
   expect(source).toContain('freeCreationAccompanimentLayerAfterInstrument');
 });
 
-test('uses the Figma final free-creation preview after adding AI accompaniment', () => {
+test('uses the completed free-creation preview with live work and jangdan data', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
   expect(source).toContain('hasAccompanimentTrack');
   expect(source).toContain('freeCreationCompletedPreviewScreen');
   expect(source).toContain('freeCreationCompletedTitleStrong');
   expect(source).toContain('미리듣기');
-  expect(source).toContain('My Arirang');
-  expect(source).toContain('AI 반주 : 아리랑');
+  expect(source).toContain('getFreeCreationCompletedPreviewModel');
+  expect(source).toContain('previewModel.playerTitle');
+  expect(source).toContain('previewModel.accompanimentTrackLabel');
   expect(source).toContain('freeCreationCompletedAccompanimentButton');
 });
 
