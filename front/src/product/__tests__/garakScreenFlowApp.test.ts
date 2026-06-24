@@ -65,6 +65,8 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).toContain("type: 'selectIntroGuideMode'");
   expect(source).toContain("mode: 'freeCreation'");
   expect(source).toContain("mode: 'practice'");
+  expect(source).toContain('modeGuideSkipButton');
+  expect(source).toMatch(/label="건너뛰기"[\s\S]*?target: 'S04'/);
   expect(source).toContain("target: 'S04'");
   expect(source).not.toContain('GARAK에 오신 것을 환영해요');
   expect(source).not.toContain('onPress={() => undefined}');
