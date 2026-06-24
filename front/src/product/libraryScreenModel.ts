@@ -1,0 +1,329 @@
+import type { ExportedAudio, PracticeResult, Work } from '../studio/studioTypes';
+import { GarakProductState } from './garakProductState';
+import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
+
+export type MyLibraryHeroCard = {
+  id: string;
+  title: string;
+  tone: 'red' | 'light' | 'navy';
+  date?: string;
+  playable: boolean;
+  workId?: string;
+  exportedAudioId?: string;
+  practiceResultId?: string;
+};
+
+export type MyLibraryPlaylistRow = {
+  id: string;
+  title: string;
+  date: string;
+  kind: 'work' | 'exportedAudio' | 'practiceResult' | 'demo';
+  playable: boolean;
+  active: boolean;
+  subtitle?: string;
+  workId?: string;
+  exportedAudioId?: string;
+  practiceResultId?: string;
+};
+
+export type MyLibraryViewModel = {
+  heroCards: MyLibraryHeroCard[];
+  playlistRows: MyLibraryPlaylistRow[];
+};
+
+export type MyLibraryPlayerViewModel = {
+  title: string;
+  meta: string;
+  sourceKind: MyLibraryPlaylistRow['kind'];
+  editWorkId?: string;
+};
+
+type ActualLibraryRow = MyLibraryPlaylistRow & {
+  sortKey: number;
+  order: number;
+};
+
+const MAX_VISIBLE_PLAYLIST_ROWS = 5;
+
+const FIGMA_DEMO_PLAYLIST_ROWS: MyLibraryPlaylistRow[] = [
+  {
+    id: 'demo-my-arirang',
+    title: 'My Arirang',
+    date: '2026.06.01',
+    kind: 'demo',
+    playable: true,
+    active: false,
+  },
+  {
+    id: 'demo-falling-water',
+    title: 'Falling water in a valley',
+    date: '2026.05.05',
+    kind: 'demo',
+    playable: true,
+    active: false,
+  },
+  {
+    id: 'demo-forest-birds',
+    title: 'Forest Birds singing',
+    date: '2026.04.20',
+    kind: 'demo',
+    playable: true,
+    active: false,
+  },
+  {
+    id: 'demo-sea-waves-march',
+    title: 'sea waves',
+    date: '2026.03.19',
+    kind: 'demo',
+    playable: true,
+    active: false,
+  },
+  {
+    id: 'demo-sea-waves-february',
+    title: 'sea waves',
+    date: '2026.02.03',
+    kind: 'demo',
+    playable: true,
+    active: false,
+  },
+];
+
+export function getMyLibraryViewModel(state: GarakProductState): MyLibraryViewModel {
+  const actualRows = getActualLibraryRows(state);
+  const playlistRows = markFirstRowActive(fillWithDemoRows(actualRows));
+  const primaryHero = createPrimaryHeroCard(playlistRows[0]);
+
+  return {
+    heroCards: [
+      {
+        id: 'hero-kdrama-ost',
+        title: 'K-Drama OST',
+        tone: 'red',
+        playable: false,
+      },
+      {
+        id: 'hero-kpop-demon-hunters',
+        title: 'K-pop Demon Hunters',
+        tone: 'light',
+        playable: false,
+      },
+      primaryHero,
+    ],
+    playlistRows,
+  };
+}
+
+export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibraryPlayerViewModel {
+  const selection = state.selectedPlayerItem;
+
+  if (selection?.kind === 'work') {
+    const work = state.library.works.find((item) => item.id === selection.workId);
+
+    if (work !== undefined) {
+      return createWorkPlayerViewModel(work);
+    }
+  }
+
+  if (selection?.kind === 'exportedAudio') {
+    const audio = state.library.exportedAudios.find((item) => item.id === selection.exportedAudioId);
+
+    if (audio !== undefined) {
+      return createExportedAudioPlayerViewModel(audio);
+    }
+  }
+
+  if (selection?.kind === 'practiceResult') {
+    const result = state.library.practiceResults.find((item) => item.id === selection.practiceResultId);
+
+    if (result !== undefined) {
+      return createPracticeResultPlayerViewModel(result);
+    }
+  }
+
+  if (selection?.kind === 'demo') {
+    return createDemoPlayerViewModel(selection.title);
+  }
+
+  const exportedAudio = state.library.exportedAudios[0];
+
+  if (exportedAudio !== undefined) {
+    return createExportedAudioPlayerViewModel(exportedAudio);
+  }
+
+  const work = state.library.works[0];
+
+  if (work !== undefined) {
+    return createWorkPlayerViewModel(work);
+  }
+
+  return createDemoPlayerViewModel('My Arirang');
+}
+
+function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {
+  let order = 0;
+
+  const workRows: ActualLibraryRow[] = state.library.works.map((work) => ({
+    id: `work-${work.id}`,
+    title: work.title,
+    date: formatLibraryDate(work.updatedAt || work.createdAt),
+    kind: 'work',
+    playable: true,
+    active: false,
+    subtitle: `${work.tracks.length} track${work.tracks.length === 1 ? '' : 's'}`,
+    workId: work.id,
+    sortKey: toSortKey(work.updatedAt || work.createdAt),
+    order: order++,
+  }));
+
+  const exportRows: ActualLibraryRow[] = state.library.exportedAudios.map((audio) => ({
+    id: `export-${audio.id}`,
+    title: audio.title,
+    date: formatLibraryDate(audio.createdAt),
+    kind: 'exportedAudio',
+    playable: true,
+    active: false,
+    subtitle: `${audio.instrumentNames.join(', ')} · ${formatDuration(audio.durationSeconds)}`,
+    exportedAudioId: audio.id,
+    sortKey: toSortKey(audio.createdAt),
+    order: order++,
+  }));
+
+  const practiceRows: ActualLibraryRow[] = state.library.practiceResults.map((result) => ({
+    id: `practice-${result.id}`,
+    title: `${formatPracticeSongTitle(result.songId)} 연습`,
+    date: formatLibraryDate(result.createdAt),
+    kind: 'practiceResult',
+    playable: true,
+    active: false,
+    subtitle: `${getInstrumentName(result.instrument)} ${result.accuracyScore}점`,
+    practiceResultId: result.id,
+    sortKey: toSortKey(result.createdAt),
+    order: order++,
+  }));
+
+  return [...workRows, ...exportRows, ...practiceRows].sort((left, right) => {
+    if (right.sortKey !== left.sortKey) {
+      return right.sortKey - left.sortKey;
+    }
+
+    return left.order - right.order;
+  });
+}
+
+function fillWithDemoRows(rows: MyLibraryPlaylistRow[]): MyLibraryPlaylistRow[] {
+  const visibleRows = rows.slice(0, MAX_VISIBLE_PLAYLIST_ROWS);
+
+  if (visibleRows.length >= MAX_VISIBLE_PLAYLIST_ROWS) {
+    return visibleRows;
+  }
+
+  return [
+    ...visibleRows,
+    ...FIGMA_DEMO_PLAYLIST_ROWS.slice(0, MAX_VISIBLE_PLAYLIST_ROWS - visibleRows.length),
+  ];
+}
+
+function markFirstRowActive(rows: MyLibraryPlaylistRow[]): MyLibraryPlaylistRow[] {
+  return rows.map((row, index) => ({
+    ...row,
+    active: index === 0,
+  }));
+}
+
+function createPrimaryHeroCard(row: MyLibraryPlaylistRow | undefined): MyLibraryHeroCard {
+  if (row === undefined || row.kind === 'demo') {
+    return {
+      id: 'hero-korea-minyo',
+      title: 'Korea Minyo',
+      date: '2026.02.01',
+      tone: 'navy',
+      playable: true,
+    };
+  }
+
+  return {
+    id: `hero-${row.id}`,
+    title: row.title,
+    date: row.date,
+    tone: 'navy',
+    playable: row.playable,
+    workId: row.workId,
+    exportedAudioId: row.exportedAudioId,
+    practiceResultId: row.practiceResultId,
+  };
+}
+
+function createWorkPlayerViewModel(work: Work): MyLibraryPlayerViewModel {
+  return {
+    title: work.title,
+    meta: `사용 악기 ${formatWorkInstrumentNames(work)} · ${formatLibraryDate(work.updatedAt || work.createdAt)}`,
+    sourceKind: 'work',
+    editWorkId: work.id,
+  };
+}
+
+function createExportedAudioPlayerViewModel(audio: ExportedAudio): MyLibraryPlayerViewModel {
+  return {
+    title: audio.title,
+    meta: `사용 악기 ${audio.instrumentNames.join(', ') || '가야금'} · ${formatDuration(audio.durationSeconds)}`,
+    sourceKind: 'exportedAudio',
+    editWorkId: audio.workId,
+  };
+}
+
+function createPracticeResultPlayerViewModel(result: PracticeResult): MyLibraryPlayerViewModel {
+  return {
+    title: `${formatPracticeSongTitle(result.songId)} 연습`,
+    meta: `사용 악기 ${getInstrumentName(result.instrument)} · 정확도 ${result.accuracyScore}점`,
+    sourceKind: 'practiceResult',
+  };
+}
+
+function createDemoPlayerViewModel(title: string): MyLibraryPlayerViewModel {
+  return {
+    title,
+    meta: '사용 악기 가야금',
+    sourceKind: 'demo',
+  };
+}
+
+function formatWorkInstrumentNames(work: Work): string {
+  const names = work.tracks
+    .filter((track) => track.kind === 'instrument')
+    .map((track) => (track.kind === 'instrument' ? getInstrumentName(track.instrument) : ''))
+    .filter((name) => name.length > 0);
+  const uniqueNames = [...new Set(names)];
+
+  return uniqueNames.length > 0 ? uniqueNames.join(', ') : '작업 트랙';
+}
+
+function formatLibraryDate(value: string): string {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (match === null) {
+    return value;
+  }
+
+  return `${match[1]}.${match[2]}.${match[3]}`;
+}
+
+function toSortKey(value: string): number {
+  const timestamp = Date.parse(value);
+
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function formatDuration(durationSeconds: number): string {
+  const minutes = Math.floor(durationSeconds / 60);
+  const seconds = Math.round(durationSeconds % 60);
+
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatPracticeSongTitle(songId: string): string {
+  if (songId === 'arirang' || songId === 'doraji' || songId === 'boatSong') {
+    return getPracticeSongTitle(songId);
+  }
+
+  return songId;
+}

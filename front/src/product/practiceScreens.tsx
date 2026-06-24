@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GARAK_COLORS } from './garakDesignSystem';
+import { GarakScreenFrameMode } from './garakScreenFrame';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   InstrumentVisual,
@@ -78,18 +79,23 @@ export function PracticeInstrumentSelectContent({
 export function PracticePerformanceContent({
   state,
   dispatch,
+  frameMode = 'portrait',
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
+  frameMode?: GarakScreenFrameMode;
 }) {
   const song = PRACTICE_SONGS.find((item) => item.id === state.selectedPracticeSongId) ?? PRACTICE_SONGS[0];
   const instrument = state.selectedInstrument ?? song.recommendedInstrument;
+  const isLandscapeFrame = frameMode === 'landscape';
 
   return (
-    <View style={styles.stack}>
-      <ScreenHeading title={song.title} compact description="다음 입력 가이드에 맞춰 연주합니다." />
-      <View style={styles.practiceSurface}>
-        <InstrumentVisual instrument={instrument} />
+    <View style={[styles.stack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
+      {!isLandscapeFrame ? (
+        <ScreenHeading title={song.title} compact description="다음 입력 가이드에 맞춰 연주합니다." />
+      ) : null}
+      <View style={[styles.practiceSurface, isLandscapeFrame ? styles.landscapePracticeSurface : undefined]}>
+        <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
         <View style={styles.guideRow}>
           {Array.from({ length: 6 }, (_, index) => (
             <View key={index} style={[styles.guideCell, index === 2 ? styles.guideCellActive : undefined]} />
@@ -129,6 +135,10 @@ export function PracticeResultContent({
 const styles = StyleSheet.create({
   stack: {
     gap: 16,
+  },
+  landscapePerformanceStack: {
+    flex: 1,
+    gap: 12,
   },
   songCard: {
     alignItems: 'center',
@@ -194,6 +204,12 @@ const styles = StyleSheet.create({
     minHeight: 390,
     padding: 16,
     ...garakCardShadow,
+  },
+  landscapePracticeSurface: {
+    flex: 1,
+    gap: 12,
+    minHeight: 0,
+    padding: 12,
   },
   guideRow: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   AccompanimentTrackContent,
   AddTrackContent,
@@ -33,6 +34,11 @@ import {
 } from './settingsScreens';
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
+import {
+  GarakScreenFrameMode,
+  getGarakScreenFrameConfig,
+  usesEmbeddedLandscapeArtworkHeader,
+} from './garakScreenFrame';
 import { GarakWordmark } from './garakUi';
 
 export function GarakScreenFlowApp() {
@@ -43,107 +49,104 @@ export function GarakScreenFlowApp() {
   const isShare = currentScreen === 'S20';
   const canOpenLanguage =
     currentScreen === 'S01' || currentScreen === 'S22';
+  const frameConfig = getGarakScreenFrameConfig(currentScreen);
+  const isLandscapeFrame = frameConfig.mode === 'landscape';
+  const usesEmbeddedHeader = isLandscapeFrame && usesEmbeddedLandscapeArtworkHeader(currentScreen);
 
   function dispatch(action: GarakProductAction) {
     setState((current) => applyProductAction(current, action));
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.phoneFrame}>
-        <View style={styles.statusBar}>
-          <Text style={styles.statusTime}>9:41</Text>
-          <View style={styles.statusIconGroup}>
-            <View style={styles.signalBars}>
-              <View style={[styles.signalBar, styles.signalBarSmall]} />
-              <View style={[styles.signalBar, styles.signalBarMedium]} />
-              <View style={[styles.signalBar, styles.signalBarLarge]} />
+    <SafeAreaProvider style={styles.provider}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+      <View style={[styles.appFrame, isLandscapeFrame ? styles.landscapeFrame : styles.phoneFrame]}>
+        {!usesEmbeddedHeader ? (
+          <View style={[styles.header, isLandscapeFrame ? styles.landscapeHeader : undefined]}>
+            <View style={[styles.headerLeftSlot, isLibrary ? styles.headerWideSlot : undefined]}>
+              {isHome ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => dispatch({ type: 'navigate', target: 'S03' })}
+                  style={styles.headerButton}
+                >
+                  <Image source={GARAK_SCREEN_ASSETS.shell.homeEntryButton} style={styles.headerIconImage} />
+                </Pressable>
+              ) : isLibrary || isShare ? null : (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => dispatch({ type: 'back' })}
+                  style={styles.headerButton}
+                >
+                  <Text style={styles.headerButtonText}>‹</Text>
+                </Pressable>
+              )}
             </View>
-            <View style={styles.wifiGlyph}>
-              <View style={styles.wifiDot} />
-            </View>
-            <View style={styles.batteryGlyph}>
-              <View style={styles.batteryFill} />
-            </View>
-            <View style={styles.batteryCap} />
-          </View>
-        </View>
-        <View style={styles.header}>
-          <View style={[styles.headerLeftSlot, isLibrary ? styles.headerWideSlot : undefined]}>
-            {isHome ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => dispatch({ type: 'navigate', target: 'S03' })}
-                style={styles.headerButton}
-              >
-                <Image source={GARAK_SCREEN_ASSETS.shell.homeEntryButton} style={styles.headerIconImage} />
-              </Pressable>
-            ) : isLibrary || isShare ? null : (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => dispatch({ type: 'back' })}
-                style={styles.headerButton}
-              >
-                <Text style={styles.headerButtonText}>‹</Text>
-              </Pressable>
-            )}
-          </View>
-          <GarakWordmark small />
-          <View style={[styles.headerRightSlot, isLibrary ? styles.headerWideSlot : undefined]}>
-            {isHome || isShare ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
-                style={styles.avatarButton}
-              >
-                <Image source={GARAK_SCREEN_ASSETS.shell.profileAvatar} style={styles.avatarImage} />
-              </Pressable>
-            ) : isLibrary ? (
-              <View style={styles.headerActionGroup}>
+            <GarakWordmark small />
+            <View style={[styles.headerRightSlot, isLibrary ? styles.headerWideSlot : undefined]}>
+              {isHome || isShare ? (
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
-                  style={styles.headerButton}
+                  style={styles.avatarButton}
                 >
-                  <Text style={styles.headerButtonText}>...</Text>
+                  <Image source={GARAK_SCREEN_ASSETS.shell.profileAvatar} style={styles.avatarImage} />
                 </Pressable>
+              ) : isLibrary ? (
+                <View style={styles.headerActionGroup}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
+                    style={styles.headerButton}
+                  >
+                    <Text style={styles.headerButtonText}>...</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => dispatch({ type: 'navigate', target: 'S01' })}
+                    style={styles.headerButton}
+                  >
+                    <Text style={styles.headerButtonText}>+</Text>
+                  </Pressable>
+                </View>
+              ) : canOpenLanguage ? (
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => dispatch({ type: 'navigate', target: 'S01' })}
+                  onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
                   style={styles.headerButton}
                 >
-                  <Text style={styles.headerButtonText}>+</Text>
+                  <Text style={styles.headerButtonText}>◎</Text>
                 </Pressable>
-              </View>
-            ) : canOpenLanguage ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
-                style={styles.headerButton}
-              >
-                <Text style={styles.headerButtonText}>◎</Text>
-              </Pressable>
-            ) : (
-              <View style={styles.headerButtonSpacer} />
-            )}
+              ) : (
+                <View style={styles.headerButtonSpacer} />
+              )}
+            </View>
           </View>
-        </View>
+        ) : null}
 
-        <ScrollView
-          contentContainerStyle={[styles.content, isHome ? styles.homeContent : undefined]}
-          showsVerticalScrollIndicator={false}
-        >
-          {renderScreenContent(state, dispatch)}
-        </ScrollView>
-        <View style={styles.homeIndicator} />
+        {frameConfig.scrollable ? (
+          <ScrollView
+            key={currentScreen}
+            contentContainerStyle={[styles.content, isHome ? styles.homeContent : undefined]}
+            showsVerticalScrollIndicator={false}
+          >
+            {renderScreenContent(state, dispatch, frameConfig.mode)}
+          </ScrollView>
+        ) : (
+          <View key={currentScreen} style={[styles.content, styles.landscapeContent]}>
+            {renderScreenContent(state, dispatch, frameConfig.mode)}
+          </View>
+        )}
       </View>
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 function renderScreenContent(
   state: GarakProductState,
   dispatch: (action: GarakProductAction) => void,
+  frameMode: GarakScreenFrameMode,
 ) {
   switch (state.screenFlow.currentScreen) {
     case 'S01':
@@ -157,13 +160,13 @@ function renderScreenContent(
     case 'S04A':
       return <InstrumentSettingsContent state={state} dispatch={dispatch} />;
     case 'S05':
-      return <FreePlayContent state={state} dispatch={dispatch} />;
+      return <FreePlayContent state={state} dispatch={dispatch} frameMode={frameMode} />;
     case 'S07':
       return <TrackLayerEditorContent state={state} dispatch={dispatch} />;
     case 'S08':
       return <AddTrackContent state={state} dispatch={dispatch} />;
     case 'S09':
-      return <ExtraInstrumentRecordContent state={state} dispatch={dispatch} />;
+      return <ExtraInstrumentRecordContent state={state} dispatch={dispatch} frameMode={frameMode} />;
     case 'S10A':
       return <LiveJangdanContent dispatch={dispatch} />;
     case 'S10B':
@@ -173,7 +176,7 @@ function renderScreenContent(
     case 'S14':
       return <PracticeInstrumentSelectContent state={state} dispatch={dispatch} />;
     case 'S15':
-      return <PracticePerformanceContent state={state} dispatch={dispatch} />;
+      return <PracticePerformanceContent state={state} dispatch={dispatch} frameMode={frameMode} />;
     case 'S16':
       return <PracticeResultContent state={state} dispatch={dispatch} />;
     case 'S17':
@@ -194,92 +197,31 @@ function renderScreenContent(
 }
 
 const styles = StyleSheet.create({
+  provider: {
+    flex: 1,
+    width: '100%',
+  },
   safeArea: {
+    alignItems: 'center',
     backgroundColor: GARAK_COLORS.surfaceSoft,
     flex: 1,
+    justifyContent: 'center',
+    width: '100%',
   },
-  phoneFrame: {
+  appFrame: {
     alignSelf: 'center',
     backgroundColor: GARAK_COLORS.surfaceApp,
     flex: 1,
-    maxHeight: GARAK_LAYOUT.figmaPhoneHeight,
-    maxWidth: GARAK_LAYOUT.figmaPhoneWidth,
     overflow: 'hidden',
     width: '100%',
   },
-  statusBar: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: 50,
-    justifyContent: 'space-between',
-    paddingHorizontal: 28,
-    paddingTop: 14,
+  phoneFrame: {
+    maxHeight: GARAK_LAYOUT.figmaPhoneHeight,
+    maxWidth: GARAK_LAYOUT.figmaPhoneWidth,
   },
-  statusTime: {
-    color: GARAK_COLORS.inkBlack,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  statusIconGroup: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 5,
-  },
-  signalBars: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-    gap: 2,
-    height: 12,
-  },
-  signalBar: {
-    backgroundColor: GARAK_COLORS.inkBlack,
-    borderRadius: 1,
-    width: 3,
-  },
-  signalBarSmall: {
-    height: 5,
-  },
-  signalBarMedium: {
-    height: 8,
-  },
-  signalBarLarge: {
-    height: 11,
-  },
-  wifiGlyph: {
-    borderColor: GARAK_COLORS.inkBlack,
-    borderRadius: 8,
-    borderTopWidth: 3,
-    height: 10,
-    justifyContent: 'flex-end',
-    width: 14,
-  },
-  wifiDot: {
-    alignSelf: 'center',
-    backgroundColor: GARAK_COLORS.inkBlack,
-    borderRadius: 2,
-    height: 3,
-    width: 3,
-  },
-  batteryGlyph: {
-    borderColor: GARAK_COLORS.inkBlack,
-    borderRadius: 3,
-    borderWidth: 1,
-    height: 11,
-    justifyContent: 'center',
-    padding: 1,
-    width: 21,
-  },
-  batteryFill: {
-    backgroundColor: GARAK_COLORS.inkBlack,
-    borderRadius: 2,
-    flex: 1,
-  },
-  batteryCap: {
-    backgroundColor: GARAK_COLORS.inkBlack,
-    borderRadius: 1,
-    height: 4,
-    marginLeft: -4,
-    width: 2,
+  landscapeFrame: {
+    maxHeight: GARAK_LAYOUT.figmaPhoneWidth,
+    maxWidth: GARAK_LAYOUT.figmaPhoneHeight,
   },
   header: {
     alignItems: 'center',
@@ -287,6 +229,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: 56,
     paddingHorizontal: GARAK_LAYOUT.horizontalPadding,
+  },
+  landscapeHeader: {
+    height: 48,
+    paddingHorizontal: 28,
   },
   headerLeftSlot: {
     alignItems: 'flex-start',
@@ -340,16 +286,14 @@ const styles = StyleSheet.create({
     paddingTop: 23,
     paddingBottom: 72,
   },
+  landscapeContent: {
+    flex: 1,
+    gap: 0,
+    paddingBottom: 18,
+    paddingHorizontal: 28,
+    paddingTop: 12,
+  },
   homeContent: {
     paddingTop: 69,
-  },
-  homeIndicator: {
-    alignSelf: 'center',
-    backgroundColor: GARAK_COLORS.inkBlack,
-    borderRadius: 2,
-    bottom: 8,
-    height: 4,
-    position: 'absolute',
-    width: 135,
   },
 });

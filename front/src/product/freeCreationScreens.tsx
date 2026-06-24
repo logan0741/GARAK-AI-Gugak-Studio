@@ -1,8 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { InstrumentId } from '../studio/studioTypes';
 import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
+import { GarakScreenFrameMode } from './garakScreenFrame';
 import { GarakProductAction, GarakProductState } from './garakProductState';
-import { InstrumentSelectionArtworkPanel } from './garakArtworkPanels';
+import {
+  InstrumentSelectionArtworkPanel,
+  JangguLandscapeStageArtwork,
+} from './garakArtworkPanels';
 import {
   InstrumentBadge,
   InstrumentVisual,
@@ -136,25 +140,41 @@ export function InstrumentSettingsContent({
 export function FreePlayContent({
   state,
   dispatch,
+  frameMode = 'portrait',
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
+  frameMode?: GarakScreenFrameMode;
 }) {
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const isLandscapeFrame = frameMode === 'landscape';
+  const usesFigmaJangguLandscapeStage = isLandscapeFrame && instrument === 'janggu';
 
   return (
-    <View style={styles.screenStack}>
-      <View style={styles.freePlaySurface}>
-        <View style={styles.freePlayTopBar}>
-          <Text style={styles.surfaceBrand}>GARAK</Text>
-          <View style={styles.inlineControls}>
-            <Text style={styles.inlineControl}>▶</Text>
-            <Text style={styles.inlineControlAmber}>●</Text>
-          </View>
+    <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
+      {usesFigmaJangguLandscapeStage ? (
+        <View style={styles.jangguLandscapeStageWrap}>
+          <JangguLandscapeStageArtwork />
+          <Pressable
+            accessibilityLabel="뒤로가기"
+            accessibilityRole="button"
+            onPress={() => dispatch({ type: 'back' })}
+            style={styles.jangguLandscapeBackHit}
+          />
         </View>
-        <InstrumentVisual instrument={instrument} />
-      </View>
-      <View style={styles.buttonRow}>
+      ) : (
+        <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
+          <View style={styles.freePlayTopBar}>
+            <Text style={styles.surfaceBrand}>GARAK</Text>
+            <View style={styles.inlineControls}>
+              <Text style={styles.inlineControl}>▶</Text>
+              <Text style={styles.inlineControlAmber}>●</Text>
+            </View>
+          </View>
+          <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
+        </View>
+      )}
+      <View style={[styles.buttonRow, isLandscapeFrame ? styles.landscapeButtonRow : undefined]}>
         <SecondaryPillButton label="장단" onPress={() => dispatch({ type: 'openLiveJangdanGuide' })} />
         <SecondaryPillButton label="레이어" onPress={() => dispatch({ type: 'navigate', target: 'S07' })} />
         <PrimaryPillButton label="녹음 완료" onPress={() => dispatch({ type: 'completePerformance' })} style={styles.rowPrimary} />
@@ -246,17 +266,20 @@ export function AddTrackContent({
 export function ExtraInstrumentRecordContent({
   state,
   dispatch,
+  frameMode = 'portrait',
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
+  frameMode?: GarakScreenFrameMode;
 }) {
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+  const isLandscapeFrame = frameMode === 'landscape';
 
   return (
-    <View style={styles.screenStack}>
-      <ScreenHeading title={`${getInstrumentName(instrument)} 트랙 녹음`} compact />
-      <View style={styles.freePlaySurface}>
-        <InstrumentVisual instrument={instrument} />
+    <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
+      {!isLandscapeFrame ? <ScreenHeading title={`${getInstrumentName(instrument)} 트랙 녹음`} compact /> : null}
+      <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
+        <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
       </View>
       <PrimaryPillButton label="TRACK 적용" onPress={() => dispatch({ type: 'applyInstrumentTrack' })} />
     </View>
@@ -380,6 +403,10 @@ const styles = StyleSheet.create({
   screenStack: {
     gap: 18,
   },
+  landscapePerformanceStack: {
+    flex: 1,
+    gap: 12,
+  },
   homeQuickAccess: {
     marginTop: 71,
   },
@@ -466,6 +493,24 @@ const styles = StyleSheet.create({
     padding: 14,
     ...garakCardShadow,
   },
+  landscapeFreePlaySurface: {
+    flex: 1,
+    minHeight: 0,
+    padding: 12,
+  },
+  jangguLandscapeStageWrap: {
+    flex: 1,
+    minHeight: 0,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  jangguLandscapeBackHit: {
+    height: 90,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    width: 140,
+  },
   freePlayTopBar: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -515,6 +560,9 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  landscapeButtonRow: {
+    minHeight: 48,
   },
   rowPrimary: {
     flex: 1,

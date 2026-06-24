@@ -20,6 +20,17 @@ export function InstrumentSelectionArtworkPanel() {
   );
 }
 
+export function JangguLandscapeStageArtwork() {
+  return (
+    <ArtworkImagePanel
+      accessibilityLabel="장구 자유 연주 가로 스테이지"
+      source={GARAK_SCREEN_ASSETS.creation.jangguFreePlayLandscapeStage}
+      style={styles.jangguLandscapeStage}
+      imageStyle={styles.jangguLandscapeStageImage}
+    />
+  );
+}
+
 export function LibraryPlaylistArtworkPanel({
   onOpenSelectedWork,
   onLibrary,
@@ -143,6 +154,13 @@ const styles = StyleSheet.create({
   },
   roundedHeroImage: {
     borderRadius: GARAK_RADIUS.hero,
+  },
+  jangguLandscapeStage: {
+    flex: 1,
+    minHeight: 0,
+  },
+  jangguLandscapeStageImage: {
+    resizeMode: 'contain',
   },
   libraryPanelWrap: {
     borderRadius: 34,

@@ -31,6 +31,12 @@ export type AccountState = {
   status: 'guest' | 'loggedIn';
 };
 
+export type ProductPlayerSelection =
+  | { kind: 'work'; workId: string }
+  | { kind: 'exportedAudio'; exportedAudioId: string }
+  | { kind: 'practiceResult'; practiceResultId: string }
+  | { kind: 'demo'; title: string; date?: string };
+
 export type ProductLibraryState = {
   works: Work[];
   exportedAudios: ExportedAudio[];
@@ -43,6 +49,7 @@ export type GarakProductState = {
   selectedInstrument?: InstrumentId;
   selectedPracticeSongId?: PracticeSong['id'];
   currentWorkId?: string;
+  selectedPlayerItem?: ProductPlayerSelection;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
     bpm: number;
@@ -80,6 +87,7 @@ export type GarakProductAction =
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
   | { type: 'loginAndLoadMySongs' }
+  | { type: 'playLibraryItem'; item: ProductPlayerSelection }
   | { type: 'navigate'; target: ImplementedScreenId }
   | { type: 'back' }
   | { type: 'openWork'; workId: string };
@@ -120,6 +128,15 @@ export function applyProductAction(
   action: GarakProductAction,
 ): GarakProductState {
   switch (action.type) {
+    case 'playLibraryItem':
+      return {
+        ...state,
+        selectedPlayerItem: action.item,
+        screenFlow: transitionScreenFlow(state.screenFlow, {
+          type: 'navigate',
+          target: 'S19',
+        }),
+      };
     case 'openWork':
       return {
         ...state,
@@ -504,6 +521,10 @@ function exportCurrentWork(state: GarakProductState): GarakProductState {
     library: {
       ...state.library,
       exportedAudios: [...state.library.exportedAudios, exported],
+    },
+    selectedPlayerItem: {
+      kind: 'exportedAudio',
+      exportedAudioId: exported.id,
     },
     screenFlow: pushTarget(state.screenFlow, 'S19'),
   };
