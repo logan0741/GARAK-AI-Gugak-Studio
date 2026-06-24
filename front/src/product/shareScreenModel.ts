@@ -1,6 +1,11 @@
 import { ExportedAudio, PracticeResult } from '../studio/studioTypes';
 import type { GarakProductAction, GarakProductState } from './garakProductState';
-import { getInstrumentName, getPracticeSongTitle, PRACTICE_SONGS } from './productFixtures';
+import {
+  FEATURED_SHARED_RECORDING,
+  getInstrumentName,
+  getPracticeSongTitle,
+  PRACTICE_SONGS,
+} from './productFixtures';
 
 export type ShareFeedCategory = {
   label: string;
@@ -9,6 +14,7 @@ export type ShareFeedCategory = {
 
 export type ShareFeedHero = {
   owner: string;
+  recordingId: string;
   title: string;
   description: string;
 };
@@ -23,6 +29,7 @@ export type ShareFeedPlayer = {
 
 export type ShareFeedRecentCard = {
   id: string;
+  recordingId: string;
   title: string;
   subtitle: string;
   liked: boolean;
@@ -51,6 +58,7 @@ const SHARE_FEED_CATEGORIES = ['Hot', 'K-pop', 'K-Drama OST', 'K-Minyo', 'Ariran
 const FIGMA_RECENT_CARDS: ShareFeedRecentCard[] = [
   {
     id: 'recent-kdrama-ost',
+    recordingId: 'recent-kdrama-ost',
     title: 'K-Drama OST',
     subtitle: 'Drama mood',
     liked: false,
@@ -58,6 +66,7 @@ const FIGMA_RECENT_CARDS: ShareFeedRecentCard[] = [
   },
   {
     id: 'recent-kpop-demon-hunters',
+    recordingId: 'recent-kpop-demon-hunters',
     title: 'K-pop Demon Hunters',
     subtitle: 'Remix',
     liked: true,
@@ -65,6 +74,7 @@ const FIGMA_RECENT_CARDS: ShareFeedRecentCard[] = [
   },
   {
     id: 'recent-korea-minyo',
+    recordingId: 'recent-korea-minyo',
     title: 'Korea Minyo',
     subtitle: 'Minyo',
     liked: false,
@@ -80,6 +90,7 @@ export function getShareFeedViewModel(state: GarakProductState): ShareFeedViewMo
     })),
     hero: {
       owner: 'Minsu_Kim',
+      recordingId: FEATURED_SHARED_RECORDING.id,
       title: 'Minsu_Kim님을 위한 추천 가락',
       description: '케이팝 데몬 헌터스의 노래들을 가락과 함께 국악으로 연주해요.',
     },

@@ -21,9 +21,10 @@ import {
 } from '../studio/studioTypes';
 import {
   DEFAULT_FREE_CREATION_INSTRUMENT,
-  FEATURED_SHARED_RECORDING,
   GARAK_BRAND,
   PRACTICE_SONGS,
+  SharedRecording,
+  getSharedRecordingById,
   getInstrumentName,
   getPracticeSongTitle,
   PracticeSong,
@@ -77,6 +78,7 @@ export type GarakProductState = {
   previewingPracticeSongId?: PracticeSong['id'];
   currentWorkId?: string;
   selectedPlayerItem?: ProductPlayerSelection;
+  selectedSharedRecordingId?: SharedRecording['id'];
   sharePreviewStatus?: 'playing';
   libraryTab: ProductLibraryTab;
   librarySearchQuery: string;
@@ -147,6 +149,7 @@ export type GarakProductAction =
   | { type: 'shareSelectedPlayerItem' }
   | { type: 'previewShareTarget' }
   | { type: 'publishShareTarget' }
+  | { type: 'openSharedRecordingDetail'; recordingId: SharedRecording['id'] }
   | { type: 'remixSharedRecording' }
   | { type: 'saveSharedRecording' }
   | { type: 'loginAndLoadMySongs' }
@@ -411,6 +414,13 @@ export function applyProductAction(
       };
     case 'publishShareTarget':
       return publishShareTarget(state);
+    case 'openSharedRecordingDetail':
+      return {
+        ...state,
+        selectedSharedRecordingId: action.recordingId,
+        sharePreviewStatus: undefined,
+        screenFlow: pushTarget(state.screenFlow, 'S21'),
+      };
     case 'remixSharedRecording':
       return remixSharedRecording(state);
     case 'saveSharedRecording':
@@ -886,11 +896,12 @@ function createPracticeResultAndRoute(
 }
 
 function remixSharedRecording(state: GarakProductState): GarakProductState {
+  const recording = getSelectedSharedRecording(state);
   const nextCounters = incrementCounters(state.counters, ['work', 'track']);
   const createdAt = state.now();
   const work: Work = {
     id: `work-${nextCounters.work}`,
-    title: `${FEATURED_SHARED_RECORDING.title} 리믹스`,
+    title: `${recording.title} 리믹스`,
     createdAt,
     updatedAt: createdAt,
     source: 'remix',
@@ -899,10 +910,10 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
       {
         id: `track-${nextCounters.track}`,
         kind: 'reference',
-        sourceShareId: FEATURED_SHARED_RECORDING.id,
-        title: FEATURED_SHARED_RECORDING.title,
-        authorDisplayName: FEATURED_SHARED_RECORDING.authorDisplayName,
-        sourceLabel: FEATURED_SHARED_RECORDING.sourceLabel,
+        sourceShareId: recording.id,
+        title: recording.title,
+        authorDisplayName: recording.authorDisplayName,
+        sourceLabel: recording.sourceLabel,
         volume: 0.8,
         mute: false,
         solo: false,
@@ -925,19 +936,20 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
 }
 
 function saveSharedRecording(state: GarakProductState): GarakProductState {
+  const recording = getSelectedSharedRecording(state);
   const nextCounters = incrementCounters(state.counters, ['export']);
   const exported: ExportedAudio = {
     id: `export-${nextCounters.export}`,
     kind: 'exported_audio',
-    title: FEATURED_SHARED_RECORDING.title,
-    durationSeconds: FEATURED_SHARED_RECORDING.durationSeconds,
-    instrumentNames: [getInstrumentName(FEATURED_SHARED_RECORDING.instrument)],
+    title: recording.title,
+    durationSeconds: recording.durationSeconds,
+    instrumentNames: [getInstrumentName(recording.instrument)],
     createdAt: state.now(),
-    audioUri: FEATURED_SHARED_RECORDING.audioUri,
+    audioUri: recording.audioUri,
     shareState: 'ready',
-    sourceShareId: FEATURED_SHARED_RECORDING.id,
-    authorDisplayName: FEATURED_SHARED_RECORDING.authorDisplayName,
-    sourceLabel: FEATURED_SHARED_RECORDING.sourceLabel,
+    sourceShareId: recording.id,
+    authorDisplayName: recording.authorDisplayName,
+    sourceLabel: recording.sourceLabel,
   };
 
   return {
@@ -953,6 +965,10 @@ function saveSharedRecording(state: GarakProductState): GarakProductState {
     },
     screenFlow: pushTarget(state.screenFlow, 'S18'),
   };
+}
+
+function getSelectedSharedRecording(state: GarakProductState): SharedRecording {
+  return getSharedRecordingById(state.selectedSharedRecordingId);
 }
 
 function publishShareTarget(state: GarakProductState): GarakProductState {

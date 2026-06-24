@@ -18,6 +18,7 @@ test('builds the Figma share-feed defaults', () => {
   ]);
   expect(model.hero).toMatchObject({
     owner: 'Minsu_Kim',
+    recordingId: 'shared-morning-arirang',
     title: 'Minsu_Kim님을 위한 추천 가락',
     description: '케이팝 데몬 헌터스의 노래들을 가락과 함께 국악으로 연주해요.',
   });
@@ -29,6 +30,11 @@ test('builds the Figma share-feed defaults', () => {
     'K-Drama OST',
     'K-pop Demon Hunters',
     'Korea Minyo',
+  ]);
+  expect(model.recentCards.map((card) => card.recordingId)).toEqual([
+    'recent-kdrama-ost',
+    'recent-kpop-demon-hunters',
+    'recent-korea-minyo',
   ]);
 });
 

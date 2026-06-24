@@ -139,6 +139,44 @@ export const FEATURED_SHARED_RECORDING: SharedRecording = {
   remixable: true,
 };
 
+export const SHARE_FEED_RECORDINGS: SharedRecording[] = [
+  FEATURED_SHARED_RECORDING,
+  {
+    id: 'recent-kdrama-ost',
+    title: 'K-Drama OST',
+    authorDisplayName: 'Drama_Garak',
+    sourceLabel: '공유 피드 데모',
+    instrument: 'daegeum',
+    durationSeconds: 57,
+    audioUri: 'placeholder://recent-kdrama-ost.wav',
+    remixable: true,
+  },
+  {
+    id: 'recent-kpop-demon-hunters',
+    title: 'K-pop Demon Hunters',
+    authorDisplayName: 'Kpop_Garak',
+    sourceLabel: '공유 피드 데모',
+    instrument: 'janggu',
+    durationSeconds: 64,
+    audioUri: 'placeholder://recent-kpop-demon-hunters.wav',
+    remixable: true,
+  },
+  {
+    id: 'recent-korea-minyo',
+    title: 'Korea Minyo',
+    authorDisplayName: 'Minyo_Archive',
+    sourceLabel: '공유 피드 데모',
+    instrument: 'gayageum',
+    durationSeconds: 52,
+    audioUri: 'placeholder://recent-korea-minyo.wav',
+    remixable: true,
+  },
+];
+
+export function getSharedRecordingById(recordingId?: string): SharedRecording {
+  return SHARE_FEED_RECORDINGS.find((recording) => recording.id === recordingId) ?? FEATURED_SHARED_RECORDING;
+}
+
 export function getInstrumentName(instrument: InstrumentId): string {
   return MVP_INSTRUMENTS.find((item) => item.id === instrument)?.name ?? instrument;
 }

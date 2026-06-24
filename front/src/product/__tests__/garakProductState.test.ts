@@ -649,6 +649,52 @@ test('saves a shared demo recording as a playable library audio item', () => {
   });
 });
 
+test('uses the selected S20 shared recording when remixing and saving from S21', () => {
+  let remixState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  remixState = applyProductAction(remixState, { type: 'navigate', target: 'S20' });
+  remixState = applyProductAction(remixState, {
+    type: 'openSharedRecordingDetail',
+    recordingId: 'recent-kdrama-ost',
+  });
+  remixState = applyProductAction(remixState, { type: 'remixSharedRecording' });
+
+  expect(remixState.screenFlow.currentScreen).toBe('S07');
+  expect(remixState.library.works[0]).toMatchObject({
+    title: 'K-Drama OST 리믹스',
+    source: 'remix',
+  });
+  expect(remixState.library.works[0].tracks[0]).toMatchObject({
+    kind: 'reference',
+    sourceShareId: 'recent-kdrama-ost',
+    title: 'K-Drama OST',
+    authorDisplayName: 'Drama_Garak',
+  });
+
+  let saveState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  saveState = applyProductAction(saveState, { type: 'navigate', target: 'S20' });
+  saveState = applyProductAction(saveState, {
+    type: 'openSharedRecordingDetail',
+    recordingId: 'recent-kdrama-ost',
+  });
+  saveState = applyProductAction(saveState, { type: 'saveSharedRecording' });
+
+  expect(saveState.screenFlow.currentScreen).toBe('S18');
+  expect(saveState.library.exportedAudios[0]).toMatchObject({
+    title: 'K-Drama OST',
+    durationSeconds: 57,
+    instrumentNames: ['대금'],
+    sourceShareId: 'recent-kdrama-ost',
+    authorDisplayName: 'Drama_Garak',
+    audioUri: 'placeholder://recent-kdrama-ost.wav',
+  });
+});
+
 test('publishes the selected exported audio from S17 and marks it shared', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

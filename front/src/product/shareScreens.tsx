@@ -2,7 +2,7 @@ import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View }
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState, ProductPlayerSelection } from './garakProductState';
-import { FEATURED_SHARED_RECORDING, getInstrumentName } from './productFixtures';
+import { getInstrumentName, getSharedRecordingById } from './productFixtures';
 import {
   getShareFeedViewModel,
   getSharePrepareAction,
@@ -138,7 +138,12 @@ export function ShareFeedContent({
       <Pressable
         accessibilityLabel={model.hero.title}
         accessibilityRole="button"
-        onPress={() => dispatch({ type: 'navigate', target: 'S21' })}
+        onPress={() =>
+          dispatch({
+            type: 'openSharedRecordingDetail',
+            recordingId: model.hero.recordingId,
+          })
+        }
         style={styles.shareHeroCard}
       >
         <ImageBackground
@@ -210,7 +215,12 @@ export function ShareFeedContent({
             <ShareRecentCardView
               key={card.id}
               card={card}
-              onPress={() => dispatch({ type: 'navigate', target: 'S21' })}
+              onPress={() =>
+                dispatch({
+                  type: 'openSharedRecordingDetail',
+                  recordingId: card.recordingId,
+                })
+              }
             />
           ))}
         </ScrollView>
@@ -322,8 +332,14 @@ const RECENT_CARD_ARTWORK = {
   pattern: GARAK_SCREEN_ASSETS.share.recentPattern,
 } as const;
 
-export function SharedDetailContent({ dispatch }: { state: GarakProductState; dispatch: ProductDispatch }) {
-  const recording = FEATURED_SHARED_RECORDING;
+export function SharedDetailContent({
+  state,
+  dispatch,
+}: {
+  state: GarakProductState;
+  dispatch: ProductDispatch;
+}) {
+  const recording = getSharedRecordingById(state.selectedSharedRecordingId);
 
   return (
     <View style={styles.stack}>

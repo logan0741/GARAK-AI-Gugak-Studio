@@ -264,9 +264,13 @@ test('connects S15 practice controls to practice attempt state actions', () => {
 test('connects shared detail remix and save buttons to library data actions', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 
-  expect(source).toContain('FEATURED_SHARED_RECORDING');
+  expect(source).toContain('getSharedRecordingById');
+  expect(source).toContain("type: 'openSharedRecordingDetail'");
+  expect(source).toContain('recordingId: model.hero.recordingId');
+  expect(source).toContain('recordingId: card.recordingId');
   expect(source).toContain("type: 'remixSharedRecording'");
   expect(source).toContain("type: 'saveSharedRecording'");
+  expect(source).toContain('state.selectedSharedRecordingId');
   expect(source).not.toContain("label=\"리믹스\" tone=\"amber\" onPress={() => dispatch({ type: 'navigate', target: 'S07' })}");
   expect(source).not.toContain("label=\"저장\" onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
 });
