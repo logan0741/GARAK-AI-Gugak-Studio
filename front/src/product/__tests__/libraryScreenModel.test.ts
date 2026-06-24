@@ -219,6 +219,7 @@ test('builds the player detail from the selected my-library item', () => {
   expect(getMyLibraryPlayerViewModel(state)).toMatchObject({
     editWorkId: 'work-1',
     sourceKind: 'exportedAudio',
+    isPlaying: false,
     title: state.library.exportedAudios[0].title,
   });
 });
@@ -237,10 +238,23 @@ test('exposes S19 player actions without choosing their visual placement', () =>
   state = applyProductAction(state, { type: 'exportCurrentWork' });
 
   expect(getMyLibraryPlayerActions(state)).toEqual({
+    playAction: { type: 'playSelectedPlayerItem' },
+    pauseAction: undefined,
     editAction: { type: 'openSelectedPlayerEditor' },
     shareAction: { type: 'shareSelectedPlayerItem' },
     deleteAction: { type: 'deleteSelectedPlayerItem' },
     backAction: { type: 'navigate', target: 'S18' },
+  });
+
+  state = applyProductAction(state, { type: 'playSelectedPlayerItem' });
+
+  expect(getMyLibraryPlayerViewModel(state)).toMatchObject({
+    isPlaying: true,
+    sourceKind: 'exportedAudio',
+  });
+  expect(getMyLibraryPlayerActions(state)).toMatchObject({
+    playAction: undefined,
+    pauseAction: { type: 'pauseSelectedPlayerItem' },
   });
 });
 

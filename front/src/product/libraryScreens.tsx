@@ -125,6 +125,9 @@ export function PlayerDetailContent({
 }) {
   const player = getMyLibraryPlayerViewModel(state);
   const playerActions = getMyLibraryPlayerActions(state);
+  const playbackAction = player.isPlaying ? playerActions.pauseAction : playerActions.playAction;
+  const playbackLabel = player.isPlaying ? '일시정지' : '재생';
+  const playbackIcon = player.isPlaying ? 'Ⅱ' : '▶';
 
   return (
     <View
@@ -172,8 +175,19 @@ export function PlayerDetailContent({
           <Pressable accessibilityLabel="이전" accessibilityRole="button" style={styles.playingIconButton}>
             <Text style={styles.playingSkip}>◀◀</Text>
           </Pressable>
-          <Pressable accessibilityLabel="재생" accessibilityRole="button" style={styles.playingPlayButton}>
-            <Text style={styles.playingPlay}>▶</Text>
+          <Pressable
+            accessibilityLabel={playbackLabel}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playbackAction === undefined }}
+            disabled={playbackAction === undefined}
+            onPress={() => {
+              if (playbackAction !== undefined) {
+                dispatch(playbackAction);
+              }
+            }}
+            style={styles.playingPlayButton}
+          >
+            <Text style={styles.playingPlay}>{playbackIcon}</Text>
           </Pressable>
           <Pressable accessibilityLabel="다음" accessibilityRole="button" style={styles.playingIconButton}>
             <Text style={styles.playingSkip}>▶▶</Text>

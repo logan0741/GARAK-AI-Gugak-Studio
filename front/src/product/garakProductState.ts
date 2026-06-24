@@ -83,6 +83,7 @@ export type GarakProductState = {
   previewingPracticeSongId?: PracticeSong['id'];
   currentWorkId?: string;
   selectedPlayerItem?: ProductPlayerSelection;
+  playingPlayerItem?: ProductPlayerSelection;
   selectedSharedRecordingId?: SharedRecording['id'];
   playingSharedRecordingId?: SharedRecording['id'];
   sharePreviewStatus?: 'playing';
@@ -171,6 +172,8 @@ export type GarakProductAction =
   | { type: 'selectLibraryTab'; tab: ProductLibraryTab }
   | { type: 'updateLibrarySearchQuery'; query: string }
   | { type: 'playLibraryItem'; item: ProductPlayerSelection }
+  | { type: 'playSelectedPlayerItem' }
+  | { type: 'pauseSelectedPlayerItem' }
   | { type: 'openSelectedPlayerEditor' }
   | { type: 'navigate'; target: ImplementedScreenId }
   | { type: 'back' }
@@ -219,10 +222,23 @@ export function applyProductAction(
       return {
         ...state,
         selectedPlayerItem: action.item,
+        playingPlayerItem: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, {
           type: 'navigate',
           target: 'S19',
         }),
+      };
+    case 'playSelectedPlayerItem':
+      return state.selectedPlayerItem === undefined
+        ? state
+        : {
+            ...state,
+            playingPlayerItem: state.selectedPlayerItem,
+          };
+    case 'pauseSelectedPlayerItem':
+      return {
+        ...state,
+        playingPlayerItem: undefined,
       };
     case 'openSelectedPlayerEditor':
       return openSelectedPlayerEditor(state);
@@ -1139,6 +1155,7 @@ function deleteSelectedPlayerItem(state: GarakProductState): GarakProductState {
     return {
       ...state,
       selectedPlayerItem: undefined,
+      playingPlayerItem: undefined,
       sharePreviewStatus: undefined,
       library: {
         ...state.library,
@@ -1154,6 +1171,7 @@ function deleteSelectedPlayerItem(state: GarakProductState): GarakProductState {
     return {
       ...state,
       selectedPlayerItem: undefined,
+      playingPlayerItem: undefined,
       sharePreviewStatus: undefined,
       library: {
         ...state.library,

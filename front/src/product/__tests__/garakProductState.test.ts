@@ -957,6 +957,32 @@ test('opens the original work editor from the S19 player when the export has a w
   expect(state.currentWorkId).toBe('work-1');
 });
 
+test('plays and pauses the selected S19 library player item without leaving the player', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'playSelectedPlayerItem' });
+
+  expect(state.screenFlow.currentScreen).toBe('S19');
+  expect(state.playingPlayerItem).toEqual({
+    kind: 'exportedAudio',
+    exportedAudioId: 'export-1',
+  });
+
+  state = applyProductAction(state, { type: 'pauseSelectedPlayerItem' });
+
+  expect(state.screenFlow.currentScreen).toBe('S19');
+  expect(state.playingPlayerItem).toBeUndefined();
+});
+
 test('deletes the selected exported audio from the S19 player and returns to the library', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -969,12 +995,14 @@ test('deletes the selected exported audio from the S19 player and returns to the
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'playSelectedPlayerItem' });
   state = applyProductAction(state, { type: 'deleteSelectedPlayerItem' });
 
   expect(state.screenFlow.currentScreen).toBe('S18');
   expect(state.library.exportedAudios).toHaveLength(0);
   expect(state.library.works).toHaveLength(1);
   expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.playingPlayerItem).toBeUndefined();
 });
 
 test('publishes the selected practice result from S17 and marks it shared', () => {

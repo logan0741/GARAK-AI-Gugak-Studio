@@ -56,10 +56,13 @@ export type MyLibraryPlayerViewModel = {
   elapsedLabel: string;
   remainingLabel: string;
   showsAirPlay: boolean;
+  isPlaying: boolean;
   editWorkId?: string;
 };
 
 export type MyLibraryPlayerActions = {
+  playAction?: GarakProductAction;
+  pauseAction?: GarakProductAction;
   editAction?: GarakProductAction;
   shareAction?: GarakProductAction;
   deleteAction?: GarakProductAction;
@@ -70,6 +73,7 @@ type ActualLibraryRow = MyLibraryPlaylistRow & {
   sortKey: number;
   order: number;
 };
+type MyLibraryPlayerBaseViewModel = Omit<MyLibraryPlayerViewModel, 'isPlaying'>;
 
 const MAX_VISIBLE_PLAYLIST_ROWS = 5;
 
@@ -159,7 +163,7 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
     const work = state.library.works.find((item) => item.id === selection.workId);
 
     if (work !== undefined) {
-      return createWorkPlayerViewModel(work);
+      return withPlayerPlaybackState(state, createWorkPlayerViewModel(work));
     }
   }
 
@@ -167,7 +171,7 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
     const audio = state.library.exportedAudios.find((item) => item.id === selection.exportedAudioId);
 
     if (audio !== undefined) {
-      return createExportedAudioPlayerViewModel(audio);
+      return withPlayerPlaybackState(state, createExportedAudioPlayerViewModel(audio));
     }
   }
 
@@ -175,32 +179,34 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
     const result = state.library.practiceResults.find((item) => item.id === selection.practiceResultId);
 
     if (result !== undefined) {
-      return createPracticeResultPlayerViewModel(result);
+      return withPlayerPlaybackState(state, createPracticeResultPlayerViewModel(result));
     }
   }
 
   if (selection?.kind === 'demo') {
-    return createDemoPlayerViewModel(selection.title);
+    return withPlayerPlaybackState(state, createDemoPlayerViewModel(selection.title));
   }
 
   const exportedAudio = state.library.exportedAudios[0];
 
   if (exportedAudio !== undefined) {
-    return createExportedAudioPlayerViewModel(exportedAudio);
+    return withPlayerPlaybackState(state, createExportedAudioPlayerViewModel(exportedAudio));
   }
 
   const work = state.library.works[0];
 
   if (work !== undefined) {
-    return createWorkPlayerViewModel(work);
+    return withPlayerPlaybackState(state, createWorkPlayerViewModel(work));
   }
 
-  return createDemoPlayerViewModel('My Arirang');
+  return withPlayerPlaybackState(state, createDemoPlayerViewModel('My Arirang'));
 }
 
 export function getMyLibraryPlayerActions(state: GarakProductState): MyLibraryPlayerActions {
   const player = getMyLibraryPlayerViewModel(state);
   const selection = state.selectedPlayerItem;
+  const canPlay = selection !== undefined;
+  const isPlaying = canPlay && player.isPlaying;
   const canShare =
     selection?.kind === 'exportedAudio'
       ? state.library.exportedAudios.some((audio) => audio.id === selection.exportedAudioId)
@@ -209,6 +215,8 @@ export function getMyLibraryPlayerActions(state: GarakProductState): MyLibraryPl
         : false;
 
   return {
+    playAction: canPlay && !isPlaying ? { type: 'playSelectedPlayerItem' } : undefined,
+    pauseAction: isPlaying ? { type: 'pauseSelectedPlayerItem' } : undefined,
     editAction: player.editWorkId !== undefined ? { type: 'openSelectedPlayerEditor' } : undefined,
     shareAction: canShare ? { type: 'shareSelectedPlayerItem' } : undefined,
     deleteAction: canShare ? { type: 'deleteSelectedPlayerItem' } : undefined,
@@ -423,7 +431,7 @@ function createPrimaryHeroCard(row: MyLibraryPlaylistRow | undefined): MyLibrary
   };
 }
 
-function createWorkPlayerViewModel(work: Work): MyLibraryPlayerViewModel {
+function createWorkPlayerViewModel(work: Work): MyLibraryPlayerBaseViewModel {
   return {
     title: work.title,
     meta: `사용 악기 ${formatWorkInstrumentNames(work)} · ${formatLibraryDate(work.updatedAt || work.createdAt)}`,
@@ -433,7 +441,7 @@ function createWorkPlayerViewModel(work: Work): MyLibraryPlayerViewModel {
   };
 }
 
-function createExportedAudioPlayerViewModel(audio: ExportedAudio): MyLibraryPlayerViewModel {
+function createExportedAudioPlayerViewModel(audio: ExportedAudio): MyLibraryPlayerBaseViewModel {
   return {
     title: audio.title,
     meta: formatExportedAudioPlayerMeta(audio),
@@ -443,7 +451,7 @@ function createExportedAudioPlayerViewModel(audio: ExportedAudio): MyLibraryPlay
   };
 }
 
-function createPracticeResultPlayerViewModel(result: PracticeResult): MyLibraryPlayerViewModel {
+function createPracticeResultPlayerViewModel(result: PracticeResult): MyLibraryPlayerBaseViewModel {
   return {
     title: `${formatPracticeSongTitle(result.songId)} 연습`,
     meta: `사용 악기 ${getInstrumentName(result.instrument)} · 정확도 ${result.accuracyScore}점`,
@@ -452,7 +460,7 @@ function createPracticeResultPlayerViewModel(result: PracticeResult): MyLibraryP
   };
 }
 
-function createDemoPlayerViewModel(title: string): MyLibraryPlayerViewModel {
+function createDemoPlayerViewModel(title: string): MyLibraryPlayerBaseViewModel {
   return {
     title,
     meta: '사용 악기 가야금',
@@ -466,6 +474,44 @@ const FIGMA_PLAYING_PLAYER_STATE = {
   remainingLabel: '-3:01',
   showsAirPlay: true,
 } as const;
+
+function withPlayerPlaybackState(
+  state: GarakProductState,
+  player: MyLibraryPlayerBaseViewModel,
+): MyLibraryPlayerViewModel {
+  return {
+    ...player,
+    isPlaying: isSelectedPlayerPlaying(state),
+  };
+}
+
+function isSelectedPlayerPlaying(state: GarakProductState): boolean {
+  return (
+    state.selectedPlayerItem !== undefined &&
+    state.playingPlayerItem !== undefined &&
+    playerSelectionsEqual(state.selectedPlayerItem, state.playingPlayerItem)
+  );
+}
+
+function playerSelectionsEqual(
+  left: NonNullable<GarakProductState['selectedPlayerItem']>,
+  right: NonNullable<GarakProductState['selectedPlayerItem']>,
+): boolean {
+  if (left.kind !== right.kind) {
+    return false;
+  }
+
+  switch (left.kind) {
+    case 'work':
+      return right.kind === 'work' && left.workId === right.workId;
+    case 'exportedAudio':
+      return right.kind === 'exportedAudio' && left.exportedAudioId === right.exportedAudioId;
+    case 'practiceResult':
+      return right.kind === 'practiceResult' && left.practiceResultId === right.practiceResultId;
+    case 'demo':
+      return right.kind === 'demo' && left.title === right.title && left.date === right.date;
+  }
+}
 
 function formatWorkInstrumentNames(work: Work): string {
   const names = work.tracks

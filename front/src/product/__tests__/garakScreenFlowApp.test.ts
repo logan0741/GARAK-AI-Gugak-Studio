@@ -142,6 +142,17 @@ test('connects S19 player edit and share CTAs to selected library item actions',
   expect(source).toContain('dispatch(playerActions.deleteAction)');
 });
 
+test('connects S19 player playback to selected library item state', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/libraryScreens.tsx'), 'utf8');
+
+  expect(source).toContain('player.isPlaying');
+  expect(source).toContain('playbackAction');
+  expect(source).toContain('playerActions.pauseAction');
+  expect(source).toContain('playerActions.playAction');
+  expect(source).toContain('accessibilityLabel={playbackLabel}');
+  expect(source).toContain('dispatch(playbackAction)');
+});
+
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
