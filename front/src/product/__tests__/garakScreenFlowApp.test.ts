@@ -54,12 +54,23 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).not.toContain('GARAK에 오신 것을 환영해요');
 });
 
-test('connects the S23 Google login button to the login sync action', () => {
+test('connects S23 login sync preview and actions to library data', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
 
+  expect(source).toContain('getLoginSyncViewModel');
+  expect(source).toContain('model.localSummary');
+  expect(source).toContain('model.accountSummary');
+  expect(source).toContain('model.conflictLabel');
+  expect(source).toContain('model.syncPreviewLabel');
+  expect(source).toContain('model.emptyAccountMessage');
   expect(source).toContain('Google로 로그인');
-  expect(source).toContain("type: 'completeLoginSync'");
-  expect(source).not.toContain("accessibilityLabel=\"Google로 로그인\"\n          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
+  expect(source).toContain('동기화');
+  expect(source).toContain('선택해서 가져오기');
+  expect(source).toContain('건너뛰기');
+  expect(source).toContain('model.actions.login');
+  expect(source).toContain('model.actions.sync');
+  expect(source).toContain('model.actions.importSelected');
+  expect(source).toContain('model.actions.skip');
 });
 
 test('connects S22 settings actions to language and library management', () => {

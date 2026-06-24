@@ -14,6 +14,7 @@ import {
   ScreenHeading,
   garakCardShadow,
 } from './garakUi';
+import { getLoginSyncViewModel } from './loginSyncScreenModel';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const FREE_CREATION_GUIDE_STEPS = ['악기 선택', '연주 & 녹음', '트랙추가', '믹싱', 'AI 반주 추가', '저장 및 공유'] as const;
@@ -131,6 +132,8 @@ export function LoginSyncContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const model = getLoginSyncViewModel(state);
+
   return (
     <View style={[styles.stack, styles.loginScreenStack]}>
       <View style={styles.loginHero}>
@@ -138,25 +141,75 @@ export function LoginSyncContent({
         <Text style={styles.loginTagline}>AI와 함께 만드는 나만의 국악, GARAK</Text>
       </View>
       <View style={styles.syncCard}>
-        <Text style={styles.cardTitle}>로컬 보관함 유지</Text>
-        <Text style={styles.bodyText}>
-          현재 로컬 작업 {state.library.works.length}개를 유지한 채 계정에 저장된 곡을 불러옵니다.
-        </Text>
+        <Text style={styles.cardTitle}>보관함 동기화 미리보기</Text>
+        <Text style={styles.bodyText}>{model.statusLabel}</Text>
+        <View style={styles.syncPreviewStack}>
+          <SyncPreviewRow label="로컬 보관함" value={model.localSummary} />
+          <SyncPreviewRow label="계정 보관함" value={model.accountSummary} />
+          <SyncPreviewRow label="충돌 항목" value={model.conflictLabel} />
+          <SyncPreviewRow label="동기화 결과" value={model.syncPreviewLabel} />
+        </View>
+        {model.emptyAccountMessage === undefined ? null : (
+          <Text style={styles.syncEmptyText}>{model.emptyAccountMessage}</Text>
+        )}
       </View>
       <View style={styles.loginActions}>
         <LoginCapsuleButton
           accessibilityLabel="Google로 로그인"
-          onPress={() => dispatch({ type: 'completeLoginSync' })}
+          onPress={() => dispatch(model.actions.login)}
         >
           <GoogleIcon />
         </LoginCapsuleButton>
-        <LoginCapsuleButton
-          accessibilityLabel="Guest Mode"
-          onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
-        >
-          <Text style={styles.guestButtonText}>Guest Mode</Text>
-        </LoginCapsuleButton>
+        <View style={styles.syncActionGrid}>
+          <SyncActionButton
+            label="동기화"
+            onPress={() => dispatch(model.actions.sync)}
+          />
+          <SyncActionButton
+            label="선택해서 가져오기"
+            onPress={() => dispatch(model.actions.importSelected)}
+          />
+          <SyncActionButton
+            label="건너뛰기"
+            onPress={() => dispatch(model.actions.skip)}
+            wide
+          />
+        </View>
       </View>
+    </View>
+  );
+}
+
+function SyncActionButton({
+  label,
+  onPress,
+  wide,
+}: {
+  label: string;
+  onPress: () => void;
+  wide?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.syncActionButton,
+        wide ? styles.syncActionButtonWide : undefined,
+        pressed ? styles.pressedCapsuleButton : undefined,
+      ]}
+    >
+      <Text numberOfLines={1} style={styles.syncActionButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function SyncPreviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.syncPreviewRow}>
+      <Text style={styles.syncPreviewLabel}>{label}</Text>
+      <Text style={styles.syncPreviewValue}>{value}</Text>
     </View>
   );
 }
@@ -408,7 +461,7 @@ const styles = StyleSheet.create({
   loginHero: {
     alignItems: 'center',
     gap: 12,
-    minHeight: 240,
+    minHeight: 190,
     justifyContent: 'center',
   },
   loginScreenStack: {
@@ -433,9 +486,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  syncPreviewStack: {
+    borderColor: GARAK_COLORS.lineSoft,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  syncPreviewRow: {
+    borderBottomColor: GARAK_COLORS.lineSoft,
+    borderBottomWidth: 1,
+    gap: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  syncPreviewLabel: {
+    color: GARAK_COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  syncPreviewValue: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  syncEmptyText: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
   loginActions: {
     alignSelf: 'center',
-    gap: GARAK_AUTH_BUTTON_LAYOUT.gap,
+    gap: 12,
     maxWidth: GARAK_AUTH_BUTTON_LAYOUT.buttonWidth,
     width: '100%',
   },
@@ -448,12 +531,33 @@ const styles = StyleSheet.create({
     width: '100%',
     ...garakCardShadow,
   },
+  syncActionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  syncActionButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: GARAK_COLORS.lineSoft,
+    borderRadius: 23,
+    borderWidth: 1,
+    flexBasis: '48%',
+    flexGrow: 1,
+    height: 46,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    ...garakCardShadow,
+  },
+  syncActionButtonWide: {
+    flexBasis: '100%',
+  },
+  syncActionButtonText: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
   pressedCapsuleButton: {
     opacity: 0.82,
-  },
-  guestButtonText: {
-    color: GARAK_COLORS.textPrimary,
-    fontSize: 14,
-    fontWeight: '500',
   },
 });
