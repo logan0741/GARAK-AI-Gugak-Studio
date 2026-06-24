@@ -43,3 +43,16 @@ test('uses the Figma instrument selection design for the free-creation instrumen
   expect(source).toContain('NEXT');
   expect(source).not.toContain('연주 & 녹음');
 });
+
+test('uses the Figma performance preview design before entering free play', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('연주 할 화면');
+  expect(source).toContain('미리 볼 수 있어요');
+  expect(source).toContain('연주를 시작하고 녹음하고');
+  expect(source).toContain('양손으로 궁편과 열편을');
+  expect(source).toContain('JangguPreviewStageArtwork');
+  expect(source).toContain('ProgressSteps step={2}');
+  expect(source).toContain('startWithDefaults');
+  expect(source).not.toContain('직접 조정');
+});

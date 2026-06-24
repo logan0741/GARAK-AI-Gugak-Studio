@@ -31,6 +31,17 @@ export function JangguLandscapeStageArtwork() {
   );
 }
 
+export function JangguPreviewStageArtwork({ style }: { style?: StyleProp<ViewStyle> }) {
+  return (
+    <ArtworkImagePanel
+      accessibilityLabel="장구 자유연주 화면 미리보기"
+      source={GARAK_SCREEN_ASSETS.creation.jangguFreePlayLandscapeStage}
+      style={[styles.jangguPreviewStage, style]}
+      imageStyle={styles.jangguPreviewStageImage}
+    />
+  );
+}
+
 export function LibraryPlaylistArtworkPanel({
   onOpenSelectedWork,
   onLibrary,
@@ -161,6 +172,13 @@ const styles = StyleSheet.create({
   },
   jangguLandscapeStageImage: {
     resizeMode: 'contain',
+  },
+  jangguPreviewStage: {
+    height: 160,
+    width: '100%',
+  },
+  jangguPreviewStageImage: {
+    resizeMode: 'cover',
   },
   libraryPanelWrap: {
     borderRadius: 34,

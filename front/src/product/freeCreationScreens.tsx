@@ -6,6 +6,7 @@ import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   InstrumentSelectionArtworkPanel,
   JangguLandscapeStageArtwork,
+  JangguPreviewStageArtwork,
 } from './garakArtworkPanels';
 import {
   InstrumentBadge,
@@ -43,6 +44,10 @@ const FUTURE_INSTRUMENT_CHIPS = [
 const JANGGU_FIGMA_BADGE = '장구 Janggu';
 const JANGGU_FIGMA_DESCRIPTION =
   '장구는 한국 전통 음악에서 가장 대표적으로 사용되는 타악기 중 하나로, 가운데가 잘록한 모래시계 모양을 하고 있습니다.';
+const PERFORMANCE_PREVIEW_TOP_CALLOUT =
+  '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.';
+const PERFORMANCE_PREVIEW_BOTTOM_CALLOUT =
+  '연주할 때는 양손으로 궁편과 열편을 손에 쥐고 연주.';
 
 export function HomeScreenContent({
   dispatch,
@@ -134,35 +139,58 @@ export function InstrumentSelectContent({
 }
 
 export function InstrumentSettingsContent({
-  state,
   dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
-  const instrumentDefinition = MVP_INSTRUMENTS.find((item) => item.id === instrument) ?? MVP_INSTRUMENTS[0];
+  const { height } = useWindowDimensions();
+  const isCompactHeight = height < 820;
 
   return (
-    <View style={styles.screenStack}>
-      <ScreenHeading title={'연주 할 화면을\n미리 볼 수 있어요.'} />
-      <View style={styles.playPreviewCard}>
-        <InstrumentVisual instrument={instrument} />
-        <View style={styles.noteBubble}>
-          <Text style={styles.noteBubbleText}>연주와 녹음은 이 화면에서 바로 시작해요.</Text>
+    <View style={styles.performancePreviewScreen}>
+      <Text
+        accessibilityLabel="연주 할 화면을 미리 볼 수 있어요."
+        style={[
+          styles.performancePreviewTitle,
+          isCompactHeight ? styles.performancePreviewTitleCompact : undefined,
+        ]}
+      >
+        연주 할 <Text style={styles.performancePreviewTitleStrong}>화면</Text>을{'\n'}미리 볼 수 있어요.
+      </Text>
+      <View
+        accessible
+        accessibilityLabel={`${PERFORMANCE_PREVIEW_TOP_CALLOUT} ${PERFORMANCE_PREVIEW_BOTTOM_CALLOUT}`}
+        style={[
+          styles.performancePreviewPanel,
+          isCompactHeight ? styles.performancePreviewPanelCompact : undefined,
+        ]}
+      >
+        <View style={styles.performancePreviewTopCallout}>
+          <Text style={styles.performancePreviewCalloutText}>{PERFORMANCE_PREVIEW_TOP_CALLOUT}</Text>
+        </View>
+        <View style={styles.performancePreviewTopLine} />
+        <View style={styles.performancePreviewTopDrop} />
+        <JangguPreviewStageArtwork
+          style={[
+            styles.performancePreviewStage,
+            isCompactHeight ? styles.performancePreviewStageCompact : undefined,
+          ]}
+        />
+        <View style={styles.performancePreviewBottomLead} />
+        <View style={styles.performancePreviewBottomDrop} />
+        <View style={styles.performancePreviewBottomCallout}>
+          <Text style={styles.performancePreviewCalloutText}>{PERFORMANCE_PREVIEW_BOTTOM_CALLOUT}</Text>
         </View>
       </View>
-      <Text style={styles.instrumentDescription}>
-        {instrumentDefinition.settings.join(' · ')} 기본값으로 시작합니다. BPM과 장단은 녹음 직전에 정합니다.
-      </Text>
-      <ProgressSteps step={1} />
-      <View style={styles.buttonRow}>
-        <SecondaryPillButton label="직접 조정" onPress={() => dispatch({ type: 'navigate', target: 'S04' })} />
-        <PrimaryPillButton
-          label="Next"
-          onPress={() => dispatch({ type: 'startWithDefaults' })}
-          style={styles.rowPrimary}
-        />
+      <View
+        style={[
+          styles.performancePreviewFooter,
+          isCompactHeight ? styles.performancePreviewFooterCompact : undefined,
+        ]}
+      >
+        <ProgressSteps step={2} />
+        <PrimaryPillButton label="NEXT" onPress={() => dispatch({ type: 'startWithDefaults' })} />
       </View>
     </View>
   );
@@ -526,6 +554,121 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   instrumentSelectFooterCompact: {
+    marginTop: 8,
+  },
+  performancePreviewScreen: {
+    gap: 0,
+  },
+  performancePreviewTitle: {
+    color: '#606060',
+    fontSize: 28,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 34,
+    marginTop: 27,
+  },
+  performancePreviewTitleCompact: {
+    fontSize: 27,
+    lineHeight: 32,
+    marginTop: 14,
+  },
+  performancePreviewTitleStrong: {
+    color: '#191919',
+    fontWeight: '800',
+  },
+  performancePreviewPanel: {
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 40,
+    borderWidth: 1,
+    height: 510,
+    marginTop: 54,
+    overflow: 'hidden',
+    position: 'relative',
+    ...garakCardShadow,
+  },
+  performancePreviewPanelCompact: {
+    height: 430,
+    marginTop: 32,
+  },
+  performancePreviewTopCallout: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(229,145,0,0.3)',
+    borderColor: GARAK_COLORS.brandAmber,
+    borderRadius: 19,
+    borderWidth: 1,
+    height: 38,
+    justifyContent: 'center',
+    marginTop: 56,
+    paddingHorizontal: 14,
+    width: 175,
+    zIndex: 2,
+  },
+  performancePreviewCalloutText: {
+    color: '#606060',
+    fontSize: 10,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 13,
+    textAlign: 'center',
+  },
+  performancePreviewTopLine: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+    height: 1,
+    position: 'absolute',
+    right: 33,
+    top: 75,
+    width: 62,
+  },
+  performancePreviewTopDrop: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+    height: 43,
+    position: 'absolute',
+    right: 33,
+    top: 75,
+    width: 1,
+  },
+  performancePreviewStage: {
+    marginTop: 22,
+  },
+  performancePreviewStageCompact: {
+    height: 145,
+  },
+  performancePreviewBottomLead: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+    height: 1,
+    left: 13,
+    position: 'absolute',
+    top: 325,
+    width: 64,
+  },
+  performancePreviewBottomDrop: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+    height: 48,
+    left: 13,
+    position: 'absolute',
+    top: 325,
+    width: 1,
+  },
+  performancePreviewBottomCallout: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(229,145,0,0.3)',
+    borderColor: GARAK_COLORS.brandAmber,
+    borderRadius: 17,
+    borderWidth: 1,
+    height: 33,
+    justifyContent: 'center',
+    marginTop: 30,
+    paddingHorizontal: 14,
+    width: 255,
+  },
+  performancePreviewFooter: {
+    gap: 13,
+    marginTop: 15,
+  },
+  performancePreviewFooterCompact: {
     marginTop: 8,
   },
   landscapePerformanceStack: {
