@@ -455,6 +455,8 @@ test('uses the Figma stacked track add flow for S08', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
   expect(source).toContain('freeCreationTrackAddScreen');
+  expect(source).toContain('currentWorkContextLabel');
+  expect(source).toContain('freeCreationTrackAddContext');
   expect(source).toContain('나만의 가락');
   expect(source).toContain('AI 반주 생성하기');
   expect(source).toContain('악기 연주 추가');

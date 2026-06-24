@@ -937,6 +937,8 @@ export function AddTrackContent({
   const currentTrackLabel = secondInstrumentTrackLabel
     ? `Track 1 : ${getInstrumentName(primaryInstrument)}`
     : `TRACK 1 : ${getInstrumentName(primaryInstrument)}`;
+  const currentWorkContextLabel =
+    work === undefined ? '현재 작업 없음' : `현재 작업 · ${work.title}`;
 
   return (
     <View style={styles.freeCreationTrackAddScreen}>
@@ -950,6 +952,7 @@ export function AddTrackContent({
           다른 악기를 연주하여 트랙을 추가해요. {'\n'}트랙을 추가하고, AI 반주를 추가하여{'\n'}
           <Text style={styles.freeCreationTrackAddCopyStrong}>나만의 가락</Text>을 생성해요.
         </Text>
+        <Text style={styles.freeCreationTrackAddContext}>{currentWorkContextLabel}</Text>
 
         <Pressable
           accessibilityRole="button"
@@ -2404,6 +2407,14 @@ const styles = StyleSheet.create({
   freeCreationTrackAddCopyStrong: {
     color: '#656565',
     fontWeight: '500',
+  },
+  freeCreationTrackAddContext: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 17,
+    marginTop: 12,
   },
   freeCreationLayerOptionWrap: {
     alignItems: 'center',
