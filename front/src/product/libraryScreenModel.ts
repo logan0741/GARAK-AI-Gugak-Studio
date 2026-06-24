@@ -1,5 +1,5 @@
 import type { ExportedAudio, PracticeResult, Work } from '../studio/studioTypes';
-import { GarakProductState } from './garakProductState';
+import type { GarakProductAction, GarakProductState } from './garakProductState';
 import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
 
 export type MyLibraryHeroCard = {
@@ -160,6 +160,37 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
   }
 
   return createDemoPlayerViewModel('My Arirang');
+}
+
+export function getMyLibraryItemAction(
+  item: MyLibraryHeroCard | MyLibraryPlaylistRow,
+): GarakProductAction | undefined {
+  if (!item.playable) {
+    return undefined;
+  }
+
+  if (item.workId !== undefined) {
+    return { type: 'openWork', workId: item.workId };
+  }
+
+  if (item.exportedAudioId !== undefined) {
+    return {
+      type: 'playLibraryItem',
+      item: { kind: 'exportedAudio', exportedAudioId: item.exportedAudioId },
+    };
+  }
+
+  if (item.practiceResultId !== undefined) {
+    return {
+      type: 'playLibraryItem',
+      item: { kind: 'practiceResult', practiceResultId: item.practiceResultId },
+    };
+  }
+
+  return {
+    type: 'playLibraryItem',
+    item: { kind: 'demo', title: item.title, date: item.date },
+  };
 }
 
 function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {

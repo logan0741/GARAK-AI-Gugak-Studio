@@ -1,6 +1,10 @@
 import { expect, test } from 'vitest';
 import { applyProductAction, createInitialGarakProductState } from '../garakProductState';
-import { getMyLibraryPlayerViewModel, getMyLibraryViewModel } from '../libraryScreenModel';
+import {
+  getMyLibraryItemAction,
+  getMyLibraryPlayerViewModel,
+  getMyLibraryViewModel,
+} from '../libraryScreenModel';
 
 test('uses the Figma my-screen demo library when there are no saved items', () => {
   const model = getMyLibraryViewModel(createInitialGarakProductState());
@@ -65,6 +69,49 @@ test('puts saved works and exports before the demo playlist rows', () => {
   expect(model.playlistRows[2]).toMatchObject({
     kind: 'demo',
     title: 'My Arirang',
+  });
+});
+
+test('routes library work rows to editing and shareable rows to the player', () => {
+  expect(
+    getMyLibraryItemAction({
+      id: 'work-work-1',
+      title: '가야금 작업 1',
+      date: '2026.06.18',
+      kind: 'work',
+      playable: true,
+      active: false,
+      workId: 'work-1',
+    }),
+  ).toEqual({ type: 'openWork', workId: 'work-1' });
+
+  expect(
+    getMyLibraryItemAction({
+      id: 'export-export-1',
+      title: '가야금 작업 1 내보내기',
+      date: '2026.06.18',
+      kind: 'exportedAudio',
+      playable: true,
+      active: false,
+      exportedAudioId: 'export-1',
+    }),
+  ).toEqual({
+    type: 'playLibraryItem',
+    item: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
+  });
+
+  expect(
+    getMyLibraryItemAction({
+      id: 'demo-my-arirang',
+      title: 'My Arirang',
+      date: '2026.06.01',
+      kind: 'demo',
+      playable: true,
+      active: false,
+    }),
+  ).toEqual({
+    type: 'playLibraryItem',
+    item: { kind: 'demo', title: 'My Arirang', date: '2026.06.01' },
   });
 });
 

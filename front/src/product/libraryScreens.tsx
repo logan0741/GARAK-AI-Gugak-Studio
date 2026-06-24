@@ -4,6 +4,7 @@ import { GarakLogo } from './GarakLogo';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
+  getMyLibraryItemAction,
   getMyLibraryPlayerViewModel,
   getMyLibraryViewModel,
   MyLibraryHeroCard,
@@ -294,32 +295,11 @@ function openLibraryPlayable(
   item: MyLibraryHeroCard | MyLibraryPlaylistRow,
   dispatch: ProductDispatch,
 ) {
-  if (!item.playable) {
-    return;
-  }
+  const action = getMyLibraryItemAction(item);
 
-  if (item.exportedAudioId !== undefined) {
-    dispatch({
-      type: 'playLibraryItem',
-      item: { kind: 'exportedAudio', exportedAudioId: item.exportedAudioId },
-    });
-    return;
+  if (action !== undefined) {
+    dispatch(action);
   }
-
-  if (item.practiceResultId !== undefined) {
-    dispatch({
-      type: 'playLibraryItem',
-      item: { kind: 'practiceResult', practiceResultId: item.practiceResultId },
-    });
-    return;
-  }
-
-  if (item.workId !== undefined) {
-    dispatch({ type: 'playLibraryItem', item: { kind: 'work', workId: item.workId } });
-    return;
-  }
-
-  dispatch({ type: 'playLibraryItem', item: { kind: 'demo', title: item.title, date: item.date } });
 }
 
 const styles = StyleSheet.create({
