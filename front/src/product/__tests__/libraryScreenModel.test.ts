@@ -79,10 +79,7 @@ test('shows saved works in the default work tab', () => {
     playable: true,
     workId: 'work-1',
   });
-  expect(model.playlistRows[1]).toMatchObject({
-    kind: 'demo',
-    title: 'My Arirang',
-  });
+  expect(model.playlistRows.map((row) => row.kind)).toEqual(['work']);
   expect(model.tabs).toEqual([
     { id: 'works', label: '작업', active: true, count: 1 },
     { id: 'shareables', label: '내보낸 음원/결과', active: false, count: 1 },

@@ -75,8 +75,6 @@ type ActualLibraryRow = MyLibraryPlaylistRow & {
 };
 type MyLibraryPlayerBaseViewModel = Omit<MyLibraryPlayerViewModel, 'isPlaying'>;
 
-const MAX_VISIBLE_PLAYLIST_ROWS = 5;
-
 const FIGMA_DEMO_PLAYLIST_ROWS: MyLibraryPlaylistRow[] = [
   {
     id: 'demo-my-arirang',
@@ -126,9 +124,9 @@ export function getMyLibraryViewModel(state: GarakProductState): MyLibraryViewMo
   const searchQuery = state.librarySearchQuery.trim();
   const tabRows = actualRows.filter((row) => rowMatchesLibraryTab(row, activeTab));
   const filteredRows = filterLibraryRows(tabRows, searchQuery);
-  const shouldFillWithDemoRows = activeTab === 'works' && searchQuery.length === 0;
+  const shouldShowDemoRows = activeTab === 'works' && searchQuery.length === 0 && filteredRows.length === 0;
   const playlistRows = markFirstRowActive(
-    shouldFillWithDemoRows ? fillWithDemoRows(filteredRows) : filteredRows,
+    shouldShowDemoRows ? FIGMA_DEMO_PLAYLIST_ROWS : filteredRows,
   );
   const primaryHero = createPrimaryHeroCard(playlistRows[0]);
 
@@ -389,19 +387,6 @@ function createLibraryEmptyState(
         ? { type: 'openWork', workId: state.library.works[0].id }
         : { type: 'navigate', target: 'S01' },
   };
-}
-
-function fillWithDemoRows(rows: MyLibraryPlaylistRow[]): MyLibraryPlaylistRow[] {
-  const visibleRows = rows.slice(0, MAX_VISIBLE_PLAYLIST_ROWS);
-
-  if (visibleRows.length >= MAX_VISIBLE_PLAYLIST_ROWS) {
-    return visibleRows;
-  }
-
-  return [
-    ...visibleRows,
-    ...FIGMA_DEMO_PLAYLIST_ROWS.slice(0, MAX_VISIBLE_PLAYLIST_ROWS - visibleRows.length),
-  ];
 }
 
 function markFirstRowActive(rows: MyLibraryPlaylistRow[]): MyLibraryPlaylistRow[] {
