@@ -936,6 +936,26 @@ test('opens the original work editor from the S19 player when the export has a w
   expect(state.currentWorkId).toBe('work-1');
 });
 
+test('deletes the selected exported audio from the S19 player and returns to the library', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'deleteSelectedPlayerItem' });
+
+  expect(state.screenFlow.currentScreen).toBe('S18');
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.library.works).toHaveLength(1);
+  expect(state.selectedPlayerItem).toBeUndefined();
+});
+
 test('publishes the selected practice result from S17 and marks it shared', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

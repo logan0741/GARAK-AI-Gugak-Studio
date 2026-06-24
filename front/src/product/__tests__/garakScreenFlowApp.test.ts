@@ -131,12 +131,15 @@ test('connects S19 player edit and share CTAs to selected library item actions',
   expect(source).toContain('getMyLibraryPlayerActions');
   expect(source).toContain('playerActions.editAction');
   expect(source).toContain('playerActions.shareAction');
+  expect(source).toContain('playerActions.deleteAction');
   expect(source).toContain('편집으로 열기');
   expect(source).toContain('공유');
+  expect(source).toContain('삭제');
   expect(source).toContain('보관함으로 돌아가기');
   expect(source).toContain('dispatch(playerActions.backAction)');
   expect(source).toContain('dispatch(playerActions.editAction)');
   expect(source).toContain('dispatch(playerActions.shareAction)');
+  expect(source).toContain('dispatch(playerActions.deleteAction)');
 });
 
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {

@@ -157,6 +157,7 @@ export type GarakProductAction =
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
   | { type: 'shareSelectedPlayerItem' }
+  | { type: 'deleteSelectedPlayerItem' }
   | { type: 'previewShareTarget' }
   | { type: 'publishShareTarget' }
   | { type: 'openSharedRecordingDetail'; recordingId: SharedRecording['id'] }
@@ -450,6 +451,8 @@ export function applyProductAction(
       return createPracticeResultAndRoute(state, 'S17');
     case 'shareSelectedPlayerItem':
       return shareSelectedPlayerItem(state);
+    case 'deleteSelectedPlayerItem':
+      return deleteSelectedPlayerItem(state);
     case 'previewShareTarget':
       return {
         ...state,
@@ -1113,6 +1116,42 @@ function openSelectedPlayerEditor(state: GarakProductState): GarakProductState {
     currentWorkId: workId,
     screenFlow: pushTarget(state.screenFlow, 'S07'),
   };
+}
+
+function deleteSelectedPlayerItem(state: GarakProductState): GarakProductState {
+  const selected = state.selectedPlayerItem;
+
+  if (selected?.kind === 'exportedAudio') {
+    return {
+      ...state,
+      selectedPlayerItem: undefined,
+      sharePreviewStatus: undefined,
+      library: {
+        ...state.library,
+        exportedAudios: state.library.exportedAudios.filter(
+          (audio) => audio.id !== selected.exportedAudioId,
+        ),
+      },
+      screenFlow: pushTarget(state.screenFlow, 'S18'),
+    };
+  }
+
+  if (selected?.kind === 'practiceResult') {
+    return {
+      ...state,
+      selectedPlayerItem: undefined,
+      sharePreviewStatus: undefined,
+      library: {
+        ...state.library,
+        practiceResults: state.library.practiceResults.filter(
+          (result) => result.id !== selected.practiceResultId,
+        ),
+      },
+      screenFlow: pushTarget(state.screenFlow, 'S18'),
+    };
+  }
+
+  return state;
 }
 
 function resolveSelectedPlayerEditWorkId(state: GarakProductState): string | undefined {

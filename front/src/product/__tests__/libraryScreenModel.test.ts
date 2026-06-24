@@ -239,6 +239,7 @@ test('exposes S19 player actions without choosing their visual placement', () =>
   expect(getMyLibraryPlayerActions(state)).toEqual({
     editAction: { type: 'openSelectedPlayerEditor' },
     shareAction: { type: 'shareSelectedPlayerItem' },
+    deleteAction: { type: 'deleteSelectedPlayerItem' },
     backAction: { type: 'navigate', target: 'S18' },
   });
 });

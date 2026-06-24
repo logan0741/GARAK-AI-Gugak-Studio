@@ -201,7 +201,7 @@ export function PlayerDetailContent({
               playerActions.editAction === undefined ? styles.playingActionButtonDisabled : undefined,
             ]}
           >
-            <Text style={styles.playingActionButtonText}>편집으로 열기</Text>
+            <Text numberOfLines={1} style={styles.playingActionButtonText}>편집으로 열기</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -217,7 +217,23 @@ export function PlayerDetailContent({
               playerActions.shareAction === undefined ? styles.playingActionButtonDisabled : undefined,
             ]}
           >
-            <Text style={styles.playingActionButtonText}>공유</Text>
+            <Text numberOfLines={1} style={styles.playingActionButtonText}>공유</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playerActions.deleteAction === undefined }}
+            disabled={playerActions.deleteAction === undefined}
+            onPress={() => {
+              if (playerActions.deleteAction !== undefined) {
+                dispatch(playerActions.deleteAction);
+              }
+            }}
+            style={[
+              styles.playingActionButton,
+              playerActions.deleteAction === undefined ? styles.playingActionButtonDisabled : undefined,
+            ]}
+          >
+            <Text numberOfLines={1} style={styles.playingActionButtonText}>삭제</Text>
           </Pressable>
         </View>
         {player.showsAirPlay ? (

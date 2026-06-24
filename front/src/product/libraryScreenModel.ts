@@ -62,6 +62,7 @@ export type MyLibraryPlayerViewModel = {
 export type MyLibraryPlayerActions = {
   editAction?: GarakProductAction;
   shareAction?: GarakProductAction;
+  deleteAction?: GarakProductAction;
   backAction: GarakProductAction;
 };
 
@@ -210,6 +211,7 @@ export function getMyLibraryPlayerActions(state: GarakProductState): MyLibraryPl
   return {
     editAction: player.editWorkId !== undefined ? { type: 'openSelectedPlayerEditor' } : undefined,
     shareAction: canShare ? { type: 'shareSelectedPlayerItem' } : undefined,
+    deleteAction: canShare ? { type: 'deleteSelectedPlayerItem' } : undefined,
     backAction: { type: 'navigate', target: 'S18' },
   };
 }
