@@ -4,6 +4,7 @@ import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState, ProductPlayerSelection } from './garakProductState';
 import {
   getShareFeedViewModel,
+  getSharePrepareAction,
   getSharePrepareViewModel,
   ShareFeedPlayer,
   ShareFeedRecentCard,
@@ -60,6 +61,7 @@ export function ShareFeedContent({
   dispatch: ProductDispatch;
 }) {
   const model = getShareFeedViewModel(state);
+  const sharePrepareAction = getSharePrepareAction(state);
 
   return (
     <View style={styles.shareFeedStack}>
@@ -132,7 +134,13 @@ export function ShareFeedContent({
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => dispatch({ type: 'navigate', target: 'S17' })}
+        accessibilityState={{ disabled: sharePrepareAction === undefined }}
+        disabled={sharePrepareAction === undefined}
+        onPress={() => {
+          if (sharePrepareAction !== undefined) {
+            dispatch(sharePrepareAction);
+          }
+        }}
         style={styles.shareSectionHeaderRow}
       >
         <Text style={styles.sectionTitle}>나의 GARAK 공유하기</Text>

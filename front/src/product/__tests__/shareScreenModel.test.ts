@@ -1,6 +1,10 @@
 import { expect, test } from 'vitest';
 import { createInitialGarakProductState } from '../garakProductState';
-import { getShareFeedViewModel, getSharePrepareViewModel } from '../shareScreenModel';
+import {
+  getShareFeedViewModel,
+  getSharePrepareAction,
+  getSharePrepareViewModel,
+} from '../shareScreenModel';
 
 test('builds the Figma share-feed defaults', () => {
   const model = getShareFeedViewModel(createInitialGarakProductState());
@@ -91,6 +95,36 @@ test('prepares the selected exported audio as the S17 share target', () => {
     title: '장구 작업 1 내보내기',
     description: '42초 · 장구, 가야금 · 내보낸 음원',
   });
+});
+
+test('opens S17 share preparation only when a shareable target exists', () => {
+  expect(getSharePrepareAction(createInitialGarakProductState())).toBeUndefined();
+
+  const state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  expect(
+    getSharePrepareAction({
+      ...state,
+      library: {
+        ...state.library,
+        exportedAudios: [
+          {
+            id: 'export-1',
+            kind: 'exported_audio',
+            workId: 'work-1',
+            title: '장구 작업 1 내보내기',
+            durationSeconds: 42,
+            instrumentNames: ['장구'],
+            createdAt: '2026-06-18T00:00:00.000Z',
+            audioUri: 'placeholder://export-1.wav',
+            shareState: 'ready',
+          },
+        ],
+      },
+    }),
+  ).toEqual({ type: 'navigate', target: 'S17' });
 });
 
 test('prepares the latest practice result when S17 is opened from practice sharing', () => {

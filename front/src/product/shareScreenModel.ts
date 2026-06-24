@@ -1,5 +1,5 @@
 import { ExportedAudio, PracticeResult } from '../studio/studioTypes';
-import { GarakProductState } from './garakProductState';
+import type { GarakProductAction, GarakProductState } from './garakProductState';
 import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
 
 export type ShareFeedCategory = {
@@ -108,6 +108,12 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
     title: `${getPracticeSongTitle(shareTarget.songId)} 연습 결과`,
     description: `${getInstrumentName(shareTarget.instrument)} · 정확도 ${shareTarget.accuracyScore}% · 따라하기 결과`,
   };
+}
+
+export function getSharePrepareAction(state: GarakProductState): GarakProductAction | undefined {
+  return getSharePrepareViewModel(state).canShare
+    ? { type: 'navigate', target: 'S17' }
+    : undefined;
 }
 
 function getSharePrepareTarget(state: GarakProductState): ExportedAudio | PracticeResult | undefined {

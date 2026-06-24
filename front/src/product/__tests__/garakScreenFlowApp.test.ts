@@ -127,6 +127,14 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
   expect(source).not.toContain('TrackPill label="트랙 추가하기"');
 });
 
+test('prevents the share feed from entering S17 without a shareable target', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+
+  expect(source).toContain('getSharePrepareAction');
+  expect(source).toContain('disabled={sharePrepareAction === undefined}');
+  expect(source).not.toContain("onPress={() => dispatch({ type: 'navigate', target: 'S17' })}");
+});
+
 test('uses the Figma stacked track add flow for S08', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
