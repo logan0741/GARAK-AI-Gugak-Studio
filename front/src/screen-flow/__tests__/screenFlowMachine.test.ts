@@ -99,6 +99,18 @@ test('routes S01 Next to S13 when practice mode is selected', () => {
   expect(next.history).toEqual(['S01']);
 });
 
+test('allows the S03 mode guide to enter the practice song flow', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S03',
+    history: ['S01'],
+  });
+
+  const next = transitionScreenFlow(state, { type: 'navigate', target: 'S13' });
+
+  expect(next.currentScreen).toBe('S13');
+  expect(next.history).toEqual(['S01', 'S03']);
+});
+
 test('rejects S01 mode selection from other screens', () => {
   const state = createInitialScreenFlowState({
     currentScreen: 'S13',

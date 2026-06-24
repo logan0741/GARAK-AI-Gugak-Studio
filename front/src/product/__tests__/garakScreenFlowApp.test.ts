@@ -149,6 +149,15 @@ test('connects S17 share publishing to the selected share target state', () => {
   expect(source).not.toContain("label=\"공유하기\"\n          onPress={() => dispatch({ type: 'navigate', target: 'S20' })}");
 });
 
+test('connects S16 result actions to retry, save, share, and choose another song', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/practiceScreens.tsx'), 'utf8');
+
+  expect(source).toMatch(/label="다시 연주"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S15' \}\)\}/);
+  expect(source).toMatch(/label="저장"\s+onPress=\{\(\) => dispatch\(\{ type: 'savePracticeResult' \}\)\}/);
+  expect(source).toMatch(/label="공유"\s+onPress=\{\(\) => dispatch\(\{ type: 'sharePracticeResult' \}\)\}/);
+  expect(source).toMatch(/label="다른 민요 선택"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S13' \}\)\}/);
+});
+
 test('connects shared detail remix and save buttons to library data actions', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
 

@@ -77,10 +77,11 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S03',
     name: 'Intro Guide',
     mvpStatus: 'recommended',
-    primaryCtas: ['nextStep', 'skip'],
+    primaryCtas: ['nextStep', 'skip', 'practiceMode'],
     transitions: [
       { action: 'nextStep', target: 'S05' },
       { action: 'skip', target: 'S04' },
+      { action: 'practiceMode', target: 'S13' },
     ],
   },
   S04: {

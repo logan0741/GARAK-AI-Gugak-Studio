@@ -76,14 +76,22 @@ export function SecondaryPillButton({
   onPress,
   disabled,
   tone = 'light',
+  style,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   tone?: ButtonTone;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <PrimaryPillButton label={label} onPress={onPress} disabled={disabled} tone={tone} style={styles.secondaryPill} />
+    <PrimaryPillButton
+      label={label}
+      onPress={onPress}
+      disabled={disabled}
+      tone={tone}
+      style={[styles.secondaryPill, style]}
+    />
   );
 }
 

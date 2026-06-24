@@ -123,10 +123,27 @@ export function PracticeResultContent({
           일부 구간은 조금 빠르게 들어갔지만 전체적인 선율 진행은 잘 유지되었습니다.
         </Text>
       </View>
-      <View style={styles.buttonRow}>
-        <SecondaryPillButton label="다시 연주" onPress={() => dispatch({ type: 'navigate', target: 'S15' })} />
-        <SecondaryPillButton label="저장" onPress={() => dispatch({ type: 'savePracticeResult' })} />
-        <SecondaryPillButton label="공유" onPress={() => dispatch({ type: 'sharePracticeResult' })} />
+      <View style={[styles.buttonRow, styles.resultButtonGrid]}>
+        <SecondaryPillButton
+          label="다시 연주"
+          onPress={() => dispatch({ type: 'navigate', target: 'S15' })}
+          style={styles.resultActionButton}
+        />
+        <SecondaryPillButton
+          label="저장"
+          onPress={() => dispatch({ type: 'savePracticeResult' })}
+          style={styles.resultActionButton}
+        />
+        <SecondaryPillButton
+          label="공유"
+          onPress={() => dispatch({ type: 'sharePracticeResult' })}
+          style={styles.resultActionButton}
+        />
+        <SecondaryPillButton
+          label="다른 민요 선택"
+          onPress={() => dispatch({ type: 'navigate', target: 'S13' })}
+          style={styles.resultActionButton}
+        />
       </View>
     </View>
   );
@@ -240,5 +257,12 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  resultButtonGrid: {
+    flexWrap: 'wrap',
+  },
+  resultActionButton: {
+    flexBasis: '48%',
+    flexGrow: 1,
   },
 });
