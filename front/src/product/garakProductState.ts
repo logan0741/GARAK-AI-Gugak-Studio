@@ -887,13 +887,18 @@ function applyInstrumentTrack(
     return state;
   }
 
+  const takeEvents = events.length > 0 ? events : state.pendingFreePlayTake?.events ?? [];
+  if (takeEvents.length === 0) {
+    return state;
+  }
+
   const nextCounters = incrementCounters(state.counters, ['track', 'take']);
   const now = state.now();
   const nextWork = addInstrumentTrack(currentWork, {
     trackId: `track-${nextCounters.track}`,
     takeId: `take-${nextCounters.take}`,
     instrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
-    events: events.length > 0 ? events : state.pendingFreePlayTake?.events ?? [],
+    events: takeEvents,
     createdAt: now,
     durationBeats: 4,
     playheadBeat,

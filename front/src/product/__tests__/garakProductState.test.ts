@@ -374,6 +374,10 @@ test('adds new tracks at the provided playhead beat', () => {
   state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'addTrack' });
   state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'janggu' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: [{ type: 'string_pluck', tsMs: 80, stringIndex: 2, velocity: 0.7 }],
+  });
   state = applyProductAction(state, { type: 'applyInstrumentTrack', playheadBeat: 5 });
   state = applyProductAction(state, { type: 'addTrack' });
   state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
@@ -394,6 +398,34 @@ test('adds new tracks at the provided playhead beat', () => {
     kind: 'accompaniment',
     startedAtBeat: 9,
   });
+});
+
+test('does not add an S09 instrument track until a take has recorded events', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+
+  const trackCountBeforeApply = state.library.works[0].tracks.length;
+
+  state = applyProductAction(state, { type: 'applyInstrumentTrack' });
+
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeApply);
+
+  state = applyProductAction(state, { type: 'restartInstrumentTrackRecording' });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack' });
+
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeApply);
 });
 
 test('records, restarts, and cancels an S09 extra instrument take before adding a track', () => {
