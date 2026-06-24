@@ -82,3 +82,16 @@ test('lets embedded Figma landscape stages own the full viewport', () => {
   expect(freePlaySource).toContain('usesFigmaLandscapeStage');
   expect(freePlaySource).toContain('!usesFigmaLandscapeStage ?');
 });
+
+test('uses the Figma free-creation mix and share flow for S07', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('freeCreationMixScreen');
+  expect(source).toContain('freeCreationPlayerDeck');
+  expect(source).toContain('My Janggu');
+  expect(source).toContain('Mix');
+  expect(source).toContain('Save & Share project');
+  expect(source).toContain("type: 'addTrack'");
+  expect(source).toContain("type: 'exportCurrentWork'");
+  expect(source).not.toContain('TrackPill label="트랙 추가하기"');
+});

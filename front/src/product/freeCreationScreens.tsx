@@ -19,7 +19,6 @@ import {
   QuickAccessNav,
   ScreenHeading,
   SecondaryPillButton,
-  TrackPill,
   VisualHero,
   garakCardShadow,
 } from './garakUi';
@@ -271,47 +270,95 @@ export function FreePlayContent({
 }
 
 export function TrackLayerEditorContent({
-  state,
   dispatch,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
-  const work = state.library.works.find((item) => item.id === state.currentWorkId);
-  const tracks = work?.tracks ?? [];
-
   return (
-    <View style={styles.screenStack}>
-      <ScreenHeading title={tracks.length > 2 ? '가락 미리듣기' : '나만의 가락 만들기'} compact />
-      <MiniTrackPlayer title={work?.title ?? 'My Janggu'} tone="navy" />
-      <Text style={styles.instrumentDescription}>
-        {tracks.length > 0
-          ? '연주 한 트랙들과 추가한 장단으로 나만의 가락을 완성해요.'
-          : '연주를 마치면 첫 트랙이 자동 저장됩니다.'}
-      </Text>
-      <View style={styles.trackStack}>
-        {tracks.map((track, index) => (
-          <TrackPill
-            key={track.id}
-            label={`TRACK ${index + 1} : ${
-              track.kind === 'instrument'
-                ? getInstrumentName(track.instrument)
-                : track.kind === 'accompaniment'
-                  ? '장단'
-                  : track.title
-            }`}
-            tone={index === 0 ? 'amber' : index === 1 ? 'red' : 'navy'}
-            onPress={() => undefined}
-          />
-        ))}
-        <TrackPill label="트랙 추가하기" tone="outline" onPress={() => dispatch({ type: 'addTrack' })} />
-        <TrackPill label="장단 추천 추가하기" tone="light" onPress={() => dispatch({ type: 'chooseAccompanimentTrack' })} />
+    <View style={styles.freeCreationMixScreen}>
+      <View style={styles.freeCreationPlayerDeck} accessible accessibilityLabel="My Janggu 재생 미리보기">
+        <View style={styles.freeCreationPlayerShadowBack} />
+        <View style={styles.freeCreationPlayerShadowFront} />
+        <View style={styles.freeCreationPlayerCard}>
+          <View style={styles.freeCreationNewBadge}>
+            <Text style={styles.freeCreationNewBadgeText}>NEW!</Text>
+          </View>
+          <Text numberOfLines={1} style={styles.freeCreationPlayerTitle}>
+            My Janggu
+          </Text>
+          <View style={styles.freeCreationPlayerProgress}>
+            <View style={styles.freeCreationPlayerProgressFill} />
+          </View>
+          <MixPlayerControls />
+        </View>
       </View>
-      <View style={styles.buttonRow}>
-        <SecondaryPillButton label="보관함" onPress={() => dispatch({ type: 'navigate', target: 'S18' })} />
-        <SecondaryPillButton label="내보내기" tone="outline" onPress={() => dispatch({ type: 'exportCurrentWork' })} />
+
+      <View style={styles.freeCreationMixPanel}>
+        <MixWaveformGlyph />
+        <Text style={styles.freeCreationMixCopy}>
+          다른 악기를 연주하여 트랙을 추가해요.{'\n'}트랙과{' '}
+          <Text style={styles.freeCreationMixCopyStrong}>AI 반주</Text>를 추가하여{' '}
+          <Text style={styles.freeCreationMixCopyStrong}>나만의 가락</Text>을 생성해요.
+        </Text>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="트랙과 AI 반주 믹스"
+          onPress={() => dispatch({ type: 'addTrack' })}
+          style={styles.freeCreationMixButton}
+        >
+          <Text style={styles.freeCreationMixButtonText}>Mix</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="프로젝트 저장 및 공유"
+          onPress={() => dispatch({ type: 'exportCurrentWork' })}
+          style={styles.freeCreationShareButton}
+        >
+          <ShareOutlineGlyph />
+          <Text style={styles.freeCreationShareButtonText}>{'Save & Share project'}</Text>
+        </Pressable>
       </View>
-      <PrimaryPillButton label="GO" onPress={() => dispatch({ type: 'exportCurrentWork' })} />
+    </View>
+  );
+}
+
+function MixPlayerControls() {
+  return (
+    <View style={styles.freeCreationPlayerControls}>
+      <View style={styles.freeCreationPlayerControlCircle}>
+        <Text style={styles.freeCreationPlayerControlIcon}>▶</Text>
+      </View>
+      <View style={styles.freeCreationPlayerPauseCircle}>
+        <View style={styles.freeCreationPauseBar} />
+        <View style={styles.freeCreationPauseBar} />
+      </View>
+    </View>
+  );
+}
+
+function MixWaveformGlyph() {
+  return (
+    <View style={styles.freeCreationWaveform} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={[styles.freeCreationWaveformBar, styles.freeCreationWaveformBarShort]} />
+      <View style={[styles.freeCreationWaveformBar, styles.freeCreationWaveformBarTall]} />
+      <View style={[styles.freeCreationWaveformBar, styles.freeCreationWaveformBarMedium]} />
+      <View style={[styles.freeCreationWaveformBar, styles.freeCreationWaveformBarTall]} />
+      <View style={[styles.freeCreationWaveformBar, styles.freeCreationWaveformBarShort]} />
+    </View>
+  );
+}
+
+function ShareOutlineGlyph() {
+  return (
+    <View style={styles.freeCreationShareGlyph} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={[styles.freeCreationShareLine, styles.freeCreationShareLineUp]} />
+      <View style={[styles.freeCreationShareLine, styles.freeCreationShareLineDown]} />
+      <View style={[styles.freeCreationShareNode, styles.freeCreationShareNodeLeft]} />
+      <View style={[styles.freeCreationShareNode, styles.freeCreationShareNodeTop]} />
+      <View style={[styles.freeCreationShareNode, styles.freeCreationShareNodeBottom]} />
     </View>
   );
 }
@@ -780,6 +827,256 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 16,
     ...garakCardShadow,
+  },
+  freeCreationMixScreen: {
+    gap: 25,
+    marginTop: 108,
+  },
+  freeCreationPlayerDeck: {
+    alignSelf: 'center',
+    height: 161,
+    position: 'relative',
+    width: '100%',
+  },
+  freeCreationPlayerShadowBack: {
+    backgroundColor: '#5E606A',
+    borderRadius: 28,
+    height: 134,
+    left: 8,
+    opacity: 0.65,
+    position: 'absolute',
+    right: 8,
+    top: 26,
+  },
+  freeCreationPlayerShadowFront: {
+    backgroundColor: '#3A3C4A',
+    borderRadius: 30,
+    height: 142,
+    left: 6,
+    opacity: 0.82,
+    position: 'absolute',
+    right: 6,
+    top: 14,
+  },
+  freeCreationPlayerCard: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: 40,
+    height: 135,
+    left: 0,
+    overflow: 'visible',
+    paddingTop: 28,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  freeCreationNewBadge: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandRed,
+    borderRadius: 36,
+    justifyContent: 'center',
+    minHeight: 24,
+    paddingHorizontal: 7,
+    position: 'absolute',
+    right: 10,
+    top: -7,
+  },
+  freeCreationNewBadgeText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  freeCreationPlayerTitle: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0,
+    lineHeight: 26,
+    maxWidth: 245,
+  },
+  freeCreationPlayerProgress: {
+    backgroundColor: '#E4E4E4',
+    borderRadius: 2,
+    height: 3,
+    marginTop: 17,
+    overflow: 'hidden',
+    width: 245,
+  },
+  freeCreationPlayerProgressFill: {
+    backgroundColor: GARAK_COLORS.brandAmber,
+    borderRadius: 2,
+    height: '100%',
+    width: 136,
+  },
+  freeCreationPlayerControls: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 55,
+    flexDirection: 'row',
+    gap: 8,
+    height: 33,
+    justifyContent: 'center',
+    marginTop: 15,
+    width: 106,
+  },
+  freeCreationPlayerControlCircle: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 12,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  freeCreationPlayerPauseCircle: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 3,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  freeCreationPlayerControlIcon: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 10,
+    fontWeight: '900',
+    lineHeight: 12,
+    marginLeft: 2,
+  },
+  freeCreationPauseBar: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: 1,
+    height: 9,
+    width: 3,
+  },
+  freeCreationMixPanel: {
+    alignSelf: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 40,
+    borderWidth: 1,
+    height: 511,
+    overflow: 'hidden',
+    paddingHorizontal: 27,
+    paddingTop: 34,
+    position: 'relative',
+    width: '100%',
+    ...garakCardShadow,
+  },
+  freeCreationWaveform: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    height: 12,
+    width: 15,
+  },
+  freeCreationWaveformBar: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: 1,
+    width: 1,
+  },
+  freeCreationWaveformBarShort: {
+    height: 7,
+  },
+  freeCreationWaveformBarMedium: {
+    height: 10,
+  },
+  freeCreationWaveformBarTall: {
+    height: 12,
+  },
+  freeCreationMixCopy: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12.5,
+    fontWeight: '300',
+    letterSpacing: 0,
+    lineHeight: 15,
+    marginTop: 17,
+    width: 304,
+  },
+  freeCreationMixCopyStrong: {
+    color: GARAK_COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  freeCreationMixButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandAmber,
+    borderRadius: 38,
+    height: 36,
+    justifyContent: 'center',
+    left: 27,
+    position: 'absolute',
+    right: 28,
+    top: 163,
+  },
+  freeCreationMixButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 15.5,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 32,
+  },
+  freeCreationShareButton: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: GARAK_RADIUS.pill,
+    bottom: 71,
+    flexDirection: 'row',
+    gap: 4,
+    height: 48,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  freeCreationShareButtonText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 15.5,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 32,
+  },
+  freeCreationShareGlyph: {
+    height: 18,
+    marginRight: 2,
+    position: 'relative',
+    width: 19,
+  },
+  freeCreationShareNode: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderRadius: 3,
+    height: 6,
+    position: 'absolute',
+    width: 6,
+    zIndex: 2,
+  },
+  freeCreationShareNodeLeft: {
+    left: 1,
+    top: 6,
+  },
+  freeCreationShareNodeTop: {
+    right: 1,
+    top: 1,
+  },
+  freeCreationShareNodeBottom: {
+    bottom: 1,
+    right: 1,
+  },
+  freeCreationShareLine: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    height: 2,
+    left: 5,
+    position: 'absolute',
+    width: 11,
+  },
+  freeCreationShareLineUp: {
+    top: 6,
+    transform: [{ rotate: '-23deg' }],
+  },
+  freeCreationShareLineDown: {
+    top: 11,
+    transform: [{ rotate: '23deg' }],
   },
   freePlaySurface: {
     backgroundColor: GARAK_COLORS.surfaceCard,
