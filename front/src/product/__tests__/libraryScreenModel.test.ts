@@ -140,7 +140,7 @@ test('filters the active library tab by search query', () => {
   });
 });
 
-test('routes library playable rows to the player', () => {
+test('routes library work rows to the editor and shareables to the player', () => {
   expect(
     getMyLibraryItemAction({
       id: 'work-work-1',
@@ -152,8 +152,8 @@ test('routes library playable rows to the player', () => {
       workId: 'work-1',
     }),
   ).toEqual({
-    type: 'playLibraryItem',
-    item: { kind: 'work', workId: 'work-1' },
+    type: 'openWork',
+    workId: 'work-1',
   });
 
   expect(

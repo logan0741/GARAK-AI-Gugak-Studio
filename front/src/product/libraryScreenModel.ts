@@ -231,8 +231,8 @@ export function getMyLibraryItemAction(
 
   if (item.workId !== undefined) {
     return {
-      type: 'playLibraryItem',
-      item: { kind: 'work', workId: item.workId },
+      type: 'openWork',
+      workId: item.workId,
     };
   }
 
