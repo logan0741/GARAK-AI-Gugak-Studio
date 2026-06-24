@@ -634,14 +634,49 @@ export function ExtraInstrumentRecordContent({
 }) {
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isLandscapeFrame = frameMode === 'landscape';
+  const work = state.library.works.find((item) => item.id === state.currentWorkId);
+  const recordingStatus = state.pendingFreePlayTake ? '미리듣기 준비됨' : '녹음 대기';
 
   return (
     <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
       {!isLandscapeFrame ? <ScreenHeading title={`${getInstrumentName(instrument)} 트랙 녹음`} compact /> : null}
+      <MiniTrackPlayer title={work?.title ?? '현재 작업'} tone="navy" />
+      <View style={[styles.noteBubble, styles.extraInstrumentNoteBubble]}>
+        <Text style={styles.noteBubbleText}>
+          기존 작업을 들으며 {getInstrumentName(instrument)} 트랙을 덧녹음해요. {recordingStatus}
+        </Text>
+      </View>
       <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
         <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
       </View>
-      <PrimaryPillButton label="TRACK 적용" onPress={() => dispatch({ type: 'applyInstrumentTrack' })} />
+      <View
+        style={[
+          styles.buttonRow,
+          styles.extraInstrumentButtonRow,
+          isLandscapeFrame ? styles.landscapeButtonRow : undefined,
+        ]}
+      >
+        <SecondaryPillButton
+          label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}
+          onPress={() => dispatch({ type: 'startPerformanceRecording' })}
+          style={styles.extraInstrumentActionButton}
+        />
+        <SecondaryPillButton
+          label="다시 녹음"
+          onPress={() => dispatch({ type: 'restartInstrumentTrackRecording' })}
+          style={styles.extraInstrumentActionButton}
+        />
+        <SecondaryPillButton
+          label="취소"
+          onPress={() => dispatch({ type: 'cancelInstrumentTrack' })}
+          style={styles.extraInstrumentActionButton}
+        />
+        <PrimaryPillButton
+          label="적용"
+          onPress={() => dispatch({ type: 'applyInstrumentTrack' })}
+          style={styles.extraInstrumentActionButton}
+        />
+      </View>
     </View>
   );
 }
@@ -1784,6 +1819,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  extraInstrumentNoteBubble: {
+    alignSelf: 'stretch',
+    maxWidth: '100%',
+  },
   noteBubbleText: {
     color: GARAK_COLORS.textPrimary,
     fontSize: 11,
@@ -1808,6 +1847,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  extraInstrumentButtonRow: {
+    justifyContent: 'space-between',
+  },
+  extraInstrumentActionButton: {
+    flex: 0,
+    flexBasis: '47%',
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   landscapeButtonRow: {
     minHeight: 48,

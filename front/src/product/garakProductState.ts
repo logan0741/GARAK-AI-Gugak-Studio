@@ -128,7 +128,9 @@ export type GarakProductAction =
   | { type: 'showLockedImportTrackNotice' }
   | { type: 'cancelTrackAdd' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
+  | { type: 'restartInstrumentTrackRecording'; events?: PerformanceEvent[] }
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
+  | { type: 'cancelInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
   | { type: 'cancelAccompanimentTrack' }
@@ -318,10 +320,31 @@ export function applyProductAction(
         ...state,
         selectedInstrument: action.instrument,
         trackAddNotice: undefined,
+        pendingFreePlayTake: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S09' }),
+      };
+    case 'restartInstrumentTrackRecording':
+      return {
+        ...state,
+        pendingFreePlayTake: {
+          events: action.events ?? [],
+        },
+        screenFlow:
+          state.screenFlow.currentScreen === 'S09'
+            ? state.screenFlow
+            : pushTarget(state.screenFlow, 'S09'),
       };
     case 'applyInstrumentTrack':
       return applyInstrumentTrack(state, action.events ?? [], action.playheadBeat);
+    case 'cancelInstrumentTrack':
+      return {
+        ...state,
+        pendingFreePlayTake: undefined,
+        screenFlow:
+          state.screenFlow.currentScreen === 'S09'
+            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
+            : pushTarget(state.screenFlow, 'S07'),
+      };
     case 'chooseAccompanimentTrack':
       return {
         ...state,
@@ -490,11 +513,13 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '악기 연주 추가',
         '장단/반주 추가',
         '가져오기',
+        '취소',
       ]);
     case 'S09':
       return summary(screenId, '추가 악기 녹음', getInstrumentLabel(state), '기존 작업을 들으며 새 악기를 덧녹음해요.', [
         '녹음',
         '적용',
+        '다시 녹음',
         '취소',
       ]);
     case 'S10A':
@@ -745,13 +770,16 @@ function applyInstrumentTrack(
     trackId: `track-${nextCounters.track}`,
     takeId: `take-${nextCounters.take}`,
     instrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
-    events,
+    events: events.length > 0 ? events : state.pendingFreePlayTake?.events ?? [],
     createdAt: now,
     durationBeats: 4,
     playheadBeat,
   });
 
-  return replaceCurrentWork(state, nextWork, nextCounters, 'S07');
+  return {
+    ...replaceCurrentWork(state, nextWork, nextCounters, 'S07'),
+    pendingFreePlayTake: undefined,
+  };
 }
 
 function applyAccompanimentTrack(

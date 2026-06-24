@@ -4,6 +4,7 @@ import {
   createInitialGarakProductState,
   getCurrentScreenSummary,
 } from '../garakProductState';
+import type { PerformanceEvent } from '../../domain/performanceEvent';
 
 function completeRecordedFreePlay(state: ReturnType<typeof createInitialGarakProductState>) {
   state = applyProductAction(state, { type: 'startPerformanceRecording' });
@@ -307,6 +308,67 @@ test('adds new tracks at the provided playhead beat', () => {
   expect(accompanimentTrack).toMatchObject({
     kind: 'accompaniment',
     startedAtBeat: 9,
+  });
+});
+
+test('records, restarts, and cancels an S09 extra instrument take before adding a track', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+
+  const currentWorkId = state.currentWorkId;
+  const trackCountBeforeRecording = state.library.works[0].tracks.length;
+  const firstTakeEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 100, stringIndex: 1, velocity: 0.72 },
+  ];
+  const secondTakeEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 220, stringIndex: 3, velocity: 0.9 },
+  ];
+
+  state = applyProductAction(state, { type: 'startPerformanceRecording', events: firstTakeEvents });
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.pendingFreePlayTake?.events).toEqual(firstTakeEvents);
+
+  state = applyProductAction(state, {
+    type: 'restartInstrumentTrackRecording',
+    events: secondTakeEvents,
+  });
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.pendingFreePlayTake?.events).toEqual(secondTakeEvents);
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeRecording);
+
+  state = applyProductAction(state, { type: 'cancelInstrumentTrack' });
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.pendingFreePlayTake).toBeUndefined();
+  expect(state.currentWorkId).toBe(currentWorkId);
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeRecording);
+
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording', events: secondTakeEvents });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack', playheadBeat: 3 });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.pendingFreePlayTake).toBeUndefined();
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeRecording + 1);
+  expect(state.library.works[0].tracks[trackCountBeforeRecording]).toMatchObject({
+    kind: 'instrument',
+    instrument: 'daegeum',
+    takes: [
+      expect.objectContaining({
+        events: secondTakeEvents,
+      }),
+    ],
+    startedAtBeat: 3,
   });
 });
 

@@ -286,3 +286,20 @@ test('uses the Figma stacked track add flow for S08', () => {
   expect(source).toContain('TRACK 1 :');
   expect(source).not.toContain("추가할 트랙을\\n선택해요.");
 });
+
+test('connects S09 extra instrument recording controls before applying the new track', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('기존 작업을 들으며');
+  expect(source).toContain("label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}");
+  expect(source).toContain("type: 'startPerformanceRecording'");
+  expect(source).toContain('미리듣기 준비됨');
+  expect(source).toContain('extraInstrumentNoteBubble');
+  expect(source).toContain("type: 'restartInstrumentTrackRecording'");
+  expect(source).toContain("type: 'applyInstrumentTrack'");
+  expect(source).toContain("type: 'cancelInstrumentTrack'");
+  expect(source).toContain('다시 녹음');
+  expect(source).toContain('취소');
+  expect(source).toContain('extraInstrumentButtonRow');
+  expect(source).toContain('extraInstrumentActionButton');
+});
