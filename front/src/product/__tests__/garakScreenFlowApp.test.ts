@@ -168,6 +168,17 @@ test('connects S16 result actions to retry, save, share, and choose another song
   expect(source).toMatch(/label="다른 민요 선택"\s+onPress=\{\(\) => dispatch\(\{ type: 'navigate', target: 'S13' \}\)\}/);
 });
 
+test('connects S13 song preview and guide readiness metadata', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/practiceScreens.tsx'), 'utf8');
+
+  expect(source).toContain("type: 'previewPracticeSong'");
+  expect(source).toContain("type: 'selectPracticeSong'");
+  expect(source).toContain('미리듣기');
+  expect(source).toContain('가이드 준비 완료');
+  expect(source).toContain('지원 악기');
+  expect(source).toContain('supportedInstruments.map');
+});
+
 test('keeps S14 instrument selection separate from the Next action', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/practiceScreens.tsx'), 'utf8');
   const stateSource = readFileSync(resolve(process.cwd(), 'src/product/garakProductState.ts'), 'utf8');

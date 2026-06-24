@@ -68,6 +68,7 @@ export type GarakProductState = {
   selectedMode: ScreenFlowMode;
   selectedInstrument?: InstrumentId;
   selectedPracticeSongId?: PracticeSong['id'];
+  previewingPracticeSongId?: PracticeSong['id'];
   currentWorkId?: string;
   selectedPlayerItem?: ProductPlayerSelection;
   pendingFreePlayTake?: PendingFreePlayTake;
@@ -105,6 +106,7 @@ export type GarakProductAction =
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
   | { type: 'exportCurrentWork' }
+  | { type: 'previewPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeInstrument'; instrument: InstrumentId }
   | { type: 'startPractice' }
@@ -260,10 +262,23 @@ export function applyProductAction(
       return applyAccompanimentTrack(state, action);
     case 'exportCurrentWork':
       return exportCurrentWork(state);
+    case 'previewPracticeSong':
+      return {
+        ...state,
+        previewingPracticeSongId: action.songId,
+      };
     case 'selectPracticeSong':
+      if (!canSelectPracticeSong(action.songId)) {
+        return {
+          ...state,
+          previewingPracticeSongId: action.songId,
+        };
+      }
+
       return {
         ...state,
         selectedPracticeSongId: action.songId,
+        previewingPracticeSongId: undefined,
         practiceAttempt: undefined,
         screenFlow: pushTarget(state.screenFlow, 'S14'),
       };
@@ -396,7 +411,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '반주 트랙 추가',
       ]);
     case 'S13':
-      return summary(screenId, '민요 선택', '따라하기', '아리랑, 도라지, 뱃노래 중 연습할 곡을 선택해요.', [
+      return summary(screenId, '민요 선택', '따라하기', practiceSongSelectDescription(state), [
         '아리랑',
         '도라지',
         '뱃노래',
@@ -558,6 +573,10 @@ function createReadyPracticeAttempt(state: GarakProductState): PracticeAttempt {
     inputEvents: [],
     timingErrorsMs: [],
   };
+}
+
+function canSelectPracticeSong(songId: PracticeSong['id']): boolean {
+  return PRACTICE_SONGS.find((song) => song.id === songId)?.guideReady === true;
 }
 
 function startPracticeAttempt(state: GarakProductState): GarakProductState {
@@ -973,6 +992,14 @@ function selectedSongLabel(state: GarakProductState): string {
   return state.selectedPracticeSongId === undefined
     ? '민요'
     : getPracticeSongTitle(state.selectedPracticeSongId);
+}
+
+function practiceSongSelectDescription(state: GarakProductState): string {
+  if (state.previewingPracticeSongId !== undefined) {
+    return `${getPracticeSongTitle(state.previewingPracticeSongId)} 샘플을 미리듣고 있어요. 가이드 준비 상태를 확인한 뒤 선택해요.`;
+  }
+
+  return '아리랑, 도라지, 뱃노래 중 연습할 곡을 선택해요.';
 }
 
 function practiceAttemptDescription(state: GarakProductState): string {

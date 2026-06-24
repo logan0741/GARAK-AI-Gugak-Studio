@@ -14,6 +14,7 @@ import { MVP_INSTRUMENTS, PRACTICE_SONGS, getInstrumentName } from './productFix
 type ProductDispatch = (action: GarakProductAction) => void;
 
 export function PracticeSongSelectContent({
+  state,
   dispatch,
 }: {
   state: GarakProductState;
@@ -21,23 +22,50 @@ export function PracticeSongSelectContent({
 }) {
   return (
     <View style={styles.stack}>
-      <ScreenHeading title={'따라할 민요를\n선택해요.'} />
-      {PRACTICE_SONGS.map((song, index) => (
-        <Pressable
-          accessibilityRole="button"
-          key={song.id}
-          onPress={() => dispatch({ type: 'selectPracticeSong', songId: song.id })}
-          style={[styles.songCard, index === 0 ? styles.songCardActive : undefined]}
-        >
-          <View>
-            <Text style={[styles.cardTitle, index === 0 ? styles.cardTitleLight : undefined]}>{song.title}</Text>
-            <Text style={[styles.bodyText, index === 0 ? styles.bodyTextLight : undefined]}>
-              {song.difficulty} · {song.durationSeconds}초 · 추천 {getInstrumentName(song.recommendedInstrument)}
-            </Text>
+      <ScreenHeading
+        title={'따라할 민요를\n선택해요.'}
+        description={
+          state.previewingPracticeSongId === undefined
+            ? '샘플을 들어보고 준비된 가이드로 연습을 시작합니다.'
+            : `${PRACTICE_SONGS.find((song) => song.id === state.previewingPracticeSongId)?.title ?? '민요'} 샘플 재생 중`
+        }
+      />
+      {PRACTICE_SONGS.map((song, index) => {
+        const isPreviewing = state.previewingPracticeSongId === song.id;
+        const isActive = isPreviewing || (state.previewingPracticeSongId === undefined && index === 0);
+        const readinessLabel = song.sampleReady && song.guideReady ? '가이드 준비 완료' : '가이드 준비 중';
+
+        return (
+          <View key={song.id} style={[styles.songCard, isActive ? styles.songCardActive : undefined]}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!song.guideReady}
+              onPress={() => dispatch({ type: 'selectPracticeSong', songId: song.id })}
+              style={styles.songSelectArea}
+            >
+              <View style={styles.songInfo}>
+                <Text style={[styles.cardTitle, isActive ? styles.cardTitleLight : undefined]}>{song.title}</Text>
+                <Text style={[styles.bodyText, isActive ? styles.bodyTextLight : undefined]}>
+                  {song.difficulty} · {song.durationSeconds}초 · 추천 {getInstrumentName(song.recommendedInstrument)}
+                </Text>
+                <Text style={[styles.bodyText, isActive ? styles.bodyTextLight : undefined]}>
+                  지원 악기 {song.supportedInstruments.map(getInstrumentName).join(', ')}
+                </Text>
+                <Text style={[styles.songReadyText, isActive ? styles.songReadyTextActive : undefined]}>
+                  {readinessLabel}
+                </Text>
+              </View>
+              <Text style={[styles.cardAction, isActive ? styles.cardActionLight : undefined]}>›</Text>
+            </Pressable>
+            <SecondaryPillButton
+              label="미리듣기"
+              disabled={!song.sampleReady}
+              onPress={() => dispatch({ type: 'previewPracticeSong', songId: song.id })}
+              style={styles.songPreviewButton}
+            />
           </View>
-          <Text style={[styles.cardAction, index === 0 ? styles.cardActionLight : undefined]}>›</Text>
-        </Pressable>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -212,17 +240,39 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   songCard: {
-    alignItems: 'center',
     backgroundColor: GARAK_COLORS.surfaceCard,
     borderRadius: 22,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 82,
-    padding: 18,
+    gap: 12,
+    minHeight: 132,
+    padding: 16,
     ...garakCardShadow,
   },
   songCardActive: {
     backgroundColor: GARAK_COLORS.brandNavy,
+  },
+  songSelectArea: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  songInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  songPreviewButton: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    paddingHorizontal: 18,
+  },
+  songReadyText: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 17,
+  },
+  songReadyTextActive: {
+    color: GARAK_COLORS.brandAmber,
   },
   instrumentCard: {
     alignItems: 'center',

@@ -14,6 +14,8 @@ export type PracticeSong = {
   durationSeconds: number;
   supportedInstruments: InstrumentId[];
   recommendedInstrument: InstrumentId;
+  sampleReady: boolean;
+  guideReady: boolean;
 };
 
 export type JangdanPreset = {
@@ -74,6 +76,8 @@ export const PRACTICE_SONGS: PracticeSong[] = [
     durationSeconds: 45,
     supportedInstruments: ['gayageum', 'janggu', 'daegeum'],
     recommendedInstrument: 'gayageum',
+    sampleReady: true,
+    guideReady: true,
   },
   {
     id: 'doraji',
@@ -82,6 +86,8 @@ export const PRACTICE_SONGS: PracticeSong[] = [
     durationSeconds: 52,
     supportedInstruments: ['gayageum', 'janggu', 'daegeum'],
     recommendedInstrument: 'daegeum',
+    sampleReady: true,
+    guideReady: true,
   },
   {
     id: 'boatSong',
@@ -90,6 +96,8 @@ export const PRACTICE_SONGS: PracticeSong[] = [
     durationSeconds: 58,
     supportedInstruments: ['gayageum', 'janggu', 'daegeum'],
     recommendedInstrument: 'janggu',
+    sampleReady: true,
+    guideReady: true,
   },
 ];
 
