@@ -244,16 +244,19 @@ export function FreePlayContent({
       {usesFigmaDaegeumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <DaegeumLandscapeStageArtwork />
+          <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : usesFigmaGayageumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <GayageumLandscapeStageArtwork />
+          <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : usesFigmaJangguLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <JangguLandscapeStageArtwork />
+          <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : (
@@ -284,6 +287,23 @@ export function FreePlayContent({
           </View>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+function LandscapeStageNotice({ visible }: { visible: boolean }) {
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <View
+      accessible
+      accessibilityLabel="저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요."
+      pointerEvents="none"
+      style={styles.landscapeStageNotice}
+    >
+      <Text style={styles.landscapeStageNoticeText}>저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.</Text>
     </View>
   );
 }
@@ -1860,6 +1880,26 @@ const styles = StyleSheet.create({
     height: 96,
     right: 0,
     width: 172,
+  },
+  landscapeStageNotice: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(25,27,43,0.88)',
+    borderRadius: 18,
+    bottom: 18,
+    left: 96,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    position: 'absolute',
+    right: 96,
+    zIndex: 5,
+  },
+  landscapeStageNoticeText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 16,
+    textAlign: 'center',
   },
   freePlayTopBar: {
     alignItems: 'center',

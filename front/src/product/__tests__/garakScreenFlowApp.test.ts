@@ -197,6 +197,8 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
   expect(source).toContain('LandscapeStageActionHits');
+  expect(source).toContain('LandscapeStageNotice');
+  expect(source).toContain("visible={state.freePlayNotice === 'missingTake'}");
   expect(source).toContain("accessibilityLabel=\"녹음 시작\"");
   expect(source).toContain("type: 'startPerformanceRecording'");
   expect(source).toContain("accessibilityLabel=\"장단 설정\"");
