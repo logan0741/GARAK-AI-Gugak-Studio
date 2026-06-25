@@ -331,19 +331,10 @@ export function applyProductAction(
       return {
         ...state,
         selectedMode: action.mode,
-        screenFlow:
-          action.mode === 'practice'
-            ? transitionScreenFlow(
-                {
-                  ...state.screenFlow,
-                  mode: action.mode,
-                },
-                { type: 'navigate', target: 'S13' },
-              )
-            : {
-                ...state.screenFlow,
-                mode: action.mode,
-              },
+        screenFlow: {
+          ...state.screenFlow,
+          mode: action.mode,
+        },
       };
     case 'setLanguage':
       return {

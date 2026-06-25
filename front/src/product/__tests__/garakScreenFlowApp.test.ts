@@ -90,18 +90,21 @@ test('connects S10 jangdan preset previews without applying the preset', () => {
 test('uses the language-aware Figma home hero copy in the home screen accessibility contract', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
   const modelSource = readFileSync(resolve(process.cwd(), 'src/product/homeScreenModel.ts'), 'utf8');
+  const uiSource = readFileSync(resolve(process.cwd(), 'src/product/garakUi.tsx'), 'utf8');
 
   expect(source).toContain('getHomeScreenViewModel');
   expect(source).toContain('homeModel.title');
   expect(source).toContain('homeModel.description');
   expect(source).toContain('cta={homeModel.ctaLabel}');
-  expect(source).toContain('homeModel.modeOptions.map');
-  expect(source).toContain('dispatch(option.selectAction)');
-  expect(source).toContain('homeModel.selectedModeTitle');
-  expect(source).toContain('homeModel.selectedModeDescription');
+  expect(source).toContain("onPress={() => dispatch({ type: 'navigate', target: 'S03' })}");
+  expect(source).not.toContain('homeModel.modeOptions.map');
+  expect(source).not.toContain('homeModel.selectedModeTitle');
+  expect(source).not.toContain('homeModel.selectedModeDescription');
   expect(source).toContain('labels={homeModel.quickAccessLabels}');
   expect(modelSource).toContain('AI와 함께');
   expect(modelSource).not.toContain('장단 추천으로');
+  expect(uiSource).toMatch(/visualHero:\s*\{[\s\S]*?position: 'relative'/);
+  expect(uiSource).toMatch(/visualHeroPressArea:\s*\{[\s\S]*?bottom: 38/);
 });
 
 test('uses the Figma free-creation mode guide for the intro screen', () => {
@@ -117,6 +120,7 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).toContain("type: 'selectIntroGuideMode'");
   expect(source).toContain("mode: 'freeCreation'");
   expect(source).toContain("mode: 'practice'");
+  expect(source).toContain("target: isPracticeMode ? 'S13' : 'S04'");
   expect(source).toContain('modeGuideSkipButton');
   expect(source).toMatch(/label="건너뛰기"[\s\S]*?target: 'S04'/);
   expect(source).toContain("target: 'S04'");

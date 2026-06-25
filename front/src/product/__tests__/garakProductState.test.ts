@@ -949,6 +949,10 @@ test('chooses practice mode from the S03 mode guide before opening song selectio
 
   expect(state.selectedMode).toBe('practice');
   expect(state.screenFlow.mode).toBe('practice');
+  expect(state.screenFlow.currentScreen).toBe('S03');
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S13' });
+
   expect(state.screenFlow.currentScreen).toBe('S13');
   expect(getCurrentScreenSummary(state).title).toBe('민요 선택');
 });

@@ -109,11 +109,7 @@ export function IntroGuideContent({
           <ProgressSteps step={0} />
           <PrimaryPillButton
             label="NEXT"
-            onPress={() =>
-              isPracticeMode
-                ? dispatch({ type: 'selectIntroGuideMode', mode: 'practice' })
-                : dispatch({ type: 'navigate', target: 'S04' })
-            }
+            onPress={() => dispatch({ type: 'navigate', target: isPracticeMode ? 'S13' : 'S04' })}
           />
           <SecondaryPillButton
             label="건너뛰기"

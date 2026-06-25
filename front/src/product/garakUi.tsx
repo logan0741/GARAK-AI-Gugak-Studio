@@ -558,6 +558,7 @@ const styles = StyleSheet.create({
   visualHero: {
     height: 485,
     overflow: 'hidden',
+    position: 'relative',
     width: '100%',
   },
   visualHeroImage: {

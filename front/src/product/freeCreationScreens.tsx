@@ -113,31 +113,11 @@ export function HomeScreenContent({
 
   return (
     <View style={styles.screenStack}>
-      <View
-        accessible
-        accessibilityLabel={`연주 모드 선택. ${homeModel.selectedModeTitle}. ${homeModel.selectedModeDescription}`}
-        style={styles.homeModeCard}
-      >
-        <View style={styles.segmented}>
-          {homeModel.modeOptions.map((option) => (
-            <ModeButton
-              active={option.isSelected}
-              key={option.id}
-              label={option.label}
-              onPress={() => dispatch(option.selectAction)}
-            />
-          ))}
-        </View>
-        <Text style={styles.homeModeTitle}>{homeModel.selectedModeTitle}</Text>
-        <Text style={styles.homeModeDescription}>{homeModel.selectedModeDescription}</Text>
-      </View>
-
       <VisualHero
         title={homeModel.title}
         description={homeModel.description}
         cta={homeModel.ctaLabel}
-        onPress={() => dispatch({ type: 'next' })}
-        style={styles.homeVisualHero}
+        onPress={() => dispatch({ type: 'navigate', target: 'S03' })}
       />
 
       <QuickAccessNav
@@ -1455,27 +1435,6 @@ function LockGlyph() {
   );
 }
 
-function ModeButton({
-  active,
-  label,
-  onPress,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={[styles.segmentButton, active ? styles.segmentButtonActive : undefined]}
-    >
-      <Text style={[styles.segmentText, active ? styles.segmentTextActive : undefined]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   screenStack: {
     gap: 18,
@@ -1797,32 +1756,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   homeQuickAccess: {
-    marginTop: 18,
-  },
-  homeVisualHero: {
-    height: 438,
-  },
-  homeModeCard: {
-    backgroundColor: GARAK_COLORS.surfaceCard,
-    borderColor: 'rgba(31,32,46,0.08)',
-    borderRadius: 24,
-    gap: 10,
-    padding: 12,
-    ...garakCardShadow,
-  },
-  homeModeTitle: {
-    color: GARAK_COLORS.textPrimary,
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 0,
-    lineHeight: 20,
-  },
-  homeModeDescription: {
-    color: GARAK_COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '500',
-    letterSpacing: 0,
-    lineHeight: 17,
+    marginTop: 71,
   },
   homeTopRow: {
     alignItems: 'center',
@@ -1857,31 +1791,6 @@ const styles = StyleSheet.create({
     color: GARAK_COLORS.surfaceCard,
     fontSize: 11,
     fontWeight: '800',
-  },
-  segmented: {
-    backgroundColor: GARAK_COLORS.surfaceCard,
-    borderRadius: 17,
-    flexDirection: 'row',
-    gap: 14,
-    minHeight: 34,
-    padding: 3,
-  },
-  segmentButton: {
-    alignItems: 'center',
-    borderRadius: 15,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  segmentButtonActive: {
-    backgroundColor: GARAK_COLORS.brandNavy,
-  },
-  segmentText: {
-    color: '#ACACAC',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  segmentTextActive: {
-    color: GARAK_COLORS.surfaceCard,
   },
   instrumentPreviewCard: {
     backgroundColor: GARAK_COLORS.surfaceCanvas,
