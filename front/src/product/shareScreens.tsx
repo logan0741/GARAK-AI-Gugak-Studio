@@ -14,7 +14,6 @@ import {
   InstrumentVisual,
   MiniTrackPlayer,
   PrimaryPillButton,
-  QuickAccessNav,
   ScreenHeading,
   SecondaryPillButton,
   garakCardShadow,
@@ -237,14 +236,6 @@ export function ShareFeedContent({
             />
           ))}
         </ScrollView>
-        <QuickAccessNav
-          active="share"
-          dark
-          style={styles.shareQuickAccessOverlay}
-          onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
-          onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
-          onShare={() => dispatch({ type: 'navigate', target: 'S20' })}
-        />
       </View>
     </View>
   );
@@ -712,12 +703,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0,
     lineHeight: 12,
-  },
-  shareQuickAccessOverlay: {
-    alignSelf: 'center',
-    position: 'absolute',
-    top: 62,
-    zIndex: 4,
   },
   prepareCard: {
     backgroundColor: GARAK_COLORS.surfaceCard,

@@ -89,6 +89,7 @@ test('connects S10 jangdan preset previews without applying the preset', () => {
 
 test('uses the language-aware Figma home hero copy in the home screen accessibility contract', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const appSource = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
   const modelSource = readFileSync(resolve(process.cwd(), 'src/product/homeScreenModel.ts'), 'utf8');
   const uiSource = readFileSync(resolve(process.cwd(), 'src/product/garakUi.tsx'), 'utf8');
 
@@ -100,7 +101,8 @@ test('uses the language-aware Figma home hero copy in the home screen accessibil
   expect(source).not.toContain('homeModel.modeOptions.map');
   expect(source).not.toContain('homeModel.selectedModeTitle');
   expect(source).not.toContain('homeModel.selectedModeDescription');
-  expect(source).toContain('labels={homeModel.quickAccessLabels}');
+  expect(appSource).toContain('getHomeScreenViewModel');
+  expect(appSource).toContain('labels={homeModel.quickAccessLabels}');
   expect(modelSource).toContain('AI와 함께');
   expect(modelSource).not.toContain('장단 추천으로');
   expect(uiSource).toMatch(/visualHero:\s*\{[\s\S]*?position: 'relative'/);
@@ -192,6 +194,22 @@ test('connects S18 library tabs, search, sync label, row storage status, and emp
   expect(source).toContain("type: 'loginAndLoadMySongs'");
   expect(source).toContain('row.storageLabel');
   expect(source).toContain('model.emptyState');
+});
+
+test('keeps home browsing quick access as a shell-level floating bar', () => {
+  const appSource = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+  const homeSource = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const librarySource = readFileSync(resolve(process.cwd(), 'src/product/libraryScreens.tsx'), 'utf8');
+  const shareSource = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+
+  expect(appSource).toContain('isHomeBrowsingSurface');
+  expect(appSource).toContain('<QuickAccessNav');
+  expect(appSource).toContain('style={styles.floatingQuickAccess}');
+  expect(appSource).toContain("currentScreen === 'S18'");
+  expect(appSource).toContain("active={isLibrary ? 'library' : isShare ? 'share' : 'home'}");
+  expect(homeSource).not.toContain('<QuickAccessNav');
+  expect(librarySource).not.toContain('<QuickAccessNav');
+  expect(shareSource).not.toContain('<QuickAccessNav');
 });
 
 test('connects S19 player edit and share CTAs to selected library item actions', () => {
@@ -490,13 +508,10 @@ test('connects S21 shared detail playback to selected recording state', () => {
 });
 
 test('keeps the share quick access tab active on S20', () => {
-  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
 
-  expect(source).toContain('model.sortLabel');
-  expect(source).toContain('card.subtitle');
-  expect(source).toContain(
-    '<QuickAccessNav\n          active="share"\n          dark\n          style={styles.shareQuickAccessOverlay}',
-  );
+  expect(source).toContain("active={isLibrary ? 'library' : isShare ? 'share' : 'home'}");
+  expect(source).toContain("onShare={() => dispatch({ type: 'navigate', target: 'S20' })}");
 });
 
 test('uses the Figma stacked track add flow for S08', () => {

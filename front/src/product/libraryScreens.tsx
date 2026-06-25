@@ -11,10 +11,7 @@ import {
   MyLibraryHeroCard,
   MyLibraryPlaylistRow,
 } from './libraryScreenModel';
-import {
-  QuickAccessNav,
-  garakCardShadow,
-} from './garakUi';
+import { garakCardShadow } from './garakUi';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 
@@ -104,14 +101,6 @@ export function LibraryContent({
           />
         ))}
       </View>
-
-      <QuickAccessNav
-        active="library"
-        onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
-        onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
-        onShare={() => dispatch({ type: 'navigate', target: 'S20' })}
-        style={styles.myQuickAccess}
-      />
     </View>
   );
 }
@@ -1017,8 +1006,5 @@ const styles = StyleSheet.create({
   },
   waveformGlyphBarRed: {
     backgroundColor: GARAK_COLORS.brandRed,
-  },
-  myQuickAccess: {
-    marginTop: 0,
   },
 });

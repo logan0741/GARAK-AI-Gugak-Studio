@@ -41,7 +41,8 @@ import {
   usesImmersivePortraitScreen,
   usesEmbeddedLandscapeArtworkHeader,
 } from './garakScreenFrame';
-import { GarakWordmark } from './garakUi';
+import { GarakWordmark, QuickAccessNav } from './garakUi';
+import { getHomeScreenViewModel } from './homeScreenModel';
 
 export type GarakScreenFlowAppProps = {
   sampleManifests?: InstrumentSampleReadinessInput['sampleManifests'];
@@ -62,6 +63,8 @@ export function GarakScreenFlowApp({
   const isHome = currentScreen === 'S01';
   const isLibrary = currentScreen === 'S18';
   const isShare = currentScreen === 'S20';
+  const isHomeBrowsingSurface = isHome || isLibrary || isShare;
+  const homeModel = getHomeScreenViewModel(state);
   const canOpenLanguage =
     currentScreen === 'S01' || currentScreen === 'S22';
   const frameConfig = getGarakScreenFrameConfig(currentScreen);
@@ -149,7 +152,11 @@ export function GarakScreenFlowApp({
         {frameConfig.scrollable ? (
           <ScrollView
             key={currentScreen}
-            contentContainerStyle={[styles.content, isHome ? styles.homeContent : undefined]}
+            contentContainerStyle={[
+              styles.content,
+              isHome ? styles.homeContent : undefined,
+              isHomeBrowsingSurface ? styles.homeBrowsingContent : undefined,
+            ]}
             showsVerticalScrollIndicator={false}
           >
             {renderScreenContent(state, dispatch, frameConfig.mode)}
@@ -159,6 +166,16 @@ export function GarakScreenFlowApp({
             {renderScreenContent(state, dispatch, frameConfig.mode)}
           </View>
         )}
+        {isHomeBrowsingSurface ? (
+          <QuickAccessNav
+            active={isLibrary ? 'library' : isShare ? 'share' : 'home'}
+            labels={homeModel.quickAccessLabels}
+            onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
+            onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
+            onShare={() => dispatch({ type: 'navigate', target: 'S20' })}
+            style={styles.floatingQuickAccess}
+          />
+        ) : null}
       </View>
     </SafeAreaView>
     </SafeAreaProvider>
@@ -308,6 +325,9 @@ const styles = StyleSheet.create({
     paddingTop: 23,
     paddingBottom: 72,
   },
+  homeBrowsingContent: {
+    paddingBottom: 122,
+  },
   landscapeContent: {
     flex: 1,
     gap: 0,
@@ -331,5 +351,12 @@ const styles = StyleSheet.create({
   },
   homeContent: {
     paddingTop: 69,
+  },
+  floatingQuickAccess: {
+    bottom: 36,
+    left: '50%',
+    marginLeft: -GARAK_LAYOUT.quickAccessWidth / 2,
+    position: 'absolute',
+    zIndex: 10,
   },
 });

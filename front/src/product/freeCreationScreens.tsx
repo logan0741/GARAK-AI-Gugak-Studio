@@ -31,7 +31,6 @@ import {
   MiniTrackPlayer,
   PrimaryPillButton,
   ProgressSteps,
-  QuickAccessNav,
   ScreenHeading,
   SecondaryPillButton,
   VisualHero,
@@ -118,15 +117,6 @@ export function HomeScreenContent({
         description={homeModel.description}
         cta={homeModel.ctaLabel}
         onPress={() => dispatch({ type: 'navigate', target: 'S03' })}
-      />
-
-      <QuickAccessNav
-        active="home"
-        labels={homeModel.quickAccessLabels}
-        onLibrary={() => dispatch({ type: 'navigate', target: 'S18' })}
-        onHome={() => dispatch({ type: 'navigate', target: 'S01' })}
-        onShare={() => dispatch({ type: 'navigate', target: 'S20' })}
-        style={styles.homeQuickAccess}
       />
     </View>
   );
@@ -1474,9 +1464,6 @@ const styles = StyleSheet.create({
   landscapePerformanceStack: {
     flex: 1,
     gap: 12,
-  },
-  homeQuickAccess: {
-    marginTop: 71,
   },
   homeTopRow: {
     alignItems: 'center',
