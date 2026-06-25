@@ -3,7 +3,18 @@
 API 키 미발급 시 stub 텍스트 반환. 키 설정 시 실제 Claude 호출.
 """
 
+import anthropic
+
 from app.core.config import settings
+
+_anthropic_client: anthropic.AsyncAnthropic | None = None
+
+
+def _get_anthropic_client() -> anthropic.AsyncAnthropic:
+    global _anthropic_client
+    if _anthropic_client is None:
+        _anthropic_client = anthropic.AsyncAnthropic(api_key=settings.claude_api_key)
+    return _anthropic_client
 
 
 async def generate_feedback(
@@ -16,8 +27,7 @@ async def generate_feedback(
         return _stub_feedback(accuracy_score, detected_key, song_name)
 
     try:
-        import anthropic
-        client = anthropic.AsyncAnthropic(api_key=settings.claude_api_key)
+        client = _get_anthropic_client()
         prompt = (
             f"국악 연주 피드백을 한국어로 2~3문장으로 작성해주세요.\n"
             f"곡명: {song_name}, 조(key): {detected_key}, 정확도: {accuracy_score:.0f}%"

@@ -12,6 +12,8 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+_http_client = httpx.AsyncClient(timeout=5.0)
+
 
 async def translate_batch_to_locale(texts: list[str], locale: str) -> list[str]:
     """여러 텍스트를 한 번의 API 호출로 번역."""
@@ -22,18 +24,16 @@ async def translate_batch_to_locale(texts: list[str], locale: str) -> list[str]:
         return texts
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://translation.googleapis.com/language/translate/v2",
-                params={"key": settings.google_translate_api_key},
-                json={"q": texts, "source": "ko", "target": "en", "format": "text"},
-                timeout=5.0,
-            )
-            response.raise_for_status()
-            translations = response.json()["data"]["translations"]
-            if len(translations) != len(texts):
-                raise ValueError("Translation count mismatch")
-            return [t["translatedText"] for t in translations]
+        response = await _http_client.post(
+            "https://translation.googleapis.com/language/translate/v2",
+            params={"key": settings.google_translate_api_key},
+            json={"q": texts, "source": "ko", "target": "en", "format": "text"},
+        )
+        response.raise_for_status()
+        translations = response.json()["data"]["translations"]
+        if len(translations) != len(texts):
+            raise ValueError("Translation count mismatch")
+        return [t["translatedText"] for t in translations]
     except Exception as exc:
         logger.warning("Batch translate API failed, returning original texts: %s", exc)
         return texts
@@ -49,15 +49,13 @@ async def translate_to_locale(text: str, locale: str) -> str:
         return text  # 키 없으면 원문 fallback
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://translation.googleapis.com/language/translate/v2",
-                params={"key": settings.google_translate_api_key},
-                json={"q": text, "source": "ko", "target": "en", "format": "text"},
-                timeout=5.0,
-            )
-            response.raise_for_status()
-            return response.json()["data"]["translations"][0]["translatedText"]
+        response = await _http_client.post(
+            "https://translation.googleapis.com/language/translate/v2",
+            params={"key": settings.google_translate_api_key},
+            json={"q": text, "source": "ko", "target": "en", "format": "text"},
+        )
+        response.raise_for_status()
+        return response.json()["data"]["translations"][0]["translatedText"]
     except Exception as exc:
         logger.warning("Translate API failed, returning original text: %s", exc)
         return text  # 번역 실패 시 한국어 원문 fallback

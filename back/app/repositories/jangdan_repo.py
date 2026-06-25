@@ -29,14 +29,10 @@ async def get_jangdan_by_id(db: AsyncSession, jangdan_id: str) -> JangdanPreset 
 
 
 async def create_recommendation(db: AsyncSession, rec: JangdanRecommendation) -> JangdanRecommendation:
-    try:
-        db.add(rec)
-        await db.commit()
-        await db.refresh(rec)
-        return rec
-    except Exception:
-        await db.rollback()
-        raise
+    db.add(rec)
+    await db.flush()
+    await db.refresh(rec)
+    return rec
 
 
 async def get_instrument_samples(
