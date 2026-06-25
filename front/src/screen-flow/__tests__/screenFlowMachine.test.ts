@@ -159,6 +159,23 @@ test('defines S20 share feed detail entry from the detailed document', () => {
   });
 });
 
+test('defines S15 practice controls from the detailed document', () => {
+  const screenFlowDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),
+    'utf8',
+  );
+  const s15Section = screenFlowDoc.slice(
+    screenFlowDoc.indexOf('### S15 따라하기 연주'),
+    screenFlowDoc.indexOf('### S16 결과 / AI 피드백'),
+  );
+
+  expect(implementedScreenDefinitions.S15.primaryCtas).toEqual(
+    expect.arrayContaining(['start', 'pause', 'complete', 'stop', 'restart']),
+  );
+  expect(s15Section).toContain('일시정지');
+  expect(s15Section).toContain('다시 시작');
+});
+
 test('documents S23 skip as returning to the entry surface', () => {
   expect(implementedScreenDefinitions.S23.transitions).toContainEqual({
     action: 'skip',
