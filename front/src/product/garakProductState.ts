@@ -227,6 +227,7 @@ export type GarakProductAction =
   | { type: 'loginAndLoadMySongs' }
   | { type: 'completeLoginSync' }
   | { type: 'skipLoginSync' }
+  | { type: 'replaceLibrarySnapshot'; library: ProductLibraryState }
   | { type: 'selectLibraryTab'; tab: ProductLibraryTab }
   | { type: 'updateLibrarySearchQuery'; query: string }
   | { type: 'playLibraryItem'; item: ProductPlayerSelection }
@@ -708,6 +709,14 @@ export function applyProductAction(
           state.screenFlow.currentScreen === 'S23'
             ? transitionScreenFlow(state.screenFlow, { type: 'completeLoginSync' })
             : pushTarget(state.screenFlow, 'S18'),
+      };
+    case 'replaceLibrarySnapshot':
+      return {
+        ...state,
+        account: {
+          status: 'loggedIn',
+        },
+        library: action.library,
       };
     case 'skipLoginSync':
       if (state.screenFlow.currentScreen !== 'S23') {

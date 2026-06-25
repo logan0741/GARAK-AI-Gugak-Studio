@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -18,6 +18,11 @@ import {
   GarakProductAction,
   GarakProductState,
 } from './garakProductState';
+import { runGarakProductEffect } from './garakProductEffects';
+import {
+  createNoopGarakProductServices,
+  type GarakProductServices,
+} from './garakProductServices';
 import type { InstrumentSampleReadinessInput } from './instrumentSampleReadiness';
 import { LibraryContent, PlayerDetailContent } from './libraryScreens';
 import {
@@ -47,17 +52,23 @@ import { getHomeScreenViewModel } from './homeScreenModel';
 export type GarakScreenFlowAppProps = {
   sampleManifests?: InstrumentSampleReadinessInput['sampleManifests'];
   sampleFallbackInstruments?: InstrumentSampleReadinessInput['fallbackInstruments'];
+  services?: GarakProductServices;
 };
 
 export function GarakScreenFlowApp({
   sampleManifests,
   sampleFallbackInstruments,
+  services,
 }: GarakScreenFlowAppProps = {}) {
   const [state, setState] = useState(() =>
     createInitialGarakProductState({
       sampleManifests,
       sampleFallbackInstruments,
     }),
+  );
+  const productServices = useMemo(
+    () => services ?? createNoopGarakProductServices(),
+    [services],
   );
   const currentScreen = state.screenFlow.currentScreen;
   const isHome = currentScreen === 'S01';
@@ -79,7 +90,19 @@ export function GarakScreenFlowApp({
       : undefined;
 
   function dispatch(action: GarakProductAction) {
-    setState((current) => applyProductAction(current, action));
+    setState((current) => {
+      const next = applyProductAction(current, action);
+
+      void runGarakProductEffect({
+        state: next,
+        action,
+        services: productServices,
+      }).then((followUpActions) => {
+        followUpActions.forEach(dispatch);
+      });
+
+      return next;
+    });
   }
 
   return (

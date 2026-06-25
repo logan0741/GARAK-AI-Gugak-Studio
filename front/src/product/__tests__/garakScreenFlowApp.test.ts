@@ -31,6 +31,15 @@ test('wires bundled sample readiness into the product app entry point', () => {
   });
 });
 
+test('accepts product services and runs effect follow-up actions after dispatch', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+
+  expect(source).toContain('services?: GarakProductServices');
+  expect(source).toContain('createNoopGarakProductServices');
+  expect(source).toContain('runGarakProductEffect');
+  expect(source).toContain('followUpActions.forEach(dispatch)');
+});
+
 test('uses the Figma completed instrument stack for S08 after adding a track', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
