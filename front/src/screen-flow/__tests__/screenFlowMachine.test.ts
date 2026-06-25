@@ -140,10 +140,14 @@ test('keeps settings and login sync primary CTAs aligned with the screen-flow do
   );
 });
 
-test('defines S17 share preparation preview and cancel actions from the detailed document', () => {
+test('defines S17 share preparation actions with connected preview and publish actions', () => {
   expect(implementedScreenDefinitions.S17.primaryCtas).toEqual(
-    expect.arrayContaining(['preview', 'share', 'saveOnly', 'cancel']),
+    expect.arrayContaining(['previewShareTarget', 'publishShareTarget', 'saveOnly', 'cancel']),
   );
+  expect(implementedScreenDefinitions.S17.transitions).toContainEqual({
+    action: 'publishShareTarget',
+    target: 'S20',
+  });
   expect(implementedScreenDefinitions.S17.transitions).toContainEqual({
     action: 'cancel',
     target: 'previous',
@@ -507,6 +511,18 @@ test('routes S19 player management with the connected UI actions', () => {
   expect(transitionScreenFlow(state, { type: 'deleteSelectedPlayerItem' }).currentScreen).toBe(
     'S18',
   );
+});
+
+test('routes S17 publishing with the connected share action', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S17',
+    history: ['S01', 'S18', 'S19'],
+  });
+
+  const next = transitionScreenFlow(state, { type: 'publishShareTarget' });
+
+  expect(next.currentScreen).toBe('S20');
+  expect(next.history).toEqual(['S01', 'S18', 'S19', 'S17']);
 });
 
 test('routes S22 login CTA to S23', () => {

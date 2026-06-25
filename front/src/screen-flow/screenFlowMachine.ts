@@ -18,6 +18,7 @@ export type ScreenFlowEvent =
   | { type: 'completePerformance' }
   | { type: 'addAccompanimentTrack' }
   | { type: 'finishPractice' }
+  | { type: 'publishShareTarget' }
   | { type: 'openSelectedPlayerEditor' }
   | { type: 'shareSelectedPlayerItem' }
   | { type: 'deleteSelectedPlayerItem' }
@@ -51,6 +52,8 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S10B', 'S07', event.type);
     case 'finishPractice':
       return routeFromScreen(state, 'S15', 'S16', event.type);
+    case 'publishShareTarget':
+      return routeFromScreen(state, 'S17', 'S20', event.type);
     case 'openSelectedPlayerEditor':
       return routeFromScreen(state, 'S19', 'S07', event.type);
     case 'shareSelectedPlayerItem':
