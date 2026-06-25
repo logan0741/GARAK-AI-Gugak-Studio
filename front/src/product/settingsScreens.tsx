@@ -194,22 +194,22 @@ export function LoginSyncContent({
       <View style={styles.loginActions}>
         <LoginCapsuleButton
           accessibilityLabel="Google로 로그인"
-          onPress={() => dispatch(model.actions.login)}
+          onPress={() => dispatch(model.actions.completeLoginSync)}
         >
           <GoogleIcon />
         </LoginCapsuleButton>
         <View style={styles.syncActionGrid}>
           <SyncActionButton
             label="동기화"
-            onPress={() => dispatch(model.actions.sync)}
+            onPress={() => dispatch(model.actions.completeLoginSync)}
           />
           <SyncActionButton
             label="선택해서 가져오기"
-            onPress={() => dispatch(model.actions.importSelected)}
+            onPress={() => dispatch(model.actions.completeLoginSync)}
           />
           <SyncActionButton
             label="건너뛰기"
-            onPress={() => dispatch(model.actions.skip)}
+            onPress={() => dispatch(model.actions.skipLoginSync)}
             wide
           />
         </View>

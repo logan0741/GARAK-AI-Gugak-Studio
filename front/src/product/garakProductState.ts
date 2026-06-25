@@ -216,6 +216,8 @@ export type GarakProductAction =
   | { type: 'shareSelectedPlayerItem' }
   | { type: 'deleteSelectedPlayerItem' }
   | { type: 'previewShareTarget' }
+  | { type: 'saveShareTargetOnly' }
+  | { type: 'cancelShareTarget' }
   | { type: 'publishShareTarget' }
   | { type: 'openSharedRecordingDetail'; recordingId: SharedRecording['id'] }
   | { type: 'playSelectedSharedRecording' }
@@ -224,6 +226,7 @@ export type GarakProductAction =
   | { type: 'saveSharedRecording' }
   | { type: 'loginAndLoadMySongs' }
   | { type: 'completeLoginSync' }
+  | { type: 'skipLoginSync' }
   | { type: 'selectLibraryTab'; tab: ProductLibraryTab }
   | { type: 'updateLibrarySearchQuery'; query: string }
   | { type: 'playLibraryItem'; item: ProductPlayerSelection }
@@ -644,6 +647,25 @@ export function applyProductAction(
         ...state,
         sharePreviewStatus: 'playing',
       };
+    case 'saveShareTargetOnly':
+      return {
+        ...state,
+        sharePreviewStatus: undefined,
+        screenFlow:
+          state.screenFlow.currentScreen === 'S17'
+            ? transitionScreenFlow(state.screenFlow, { type: 'saveShareTargetOnly' })
+            : pushTarget(state.screenFlow, 'S18'),
+      };
+    case 'cancelShareTarget':
+      if (state.screenFlow.currentScreen !== 'S17') {
+        return state;
+      }
+
+      return {
+        ...state,
+        sharePreviewStatus: undefined,
+        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'cancelShareTarget' }),
+      };
     case 'publishShareTarget':
       return publishShareTarget(state);
     case 'openSharedRecordingDetail':
@@ -682,7 +704,19 @@ export function applyProductAction(
         account: {
           status: 'loggedIn',
         },
-        screenFlow: pushTarget(state.screenFlow, 'S18'),
+        screenFlow:
+          state.screenFlow.currentScreen === 'S23'
+            ? transitionScreenFlow(state.screenFlow, { type: 'completeLoginSync' })
+            : pushTarget(state.screenFlow, 'S18'),
+      };
+    case 'skipLoginSync':
+      if (state.screenFlow.currentScreen !== 'S23') {
+        return state;
+      }
+
+      return {
+        ...state,
+        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'skipLoginSync' }),
       };
     case 'selectLibraryTab':
       return {
@@ -1572,6 +1606,11 @@ function publishShareTarget(state: GarakProductState): GarakProductState {
     return state;
   }
 
+  const screenFlow =
+    state.screenFlow.currentScreen === 'S17'
+      ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
+      : pushTarget(state.screenFlow, 'S20');
+
   if (target.kind === 'exportedAudio') {
     return {
       ...state,
@@ -1583,7 +1622,7 @@ function publishShareTarget(state: GarakProductState): GarakProductState {
         ),
       },
       selectedPlayerItem: target,
-      screenFlow: pushTarget(state.screenFlow, 'S20'),
+      screenFlow,
     };
   }
 
@@ -1597,7 +1636,7 @@ function publishShareTarget(state: GarakProductState): GarakProductState {
       ),
     },
     selectedPlayerItem: target,
-    screenFlow: pushTarget(state.screenFlow, 'S20'),
+    screenFlow,
   };
 }
 

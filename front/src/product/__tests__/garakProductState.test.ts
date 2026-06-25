@@ -1510,9 +1510,15 @@ test('publishes the selected exported audio from S17 and marks it shared', () =>
   state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'exportCurrentWork' });
   state = applyProductAction(state, { type: 'navigate', target: 'S17' });
+  state = {
+    ...state,
+    sharePreviewStatus: 'playing',
+  };
   state = applyProductAction(state, { type: 'publishShareTarget' });
 
   expect(state.screenFlow.currentScreen).toBe('S20');
+  expect(state.screenFlow.history).toEqual(['S01', 'S03', 'S04', 'S04A', 'S05', 'S07', 'S19', 'S17']);
+  expect(state.sharePreviewStatus).toBeUndefined();
   expect(state.library.exportedAudios[0]).toMatchObject({
     id: 'export-1',
     shareState: 'shared',
@@ -1521,6 +1527,48 @@ test('publishes the selected exported audio from S17 and marks it shared', () =>
     kind: 'exportedAudio',
     exportedAudioId: 'export-1',
   });
+});
+
+test('routes S17 save-only and cancel actions through connected share preparation actions', () => {
+  let saveState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  saveState = applyProductAction(saveState, { type: 'selectMode', mode: 'freeCreation' });
+  saveState = applyProductAction(saveState, { type: 'next' });
+  saveState = applyProductAction(saveState, { type: 'selectInstrument', instrument: 'gayageum' });
+  saveState = applyProductAction(saveState, { type: 'next' });
+  saveState = applyProductAction(saveState, { type: 'startWithDefaults' });
+  saveState = completeRecordedFreePlay(saveState);
+  saveState = applyProductAction(saveState, { type: 'exportCurrentWork' });
+  saveState = applyProductAction(saveState, { type: 'saveShareTargetOnly' });
+
+  expect(saveState.screenFlow.currentScreen).toBe('S18');
+  expect(saveState.sharePreviewStatus).toBeUndefined();
+  expect(saveState.library.exportedAudios[0].shareState).toBe('ready');
+
+  let cancelState = applyProductAction(saveState, {
+    type: 'playLibraryItem',
+    item: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
+  });
+  cancelState = applyProductAction(cancelState, { type: 'shareSelectedPlayerItem' });
+  cancelState = applyProductAction(cancelState, { type: 'previewShareTarget' });
+  cancelState = applyProductAction(cancelState, { type: 'cancelShareTarget' });
+
+  expect(cancelState.screenFlow.currentScreen).toBe('S19');
+  expect(cancelState.sharePreviewStatus).toBeUndefined();
+});
+
+test('keeps share-specific cancellation scoped to S17', () => {
+  const state = {
+    ...createInitialGarakProductState(),
+    sharePreviewStatus: 'playing' as const,
+  };
+
+  const next = applyProductAction(state, { type: 'cancelShareTarget' });
+
+  expect(next.screenFlow).toBe(state.screenFlow);
+  expect(next.sharePreviewStatus).toBe('playing');
 });
 
 test('previews the selected S17 share target without publishing it', () => {

@@ -72,12 +72,12 @@ export function SharePrepareContent({
         <SecondaryPillButton
           disabled={!model.canShare}
           label="저장만 하기"
-          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}
+          onPress={() => dispatch({ type: 'saveShareTargetOnly' })}
           style={styles.prepareActionButton}
         />
         <SecondaryPillButton
           label="취소"
-          onPress={() => dispatch({ type: 'back' })}
+          onPress={() => dispatch({ type: 'cancelShareTarget' })}
           style={styles.prepareActionButton}
         />
       </View>

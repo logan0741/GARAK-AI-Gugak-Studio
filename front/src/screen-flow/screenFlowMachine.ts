@@ -41,7 +41,11 @@ export type ScreenFlowEvent =
   | { type: 'openSharedRecordingDetail' }
   | { type: 'remixSharedRecording' }
   | { type: 'saveSharedRecording' }
+  | { type: 'saveShareTargetOnly' }
+  | { type: 'cancelShareTarget' }
   | { type: 'publishShareTarget' }
+  | { type: 'completeLoginSync' }
+  | { type: 'skipLoginSync' }
   | { type: 'openSelectedPlayerEditor' }
   | { type: 'shareSelectedPlayerItem' }
   | { type: 'deleteSelectedPlayerItem' }
@@ -121,8 +125,16 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S21', 'S07', event.type);
     case 'saveSharedRecording':
       return routeFromScreen(state, 'S21', 'S18', event.type);
+    case 'saveShareTargetOnly':
+      return routeFromScreen(state, 'S17', 'S18', event.type);
+    case 'cancelShareTarget':
+      return routeBackFromScreen(state, 'S17', event.type);
     case 'publishShareTarget':
       return routeFromScreen(state, 'S17', 'S20', event.type);
+    case 'completeLoginSync':
+      return routeFromScreen(state, 'S23', 'S18', event.type);
+    case 'skipLoginSync':
+      return routeBackFromScreen(state, 'S23', event.type);
     case 'openSelectedPlayerEditor':
       return routeFromScreen(state, 'S19', 'S07', event.type);
     case 'shareSelectedPlayerItem':
@@ -189,6 +201,18 @@ function routeFromScreens(
   }
 
   return pushScreen(state, target);
+}
+
+function routeBackFromScreen(
+  state: ScreenFlowState,
+  expectedScreen: ImplementedScreenId,
+  eventType: ScreenFlowEvent['type'],
+): ScreenFlowState {
+  if (state.currentScreen !== expectedScreen) {
+    throw new Error(`${eventType} is not available from ${state.currentScreen}`);
+  }
+
+  return popScreen(state);
 }
 
 function pushScreen(state: ScreenFlowState, target: ImplementedScreenId): ScreenFlowState {

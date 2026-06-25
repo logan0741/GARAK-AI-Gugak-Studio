@@ -30,10 +30,8 @@ test('previews S23 account sync without dropping local library items', () => {
   expect(model.syncPreviewLabel).toBe('동기화 후 1개 작업 · 로컬 항목 보존');
   expect(model.emptyAccountMessage).toBe('계정에 저장된 곡이 없어요.');
   expect(model.actions).toEqual({
-    login: { type: 'completeLoginSync' },
-    sync: { type: 'completeLoginSync' },
-    importSelected: { type: 'completeLoginSync' },
-    skip: { type: 'back' },
+    completeLoginSync: { type: 'completeLoginSync' },
+    skipLoginSync: { type: 'skipLoginSync' },
   });
 });
 
@@ -57,14 +55,14 @@ test('returns to the S23 entry surface when skipping login sync', () => {
   let settingsState = createInitialGarakProductState();
   settingsState = applyProductAction(settingsState, { type: 'navigate', target: 'S22' });
   settingsState = applyProductAction(settingsState, { type: 'loginAndLoadMySongs' });
-  settingsState = applyProductAction(settingsState, getLoginSyncViewModel(settingsState).actions.skip);
+  settingsState = applyProductAction(settingsState, getLoginSyncViewModel(settingsState).actions.skipLoginSync);
 
   expect(settingsState.screenFlow.currentScreen).toBe('S22');
 
   let libraryState = createInitialGarakProductState();
   libraryState = applyProductAction(libraryState, { type: 'navigate', target: 'S18' });
   libraryState = applyProductAction(libraryState, { type: 'loginAndLoadMySongs' });
-  libraryState = applyProductAction(libraryState, getLoginSyncViewModel(libraryState).actions.skip);
+  libraryState = applyProductAction(libraryState, getLoginSyncViewModel(libraryState).actions.skipLoginSync);
 
   expect(libraryState.screenFlow.currentScreen).toBe('S18');
 });

@@ -215,11 +215,16 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S17',
     name: 'Share Preparation',
     mvpStatus: 'required',
-    primaryCtas: ['previewShareTarget', 'publishShareTarget', 'saveOnly', 'cancel'],
+    primaryCtas: [
+      'previewShareTarget',
+      'publishShareTarget',
+      'saveShareTargetOnly',
+      'cancelShareTarget',
+    ],
     transitions: [
-      { action: 'saveOnly', target: 'S18' },
+      { action: 'saveShareTargetOnly', target: 'S18' },
       { action: 'publishShareTarget', target: 'S20' },
-      { action: 'cancel', target: 'previous' },
+      { action: 'cancelShareTarget', target: 'previous' },
     ],
   },
   S18: {
@@ -304,11 +309,10 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S23',
     name: 'Login And Library Sync',
     mvpStatus: 'recommended',
-    primaryCtas: ['login', 'sync', 'importSelected', 'skip'],
+    primaryCtas: ['completeLoginSync', 'skipLoginSync'],
     transitions: [
-      { action: 'sync', target: 'S18' },
-      { action: 'importSelected', target: 'S18' },
-      { action: 'skip', target: 'previous' },
+      { action: 'completeLoginSync', target: 'S18' },
+      { action: 'skipLoginSync', target: 'previous' },
     ],
   },
 };

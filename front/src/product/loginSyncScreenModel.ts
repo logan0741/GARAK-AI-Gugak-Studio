@@ -12,10 +12,8 @@ export type LoginSyncViewModel = {
   syncPreviewLabel: string;
   emptyAccountMessage?: string;
   actions: {
-    login: GarakProductAction;
-    sync: GarakProductAction;
-    importSelected: GarakProductAction;
-    skip: GarakProductAction;
+    completeLoginSync: GarakProductAction;
+    skipLoginSync: GarakProductAction;
   };
 };
 
@@ -27,10 +25,8 @@ export function getLoginSyncViewModel(state: GarakProductState): LoginSyncViewMo
   const shareableCount = state.library.exportedAudios.length + state.library.practiceResults.length;
   const isEn = state.language === 'en';
   const actions = {
-    login: { type: 'completeLoginSync' },
-    sync: { type: 'completeLoginSync' },
-    importSelected: { type: 'completeLoginSync' },
-    skip: { type: 'back' },
+    completeLoginSync: { type: 'completeLoginSync' },
+    skipLoginSync: { type: 'skipLoginSync' },
   } satisfies LoginSyncViewModel['actions'];
 
   if (isEn) {

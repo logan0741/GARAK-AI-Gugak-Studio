@@ -232,20 +232,35 @@ test('keeps settings and login sync primary CTAs aligned with the screen-flow do
     expect.arrayContaining(['loginAndLoadMySongs', 'changeLanguage', 'manageLibrary']),
   );
   expect(implementedScreenDefinitions.S23.primaryCtas).toEqual(
-    expect.arrayContaining(['login', 'sync', 'importSelected', 'skip']),
+    expect.arrayContaining(['completeLoginSync', 'skipLoginSync']),
+  );
+  expect(implementedScreenDefinitions.S23.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'completeLoginSync', target: 'S18' },
+      { action: 'skipLoginSync', target: 'previous' },
+    ]),
   );
 });
 
 test('defines S17 share preparation actions with connected preview and publish actions', () => {
   expect(implementedScreenDefinitions.S17.primaryCtas).toEqual(
-    expect.arrayContaining(['previewShareTarget', 'publishShareTarget', 'saveOnly', 'cancel']),
+    expect.arrayContaining([
+      'previewShareTarget',
+      'publishShareTarget',
+      'saveShareTargetOnly',
+      'cancelShareTarget',
+    ]),
   );
   expect(implementedScreenDefinitions.S17.transitions).toContainEqual({
     action: 'publishShareTarget',
     target: 'S20',
   });
   expect(implementedScreenDefinitions.S17.transitions).toContainEqual({
-    action: 'cancel',
+    action: 'saveShareTargetOnly',
+    target: 'S18',
+  });
+  expect(implementedScreenDefinitions.S17.transitions).toContainEqual({
+    action: 'cancelShareTarget',
     target: 'previous',
   });
 });
@@ -428,9 +443,9 @@ test('defines S16 choose-another-song action from the detailed document', () => 
   expect(s16Section).toContain('다른 민요 선택');
 });
 
-test('documents S23 skip as returning to the entry surface', () => {
+test('documents S23 skipLoginSync as returning to the entry surface', () => {
   expect(implementedScreenDefinitions.S23.transitions).toContainEqual({
-    action: 'skip',
+    action: 'skipLoginSync',
     target: 'previous',
   });
 });
@@ -807,6 +822,19 @@ test('routes S17 publishing with the connected share action', () => {
   expect(next.history).toEqual(['S01', 'S18', 'S19', 'S17']);
 });
 
+test('routes S17 save-only and cancel actions with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S17',
+    history: ['S01', 'S18', 'S19'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'saveShareTargetOnly' }).currentScreen).toBe('S18');
+
+  const cancelNext = transitionScreenFlow(state, { type: 'cancelShareTarget' });
+  expect(cancelNext.currentScreen).toBe('S19');
+  expect(cancelNext.history).toEqual(['S01', 'S18']);
+});
+
 test('routes S22 login CTA to S23', () => {
   const state = createInitialScreenFlowState({
     currentScreen: 'S22',
@@ -825,10 +853,23 @@ test('routes S18 library sync CTA to S23', () => {
     history: ['S01'],
   });
 
-  const next = transitionScreenFlow(state, { type: 'loginCta' });
+  const next = transitionScreenFlow(state, { type: 'loginAndLoadMySongs' });
 
   expect(next.currentScreen).toBe('S23');
   expect(next.history).toEqual(['S01', 'S18']);
+});
+
+test('routes S23 completion and skip actions with connected login sync actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S23',
+    history: ['S01', 'S18'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'completeLoginSync' }).currentScreen).toBe('S18');
+
+  const skipNext = transitionScreenFlow(state, { type: 'skipLoginSync' });
+  expect(skipNext.currentScreen).toBe('S18');
+  expect(skipNext.history).toEqual(['S01']);
 });
 
 test('supports a push history stack and back transition', () => {

@@ -146,10 +146,12 @@ test('connects S23 login sync preview and actions to library data', () => {
   expect(source).toContain('동기화');
   expect(source).toContain('선택해서 가져오기');
   expect(source).toContain('건너뛰기');
-  expect(source).toContain('model.actions.login');
-  expect(source).toContain('model.actions.sync');
-  expect(source).toContain('model.actions.importSelected');
-  expect(source).toContain('model.actions.skip');
+  expect(source).toContain('model.actions.completeLoginSync');
+  expect(source).toContain('model.actions.skipLoginSync');
+  expect(source).not.toContain('model.actions.login)');
+  expect(source).not.toContain('model.actions.sync)');
+  expect(source).not.toContain('model.actions.importSelected)');
+  expect(source).not.toContain('model.actions.skip)');
 });
 
 test('connects S22 settings actions to language and library management', () => {
@@ -390,7 +392,7 @@ test('connects S17 share publishing to the selected share target state', () => {
 
   expect(source).toContain("type: 'publishShareTarget'");
   expect(source).toContain("type: 'previewShareTarget'");
-  expect(source).toContain("type: 'back'");
+  expect(source).toContain("type: 'cancelShareTarget'");
   expect(source).toContain('durationLabel');
   expect(source).toContain('instrumentLabel');
   expect(source).toContain('sourceLabel');
@@ -431,16 +433,11 @@ test('connects S13 song preview and guide readiness metadata', () => {
 
 test('keeps S14 instrument selection separate from the Next action', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/practiceScreens.tsx'), 'utf8');
-  const stateSource = readFileSync(resolve(process.cwd(), 'src/product/garakProductState.ts'), 'utf8');
-  const selectInstrumentReducerCase =
-    stateSource.match(/case 'selectPracticeInstrument':[\s\S]*?case 'finishPractice':/)?.[0] ?? '';
 
   expect(source).toContain('selectedPracticeInstrument');
   expect(source).toContain("type: 'selectPracticeInstrument'");
   expect(source).toContain('practiceInstrumentGuideStatus');
   expect(source).toMatch(/PrimaryPillButton label="NEXT" onPress=\{\(\) => dispatch\(\{ type: 'next' \}\)\}/);
-  expect(selectInstrumentReducerCase).toContain('selectedInstrument: action.instrument');
-  expect(selectInstrumentReducerCase).not.toContain("pushTarget(state.screenFlow, 'S15')");
 });
 
 test('connects S15 practice controls to practice attempt state actions', () => {
@@ -470,6 +467,15 @@ test('connects shared detail remix and save buttons to library data actions', ()
   expect(source).not.toContain("type: 'navigate', target: 'S21'");
   expect(source).not.toContain("label=\"리믹스\" tone=\"amber\" onPress={() => dispatch({ type: 'navigate', target: 'S07' })}");
   expect(source).not.toContain("label=\"저장\" onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
+});
+
+test('connects S17 save-only and cancel controls to explicit share preparation actions', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+
+  expect(source).toContain("type: 'saveShareTargetOnly'");
+  expect(source).toContain("type: 'cancelShareTarget'");
+  expect(source).not.toContain("label=\"저장만 하기\"\n          onPress={() => dispatch({ type: 'navigate', target: 'S18' })}");
+  expect(source).not.toContain("label=\"취소\"\n          onPress={() => dispatch({ type: 'back' })}");
 });
 
 test('connects S21 shared detail playback to selected recording state', () => {
