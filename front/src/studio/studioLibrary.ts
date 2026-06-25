@@ -3,12 +3,16 @@ import {
   AccompanimentTrack,
   ExportedAudio,
   InstrumentId,
+  InstrumentSettingValues,
   InstrumentTrack,
   JangdanPresetId,
   LibrarySections,
   LiveJangdanGuide,
   PracticeResult,
+  RecordingSetup,
+  ReferenceTrack,
   Take,
+  Track,
   Work,
 } from './studioTypes';
 
@@ -31,7 +35,9 @@ export function autoSaveTakeAsWork(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 }): Work {
   const take = createTake({
     id: input.takeId,
@@ -39,7 +45,9 @@ export function autoSaveTakeAsWork(input: {
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
+    instrumentSettings: input.instrumentSettings,
   });
 
   return {
@@ -71,6 +79,7 @@ export function addInstrumentTrack(
     durationBeats: number;
     playheadBeat?: number;
     recordingUri?: string;
+    instrumentSettings?: InstrumentSettingValues;
   },
 ): Work {
   const startedAtBeat = resolveStartBeat(input.playheadBeat);
@@ -80,6 +89,7 @@ export function addInstrumentTrack(
     startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    instrumentSettings: input.instrumentSettings,
   });
 
   return {
@@ -131,6 +141,48 @@ export function isWorkShareable(work: Work): boolean {
   return work.tracks.length > 0;
 }
 
+export function toggleWorkTrackMute(
+  work: Work,
+  input: {
+    trackId: string;
+    updatedAt: string;
+  },
+): Work {
+  const track = work.tracks.find((item) => item.id === input.trackId);
+  if (track === undefined) {
+    return work;
+  }
+
+  return {
+    ...work,
+    updatedAt: input.updatedAt,
+    tracks: work.tracks.map((item) =>
+      item.id === input.trackId ? { ...item, mute: !item.mute } : item,
+    ),
+  };
+}
+
+export function toggleWorkTrackSolo(
+  work: Work,
+  input: {
+    trackId: string;
+    updatedAt: string;
+  },
+): Work {
+  const target = work.tracks.find((track) => track.id === input.trackId);
+  if (target === undefined) {
+    return work;
+  }
+
+  const shouldSoloTarget = !target.solo;
+
+  return {
+    ...work,
+    updatedAt: input.updatedAt,
+    tracks: work.tracks.map((track) => setTrackSolo(track, track.id === input.trackId && shouldSoloTarget)),
+  };
+}
+
 export function exportWorkAudioPlaceholder(input: {
   id: string;
   work: Work;
@@ -139,6 +191,8 @@ export function exportWorkAudioPlaceholder(input: {
   durationSeconds: number;
   createdAt: string;
 }): ExportedAudio {
+  const referenceSource = collectReferenceSource(input.work);
+
   return {
     id: input.id,
     kind: 'exported_audio',
@@ -149,6 +203,7 @@ export function exportWorkAudioPlaceholder(input: {
     createdAt: input.createdAt,
     audioUri: input.audioUri,
     shareState: 'ready',
+    ...referenceSource,
   };
 }
 
@@ -211,7 +266,9 @@ function createTake(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 }): Take {
   return {
     id: input.id,
@@ -219,7 +276,9 @@ function createTake(input: {
     recordingUri: normalizeOptionalText(input.recordingUri),
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
+    recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
+    instrumentSettings: input.instrumentSettings,
   };
 }
 
@@ -242,6 +301,13 @@ function createInstrumentTrack(input: {
   };
 }
 
+function setTrackSolo(track: Track, solo: boolean): Track {
+  return {
+    ...track,
+    solo,
+  };
+}
+
 function collectInstrumentNames(work: Work): string[] {
   const names = new Set<string>();
 
@@ -252,9 +318,29 @@ function collectInstrumentNames(work: Work): string[] {
     if (track.kind === 'accompaniment') {
       names.add('장단');
     }
+    if (track.kind === 'reference') {
+      names.add(`참조: ${track.title}`);
+    }
   }
 
   return [...names];
+}
+
+function collectReferenceSource(work: Work): Pick<
+  ExportedAudio,
+  'sourceShareId' | 'authorDisplayName' | 'sourceLabel'
+> | undefined {
+  const referenceTrack = work.tracks.find((track): track is ReferenceTrack => track.kind === 'reference');
+
+  if (referenceTrack === undefined) {
+    return undefined;
+  }
+
+  return {
+    sourceShareId: referenceTrack.sourceShareId,
+    authorDisplayName: referenceTrack.authorDisplayName,
+    sourceLabel: referenceTrack.sourceLabel,
+  };
 }
 
 function resolveStartBeat(playheadBeat: number | undefined): number {

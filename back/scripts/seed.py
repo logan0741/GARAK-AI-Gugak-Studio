@@ -15,15 +15,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.dialects.mysql import insert
-
-from app.core.config import settings
-from app.models.instrument import Instrument, InstrumentUnit
-from app.models.sample_asset import SampleAssetManifest
-from app.models.jangdan import JangdanPreset
-
-
 INSTRUMENT = {
     "id": "gayageum_12",
     "type": "gayageum",
@@ -56,13 +47,24 @@ SAMPLE_ASSET_MANIFEST = {
 
 JANGDAN_PRESETS = [
     {"id": "jungmori",  "name": "중모리",  "min_bpm": 60,  "max_bpm": 80,  "density_range": "low",    "meter": "12/8"},
-    {"id": "gutgeori",  "name": "굿거리",  "min_bpm": 80,  "max_bpm": 110, "density_range": "medium", "meter": "12/8"},
+    {"id": "semachi",   "name": "세마치",  "min_bpm": 80,  "max_bpm": 90,  "density_range": "medium", "meter": "12/8"},
     {"id": "jajinmori", "name": "자진모리", "min_bpm": 120, "max_bpm": 160, "density_range": "high",   "meter": "12/8"},
     {"id": "semachi",   "name": "세마치",  "min_bpm": 100, "max_bpm": 140, "density_range": "medium", "meter": "9/8"},
 ]
 
+STALE_JANGDAN_PRESET_IDS = ("gutgeori",)
+
 
 async def seed() -> None:
+    from sqlalchemy import delete
+    from sqlalchemy.dialects.mysql import insert
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from app.core.config import settings
+    from app.models.instrument import Instrument, InstrumentUnit
+    from app.models.jangdan import JangdanPreset
+    from app.models.sample_asset import SampleAssetManifest
+
     engine = create_async_engine(settings.db_url)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -82,6 +84,9 @@ async def seed() -> None:
                 insert(SampleAssetManifest)
                 .values(SAMPLE_ASSET_MANIFEST)
                 .on_duplicate_key_update(version=SAMPLE_ASSET_MANIFEST["version"])
+            )
+            await session.execute(
+                delete(JangdanPreset).where(JangdanPreset.id.in_(STALE_JANGDAN_PRESET_IDS))
             )
             await session.execute(
                 insert(JangdanPreset)

@@ -223,6 +223,10 @@ function parseFallbackSession(input: unknown): { errors: string[]; session?: Ses
         return recordingResult.recording ? [recordingResult.recording] : [];
       })
     : [];
+  const jangdanRecommendationResult = parseFallbackJangdanRecommendation(
+    input.jangdanRecommendation,
+  );
+  errors.push(...jangdanRecommendationResult.errors);
 
   if (errors.length > 0) {
     return { errors };
@@ -243,12 +247,30 @@ function parseFallbackSession(input: unknown): { errors: string[]; session?: Ses
       events,
       bpmEstimate: input.bpmEstimate as number | undefined,
       densityEstimate: input.densityEstimate as 'low' | 'medium' | 'high' | undefined,
-      jangdanRecommendation: input.jangdanRecommendation as
-        | 'jungmori'
-        | 'gutgeori'
-        | 'jajinmori'
-        | undefined,
+      jangdanRecommendation: jangdanRecommendationResult.jangdanRecommendation,
     },
+  };
+}
+
+function parseFallbackJangdanRecommendation(input: unknown): {
+  errors: string[];
+  jangdanRecommendation?: Session['jangdanRecommendation'];
+} {
+  if (input === undefined) {
+    return { errors: [] };
+  }
+
+  if (input === 'semachi' || input === 'jungmori' || input === 'jajinmori') {
+    return {
+      errors: [],
+      jangdanRecommendation: input,
+    };
+  }
+
+  return {
+    errors: [
+      'session.jangdanRecommendation must be one of semachi, jungmori, jajinmori when provided',
+    ],
   };
 }
 

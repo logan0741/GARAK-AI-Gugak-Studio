@@ -26,7 +26,8 @@
             "android.permission.MODIFY_AUDIO_SETTINGS"
           ]
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "android": {
       "package": "com.gukakstudio.prototype"

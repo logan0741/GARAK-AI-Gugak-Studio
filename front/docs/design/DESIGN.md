@@ -1,6 +1,6 @@
 # GARAK 디자인 시스템
 
-상태: 현재 Figma 스냅샷 기반 기준 후보
+상태: 현재 Figma MCP 기준 후보
 작성일: 2026-06-19
 문서 책임: GARAK 프론트엔드가 참고할 브랜드 색, 로고 후보, 기초 UI 요소, Figma 해석 기준을 관리한다.
 관련 문서: `../document-authority-index.md`, `../product/screen-flow/current-screen-flow.md`, `../product/screen-flow/screen-composition-standards.md`
@@ -15,12 +15,13 @@
 
 | 출처 | 이 문서에서 쓰는 범위 | 신뢰도 |
 | --- | --- | --- |
-| 2026-06-19 첨부 Figma 스크린샷 | 색 계열, 로고 후보, 화면별 구성 방향, 컴포넌트 종류 | 중간 |
+| Figma MCP 노드/레이어 값 | 화면 구조, 화면명, CTA, 컴포넌트 종류, 현재 디자인 판정 | 높음 |
 | 기존 `figma-6-10-section.png` / `figma-6-10-wireframe.png` | 이전 와이어프레임 흐름과 브랜드 탐색 맥락 | 보조 |
-| 실제 Figma 레이어 값 | 현재 문서에는 없음 | 낮음 |
+| 사용자 제공 Figma 캡쳐 | 사용자가 지적한 문제 상황이나 검토 요청의 참고 맥락 | 보조 |
 
-- 색상 hex는 스크린샷 픽셀에서 읽은 근사값이다.
-- 프로덕션 구현 전에는 Figma 변수, 스타일, export 파일로 다시 검증한다.
+- Figma 관련 판정은 Figma MCP에서 확인한 노드 구조, 레이어명, 렌더 캡쳐를 우선한다.
+- 사용자 제공 Figma 캡쳐는 판정 기준으로 쓰지 않는다. 캡쳐는 어떤 문제를 봐야 하는지 설명하는 참고 자료로만 사용한다.
+- 색상 hex는 Figma MCP 또는 Figma export에서 확인한 값을 우선하고, 확인 전 값은 근사값으로 다룬다.
 - 스크린샷을 잘라 앱 에셋으로 쓰지 않는다. 실제 에셋은 Figma 원본에서 SVG 또는 3x PNG로 export한다.
 
 ## 2. 디자인 방향
@@ -73,9 +74,10 @@ Red는 기본적으로 오류 색이 아니라 브랜드 색이다. 오류/위�
 
 ### Segmented Control
 
-- 홈의 1차 선택은 `자유창작 모드 / 따라하기 모드` segmented control이다.
+- 홈의 1차 행동은 hero `PLAY` 진입이다.
+- `자유창작 모드 / 따라하기 모드` segmented control은 S03 `홈-자유창작모드`의 연주 모드 선택에 둔다.
 - active segment는 navy 또는 dark fill, inactive segment는 soft/off-white fill을 쓴다.
-- segmented control은 홈의 모드 선택에 우선 사용하고, 전역 내비게이션으로 확장하지 않는다.
+- segmented control은 S03의 모드 선택에 우선 사용하고, 전역 내비게이션으로 확장하지 않는다.
 
 ### Buttons
 
@@ -108,8 +110,8 @@ Red는 기본적으로 오류 색이 아니라 브랜드 색이다. 오류/위�
 | --- | --- | --- |
 | 온보딩 3종 `GARAK` 화면 | 로고/splash 에셋 후보. 앱 사용 전 필수 관문으로 확정하지 않는다. | 이 문서 4장, `../product/garak-product-brief.md` |
 | 로그인 화면 | 선택 로그인 또는 S23 동기화 흐름의 참고. 첫 실행 관문으로 쓰지 않는다. | `../product/screen-flow/current-screen-flow.md` S22/S23 |
-| 홈 | S01 홈. 모드 segmented control, 큰 단일 카드, home quick access를 유지한다. | `../product/screen-flow/current-screen-flow.md` S01 |
-| 자유창작/따라하기 선택 | S01 상태 또는 S04/S13 진입 전 선택 화면의 참고. 독립 중복 화면을 만들지 않는다. | `../product/screen-flow/current-screen-flow.md` S01/S04/S13 |
+| 홈 | S01 홈. 큰 단일 hero 카드, PLAY 진입, home quick access를 유지한다. | `../product/screen-flow/current-screen-flow.md` S01 |
+| 자유창작/따라하기 선택 | S03 `홈-자유창작모드`의 segmented control 참고. 독립 중복 화면을 만들지 않는다. | `../product/screen-flow/current-screen-flow.md` S03/S04/S13 |
 | 악기 선택 | S04/S14 참고. MVP 3악기와 잠금 확장 슬롯을 구분한다. | `../product/screen-flow/current-screen-flow.md` S04/S14 |
 | 가야금 연주면 | S05/S09 가야금 입력면 참고. 가야금은 버튼 배열이 아니라 현 중심 입력면이다. | `../domain/README.md`, `../product/screen-flow/current-screen-flow.md` S05/S09 |
 | Mix / 플레이어 / 보관함 화면 | S07/S17/S18/S19/S20 계열 참고. 자동 저장 Work와 공유 가능한 산출물을 구분한다. | `../product/screen-flow/current-screen-flow.md` S07/S17-S20 |

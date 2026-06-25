@@ -1,5 +1,6 @@
 import logging
 from functools import lru_cache
+from typing import List
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
@@ -13,6 +14,10 @@ class Settings(BaseSettings):
     claude_api_key: str = ""
     google_translate_api_key: str = ""
     server_base_url: str = "http://localhost:8000"
+    cors_origins: List[str] = [
+        "http://localhost:8081",
+        "http://localhost:8098",
+    ]
     ai_module_path: str = "../ai"
     models_dir: str = "../AI/models"
     segments_dir: str = "../AI/segments"
