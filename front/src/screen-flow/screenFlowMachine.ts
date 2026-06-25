@@ -66,11 +66,19 @@ function selectMode(state: ScreenFlowState, mode: ScreenFlowMode): ScreenFlowSta
 }
 
 function routeNext(state: ScreenFlowState): ScreenFlowState {
-  if (state.currentScreen !== 'S03') {
-    throw new Error(`next is not available from ${state.currentScreen}`);
+  if (state.currentScreen === 'S03') {
+    return pushScreen(state, state.mode === 'freeCreation' ? 'S04' : 'S13');
   }
 
-  return pushScreen(state, state.mode === 'freeCreation' ? 'S04' : 'S13');
+  const nextTransition = implementedScreenDefinitions[state.currentScreen].transitions.find(
+    (transition) => transition.action === 'next',
+  );
+
+  if (nextTransition !== undefined && isImplementedScreenId(nextTransition.target)) {
+    return pushScreen(state, nextTransition.target);
+  }
+
+  throw new Error(`next is not available from ${state.currentScreen}`);
 }
 
 function routeFromScreen(

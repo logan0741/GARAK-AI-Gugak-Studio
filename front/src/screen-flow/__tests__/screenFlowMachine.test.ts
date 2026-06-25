@@ -374,6 +374,48 @@ test('routes S03 Next to S13 when practice mode is selected', () => {
   expect(next.history).toEqual(['S01', 'S03']);
 });
 
+test('routes documented Next transitions after mode and instrument selection', () => {
+  expect(
+    transitionScreenFlow(
+      createInitialScreenFlowState({
+        currentScreen: 'S04',
+        history: ['S01', 'S03'],
+      }),
+      { type: 'next' },
+    ),
+  ).toMatchObject({
+    currentScreen: 'S04A',
+    history: ['S01', 'S03', 'S04'],
+  });
+
+  expect(
+    transitionScreenFlow(
+      createInitialScreenFlowState({
+        currentScreen: 'S04A',
+        history: ['S01', 'S03', 'S04'],
+      }),
+      { type: 'next' },
+    ),
+  ).toMatchObject({
+    currentScreen: 'S05',
+    history: ['S01', 'S03', 'S04', 'S04A'],
+  });
+
+  expect(
+    transitionScreenFlow(
+      createInitialScreenFlowState({
+        currentScreen: 'S14',
+        history: ['S01', 'S03', 'S13'],
+        mode: 'practice',
+      }),
+      { type: 'next' },
+    ),
+  ).toMatchObject({
+    currentScreen: 'S15',
+    history: ['S01', 'S03', 'S13', 'S14'],
+  });
+});
+
 test('allows the S03 mode guide to enter the practice song flow', () => {
   const state = createInitialScreenFlowState({
     currentScreen: 'S03',
