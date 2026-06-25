@@ -59,7 +59,9 @@ async def accompaniment(
         )
         try:
             await jangdan_repo.create_recommendation(db, rec)
+            await db.commit()
         except IntegrityError as exc:
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid sessionId: {body.session_id}",
