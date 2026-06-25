@@ -140,10 +140,18 @@ test('defines S08 locked import as a documented same-screen action', () => {
 
   expect(implementedScreenDefinitions.S08.primaryCtas).toEqual(
     expect.arrayContaining([
-      'addInstrumentPerformance',
-      'addAccompaniment',
+      'openInstrumentTrackSelection',
+      'chooseInstrumentTrack',
+      'chooseAccompanimentTrack',
       'showLockedImportTrackNotice',
-      'cancel',
+      'cancelTrackAdd',
+    ]),
+  );
+  expect(implementedScreenDefinitions.S08.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'chooseInstrumentTrack', target: 'S09' },
+      { action: 'chooseAccompanimentTrack', target: 'S10B' },
+      { action: 'cancelTrackAdd', target: 'S07' },
     ]),
   );
   expect(implementedScreenDefinitions.S08.transitions).not.toContainEqual(
@@ -503,6 +511,19 @@ test('routes S10B accompaniment add directly to S07 without entering S11', () =>
   expect(next.currentScreen).toBe('S07');
   expect(next.history).toEqual(['S07', 'S08', 'S10B']);
   expect(next.history).not.toContain('S11');
+});
+
+test('routes S08 track add choices with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S08',
+    history: ['S01', 'S03', 'S04', 'S04A', 'S05', 'S07'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'chooseInstrumentTrack' }).currentScreen).toBe('S09');
+  expect(transitionScreenFlow(state, { type: 'chooseAccompanimentTrack' }).currentScreen).toBe(
+    'S10B',
+  );
+  expect(transitionScreenFlow(state, { type: 'cancelTrackAdd' }).currentScreen).toBe('S07');
 });
 
 test('routes S10B cancellation back to S07 with the connected UI action', () => {

@@ -528,7 +528,7 @@ export function applyProductAction(
         trackAddSelection: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S08'
-            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
+            ? transitionScreenFlow(state.screenFlow, { type: 'cancelTrackAdd' })
             : pushTarget(state.screenFlow, 'S07'),
       };
     case 'chooseInstrumentTrack':
@@ -539,7 +539,7 @@ export function applyProductAction(
         trackAddSelection: undefined,
         pendingFreePlayTake: undefined,
         freePlayRecordingSetup: undefined,
-        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S09' }),
+        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'chooseInstrumentTrack' }),
       };
     case 'restartInstrumentTrackRecording':
       return {
@@ -571,7 +571,7 @@ export function applyProductAction(
         ...state,
         trackAddNotice: undefined,
         trackAddSelection: undefined,
-        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S10B' }),
+        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'chooseAccompanimentTrack' }),
       };
     case 'addAccompanimentTrack':
       return applyAccompanimentTrack(state, action);

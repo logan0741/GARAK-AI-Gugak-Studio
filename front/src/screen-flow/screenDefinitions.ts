@@ -123,11 +123,17 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S08',
     name: 'Add Track',
     mvpStatus: 'required',
-    primaryCtas: ['addInstrumentPerformance', 'addAccompaniment', 'showLockedImportTrackNotice', 'cancel'],
+    primaryCtas: [
+      'openInstrumentTrackSelection',
+      'chooseInstrumentTrack',
+      'chooseAccompanimentTrack',
+      'showLockedImportTrackNotice',
+      'cancelTrackAdd',
+    ],
     transitions: [
-      { action: 'addInstrumentPerformance', target: 'S09' },
-      { action: 'addAccompaniment', target: 'S10B' },
-      { action: 'cancel', target: 'S07' },
+      { action: 'chooseInstrumentTrack', target: 'S09' },
+      { action: 'chooseAccompanimentTrack', target: 'S10B' },
+      { action: 'cancelTrackAdd', target: 'S07' },
     ],
   },
   S09: {
