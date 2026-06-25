@@ -812,12 +812,12 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
     case 'S04A':
       return summary(
         screenId,
-        '연주 기본 설정',
+        '연주 화면 미리보기',
         getInstrumentLabel(state),
         state.instrumentSettingsNotice === 'sampleRequired'
           ? '필수 샘플 준비 후 연주를 시작할 수 있어요.'
-          : '초보자는 기본값으로 바로 시작할 수 있어요.',
-        ['기본값으로 시작', '직접 조정', 'Next'],
+          : '선택한 악기의 연주 화면을 미리 확인하고 바로 시작해요.',
+        ['NEXT'],
       );
     case 'S05':
       return summary(

@@ -52,6 +52,25 @@ test('summarizes S03 as the mode guide opened from the home hero', () => {
   expect(summary.primaryCtas).not.toContain('건너뛰기');
 });
 
+test('summarizes S04A as the Figma performance preview with a single Next CTA', () => {
+  const state = {
+    ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu'] }),
+    selectedInstrument: 'janggu' as const,
+    screenFlow: {
+      currentScreen: 'S04A' as const,
+      history: ['S01' as const, 'S03' as const, 'S04' as const],
+      mode: 'freeCreation' as const,
+    },
+  };
+  const summary = getCurrentScreenSummary(state);
+
+  expect(summary.title).toBe('연주 화면 미리보기');
+  expect(summary.description).toContain('미리');
+  expect(summary.primaryCtas).toEqual(['NEXT']);
+  expect(summary.primaryCtas).not.toContain('기본값으로 시작');
+  expect(summary.primaryCtas).not.toContain('직접 조정');
+});
+
 test('moves through free creation selection to S05 with an MVP instrument', () => {
   let state = createInitialGarakProductState();
 

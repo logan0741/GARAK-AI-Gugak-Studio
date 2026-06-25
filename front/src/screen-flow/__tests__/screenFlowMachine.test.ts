@@ -60,6 +60,26 @@ test('documents S12 as absorbed into the S03 mode guide state', () => {
   expect(excludedScreenDefinitions.S12.reason).not.toContain('S01 home selection');
 });
 
+test('documents S04A as the Figma performance preview with a single Next CTA', () => {
+  const screenFlowDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),
+    'utf8',
+  );
+  const s04aSection = screenFlowDoc.slice(
+    screenFlowDoc.indexOf('### S04A 연주 화면 미리보기'),
+    screenFlowDoc.indexOf('### S05 악기 자유연주'),
+  );
+
+  expect(implementedScreenDefinitions.S04A.primaryCtas).toEqual(['next']);
+  expect(implementedScreenDefinitions.S04A.transitions).toEqual([
+    { action: 'next', target: 'S05' },
+  ]);
+  expect(s04aSection).toContain('Figma MCP node `258:266`');
+  expect(s04aSection).toContain('NEXT');
+  expect(s04aSection).not.toContain('직접 조정');
+  expect(s04aSection).not.toContain('기본값으로 시작');
+});
+
 test('defines documented cancel and disable transitions for track and jangdan flows', () => {
   expect(implementedScreenDefinitions.S09.primaryCtas).toEqual(
     expect.arrayContaining(['record', 'apply', 'recordAgain', 'cancel']),

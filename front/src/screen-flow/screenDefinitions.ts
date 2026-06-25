@@ -94,11 +94,8 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S04A',
     name: 'Performance Defaults',
     mvpStatus: 'required',
-    primaryCtas: ['startWithDefaults', 'customize', 'next'],
-    transitions: [
-      { action: 'next', target: 'S05' },
-      { action: 'customize', target: 'S04' },
-    ],
+    primaryCtas: ['next'],
+    transitions: [{ action: 'next', target: 'S05' }],
   },
   S05: {
     id: 'S05',
