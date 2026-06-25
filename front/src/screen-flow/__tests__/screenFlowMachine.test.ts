@@ -162,13 +162,19 @@ test('defines S18 library search and sync actions from the detailed document', (
 
 test('defines S19 player management actions from the detailed document', () => {
   expect(implementedScreenDefinitions.S19.primaryCtas).toEqual(
-    expect.arrayContaining(['play', 'pause', 'openEditor', 'share', 'delete']),
+    expect.arrayContaining([
+      'playSelectedPlayerItem',
+      'pauseSelectedPlayerItem',
+      'openSelectedPlayerEditor',
+      'shareSelectedPlayerItem',
+      'deleteSelectedPlayerItem',
+    ]),
   );
   expect(implementedScreenDefinitions.S19.transitions).toEqual(
     expect.arrayContaining([
-      { action: 'openEditor', target: 'S07' },
-      { action: 'share', target: 'S17' },
-      { action: 'delete', target: 'S18' },
+      { action: 'openSelectedPlayerEditor', target: 'S07' },
+      { action: 'shareSelectedPlayerItem', target: 'S17' },
+      { action: 'deleteSelectedPlayerItem', target: 'S18' },
       { action: 'backToLibrary', target: 'S18' },
     ]),
   );
@@ -484,6 +490,23 @@ test('routes S15 practice completion to S16 result with the connected UI action'
 
   expect(next.currentScreen).toBe('S16');
   expect(next.history).toEqual(['S01', 'S03', 'S13', 'S14', 'S15']);
+});
+
+test('routes S19 player management with the connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S19',
+    history: ['S01', 'S18'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'openSelectedPlayerEditor' }).currentScreen).toBe(
+    'S07',
+  );
+  expect(transitionScreenFlow(state, { type: 'shareSelectedPlayerItem' }).currentScreen).toBe(
+    'S17',
+  );
+  expect(transitionScreenFlow(state, { type: 'deleteSelectedPlayerItem' }).currentScreen).toBe(
+    'S18',
+  );
 });
 
 test('routes S22 login CTA to S23', () => {

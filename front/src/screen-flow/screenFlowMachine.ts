@@ -18,6 +18,9 @@ export type ScreenFlowEvent =
   | { type: 'completePerformance' }
   | { type: 'addAccompanimentTrack' }
   | { type: 'finishPractice' }
+  | { type: 'openSelectedPlayerEditor' }
+  | { type: 'shareSelectedPlayerItem' }
+  | { type: 'deleteSelectedPlayerItem' }
   | { type: 'loginCta' }
   | { type: 'navigate'; target: string }
   | { type: 'back' };
@@ -48,6 +51,12 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S10B', 'S07', event.type);
     case 'finishPractice':
       return routeFromScreen(state, 'S15', 'S16', event.type);
+    case 'openSelectedPlayerEditor':
+      return routeFromScreen(state, 'S19', 'S07', event.type);
+    case 'shareSelectedPlayerItem':
+      return routeFromScreen(state, 'S19', 'S17', event.type);
+    case 'deleteSelectedPlayerItem':
+      return routeFromScreen(state, 'S19', 'S18', event.type);
     case 'loginCta':
       return routeFromScreens(state, ['S18', 'S22'], 'S23', event.type);
     case 'navigate':
