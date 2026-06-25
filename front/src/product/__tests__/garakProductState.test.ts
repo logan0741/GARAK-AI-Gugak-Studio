@@ -4,6 +4,7 @@ import {
   createInitialGarakProductState as createBaseInitialGarakProductState,
   getCurrentScreenSummary,
 } from '../garakProductState';
+import { getJangdanPresetPanelModel } from '../jangdanPresetPanelModel';
 import type { PerformanceEvent } from '../../domain/performanceEvent';
 import {
   PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
@@ -291,6 +292,36 @@ test('closes S05 recording setup when leaving for jangdan or layer actions', () 
   expect(state.screenFlow.currentScreen).toBe('S05');
   expect(state.freePlayRecordingSetup).toBeUndefined();
   expect(state.freePlayNotice).toBe('missingTake');
+});
+
+test('resets live jangdan preview state when leaving and reopening the guide', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'openLiveJangdanGuide' });
+  state = applyProductAction(state, {
+    type: 'previewJangdanPreset',
+    mode: 'live',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.6,
+  });
+
+  state = applyProductAction(state, { type: 'back' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.previewingJangdanPreset).toBeUndefined();
+
+  state = applyProductAction(state, { type: 'openLiveJangdanGuide' });
+
+  const model = getJangdanPresetPanelModel(state, 'live');
+
+  expect(model.previewingPresetId).toBeUndefined();
+  expect(model.acceptAction).toBeUndefined();
 });
 
 test('keeps S05 in place and shows guidance when opening layer editor without a work', () => {

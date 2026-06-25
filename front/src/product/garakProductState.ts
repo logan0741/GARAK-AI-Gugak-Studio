@@ -493,6 +493,7 @@ export function applyProductAction(
       return {
         ...state,
         freePlayRecordingSetup: undefined,
+        previewingJangdanPreset: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'openLiveJangdanGuide' }),
       };
     case 'applyLiveJangdanGuide':
@@ -778,6 +779,10 @@ export function applyProductAction(
     case 'back':
       return {
         ...state,
+        previewingJangdanPreset:
+          state.screenFlow.currentScreen === 'S10A' || state.screenFlow.currentScreen === 'S10B'
+            ? undefined
+            : state.previewingJangdanPreset,
         sharePreviewStatus: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'back' }),
       };
