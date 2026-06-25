@@ -14,7 +14,7 @@
 
 첨부 기술 스택은 모바일 악기 앱의 방향성, 저지연 오디오, Skia/Reanimated 기반 인터랙션, Zustand, i18n, Python 분석 스택의 장기 확장 가능성은 기존 기획과 대체로 맞다.
 
-다만 현재 MVP 기획과 충돌하는 항목이 있다. FastAPI, MySQL, Google 로그인, Claude API, Google 번역 API, Markov Chain 반주 생성, 서버 업로드, 공유 링크, Firestore 기반 저장 흐름은 현재 MVP 범위가 아니다. MVP는 네트워크 없는 로컬 악기 경험과 이벤트 중심 세션 모델을 먼저 검증한다.
+다만 현재 MVP 기획과 충돌하는 항목이 있다. FastAPI, MySQL, Google 로그인, Claude API, Google 번역 API, Markov Chain 반주 생성, 녹음 직후 원시 서버 업로드, 공유 링크, Firestore 기반 저장 흐름은 현재 MVP 기본 경로가 아니다. MVP는 네트워크 없는 로컬 악기 경험과 이벤트 중심 세션 모델을 먼저 검증하되, 완성 Work/내보낸 음원 저장 API는 백엔드 계약 확정 시 연결한다.
 
 따라서 확정 방향은 다음과 같다.
 
@@ -81,8 +81,9 @@
 
 | 목적 | 확정 기술/형태 | 적용 규칙 |
 | --- | --- | --- |
-| 도메인 언어 | TypeScript type/module | `PerformanceEvent`, `Session`, `Recording`, `SampleAssetManifest`, `DataReferenceManifest`를 코드의 핵심 계약으로 둔다. |
+| 도메인 언어 | TypeScript type/module | `PerformanceEvent`, `Session`, `Work`, `Track`, `Take`, `Recording`, `SampleAssetManifest`, `DataReferenceManifest`를 코드의 핵심 계약으로 둔다. |
 | 세션 저장 | 로컬 직렬화 JSON | MVP에서는 클라우드 동기화 없이 로컬 세션으로 충분하다. 오디오 파일보다 이벤트 로그가 기준 데이터다. |
+| 작업 저장 | 로컬 `Work` 직렬화 | 여러 테이크와 레이어 편집은 `Work` 기준으로 보존한다. 서버 저장이 붙어도 로컬 보존과 동기화 상태를 분리한다. |
 | 재생 에셋 | `SampleAssetManifest` + 로컬 오디오 파일 | 정상 연주 중 외부 API 또는 파일 I/O에 의존하지 않도록 악기 화면 진입 전에 preload한다. |
 | 분석/검증 참조 | `DataReferenceManifest` | 공공데이터, AI Hub, 검증 기준은 재생 에셋과 분리한다. |
 | 장단 추천 | 로컬 TypeScript `JangdanMatcher` | MVP는 BPM, 터치 밀도, 박자 안정성 기반의 설명 가능한 규칙 엔진으로 시작한다. |
@@ -112,7 +113,9 @@
 | 동적 번역 | Google 번역 API | 국악 용어 오역 리스크가 있고 MVP에는 정적 UI 번역이면 충분하다. | 사용자 생성/AI 생성 텍스트를 다국어로 제공할 때 |
 | 고급 음악 분석 | Python, librosa, numpy, scikit-learn-extra, dtaidistance | MVP는 이벤트 기반 장단 추천으로 충분하다. | 실제 음원/연주 분석 고도화 단계 |
 | Markov Chain 반주 | Python 학습 파이프라인 + `.pkl` | 기존 기획의 "AI는 오디오 파형을 직접 만들지 않는다" 원칙과 MVP 범위에 비해 과하다. | 로컬 장단 프리셋 MVP가 통과하고, 반주 다양성 문제가 명확해질 때 |
-| 서버 파일 업로드 | FastAPI static/audio, object storage | MVP 기준 데이터는 `Session` 이벤트 로그다. | 외부 공유/내보내기 기능이 제품 요구로 확정될 때 |
+| 서버 파일 업로드 | FastAPI static/audio, object storage | 정상 연주/녹음 경로에는 필요 없다. 단, 완성 Work/내보낸 음원 저장은 제품 요구로 부상했다. | 백엔드가 보관함/완성 곡 저장 API와 전송 단위를 확정할 때 |
+
+2026-06-19 회의 반영: 서버 파일 업로드는 여전히 S05 녹음 완료의 필수 후속 동작이 아니다. 프론트는 로컬 `Session`/`Take`/`Work` 보존을 먼저 보장하고, 서버 저장은 S07 `작업 저장`, S07 `내보내기`, S18 `보관함`, S23 `동기화` 중 백엔드와 합의한 트리거에 연결한다. 단일 `Session`까지 서버에 저장할지, 여러 레이어를 가진 `Work` 또는 `ExportedAudio`만 저장할지는 미정이다.
 
 ---
 
