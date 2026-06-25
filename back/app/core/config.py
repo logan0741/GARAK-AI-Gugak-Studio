@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     claude_api_key: str = ""
     google_translate_api_key: str = ""
     server_base_url: str = "http://localhost:8000"
+    cors_origins: list[str] = [
+        "http://localhost:8081",
+        "http://localhost:8098",
+    ]
     ai_module_path: str = "../ai"
     bypass_auth: bool = False
     jwt_secret_key: str = "dev-secret-key"

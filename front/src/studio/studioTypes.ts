@@ -17,13 +17,23 @@ export type LiveJangdanGuide = {
   startedAtBeat: number;
 };
 
+export type RecordingSetup = {
+  presetId: JangdanPresetId;
+  bpm: number;
+  beatUnit: string;
+};
+
+export type InstrumentSettingValues = Record<string, string>;
+
 export type Take = {
   id: string;
   events: PerformanceEvent[];
   recordingUri?: string;
   startedAtBeat: number;
   durationBeats: number;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 };
 
 export type InstrumentTrack = {
@@ -55,6 +65,8 @@ export type ReferenceTrack = {
   kind: 'reference';
   sourceShareId: string;
   title: string;
+  authorDisplayName: string;
+  sourceLabel: string;
   volume: number;
   mute: boolean;
   solo: boolean;
@@ -77,13 +89,16 @@ export type Work = {
 export type ExportedAudio = {
   id: string;
   kind: 'exported_audio';
-  workId: string;
+  workId?: string;
   title: string;
   durationSeconds: number;
   instrumentNames: string[];
   createdAt: string;
   audioUri: string;
   shareState: ShareState;
+  sourceShareId?: string;
+  authorDisplayName?: string;
+  sourceLabel?: string;
 };
 
 export type PracticeResult = {

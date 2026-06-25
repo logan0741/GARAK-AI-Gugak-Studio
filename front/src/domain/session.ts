@@ -1,4 +1,5 @@
 import { PerformanceEvent, assertPerformanceEvent } from './performanceEvent';
+import type { JangdanName } from './jangdan';
 
 export type Recording = {
   id: string;
@@ -16,7 +17,7 @@ export type Session = {
   recordingUri?: string;
   bpmEstimate?: number;
   densityEstimate?: 'low' | 'medium' | 'high';
-  jangdanRecommendation?: 'jungmori' | 'gutgeori' | 'jajinmori';
+  jangdanRecommendation?: JangdanName;
 };
 
 export function createEmptySession(input: {

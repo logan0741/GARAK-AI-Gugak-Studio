@@ -14,6 +14,8 @@ export type PracticeSong = {
   durationSeconds: number;
   supportedInstruments: InstrumentId[];
   recommendedInstrument: InstrumentId;
+  sampleReady: boolean;
+  guideReady: boolean;
 };
 
 export type JangdanPreset = {
@@ -25,10 +27,23 @@ export type JangdanPreset = {
   beatUnit: string;
 };
 
+export type SharedRecording = {
+  id: string;
+  title: string;
+  authorDisplayName: string;
+  sourceLabel: string;
+  instrument: InstrumentId;
+  durationSeconds: number;
+  audioUri: string;
+  remixable: boolean;
+};
+
 export const GARAK_BRAND = {
   serviceName: 'GARAK',
   subtitle: 'AI GUGAK STUDIO',
 };
+
+export const DEFAULT_FREE_CREATION_INSTRUMENT: InstrumentId = 'janggu';
 
 export const MVP_INSTRUMENTS: InstrumentDefinition[] = [
   {
@@ -61,6 +76,8 @@ export const PRACTICE_SONGS: PracticeSong[] = [
     durationSeconds: 45,
     supportedInstruments: ['gayageum', 'janggu', 'daegeum'],
     recommendedInstrument: 'gayageum',
+    sampleReady: true,
+    guideReady: true,
   },
   {
     id: 'doraji',
@@ -69,6 +86,8 @@ export const PRACTICE_SONGS: PracticeSong[] = [
     durationSeconds: 52,
     supportedInstruments: ['gayageum', 'janggu', 'daegeum'],
     recommendedInstrument: 'daegeum',
+    sampleReady: true,
+    guideReady: true,
   },
   {
     id: 'boatSong',
@@ -77,6 +96,8 @@ export const PRACTICE_SONGS: PracticeSong[] = [
     durationSeconds: 58,
     supportedInstruments: ['gayageum', 'janggu', 'daegeum'],
     recommendedInstrument: 'janggu',
+    sampleReady: true,
+    guideReady: true,
   },
 ];
 
@@ -107,10 +128,59 @@ export const JANGDAN_PRESETS: JangdanPreset[] = [
   },
 ];
 
+export const FEATURED_SHARED_RECORDING: SharedRecording = {
+  id: 'shared-morning-arirang',
+  title: '아침의 아리랑',
+  authorDisplayName: 'Minsu_Kim',
+  sourceLabel: '공유 피드 데모',
+  instrument: 'gayageum',
+  durationSeconds: 48,
+  audioUri: 'placeholder://shared-morning-arirang.wav',
+  remixable: true,
+};
+
+export const SHARE_FEED_RECORDINGS: SharedRecording[] = [
+  FEATURED_SHARED_RECORDING,
+  {
+    id: 'recent-kdrama-ost',
+    title: 'K-Drama OST',
+    authorDisplayName: 'Drama_Garak',
+    sourceLabel: '공유 피드 데모',
+    instrument: 'daegeum',
+    durationSeconds: 57,
+    audioUri: 'placeholder://recent-kdrama-ost.wav',
+    remixable: true,
+  },
+  {
+    id: 'recent-kpop-demon-hunters',
+    title: 'K-pop Demon Hunters',
+    authorDisplayName: 'Kpop_Garak',
+    sourceLabel: '공유 피드 데모',
+    instrument: 'janggu',
+    durationSeconds: 64,
+    audioUri: 'placeholder://recent-kpop-demon-hunters.wav',
+    remixable: true,
+  },
+  {
+    id: 'recent-korea-minyo',
+    title: 'Korea Minyo',
+    authorDisplayName: 'Minyo_Archive',
+    sourceLabel: '공유 피드 데모',
+    instrument: 'gayageum',
+    durationSeconds: 52,
+    audioUri: 'placeholder://recent-korea-minyo.wav',
+    remixable: false,
+  },
+];
+
+export function getSharedRecordingById(recordingId?: string): SharedRecording {
+  return SHARE_FEED_RECORDINGS.find((recording) => recording.id === recordingId) ?? FEATURED_SHARED_RECORDING;
+}
+
 export function getInstrumentName(instrument: InstrumentId): string {
   return MVP_INSTRUMENTS.find((item) => item.id === instrument)?.name ?? instrument;
 }
 
-export function getPracticeSongTitle(songId: PracticeSong['id']): string {
+export function getPracticeSongTitle(songId: string): string {
   return PRACTICE_SONGS.find((song) => song.id === songId)?.title ?? songId;
 }
