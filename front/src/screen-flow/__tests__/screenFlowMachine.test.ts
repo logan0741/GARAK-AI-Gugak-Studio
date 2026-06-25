@@ -90,12 +90,25 @@ test('defines documented cancel and disable transitions for track and jangdan fl
   });
 
   expect(implementedScreenDefinitions.S10A.primaryCtas).toEqual(
-    expect.arrayContaining(['preview', 'applyAndReturnToPerformance', 'turnOff']),
+    expect.arrayContaining([
+      'previewJangdanPreset',
+      'applyLiveJangdanGuide',
+      'turnOffLiveJangdanGuide',
+    ]),
   );
   expect(implementedScreenDefinitions.S10A.transitions).toContainEqual({
-    action: 'turnOff',
+    action: 'applyLiveJangdanGuide',
     target: 'S05',
   });
+  expect(implementedScreenDefinitions.S10A.transitions).toContainEqual({
+    action: 'turnOffLiveJangdanGuide',
+    target: 'S05',
+  });
+  expect(implementedScreenDefinitions.S10A.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'previewJangdanPreset',
+    }),
+  );
 
   expect(implementedScreenDefinitions.S10B.primaryCtas).toEqual(
     expect.arrayContaining(['preview', 'addAccompanimentTrack', 'cancel']),
@@ -481,6 +494,20 @@ test('routes S10B accompaniment add directly to S07 without entering S11', () =>
   expect(next.currentScreen).toBe('S07');
   expect(next.history).toEqual(['S07', 'S08', 'S10B']);
   expect(next.history).not.toContain('S11');
+});
+
+test('routes S10A live jangdan guide actions back to S05 with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S10A',
+    history: ['S01', 'S03', 'S04', 'S04A', 'S05'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'applyLiveJangdanGuide' }).currentScreen).toBe(
+    'S05',
+  );
+  expect(transitionScreenFlow(state, { type: 'turnOffLiveJangdanGuide' }).currentScreen).toBe(
+    'S05',
+  );
 });
 
 test('routes S15 practice completion to S16 result with the connected UI action', () => {

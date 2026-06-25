@@ -477,7 +477,10 @@ export function applyProductAction(
           volume: action.volume,
         },
         previewingJangdanPreset: undefined,
-        screenFlow: pushTarget(state.screenFlow, 'S05'),
+        screenFlow:
+          state.screenFlow.currentScreen === 'S10A'
+            ? transitionScreenFlow(state.screenFlow, { type: 'applyLiveJangdanGuide' })
+            : pushTarget(state.screenFlow, 'S05'),
       };
     case 'previewJangdanPreset':
       return {
@@ -496,7 +499,7 @@ export function applyProductAction(
         previewingJangdanPreset: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S10A'
-            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S05' })
+            ? transitionScreenFlow(state.screenFlow, { type: 'turnOffLiveJangdanGuide' })
             : pushTarget(state.screenFlow, 'S05'),
       };
     case 'addTrack':

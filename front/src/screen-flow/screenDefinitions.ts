@@ -144,10 +144,10 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S10A',
     name: 'Live Jangdan Guide',
     mvpStatus: 'required',
-    primaryCtas: ['preview', 'applyAndReturnToPerformance', 'turnOff'],
+    primaryCtas: ['previewJangdanPreset', 'applyLiveJangdanGuide', 'turnOffLiveJangdanGuide'],
     transitions: [
-      { action: 'applyAndReturnToPerformance', target: 'S05' },
-      { action: 'turnOff', target: 'S05' },
+      { action: 'applyLiveJangdanGuide', target: 'S05' },
+      { action: 'turnOffLiveJangdanGuide', target: 'S05' },
     ],
   },
   S10B: {

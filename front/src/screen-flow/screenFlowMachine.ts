@@ -16,6 +16,8 @@ export type ScreenFlowEvent =
   | { type: 'selectMode'; mode: ScreenFlowMode }
   | { type: 'next' }
   | { type: 'completePerformance' }
+  | { type: 'applyLiveJangdanGuide' }
+  | { type: 'turnOffLiveJangdanGuide' }
   | { type: 'addAccompanimentTrack' }
   | { type: 'finishPractice' }
   | { type: 'publishShareTarget' }
@@ -48,6 +50,10 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeNext(state);
     case 'completePerformance':
       return routeFromScreen(state, 'S05', 'S07', event.type);
+    case 'applyLiveJangdanGuide':
+      return routeFromScreen(state, 'S10A', 'S05', event.type);
+    case 'turnOffLiveJangdanGuide':
+      return routeFromScreen(state, 'S10A', 'S05', event.type);
     case 'addAccompanimentTrack':
       return routeFromScreen(state, 'S10B', 'S07', event.type);
     case 'finishPractice':
