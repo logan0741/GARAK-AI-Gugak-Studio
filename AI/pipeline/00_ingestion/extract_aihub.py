@@ -3,8 +3,8 @@
 AIHub 국악 데이터셋에서 조×장단별 WAV 파일 선별 추출
 
 사용법:
-  python AI/extract_aihub.py
-  python AI/extract_aihub.py --max-per-combo 30 --output AI/data_aihub
+  python AI/pipeline/00_ingestion/extract_aihub.py
+  python AI/pipeline/00_ingestion/extract_aihub.py --max-per-combo 30 --output AI/data_aihub
 """
 from __future__ import annotations
 
@@ -176,7 +176,7 @@ def main() -> None:
     print(f"총 {total}개 WAV 파일 → {args.output}")
     print()
     print("다음 단계:")
-    print(f"  python AI/train_markov.py --data-dir {args.output}")
+    print(f"  python AI/pipeline/02_training/train_markov.py --data-dir {args.output}")
 
 
 if __name__ == "__main__":

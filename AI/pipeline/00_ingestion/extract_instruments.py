@@ -3,9 +3,9 @@
 AIHub 국악 데이터셋에서 가야금/대금 WAV 파일을 악기×조×장단별로 추출
 
 사용법:
-  python AI/extract_instruments.py
-  python AI/extract_instruments.py --instrument 가야금 --max-per-combo 30
-  python AI/extract_instruments.py --output AI/data_instruments
+  python AI/pipeline/00_ingestion/extract_instruments.py
+  python AI/pipeline/00_ingestion/extract_instruments.py --instrument 가야금 --max-per-combo 30
+  python AI/pipeline/00_ingestion/extract_instruments.py --output AI/data_instruments
 """
 from __future__ import annotations
 
@@ -184,7 +184,7 @@ def main() -> None:
         print(f"{inst:<8}{jo:<8}{jd:<10}{cnt:>6}")
     print("-" * 60)
     print(f"총 {total}개 WAV 추출 완료 → {args.output}")
-    print(f"\n다음: python AI/train_pitch_markov.py --data-dir {args.output}")
+    print(f"\n다음: python AI/pipeline/02_training/train_pitch_markov.py --data-dir {args.output}")
 
 
 if __name__ == "__main__":

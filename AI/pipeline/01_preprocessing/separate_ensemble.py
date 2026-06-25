@@ -174,7 +174,7 @@ def main() -> None:
         done += 1
 
     print("\n" + "-" * 60)
-    print(f"총 {done}개 분리 완료 → 재학습하려면: python AI/train_markov.py")
+    print(f"총 {done}개 분리 완료 → 재학습하려면: python AI/pipeline/02_training/train_markov.py")
 
 
 if __name__ == "__main__":

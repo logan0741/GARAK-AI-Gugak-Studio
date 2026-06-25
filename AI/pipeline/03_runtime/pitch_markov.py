@@ -20,13 +20,22 @@ except ImportError as exc:
     raise ImportError("pip install numpy librosa") from exc
 
 N_PITCHES = 12
-YUL_NAMES = ["황", "대", "태", "협", "고", "중", "유", "임", "이", "남", "무", "응"]
 
-# 평조: 황태중임남 → 상대적 반음 [0,2,5,7,9]  (장2도 간격 5음계)
-# 계면조: 황중임남응 → 상대적 반음 [0,3,5,7,10] (단3도 시작 5음계)
-JO_SCALE = {
-    "평조":  [0, 2, 5, 7, 9],
-    "계면조": [0, 3, 5, 7, 10],
+# 율명 ↔ 절대 MIDI pitch class (황=G=7 기준)
+# 황(G=7), 대(Ab=8), 태(A=9), 협(Bb=10), 고(B=11),
+# 중(C=0), 유(C#=1), 임(D=2), 이(Eb=3), 남(E=4), 무(F=5), 응(F#=6)
+PC_TO_YUL: dict[int, str] = {
+    7: "황", 8: "대", 9: "태", 10: "협", 11: "고",
+    0: "중", 1: "유", 2: "임", 3:  "이",  4: "남",  5: "무",  6: "응",
+}
+YUL_TO_PC: dict[str, int] = {v: k for k, v in PC_TO_YUL.items()}
+YUL_NAMES = [PC_TO_YUL[i] for i in range(12)]   # 중유임이남무응황대태협고
+
+# 평조 (황태중임남): G A C D E → [7, 9, 0, 2, 4]
+# 계면조 (황중임남응): G C D E F# → [7, 0, 2, 4, 6]
+JO_SCALE: dict[str, list[int]] = {
+    "평조":   [7, 9, 0, 2, 4],
+    "계면조": [7, 0, 2, 4, 6],
 }
 
 LAPLACE_ALPHA   = 1e-6

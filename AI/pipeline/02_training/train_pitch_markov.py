@@ -3,10 +3,10 @@
 가야금/대금 음고 마르코프 학습 파이프라인 CLI
 
 사용법:
-  python AI/train_pitch_markov.py                                   # 전체 학습
-  python AI/train_pitch_markov.py --instrument 가야금               # 가야금만
-  python AI/train_pitch_markov.py --instrument 가야금 --jangdan 중모리
-  python AI/train_pitch_markov.py --data-dir AI/data_instruments --output-dir AI/models
+  python AI/pipeline/02_training/train_pitch_markov.py                                   # 전체 학습
+  python AI/pipeline/02_training/train_pitch_markov.py --instrument 가야금               # 가야금만
+  python AI/pipeline/02_training/train_pitch_markov.py --instrument 가야금 --jangdan 중모리
+  python AI/pipeline/02_training/train_pitch_markov.py --data-dir AI/data_instruments --output-dir AI/models
 """
 from __future__ import annotations
 
@@ -15,6 +15,10 @@ import glob
 import os
 import sys
 import time
+
+RUNTIME_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "03_runtime"))
+if RUNTIME_DIR not in sys.path:
+    sys.path.insert(0, RUNTIME_DIR)
 
 from pitch_markov import (
     extract_note_sequence,
@@ -140,7 +144,7 @@ def main() -> None:
 
     if not os.path.isdir(args.data_dir):
         print(f"[ERROR] 데이터 디렉토리 없음: {args.data_dir}")
-        print("먼저 실행: python AI/extract_instruments.py")
+        print("먼저 실행: python AI/pipeline/00_ingestion/extract_instruments.py")
         sys.exit(1)
 
     os.makedirs(args.output_dir, exist_ok=True)
