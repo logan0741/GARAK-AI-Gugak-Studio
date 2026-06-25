@@ -106,6 +106,31 @@ test('defines documented cancel and disable transitions for track and jangdan fl
   });
 });
 
+test('defines S08 locked import as a documented same-screen action', () => {
+  const screenFlowDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),
+    'utf8',
+  );
+  const s08Section = screenFlowDoc.slice(
+    screenFlowDoc.indexOf('### S08 트랙 추가'),
+    screenFlowDoc.indexOf('### S09 추가 악기 녹음'),
+  );
+
+  expect(implementedScreenDefinitions.S08.primaryCtas).toEqual(
+    expect.arrayContaining([
+      'addInstrumentPerformance',
+      'addAccompaniment',
+      'showLockedImportTrackNotice',
+      'cancel',
+    ]),
+  );
+  expect(implementedScreenDefinitions.S08.transitions).not.toContainEqual(
+    expect.objectContaining({ action: 'showLockedImportTrackNotice' }),
+  );
+  expect(s08Section).toContain('가져오기');
+  expect(s08Section).toContain('가져오기는 이후 업데이트에서 지원할 예정이에요.');
+});
+
 test('keeps settings and login sync primary CTAs aligned with the screen-flow document', () => {
   expect(implementedScreenDefinitions.S22.primaryCtas).toEqual(
     expect.arrayContaining(['loginAndLoadMySongs', 'changeLanguage', 'manageLibrary']),

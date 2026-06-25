@@ -123,7 +123,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S08',
     name: 'Add Track',
     mvpStatus: 'required',
-    primaryCtas: ['addInstrumentPerformance', 'addAccompaniment', 'cancel'],
+    primaryCtas: ['addInstrumentPerformance', 'addAccompaniment', 'showLockedImportTrackNotice', 'cancel'],
     transitions: [
       { action: 'addInstrumentPerformance', target: 'S09' },
       { action: 'addAccompaniment', target: 'S10B' },
