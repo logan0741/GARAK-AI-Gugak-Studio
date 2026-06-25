@@ -437,6 +437,21 @@ test('connects S05 and S09 performance surfaces to captured input events', () =>
   expect(source).toContain('onPerformanceEvents={appendPerformanceEvents}');
 });
 
+test('keeps the performance PanResponder stable across callback prop updates', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('useCallback');
+  expect(source).toContain('useRef');
+  expect(source).toContain('const enabledRef = useRef(enabled);');
+  expect(source).toContain('enabledRef.current = enabled;');
+  expect(source).toContain('const onPerformanceEventsRef = useRef(onPerformanceEvents);');
+  expect(source).toContain('onPerformanceEventsRef.current = onPerformanceEvents;');
+  expect(source).toContain('const handleTouchFrame = useCallback(');
+  expect(source).toContain('onPerformanceEventsRef.current(events);');
+  expect(source).toContain('[handleTouchFrame]');
+  expect(source).not.toContain('[enabled, onPerformanceEvents, touchModel]');
+});
+
 test('connects S05 recording start separately from completion and missing-take guidance', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 

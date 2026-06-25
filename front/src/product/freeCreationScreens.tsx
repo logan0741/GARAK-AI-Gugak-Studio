@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, type ReactNode } from 'react';
 import {
   PanResponder,
   Pressable,
@@ -115,47 +115,55 @@ function PerformanceCaptureSurface({
   onPerformanceEvents: (events: PerformanceEvent[]) => void;
   style?: StyleProp<ViewStyle>;
 }) {
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+
+  const onPerformanceEventsRef = useRef(onPerformanceEvents);
+  onPerformanceEventsRef.current = onPerformanceEvents;
+
   const touchModel = useMemo(() => createTouchModel({ layout: PRODUCT_TOUCH_LAYOUT }), []);
+  const handleTouchFrame = useCallback(
+    (
+      phase: TouchFrame['phase'],
+      event: GestureResponderEvent,
+      gestureState: PanResponderGestureState,
+    ) => {
+      if (!enabledRef.current) {
+        return;
+      }
+
+      const nativeEvent = event.nativeEvent as GestureResponderEvent['nativeEvent'] & {
+        force?: number;
+      };
+      const events = touchModel.handleFrame({
+        phase,
+        pointerId: String(gestureState.stateID),
+        tsMs: Date.now(),
+        x: nativeEvent.locationX,
+        y: nativeEvent.locationY,
+        force: typeof nativeEvent.force === 'number' ? nativeEvent.force : undefined,
+      });
+
+      if (events.length > 0) {
+        onPerformanceEventsRef.current(events);
+      }
+    },
+    [touchModel],
+  );
   const performanceCapture = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => enabled,
-        onMoveShouldSetPanResponder: () => enabled,
+        onStartShouldSetPanResponder: () => enabledRef.current,
+        onMoveShouldSetPanResponder: () => enabledRef.current,
         onPanResponderGrant: (event, gestureState) => handleTouchFrame('start', event, gestureState),
         onPanResponderMove: (event, gestureState) => handleTouchFrame('move', event, gestureState),
         onPanResponderRelease: (event, gestureState) => handleTouchFrame('end', event, gestureState),
         onPanResponderTerminate: (event, gestureState) => handleTouchFrame('cancel', event, gestureState),
         onPanResponderTerminationRequest: () => true,
       }),
-    [enabled, onPerformanceEvents, touchModel],
+    [handleTouchFrame],
   );
   const captureHandlers = enabled ? performanceCapture.panHandlers : undefined;
-
-  function handleTouchFrame(
-    phase: TouchFrame['phase'],
-    event: GestureResponderEvent,
-    gestureState: PanResponderGestureState,
-  ) {
-    if (!enabled) {
-      return;
-    }
-
-    const nativeEvent = event.nativeEvent as GestureResponderEvent['nativeEvent'] & {
-      force?: number;
-    };
-    const events = touchModel.handleFrame({
-      phase,
-      pointerId: String(gestureState.stateID),
-      tsMs: Date.now(),
-      x: nativeEvent.locationX,
-      y: nativeEvent.locationY,
-      force: typeof nativeEvent.force === 'number' ? nativeEvent.force : undefined,
-    });
-
-    if (events.length > 0) {
-      onPerformanceEvents(events);
-    }
-  }
 
   return (
     <View {...captureHandlers} style={style}>
