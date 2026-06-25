@@ -125,11 +125,14 @@ export function IntroGuideContent({
 export function SettingsContent({
   state,
   dispatch,
+  onLogout,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
+  onLogout?: () => void;
 }) {
   const model = getSettingsViewModel(state);
+  const isLoggedIn = state.account.status === 'loggedIn';
 
   return (
     <View style={styles.stack}>
@@ -150,8 +153,8 @@ export function SettingsContent({
         />
       </View>
       <PrimaryPillButton
-        label="로그인하고 내 곡 불러오기"
-        onPress={() => dispatch(model.actions.loginAndLoadMySongs)}
+        label={isLoggedIn ? '로그아웃' : '로그인하고 내 곡 불러오기'}
+        onPress={isLoggedIn && onLogout !== undefined ? onLogout : () => dispatch(model.actions.loginAndLoadMySongs)}
       />
       <QuickAccessNav
         active="library"

@@ -12,6 +12,7 @@ import {
   RecordingSetup,
   ReferenceTrack,
   Take,
+  Track,
   Work,
 } from './studioTypes';
 
@@ -140,6 +141,48 @@ export function isWorkShareable(_work: Work): boolean {
   return false;
 }
 
+export function toggleWorkTrackMute(
+  work: Work,
+  input: {
+    trackId: string;
+    updatedAt: string;
+  },
+): Work {
+  const track = work.tracks.find((item) => item.id === input.trackId);
+  if (track === undefined) {
+    return work;
+  }
+
+  return {
+    ...work,
+    updatedAt: input.updatedAt,
+    tracks: work.tracks.map((item) =>
+      item.id === input.trackId ? { ...item, mute: !item.mute } : item,
+    ),
+  };
+}
+
+export function toggleWorkTrackSolo(
+  work: Work,
+  input: {
+    trackId: string;
+    updatedAt: string;
+  },
+): Work {
+  const target = work.tracks.find((track) => track.id === input.trackId);
+  if (target === undefined) {
+    return work;
+  }
+
+  const shouldSoloTarget = !target.solo;
+
+  return {
+    ...work,
+    updatedAt: input.updatedAt,
+    tracks: work.tracks.map((track) => setTrackSolo(track, track.id === input.trackId && shouldSoloTarget)),
+  };
+}
+
 export function exportWorkAudioPlaceholder(input: {
   id: string;
   work: Work;
@@ -255,6 +298,13 @@ function createInstrumentTrack(input: {
     mute: false,
     solo: false,
     createdAt: input.createdAt,
+  };
+}
+
+function setTrackSolo(track: Track, solo: boolean): Track {
+  return {
+    ...track,
+    solo,
   };
 }
 

@@ -15,8 +15,8 @@ VALID_SESSION = {
     "durationMs": 10000,
     "createdAtMs": 1700000000000,
     "events": [
-        {"id": "e1", "tsMs": 0, "type": "string_pluck", "stringIndex": 0, "velocity": 0.8},
-        {"id": "e2", "tsMs": 500, "type": "string_release", "stringIndex": 0},
+        {"id": "e1", "tsMs": 0, "type": "string_pluck", "stringIndex": 1, "velocity": 0.8},
+        {"id": "e2", "tsMs": 500, "type": "string_release", "stringIndex": 1},
     ],
 }
 
@@ -38,7 +38,7 @@ async def test_create_session_success(client: AsyncClient):
 async def test_create_session_events_over_limit(client: AsyncClient):
     """이벤트 20,000개 초과 → 422."""
     body = {**VALID_SESSION, "events": [
-        {"id": f"e{i}", "tsMs": i, "type": "string_pluck", "stringIndex": 0}
+        {"id": f"e{i}", "tsMs": i, "type": "string_pluck", "stringIndex": 1}
         for i in range(20_001)
     ]}
     response = await client.post("/api/sessions", json=body, headers=AUTH)
@@ -57,7 +57,7 @@ async def test_create_session_duration_over_limit(client: AsyncClient):
 async def test_create_session_invalid_event_type(client: AsyncClient):
     """유효하지 않은 이벤트 타입 → 422."""
     body = {**VALID_SESSION, "events": [
-        {"id": "e1", "tsMs": 0, "type": "invalid_type", "stringIndex": 0},
+        {"id": "e1", "tsMs": 0, "type": "invalid_type", "stringIndex": 1},
     ]}
     response = await client.post("/api/sessions", json=body, headers=AUTH)
     assert response.status_code == 422

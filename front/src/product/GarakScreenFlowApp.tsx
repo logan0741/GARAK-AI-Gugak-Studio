@@ -13,6 +13,7 @@ import {
   TrackLayerEditorContent,
 } from './freeCreationScreens';
 import {
+  AccountState,
   applyProductAction,
   createInitialGarakProductState,
   GarakProductAction,
@@ -50,18 +51,23 @@ import { GarakWordmark, QuickAccessNav } from './garakUi';
 import { getHomeScreenViewModel } from './homeScreenModel';
 
 export type GarakScreenFlowAppProps = {
+  account?: AccountState;
+  onLogout?: () => void;
   sampleManifests?: InstrumentSampleReadinessInput['sampleManifests'];
   sampleFallbackInstruments?: InstrumentSampleReadinessInput['fallbackInstruments'];
   services?: GarakProductServices;
 };
 
 export function GarakScreenFlowApp({
+  account,
+  onLogout,
   sampleManifests,
   sampleFallbackInstruments,
   services,
 }: GarakScreenFlowAppProps = {}) {
   const [state, setState] = useState(() =>
     createInitialGarakProductState({
+      account,
       sampleManifests,
       sampleFallbackInstruments,
     }),
@@ -182,11 +188,11 @@ export function GarakScreenFlowApp({
             ]}
             showsVerticalScrollIndicator={false}
           >
-            {renderScreenContent(state, dispatch, frameConfig.mode)}
+            {renderScreenContent(state, dispatch, frameConfig.mode, onLogout)}
           </ScrollView>
         ) : (
           <View key={currentScreen} style={[styles.content, contentStyle]}>
-            {renderScreenContent(state, dispatch, frameConfig.mode)}
+            {renderScreenContent(state, dispatch, frameConfig.mode, onLogout)}
           </View>
         )}
         {isHomeBrowsingSurface ? (
@@ -209,6 +215,7 @@ function renderScreenContent(
   state: GarakProductState,
   dispatch: (action: GarakProductAction) => void,
   frameMode: GarakScreenFrameMode,
+  onLogout?: () => void,
 ) {
   switch (state.screenFlow.currentScreen) {
     case 'S01':
@@ -252,7 +259,7 @@ function renderScreenContent(
     case 'S21':
       return <SharedDetailContent state={state} dispatch={dispatch} />;
     case 'S22':
-      return <SettingsContent state={state} dispatch={dispatch} />;
+      return <SettingsContent state={state} dispatch={dispatch} onLogout={onLogout} />;
     case 'S23':
       return <LoginSyncContent state={state} dispatch={dispatch} />;
   }

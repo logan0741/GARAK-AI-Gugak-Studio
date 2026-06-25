@@ -16,7 +16,7 @@ test('does not render a mocked OS status bar in the app shell', () => {
 });
 
 test('wires bundled sample readiness into the product app entry point', () => {
-  const source = readFileSync(resolve(process.cwd(), 'app/index.tsx'), 'utf8');
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakAuthEntryApp.tsx'), 'utf8');
   const statuses = resolveInstrumentSampleStatuses({
     sampleManifests: PRODUCT_SAMPLE_MANIFESTS,
     fallbackInstruments: PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,

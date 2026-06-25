@@ -46,9 +46,15 @@ import { buildPracticeResultFeedback, evaluatePracticeResult } from './practiceR
 
 export type { InstrumentSampleStatus } from './instrumentSampleReadiness';
 
-export type AccountState = {
-  status: 'guest' | 'loggedIn';
-};
+export type AccountState =
+  | {
+      status: 'guest';
+    }
+  | {
+      status: 'loggedIn';
+      userId: string;
+      email: string;
+    };
 
 export type ProductPlayerSelection =
   | { kind: 'work'; workId: string }
@@ -249,6 +255,7 @@ export type ScreenSummary = {
 export function createInitialGarakProductState(
   input: {
     now?: () => string;
+    account?: AccountState;
     sampleManifests?: InstrumentSampleReadinessInput['sampleManifests'];
     sampleFallbackInstruments?: InstrumentSampleReadinessInput['fallbackInstruments'];
   } = {},
@@ -262,7 +269,7 @@ export function createInitialGarakProductState(
       exportedAudios: [],
       practiceResults: [],
     },
-    account: {
+    account: input.account ?? {
       status: 'guest',
     },
     libraryTab: 'works',
@@ -702,9 +709,7 @@ export function applyProductAction(
     case 'completeLoginSync':
       return {
         ...state,
-        account: {
-          status: 'loggedIn',
-        },
+        account: resolveSyncedAccount(state.account),
         screenFlow:
           state.screenFlow.currentScreen === 'S23'
             ? transitionScreenFlow(state.screenFlow, { type: 'completeLoginSync' })
@@ -713,9 +718,7 @@ export function applyProductAction(
     case 'replaceLibrarySnapshot':
       return {
         ...state,
-        account: {
-          status: 'loggedIn',
-        },
+        account: resolveSyncedAccount(state.account),
         library: action.library,
       };
     case 'skipLoginSync':
@@ -1855,6 +1858,18 @@ function currentWorkTitle(state: GarakProductState): string {
 
 function accountLabel(state: GarakProductState): string {
   return state.account.status === 'guest' ? '게스트' : '로그인';
+}
+
+function resolveSyncedAccount(account: AccountState): Extract<AccountState, { status: 'loggedIn' }> {
+  if (account.status === 'loggedIn') {
+    return account;
+  }
+
+  return {
+    status: 'loggedIn',
+    userId: 'demo-user',
+    email: 'demo@garak.local',
+  };
 }
 
 function summary(
