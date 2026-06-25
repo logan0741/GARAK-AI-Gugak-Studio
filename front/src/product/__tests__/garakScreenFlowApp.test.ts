@@ -592,6 +592,18 @@ test('labels auth buttons without exposing decorative marks as button names', ()
   expect(source).toContain('importantForAccessibility="no-hide-descendants"');
 });
 
+test('keeps the login brand and auth actions visually grouped', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/authScreens.tsx'), 'utf8');
+  const loginScreenStyle = source.slice(source.indexOf('loginScreen:'), source.indexOf('loginBrand:'));
+  const homeIndicatorStyle = source.slice(source.indexOf('homeIndicator:'), source.indexOf('});', source.indexOf('homeIndicator:')));
+
+  expect(loginScreenStyle).not.toContain("justifyContent: 'space-between'");
+  expect(loginScreenStyle).toContain("justifyContent: 'center'");
+  expect(loginScreenStyle).toContain('gap: 104');
+  expect(homeIndicatorStyle).toContain("position: 'absolute'");
+  expect(homeIndicatorStyle).toContain('bottom: 9');
+});
+
 test('uses the Figma stacked track add flow for S08', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
