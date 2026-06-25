@@ -393,13 +393,37 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
   expect(source).toContain('LandscapeStageActionHits');
   expect(source).toContain('LandscapeStageNotice');
   expect(source).toContain("visible={state.freePlayNotice === 'missingTake'}");
-  expect(source).toContain("accessibilityLabel=\"녹음 시작\"");
+  expect(source).toContain("accessibilityLabel={isRecordingPerformance ? '연주 완료' : '녹음 시작'}");
   expect(source).toContain("type: 'openFreePlayRecordingSetup'");
   expect(source).toContain("accessibilityLabel=\"장단 설정\"");
   expect(source).toContain("type: 'openLiveJangdanGuide'");
   expect(source).not.toContain('landscapeStageLayerHit');
-  expect(source).toContain("accessibilityLabel=\"연주 완료\"");
   expect(source).toContain("type: 'completePerformance'");
+});
+
+test('keeps S05 landscape control hits on visible controls instead of the instrument corners', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const freePlaySource = source.slice(
+    source.indexOf('export function FreePlayContent'),
+    source.indexOf('function LandscapeStageNotice'),
+  );
+  const actionHitsSource = source.slice(
+    source.indexOf('function LandscapeStageActionHits'),
+    source.indexOf('export function TrackLayerEditorContent'),
+  );
+  const primaryHitStyle = source.slice(
+    source.indexOf('landscapeStagePrimaryHit:'),
+    source.indexOf('landscapeStageJangdanHit:'),
+  );
+
+  expect(freePlaySource).toContain('isRecordingPerformance={isRecordingPerformance}');
+  expect(actionHitsSource).toContain('isRecordingPerformance');
+  expect(actionHitsSource).toContain("type: isRecordingPerformance ? 'completePerformance' : 'openFreePlayRecordingSetup'");
+  expect(actionHitsSource).not.toContain('landscapeStageCompleteHit');
+  expect(primaryHitStyle).toContain('top: 16');
+  expect(primaryHitStyle).toContain('right: 64');
+  expect(primaryHitStyle).toContain('width: 44');
+  expect(primaryHitStyle).not.toContain('bottom: 0');
 });
 
 test('connects S05 and S09 performance surfaces to captured input events', () => {

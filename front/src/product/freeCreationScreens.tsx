@@ -371,7 +371,7 @@ export function FreePlayContent({
             <DaegeumLandscapeStageArtwork />
           </PerformanceCaptureSurface>
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
-          <LandscapeStageActionHits dispatch={dispatch} />
+          <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : usesFigmaGayageumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
@@ -383,7 +383,7 @@ export function FreePlayContent({
             <GayageumLandscapeStageArtwork />
           </PerformanceCaptureSurface>
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
-          <LandscapeStageActionHits dispatch={dispatch} />
+          <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : usesFigmaJangguLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
@@ -395,7 +395,7 @@ export function FreePlayContent({
             <JangguLandscapeStageArtwork />
           </PerformanceCaptureSurface>
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
-          <LandscapeStageActionHits dispatch={dispatch} />
+          <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : (
         <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
@@ -540,7 +540,13 @@ function FreePlayRecordingSetupSheet({
   );
 }
 
-function LandscapeStageActionHits({ dispatch }: { dispatch: ProductDispatch }) {
+function LandscapeStageActionHits({
+  dispatch,
+  isRecordingPerformance,
+}: {
+  dispatch: ProductDispatch;
+  isRecordingPerformance: boolean;
+}) {
   return (
     <>
       <Pressable
@@ -550,22 +556,20 @@ function LandscapeStageActionHits({ dispatch }: { dispatch: ProductDispatch }) {
         style={styles.jangguLandscapeBackHit}
       />
       <Pressable
-        accessibilityLabel="녹음 시작"
+        accessibilityLabel={isRecordingPerformance ? '연주 완료' : '녹음 시작'}
         accessibilityRole="button"
-        onPress={() => dispatch({ type: 'openFreePlayRecordingSetup' })}
-        style={[styles.landscapeStageActionHit, styles.landscapeStageRecordHit]}
+        onPress={() =>
+          dispatch({
+            type: isRecordingPerformance ? 'completePerformance' : 'openFreePlayRecordingSetup',
+          })
+        }
+        style={[styles.landscapeStageActionHit, styles.landscapeStagePrimaryHit]}
       />
       <Pressable
         accessibilityLabel="장단 설정"
         accessibilityRole="button"
         onPress={() => dispatch({ type: 'openLiveJangdanGuide' })}
         style={[styles.landscapeStageActionHit, styles.landscapeStageJangdanHit]}
-      />
-      <Pressable
-        accessibilityLabel="연주 완료"
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'completePerformance' })}
-        style={[styles.landscapeStageActionHit, styles.landscapeStageCompleteHit]}
       />
     </>
   );
@@ -2395,23 +2399,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 3,
   },
-  landscapeStageRecordHit: {
-    height: 52,
-    right: 34,
-    top: 82,
-    width: 52,
-  },
-  landscapeStageJangdanHit: {
-    height: 52,
-    right: 0,
-    top: 82,
+  landscapeStagePrimaryHit: {
+    height: 44,
+    right: 64,
+    top: 16,
     width: 44,
   },
-  landscapeStageCompleteHit: {
-    bottom: 0,
-    height: 96,
-    right: 0,
-    width: 172,
+  landscapeStageJangdanHit: {
+    height: 44,
+    right: 20,
+    top: 16,
+    width: 44,
   },
   landscapeStageNotice: {
     alignSelf: 'center',
