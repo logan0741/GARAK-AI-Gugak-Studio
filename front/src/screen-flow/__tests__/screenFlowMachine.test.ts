@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { expect, test } from 'vitest';
 import {
   EXCLUDED_SCREEN_IDS,
@@ -91,8 +93,86 @@ test('documents S23 skip as returning to the entry surface', () => {
   });
 });
 
-test('routes S01 Next to S04 when free creation mode is selected', () => {
-  const state = transitionScreenFlow(createInitialScreenFlowState(), {
+test('defines S01 as the Figma hero entry that opens the S03 mode guide', () => {
+  expect(implementedScreenDefinitions.S01.primaryCtas).toEqual([
+    'playHero',
+    'language',
+    'library',
+    'shareFeed',
+    'settings',
+  ]);
+  expect(implementedScreenDefinitions.S01.transitions).toContainEqual({
+    action: 'introGuide',
+    target: 'S03',
+  });
+  expect(implementedScreenDefinitions.S01.transitions).not.toContainEqual({
+    action: 'nextFreeCreation',
+    target: 'S04',
+  });
+  expect(implementedScreenDefinitions.S01.transitions).not.toContainEqual({
+    action: 'nextPractice',
+    target: 'S13',
+  });
+
+  expect(implementedScreenDefinitions.S03.primaryCtas).toEqual([
+    'selectFreeCreationMode',
+    'selectPracticeMode',
+    'next',
+  ]);
+  expect(implementedScreenDefinitions.S03.transitions).toContainEqual({
+    action: 'nextFreeCreation',
+    target: 'S04',
+  });
+  expect(implementedScreenDefinitions.S03.transitions).toContainEqual({
+    action: 'nextPractice',
+    target: 'S13',
+  });
+  expect(implementedScreenDefinitions.S03.transitions).not.toContainEqual({
+    action: 'skip',
+    target: 'S04',
+  });
+  expect(implementedScreenDefinitions.S03.transitions).not.toContainEqual({
+    action: 'nextStep',
+    target: 'S05',
+  });
+});
+
+test('documents S01 hero entry and S03 mode selection as the current authority', () => {
+  const screenFlowDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),
+    'utf8',
+  );
+  const designDoc = readFileSync(resolve(process.cwd(), 'docs/design/DESIGN.md'), 'utf8');
+  const changeDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/changes/2026-06-25-s01-home-hero-entry.md'),
+    'utf8',
+  );
+
+  expect(screenFlowDoc).toContain('S01 홈은 Figma의 단일 hero entry를 우선한다.');
+  expect(screenFlowDoc).toContain('S03 `홈-자유창작모드`에서 `자유창작 모드 / 따라하기 모드`를 선택한다.');
+  expect(screenFlowDoc).not.toContain('홈의 1차 선택은 `자유창작 모드 / 따라하기 모드`이다.');
+  expect(screenFlowDoc).not.toContain('S01 홈의 따라하기 모드 선택 상태로 흡수한다.');
+  expect(designDoc).toContain('홈의 1차 행동은 hero `PLAY` 진입이다.');
+  expect(designDoc).not.toContain('홈의 1차 선택은 `자유창작 모드 / 따라하기 모드` segmented control이다.');
+  expect(changeDoc).toContain('2026-06-25');
+  expect(changeDoc).toContain('S01에서 모드 토글을 제거');
+});
+
+test('routes S01 hero entry to S03 mode selection', () => {
+  const next = transitionScreenFlow(createInitialScreenFlowState(), {
+    type: 'navigate',
+    target: 'S03',
+  });
+
+  expect(next.currentScreen).toBe('S03');
+  expect(next.history).toEqual(['S01']);
+});
+
+test('routes S03 Next to S04 when free creation mode is selected', () => {
+  const state = transitionScreenFlow(createInitialScreenFlowState({
+    currentScreen: 'S03',
+    history: ['S01'],
+  }), {
     type: 'selectMode',
     mode: 'freeCreation',
   });
@@ -100,11 +180,14 @@ test('routes S01 Next to S04 when free creation mode is selected', () => {
   const next = transitionScreenFlow(state, { type: 'next' });
 
   expect(next.currentScreen).toBe('S04');
-  expect(next.history).toEqual(['S01']);
+  expect(next.history).toEqual(['S01', 'S03']);
 });
 
-test('routes S01 Next to S13 when practice mode is selected', () => {
-  const state = transitionScreenFlow(createInitialScreenFlowState(), {
+test('routes S03 Next to S13 when practice mode is selected', () => {
+  const state = transitionScreenFlow(createInitialScreenFlowState({
+    currentScreen: 'S03',
+    history: ['S01'],
+  }), {
     type: 'selectMode',
     mode: 'practice',
   });
@@ -112,7 +195,7 @@ test('routes S01 Next to S13 when practice mode is selected', () => {
   const next = transitionScreenFlow(state, { type: 'next' });
 
   expect(next.currentScreen).toBe('S13');
-  expect(next.history).toEqual(['S01']);
+  expect(next.history).toEqual(['S01', 'S03']);
 });
 
 test('allows the S03 mode guide to enter the practice song flow', () => {
@@ -127,7 +210,7 @@ test('allows the S03 mode guide to enter the practice song flow', () => {
   expect(next.history).toEqual(['S01', 'S03']);
 });
 
-test('rejects S01 mode selection from other screens', () => {
+test('rejects S03 mode selection from other screens', () => {
   const state = createInitialScreenFlowState({
     currentScreen: 'S13',
     history: ['S01'],
@@ -139,7 +222,7 @@ test('rejects S01 mode selection from other screens', () => {
       type: 'selectMode',
       mode: 'freeCreation',
     }),
-  ).toThrow('selectMode is only available from S01');
+  ).toThrow('selectMode is only available from S03');
 });
 
 test('routes S05 completion directly to S07 without entering S06', () => {

@@ -57,12 +57,10 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S01',
     name: 'Home',
     mvpStatus: 'required',
-    primaryCtas: ['selectFreeCreationMode', 'selectPracticeMode', 'next'],
+    primaryCtas: ['playHero', 'language', 'library', 'shareFeed', 'settings'],
     transitions: [
       { action: 'language', target: 'S02' },
       { action: 'introGuide', target: 'S03' },
-      { action: 'nextFreeCreation', target: 'S04' },
-      { action: 'nextPractice', target: 'S13' },
       { action: 'library', target: 'S18' },
       { action: 'shareFeed', target: 'S20' },
       { action: 'settings', target: 'S22' },
@@ -77,13 +75,12 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
   },
   S03: {
     id: 'S03',
-    name: 'Intro Guide',
+    name: 'Mode Guide',
     mvpStatus: 'recommended',
-    primaryCtas: ['nextStep', 'skip', 'practiceMode'],
+    primaryCtas: ['selectFreeCreationMode', 'selectPracticeMode', 'next'],
     transitions: [
-      { action: 'nextStep', target: 'S05' },
-      { action: 'skip', target: 'S04' },
-      { action: 'practiceMode', target: 'S13' },
+      { action: 'nextFreeCreation', target: 'S04' },
+      { action: 'nextPractice', target: 'S13' },
     ],
   },
   S04: {

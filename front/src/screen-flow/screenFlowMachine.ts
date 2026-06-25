@@ -55,8 +55,8 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
 }
 
 function selectMode(state: ScreenFlowState, mode: ScreenFlowMode): ScreenFlowState {
-  if (state.currentScreen !== 'S01') {
-    throw new Error('selectMode is only available from S01');
+  if (state.currentScreen !== 'S03') {
+    throw new Error('selectMode is only available from S03');
   }
 
   return {
@@ -66,7 +66,7 @@ function selectMode(state: ScreenFlowState, mode: ScreenFlowMode): ScreenFlowSta
 }
 
 function routeNext(state: ScreenFlowState): ScreenFlowState {
-  if (state.currentScreen !== 'S01') {
+  if (state.currentScreen !== 'S03') {
     throw new Error(`next is not available from ${state.currentScreen}`);
   }
 

@@ -73,9 +73,10 @@ Red는 기본적으로 오류 색이 아니라 브랜드 색이다. 오류/위�
 
 ### Segmented Control
 
-- 홈의 1차 선택은 `자유창작 모드 / 따라하기 모드` segmented control이다.
+- 홈의 1차 행동은 hero `PLAY` 진입이다.
+- `자유창작 모드 / 따라하기 모드` segmented control은 S03 `홈-자유창작모드`의 연주 모드 선택에 둔다.
 - active segment는 navy 또는 dark fill, inactive segment는 soft/off-white fill을 쓴다.
-- segmented control은 홈의 모드 선택에 우선 사용하고, 전역 내비게이션으로 확장하지 않는다.
+- segmented control은 S03의 모드 선택에 우선 사용하고, 전역 내비게이션으로 확장하지 않는다.
 
 ### Buttons
 
@@ -108,8 +109,8 @@ Red는 기본적으로 오류 색이 아니라 브랜드 색이다. 오류/위�
 | --- | --- | --- |
 | 온보딩 3종 `GARAK` 화면 | 로고/splash 에셋 후보. 앱 사용 전 필수 관문으로 확정하지 않는다. | 이 문서 4장, `../product/garak-product-brief.md` |
 | 로그인 화면 | 선택 로그인 또는 S23 동기화 흐름의 참고. 첫 실행 관문으로 쓰지 않는다. | `../product/screen-flow/current-screen-flow.md` S22/S23 |
-| 홈 | S01 홈. 모드 segmented control, 큰 단일 카드, home quick access를 유지한다. | `../product/screen-flow/current-screen-flow.md` S01 |
-| 자유창작/따라하기 선택 | S01 상태 또는 S04/S13 진입 전 선택 화면의 참고. 독립 중복 화면을 만들지 않는다. | `../product/screen-flow/current-screen-flow.md` S01/S04/S13 |
+| 홈 | S01 홈. 큰 단일 hero 카드, PLAY 진입, home quick access를 유지한다. | `../product/screen-flow/current-screen-flow.md` S01 |
+| 자유창작/따라하기 선택 | S03 `홈-자유창작모드`의 segmented control 참고. 독립 중복 화면을 만들지 않는다. | `../product/screen-flow/current-screen-flow.md` S03/S04/S13 |
 | 악기 선택 | S04/S14 참고. MVP 3악기와 잠금 확장 슬롯을 구분한다. | `../product/screen-flow/current-screen-flow.md` S04/S14 |
 | 가야금 연주면 | S05/S09 가야금 입력면 참고. 가야금은 버튼 배열이 아니라 현 중심 입력면이다. | `../domain/README.md`, `../product/screen-flow/current-screen-flow.md` S05/S09 |
 | Mix / 플레이어 / 보관함 화면 | S07/S17/S18/S19/S20 계열 참고. 자동 저장 Work와 공유 가능한 산출물을 구분한다. | `../product/screen-flow/current-screen-flow.md` S07/S17-S20 |

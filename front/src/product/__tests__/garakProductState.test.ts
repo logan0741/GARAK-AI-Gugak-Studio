@@ -36,7 +36,20 @@ test('starts on the GARAK home in guest free creation mode', () => {
   expect(state.account.status).toBe('guest');
   expect(state.selectedMode).toBe('freeCreation');
   expect(summary.title).toBe('GARAK');
-  expect(summary.primaryCtas).toContain('Next');
+  expect(summary.description).toContain('PLAY');
+  expect(summary.primaryCtas).toEqual(expect.arrayContaining(['PLAY']));
+  expect(summary.primaryCtas).not.toContain('Next');
+});
+
+test('summarizes S03 as the mode guide opened from the home hero', () => {
+  const state = applyProductAction(createInitialGarakProductState(), { type: 'navigate', target: 'S03' });
+  const summary = getCurrentScreenSummary(state);
+
+  expect(summary.title).toBe('연주 모드 선택');
+  expect(summary.description).toContain('자유창작');
+  expect(summary.description).toContain('따라하기');
+  expect(summary.primaryCtas).toEqual(expect.arrayContaining(['자유창작 모드', '따라하기 모드', 'NEXT']));
+  expect(summary.primaryCtas).not.toContain('건너뛰기');
 });
 
 test('moves through free creation selection to S05 with an MVP instrument', () => {

@@ -319,6 +319,22 @@ export function applyProductAction(
         }),
       };
     case 'selectMode':
+      if (state.screenFlow.currentScreen === 'S01') {
+        const modeGuideScreenFlow = transitionScreenFlow(state.screenFlow, {
+          type: 'navigate',
+          target: 'S03',
+        });
+
+        return {
+          ...state,
+          selectedMode: action.mode,
+          screenFlow: transitionScreenFlow(modeGuideScreenFlow, {
+            type: 'selectMode',
+            mode: action.mode,
+          }),
+        };
+      }
+
       return {
         ...state,
         selectedMode: action.mode,
@@ -331,10 +347,10 @@ export function applyProductAction(
       return {
         ...state,
         selectedMode: action.mode,
-        screenFlow: {
-          ...state.screenFlow,
+        screenFlow: transitionScreenFlow(state.screenFlow, {
+          type: 'selectMode',
           mode: action.mode,
-        },
+        }),
       };
     case 'setLanguage':
       return {
@@ -780,11 +796,8 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         id: screenId,
         title: GARAK_BRAND.serviceName,
         eyebrow: GARAK_BRAND.subtitle,
-        description:
-          state.selectedMode === 'freeCreation'
-            ? '자유창작 모드에서 가야금, 장구, 대금을 골라 나만의 국악 작업을 시작해요.'
-            : '따라하기 모드에서 민요를 고르고 악기별 가이드에 맞춰 연습해요.',
-        primaryCtas: ['자유창작 모드', '따라하기 모드', 'Next'],
+        description: 'GARAK과 함께 국악 연주하기 hero의 PLAY로 연주 모드 선택 화면에 진입해요.',
+        primaryCtas: ['PLAY', '언어 변경', '마이', '쉐어', '설정'],
       };
     case 'S04':
       return summary(
@@ -915,9 +928,10 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
     case 'S02':
       return summary(screenId, '언어 전환', '설정', '한국어와 영어 표시를 바꿔요.', ['한국어', 'English']);
     case 'S03':
-      return summary(screenId, '입문 가이드', '연주법', '농현과 추성 같은 기본 제스처를 익혀요.', [
-        '다음 단계로',
-        '건너뛰기',
+      return summary(screenId, '연주 모드 선택', '홈-자유창작모드', '자유창작 모드와 따라하기 모드 중 현재 연주 흐름을 선택해요.', [
+        '자유창작 모드',
+        '따라하기 모드',
+        'NEXT',
       ]);
   }
 }
@@ -1058,7 +1072,7 @@ function openLayerEditor(state: GarakProductState): GarakProductState {
 }
 
 function routeProductNext(state: GarakProductState): ScreenFlowState {
-  if (state.screenFlow.currentScreen === 'S01') {
+  if (state.screenFlow.currentScreen === 'S03') {
     return transitionScreenFlow(state.screenFlow, { type: 'next' });
   }
 
