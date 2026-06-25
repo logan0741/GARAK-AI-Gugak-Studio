@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { GARAK_COLORS } from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
 import { GarakProductAction, GarakProductState } from './garakProductState';
@@ -11,6 +11,7 @@ import {
 } from './garakUi';
 import { MVP_INSTRUMENTS, PRACTICE_SONGS, getInstrumentName } from './productFixtures';
 import { getPracticeResultModel } from './practiceResultModel';
+import { GarakText as Text } from './garakTypography';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 

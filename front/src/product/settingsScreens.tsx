@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import {
   GARAK_AUTH_BUTTON_LAYOUT,
@@ -16,6 +16,7 @@ import {
   garakCardShadow,
 } from './garakUi';
 import { getLoginSyncViewModel } from './loginSyncScreenModel';
+import { GarakText as Text } from './garakTypography';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 const FREE_CREATION_GUIDE_STEPS = ['악기 선택', '연주 & 녹음', '트랙추가', '믹싱', 'AI 반주 추가', '저장 및 공유'] as const;

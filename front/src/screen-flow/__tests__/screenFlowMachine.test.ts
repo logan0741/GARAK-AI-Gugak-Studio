@@ -312,6 +312,7 @@ test('defines S20 share feed detail entry from the detailed document', () => {
     expect.arrayContaining([
       { action: 'playLibraryItem', target: 'S19' },
       { action: 'openSharedRecordingDetail', target: 'S21' },
+      { action: 'settings', target: 'S22' },
     ]),
   );
 });

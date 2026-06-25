@@ -1366,6 +1366,16 @@ test('summarizes S20 share feed detail entry from the detailed document', () => 
   );
 });
 
+test('opens settings from the S20 share feed profile button route', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S22' });
+
+  expect(state.screenFlow.currentScreen).toBe('S22');
+  expect(state.screenFlow.history.at(-1)).toBe('S20');
+});
+
 test('opens the S20 share feed player through the connected library player action', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

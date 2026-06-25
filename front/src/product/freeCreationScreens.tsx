@@ -2,7 +2,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   type StyleProp,
   type ViewStyle,
   useWindowDimensions,
@@ -25,6 +24,7 @@ import {
   InstrumentPreviewStageArtwork,
   JangguLandscapeStageArtwork,
 } from './garakArtworkPanels';
+import { GarakText as Text } from './garakTypography';
 import {
   InstrumentBadge,
   InstrumentVisual,

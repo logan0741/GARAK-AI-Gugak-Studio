@@ -1,4 +1,4 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { GARAK_COLORS } from './garakDesignSystem';
 import { GarakLogo } from './GarakLogo';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
@@ -12,6 +12,7 @@ import {
   MyLibraryPlaylistRow,
 } from './libraryScreenModel';
 import { garakCardShadow } from './garakUi';
+import { GarakText as Text, GarakTextInput as TextInput } from './garakTypography';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 

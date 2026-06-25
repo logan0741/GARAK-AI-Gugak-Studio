@@ -1,4 +1,4 @@
-import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { GarakProductAction, GarakProductState, ProductPlayerSelection } from './garakProductState';
@@ -18,6 +18,7 @@ import {
   SecondaryPillButton,
   garakCardShadow,
 } from './garakUi';
+import { GarakText as Text } from './garakTypography';
 
 type ProductDispatch = (action: GarakProductAction) => void;
 

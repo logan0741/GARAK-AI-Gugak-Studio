@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleProp,
   StyleSheet,
-  Text,
   View,
   ViewStyle,
 } from 'react-native';
@@ -15,6 +14,7 @@ import { GARAK_COLORS, GARAK_LAYOUT, GARAK_RADIUS } from './garakDesignSystem';
 import { GarakLogo } from './GarakLogo';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { getInstrumentName } from './productFixtures';
+import { GarakText as Text } from './garakTypography';
 
 type ButtonTone = 'navy' | 'red' | 'amber' | 'light' | 'outline';
 

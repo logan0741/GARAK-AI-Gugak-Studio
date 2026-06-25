@@ -274,6 +274,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
       { action: 'openSharedRecordingDetail', target: 'S21' },
       { action: 'home', target: 'S01' },
       { action: 'library', target: 'S18' },
+      { action: 'settings', target: 'S22' },
     ],
   },
   S21: {

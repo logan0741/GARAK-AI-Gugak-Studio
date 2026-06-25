@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   AccompanimentTrackContent,
@@ -49,6 +49,7 @@ import {
 } from './garakScreenFrame';
 import { GarakWordmark, QuickAccessNav } from './garakUi';
 import { getHomeScreenViewModel } from './homeScreenModel';
+import { GarakText as Text } from './garakTypography';
 
 export type GarakScreenFlowAppProps = {
   account?: AccountState;
