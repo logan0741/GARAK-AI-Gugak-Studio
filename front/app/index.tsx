@@ -1,9 +1,7 @@
 import { useFonts } from 'expo-font';
 
 import { GarakAuthEntryApp } from '../src/product/GarakAuthEntryApp';
-import { applyGarakTextDefaults, GARAK_FONT_ASSETS } from '../src/product/garakTypography';
-
-applyGarakTextDefaults();
+import { GARAK_FONT_ASSETS } from '../src/product/garakTypography';
 
 export default function Index() {
   const [fontsLoaded] = useFonts(GARAK_FONT_ASSETS);

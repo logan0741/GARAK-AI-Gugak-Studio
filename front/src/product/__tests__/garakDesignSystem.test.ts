@@ -93,7 +93,9 @@ test('loads Pretendard as the GARAK app font', () => {
   expect(existsSync(resolve(fontAssetsDir, 'PretendardVariable.ttf'))).toBe(true);
   expect(existsSync(resolve(fontAssetsDir, 'Pretendard-LICENSE.txt'))).toBe(true);
   expect(appSource).toContain('useFonts(GARAK_FONT_ASSETS)');
-  expect(appSource).toContain('applyGarakTextDefaults()');
-  expect(typographySource).toContain('React.cloneElement');
-  expect(typographySource).toContain('TextInput');
+  expect(appSource).not.toContain('applyGarakTextDefaults()');
+  expect(typographySource).toContain('withGarakFontStyle');
+  expect(typographySource).toContain('GarakTextInput');
+  expect(typographySource).not.toContain('defaultProps');
+  expect(typographySource).not.toContain('React.cloneElement');
 });

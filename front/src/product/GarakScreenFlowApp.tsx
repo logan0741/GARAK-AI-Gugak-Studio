@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -58,6 +58,18 @@ export type GarakScreenFlowAppProps = {
   services?: GarakProductServices;
 };
 
+type PendingProductEffect = {
+  id: number;
+  state: GarakProductState;
+  action: GarakProductAction;
+};
+
+type GarakProductRuntimeState = {
+  productState: GarakProductState;
+  pendingEffects: PendingProductEffect[];
+  nextEffectId: number;
+};
+
 export function GarakScreenFlowApp({
   account,
   onLogout,
@@ -65,17 +77,21 @@ export function GarakScreenFlowApp({
   sampleFallbackInstruments,
   services,
 }: GarakScreenFlowAppProps = {}) {
-  const [state, setState] = useState(() =>
-    createInitialGarakProductState({
+  const handledEffectIdsRef = useRef<Set<number>>(new Set());
+  const [runtimeState, setRuntimeState] = useState<GarakProductRuntimeState>(() => ({
+    productState: createInitialGarakProductState({
       account,
       sampleManifests,
       sampleFallbackInstruments,
     }),
-  );
+    pendingEffects: [],
+    nextEffectId: 1,
+  }));
   const productServices = useMemo(
     () => services ?? createNoopGarakProductServices(),
     [services],
   );
+  const state = runtimeState.productState;
   const currentScreen = state.screenFlow.currentScreen;
   const isHome = currentScreen === 'S01';
   const isLibrary = currentScreen === 'S18';
@@ -95,21 +111,50 @@ export function GarakScreenFlowApp({
       ? styles.immersiveContent
       : undefined;
 
-  function dispatch(action: GarakProductAction) {
-    setState((current) => {
-      const next = applyProductAction(current, action);
-
-      void runGarakProductEffect({
+  const dispatch = useCallback((action: GarakProductAction) => {
+    setRuntimeState((current) => {
+      const next = applyProductAction(current.productState, action);
+      const pendingEffect: PendingProductEffect = {
+        id: current.nextEffectId,
         state: next,
+        action,
+      };
+
+      return {
+        productState: next,
+        pendingEffects: [...current.pendingEffects, pendingEffect],
+        nextEffectId: current.nextEffectId + 1,
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    const effectsToRun = runtimeState.pendingEffects.filter(
+      ({ id }) => !handledEffectIdsRef.current.has(id),
+    );
+
+    if (effectsToRun.length === 0) {
+      return;
+    }
+
+    effectsToRun.forEach(({ id }) => handledEffectIdsRef.current.add(id));
+    const effectIds = new Set(effectsToRun.map(({ id }) => id));
+
+    setRuntimeState((current) => ({
+      ...current,
+      pendingEffects: current.pendingEffects.filter(({ id }) => !effectIds.has(id)),
+    }));
+
+    effectsToRun.forEach(({ state: effectState, action }) => {
+      void runGarakProductEffect({
+        state: effectState,
         action,
         services: productServices,
       }).then((followUpActions) => {
         followUpActions.forEach(dispatch);
       });
-
-      return next;
     });
-  }
+  }, [dispatch, productServices, runtimeState.pendingEffects]);
 
   return (
     <SafeAreaProvider style={styles.provider}>
