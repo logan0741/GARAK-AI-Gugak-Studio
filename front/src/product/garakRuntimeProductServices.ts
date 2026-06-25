@@ -1,4 +1,5 @@
 import type { AuthSessionStore } from './authSessionStore';
+import type { AuthStoragePort } from './authSessionStore';
 import {
   createHttpGarakProductServices,
   type GarakFetch,
@@ -7,12 +8,16 @@ import {
   createNoopGarakProductServices,
   type GarakProductServices,
 } from './garakProductServices';
+import { createLocalGarakProductServices } from './localGarakProductServices';
+import type { GarakSharePort } from './localGarakProductServices';
 
 export type RuntimeGarakProductServicesInput = {
   apiBaseUrl?: string;
   fetch?: GarakFetch;
   getAccessToken?: () => Promise<string | undefined>;
   sessionStore?: AuthSessionStore;
+  libraryStorage?: AuthStoragePort;
+  share?: GarakSharePort;
 };
 
 export function createRuntimeGarakProductServices({
@@ -20,8 +25,11 @@ export function createRuntimeGarakProductServices({
   fetch,
   getAccessToken,
   sessionStore,
+  libraryStorage,
+  share,
 }: RuntimeGarakProductServicesInput = {}): GarakProductServices {
-  const fallbackServices = createNoopGarakProductServices();
+  const fallbackServices = createLocalGarakProductServices({ storage: libraryStorage, share });
+  const noopServices = createNoopGarakProductServices();
   const normalizedBaseUrl = apiBaseUrl?.trim();
 
   if (!normalizedBaseUrl) {
@@ -38,7 +46,7 @@ export function createRuntimeGarakProductServices({
     ...httpServices,
     audio: {
       ...httpServices.audio,
-      playPerformanceEvents: fallbackServices.audio.playPerformanceEvents,
+      playPerformanceEvents: noopServices.audio.playPerformanceEvents,
     },
   };
 }

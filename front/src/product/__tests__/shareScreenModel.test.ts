@@ -301,6 +301,8 @@ test('prepares the selected exported audio as the S17 share target', () => {
     instrumentLabel: '장구, 가야금',
     sourceLabel: '출처 작업',
     isPreviewing: false,
+    isPublishing: false,
+    publishButtonLabel: expect.any(String),
   });
 });
 
@@ -367,6 +369,8 @@ test('prepares the latest practice result when S17 is opened from practice shari
     instrumentLabel: '가야금',
     sourceLabel: '따라하기 결과',
     isPreviewing: false,
+    isPublishing: false,
+    publishButtonLabel: expect.any(String),
   });
 });
 
@@ -491,6 +495,8 @@ test('does not prepare an auto-saved work as a direct S17 share target', () => {
     instrumentLabel: '사용 악기 없음',
     sourceLabel: '공유 대상 없음',
     isPreviewing: false,
+    isPublishing: false,
+    publishButtonLabel: expect.any(String),
   });
 });
 

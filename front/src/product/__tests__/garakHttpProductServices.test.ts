@@ -85,7 +85,13 @@ describe('HTTP Garak product services', () => {
       fetch: async () => jsonResponse(501, { message: 'not implemented' }),
     });
 
-    await expect(services.share.publishShareTarget({ kind: 'practiceResult', id: 'practice-1' })).resolves.toEqual({
+    await expect(
+      services.share.publishShareTarget({
+        target: { kind: 'practiceResult', id: 'practice-1' },
+        title: 'Practice result',
+        message: 'Practice result',
+      }),
+    ).resolves.toEqual({
       status: 'unavailable',
     });
   });

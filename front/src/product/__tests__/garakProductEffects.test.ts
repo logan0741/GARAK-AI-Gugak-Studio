@@ -58,6 +58,125 @@ describe('Garak product effect runner', () => {
     ).resolves.toEqual([{ type: 'replaceLibrarySnapshot', library: remoteLibrary }]);
   });
 
+  test('saves the current work before exporting audio for Save & Share', async () => {
+    const services = createInMemoryGarakProductServices();
+    const workState = {
+      ...createInitialGarakProductState({
+        now: () => '2026-06-26T00:00:00.000Z',
+      }),
+      screenFlow: createInitialScreenFlowState({ currentScreen: 'S07' }),
+      currentWorkId: 'work-1',
+      library: {
+        works: [createWork('work-1')],
+        exportedAudios: [],
+        practiceResults: [],
+      },
+    };
+    const action = { type: 'saveAndShareCurrentWork' } as const;
+    const nextState = applyProductAction(workState, action);
+    const servicesWithAudio = {
+      ...services,
+      audio: {
+        ...services.audio,
+        exportWorkAudio: async (work: Work) => {
+          expect(work.id).toBe('work-1');
+          return {
+            status: 'ok' as const,
+            value: {
+              audioUri: 'file://garak/export-1.wav',
+              durationSeconds: 31,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services: servicesWithAudio,
+      }),
+    ).resolves.toEqual([
+      { type: 'completeCurrentWorkSave' },
+      {
+        type: 'completeWorkAudioExport',
+        workId: 'work-1',
+        audioUri: 'file://garak/export-1.wav',
+        durationSeconds: 31,
+      },
+    ]);
+    await expect(services.library.loadSnapshot()).resolves.toEqual(nextState.library);
+  });
+
+  test('publishes the selected share target through the share service boundary', async () => {
+    const noopServices = createNoopGarakProductServices();
+    const state: GarakProductState = {
+      ...createInitialGarakProductState({
+        now: () => '2026-06-26T00:00:00.000Z',
+      }),
+      selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
+      sharePublishStatus: {
+        status: 'publishing',
+        target: { kind: 'exportedAudio', id: 'export-1' },
+      },
+      library: {
+        works: [],
+        exportedAudios: [
+          {
+            id: 'export-1',
+            kind: 'exported_audio',
+            title: 'My Export',
+            durationSeconds: 31,
+            instrumentNames: ['Janggu'],
+            createdAt: '2026-06-26T00:00:00.000Z',
+            audioUri: 'file://garak/export-1.wav',
+            shareState: 'ready',
+          },
+        ],
+        practiceResults: [],
+      },
+    };
+    const services = {
+      ...noopServices,
+      share: {
+        publishShareTarget: async (input: Parameters<typeof noopServices.share.publishShareTarget>[0]) => {
+          expect(input).toMatchObject({
+            target: { kind: 'exportedAudio', id: 'export-1' },
+            title: 'My Export',
+            fileUri: 'file://garak/export-1.wav',
+          });
+          return {
+            status: 'ok' as const,
+            value: {
+              remoteId: 'remote-export-1',
+              shareUrl: 'https://garak.test/share/remote-export-1',
+              expiresAtMs: 1783036800000,
+              shareMethod: 'link' as const,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state,
+        action: { type: 'publishShareTarget' },
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeSharePublish',
+        target: { kind: 'exportedAudio', id: 'export-1' },
+        remoteId: 'remote-export-1',
+        shareUrl: 'https://garak.test/share/remote-export-1',
+        expiresAtMs: 1783036800000,
+        shareMethod: 'link',
+      },
+    ]);
+  });
+
   test('maps AI accompaniment recommendations to the existing jangdan preview action', async () => {
     const events: PerformanceEvent[] = [
       { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.7 },

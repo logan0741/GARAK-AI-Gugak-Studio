@@ -18,6 +18,8 @@ import {
   JangdanPresetId,
   PracticeResult,
   RecordingSetup,
+  ShareMethod,
+  ShareTargetReference,
   Track,
   Work,
 } from '../studio/studioTypes';
@@ -108,6 +110,20 @@ export type PracticeAttempt = {
   timingErrorsMs: number[];
 };
 
+export type WorkSaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
+
+export type WorkExportStatus =
+  | { status: 'idle' }
+  | { status: 'exporting'; workId: Work['id'] }
+  | { status: 'ready'; exportedAudioId: ExportedAudio['id'] }
+  | { status: 'failed'; workId: Work['id']; message: string };
+
+export type SharePublishStatus =
+  | { status: 'idle' }
+  | { status: 'publishing'; target: ShareTargetReference }
+  | { status: 'shared'; target: ShareTargetReference; remoteId: string }
+  | { status: 'failed'; target: ShareTargetReference; message: string };
+
 export type JangdanPresetPreviewMode = 'live' | 'track';
 
 export type GarakProductState = {
@@ -137,7 +153,10 @@ export type GarakProductState = {
   activeInstrumentSettings?: ActiveInstrumentSettings;
   trackAddNotice?: TrackAddNotice;
   trackAddSelection?: TrackAddSelection;
-  workSaveStatus?: 'saved';
+  workSaveStatus: WorkSaveStatus;
+  workSaveErrorMessage?: string;
+  workExportStatus: WorkExportStatus;
+  sharePublishStatus: SharePublishStatus;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
@@ -209,7 +228,12 @@ export type GarakProductAction =
   | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
   | { type: 'cancelAccompanimentTrack' }
   | { type: 'saveCurrentWork' }
+  | { type: 'completeCurrentWorkSave' }
+  | { type: 'failCurrentWorkSave'; message: string }
+  | { type: 'saveAndShareCurrentWork' }
   | { type: 'exportCurrentWork' }
+  | { type: 'completeWorkAudioExport'; workId: Work['id']; audioUri: string; durationSeconds?: number }
+  | { type: 'failWorkAudioExport'; workId: Work['id']; message: string }
   | { type: 'previewPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeInstrument'; instrument: InstrumentId }
@@ -227,6 +251,15 @@ export type GarakProductAction =
   | { type: 'saveShareTargetOnly' }
   | { type: 'cancelShareTarget' }
   | { type: 'publishShareTarget' }
+  | {
+      type: 'completeSharePublish';
+      target: ShareTargetReference;
+      remoteId: string;
+      shareUrl?: string;
+      expiresAtMs?: number;
+      shareMethod: ShareMethod;
+    }
+  | { type: 'failSharePublish'; target: ShareTargetReference; message: string }
   | { type: 'openSharedRecordingDetail'; recordingId: SharedRecording['id'] }
   | { type: 'playSelectedSharedRecording' }
   | { type: 'pauseSelectedSharedRecording' }
@@ -277,6 +310,9 @@ export function createInitialGarakProductState(
     libraryTab: 'works',
     librarySearchQuery: '',
     workPlayheadBeat: 1,
+    workSaveStatus: 'idle',
+    workExportStatus: { status: 'idle' },
+    sharePublishStatus: { status: 'idle' },
     instrumentSampleStatuses: resolveInstrumentSampleStatuses({
       sampleManifests: input.sampleManifests,
       fallbackInstruments: input.sampleFallbackInstruments,
@@ -326,7 +362,8 @@ export function applyProductAction(
       return {
         ...state,
         currentWorkId: action.workId,
-        workSaveStatus: undefined,
+        workSaveStatus: 'idle',
+        workSaveErrorMessage: undefined,
         workPlayheadBeat: 1,
         screenFlow:
           state.screenFlow.currentScreen === 'S18'
@@ -616,6 +653,20 @@ export function applyProductAction(
       return applyAccompanimentTrack(state, action);
     case 'saveCurrentWork':
       return saveCurrentWork(state);
+    case 'completeCurrentWorkSave':
+      return {
+        ...state,
+        workSaveStatus: 'saved',
+        workSaveErrorMessage: undefined,
+      };
+    case 'failCurrentWorkSave':
+      return {
+        ...state,
+        workSaveStatus: 'failed',
+        workSaveErrorMessage: action.message,
+      };
+    case 'saveAndShareCurrentWork':
+      return saveAndShareCurrentWork(state);
     case 'cancelAccompanimentTrack':
       return {
         ...state,
@@ -627,6 +678,17 @@ export function applyProductAction(
       };
     case 'exportCurrentWork':
       return exportCurrentWork(state);
+    case 'completeWorkAudioExport':
+      return completeWorkAudioExport(state, action);
+    case 'failWorkAudioExport':
+      return {
+        ...state,
+        workExportStatus: {
+          status: 'failed',
+          workId: action.workId,
+          message: action.message,
+        },
+      };
     case 'previewPracticeSong':
       return {
         ...state,
@@ -685,6 +747,7 @@ export function applyProductAction(
       return {
         ...state,
         sharePreviewStatus: undefined,
+        sharePublishStatus: { status: 'idle' },
         screenFlow:
           state.screenFlow.currentScreen === 'S17'
             ? transitionScreenFlow(state.screenFlow, { type: 'saveShareTargetOnly' })
@@ -702,6 +765,17 @@ export function applyProductAction(
       };
     case 'publishShareTarget':
       return publishShareTarget(state);
+    case 'completeSharePublish':
+      return completeSharePublish(state, action);
+    case 'failSharePublish':
+      return {
+        ...state,
+        sharePublishStatus: {
+          status: 'failed',
+          target: action.target,
+          message: action.message,
+        },
+      };
     case 'openSharedRecordingDetail':
       return {
         ...state,
@@ -744,7 +818,6 @@ export function applyProductAction(
     case 'replaceLibrarySnapshot':
       return {
         ...state,
-        account: resolveSyncedAccount(state.account),
         library: action.library,
       };
     case 'skipLoginSync':
@@ -1091,7 +1164,8 @@ function completePerformance(state: GarakProductState): GarakProductState {
     pendingFreePlayTake: undefined,
     freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     pendingLiveJangdanGuide: undefined,
     library: {
       ...state.library,
@@ -1501,6 +1575,10 @@ function exportCurrentWork(state: GarakProductState): GarakProductState {
       kind: 'exportedAudio',
       exportedAudioId: exported.id,
     },
+    workExportStatus: {
+      status: 'ready',
+      exportedAudioId: exported.id,
+    },
     screenFlow: transitionScreenFlow(
       state.screenFlow.currentScreen === 'S07'
         ? state.screenFlow
@@ -1528,7 +1606,83 @@ function saveCurrentWork(state: GarakProductState): GarakProductState {
       ...state.library,
       works: state.library.works.map((work) => (work.id === savedWork.id ? savedWork : work)),
     },
-    workSaveStatus: 'saved',
+    workSaveStatus: 'saving',
+    workSaveErrorMessage: undefined,
+  };
+}
+
+function saveAndShareCurrentWork(state: GarakProductState): GarakProductState {
+  const currentWork = findCurrentWork(state);
+  if (currentWork === undefined) {
+    return state;
+  }
+
+  const savedWork: Work = {
+    ...currentWork,
+    updatedAt: state.now(),
+    syncState: 'local_only',
+  };
+
+  return {
+    ...state,
+    library: {
+      ...state.library,
+      works: state.library.works.map((work) => (work.id === savedWork.id ? savedWork : work)),
+    },
+    workSaveStatus: 'saving',
+    workSaveErrorMessage: undefined,
+    workExportStatus: {
+      status: 'exporting',
+      workId: savedWork.id,
+    },
+    sharePublishStatus: { status: 'idle' },
+  };
+}
+
+function completeWorkAudioExport(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'completeWorkAudioExport' }>,
+): GarakProductState {
+  const work = state.library.works.find((item) => item.id === action.workId);
+  if (work === undefined) {
+    return state;
+  }
+
+  const nextCounters = incrementCounters(state.counters, ['export']);
+  const exported = exportWorkAudioPlaceholder({
+    id: `export-${nextCounters.export}`,
+    work,
+    title: `${work.title} ?대낫?닿린`,
+    audioUri: action.audioUri,
+    durationSeconds: action.durationSeconds ?? 24,
+    createdAt: state.now(),
+  });
+
+  return {
+    ...state,
+    counters: nextCounters,
+    library: {
+      ...state.library,
+      exportedAudios: [...state.library.exportedAudios, exported],
+    },
+    selectedPlayerItem: {
+      kind: 'exportedAudio',
+      exportedAudioId: exported.id,
+    },
+    sharePreviewStatus: undefined,
+    workExportStatus: {
+      status: 'ready',
+      exportedAudioId: exported.id,
+    },
+    screenFlow:
+      state.screenFlow.currentScreen === 'S17'
+        ? state.screenFlow
+        : transitionScreenFlow(
+            state.screenFlow.currentScreen === 'S07'
+              ? state.screenFlow
+              : pushTarget(state.screenFlow, 'S07'),
+            { type: 'saveAndShareCurrentWork' },
+          ),
   };
 }
 
@@ -1616,7 +1770,8 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
     ...state,
     counters: nextCounters,
     currentWorkId: work.id,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     workPlayheadBeat: 1,
     library: {
       ...state.library,
@@ -1669,43 +1824,82 @@ function getSelectedSharedRecording(state: GarakProductState): SharedRecording {
 }
 
 function publishShareTarget(state: GarakProductState): GarakProductState {
-  const target = resolveShareTargetSelection(state);
+  const selection = resolveShareTargetSelection(state);
+  const target = selectionToShareTargetReference(selection);
 
   if (target === undefined) {
     return state;
   }
 
-  const screenFlow =
-    state.screenFlow.currentScreen === 'S17'
-      ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
-      : pushTarget(state.screenFlow, 'S20');
+  return {
+    ...state,
+    sharePreviewStatus: undefined,
+    sharePublishStatus: {
+      status: 'publishing',
+      target,
+    },
+    selectedPlayerItem: selection,
+    screenFlow: state.screenFlow.currentScreen === 'S17' ? state.screenFlow : pushTarget(state.screenFlow, 'S17'),
+  };
+}
 
-  if (target.kind === 'exportedAudio') {
+function completeSharePublish(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'completeSharePublish' }>,
+): GarakProductState {
+  const selection = shareTargetReferenceToSelection(action.target);
+  const sharedAt = state.now();
+  const sharedFields = {
+    shareState: 'shared' as const,
+    remoteShareId: action.remoteId,
+    shareUrl: action.shareUrl,
+    shareExpiresAtMs: action.expiresAtMs,
+    shareMethod: action.shareMethod,
+    sharedAt,
+  };
+
+  if (action.target.kind === 'exportedAudio') {
     return {
       ...state,
       sharePreviewStatus: undefined,
+      sharePublishStatus: {
+        status: 'shared',
+        target: action.target,
+        remoteId: action.remoteId,
+      },
       library: {
         ...state.library,
         exportedAudios: state.library.exportedAudios.map((audio) =>
-          audio.id === target.exportedAudioId ? { ...audio, shareState: 'shared' } : audio,
+          audio.id === action.target.id ? { ...audio, ...sharedFields } : audio,
         ),
       },
-      selectedPlayerItem: target,
-      screenFlow,
+      selectedPlayerItem: selection,
+      screenFlow:
+        state.screenFlow.currentScreen === 'S17'
+          ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
+          : pushTarget(state.screenFlow, 'S20'),
     };
   }
 
   return {
     ...state,
     sharePreviewStatus: undefined,
+    sharePublishStatus: {
+      status: 'shared',
+      target: action.target,
+      remoteId: action.remoteId,
+    },
     library: {
       ...state.library,
       practiceResults: state.library.practiceResults.map((result) =>
-        result.id === target.practiceResultId ? { ...result, shareState: 'shared' } : result,
+        result.id === action.target.id ? { ...result, ...sharedFields } : result,
       ),
     },
-    selectedPlayerItem: target,
-    screenFlow,
+    selectedPlayerItem: selection,
+    screenFlow:
+      state.screenFlow.currentScreen === 'S17'
+        ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
+        : pushTarget(state.screenFlow, 'S20'),
   };
 }
 
@@ -1734,7 +1928,8 @@ function openSelectedPlayerEditor(state: GarakProductState): GarakProductState {
   return {
     ...state,
     currentWorkId: workId,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     workPlayheadBeat: 1,
     screenFlow: pushTarget(state.screenFlow, 'S07'),
   };
@@ -1835,6 +2030,40 @@ function resolveShareTargetSelection(
   )[0]?.selection;
 }
 
+function selectionToShareTargetReference(
+  selection: Extract<ProductPlayerSelection, { kind: 'exportedAudio' | 'practiceResult' }> | undefined,
+): ShareTargetReference | undefined {
+  if (selection?.kind === 'exportedAudio') {
+    return {
+      kind: 'exportedAudio',
+      id: selection.exportedAudioId,
+    };
+  }
+
+  if (selection?.kind === 'practiceResult') {
+    return {
+      kind: 'practiceResult',
+      id: selection.practiceResultId,
+    };
+  }
+
+  return undefined;
+}
+
+function shareTargetReferenceToSelection(
+  target: ShareTargetReference,
+): Extract<ProductPlayerSelection, { kind: 'exportedAudio' | 'practiceResult' }> {
+  return target.kind === 'exportedAudio'
+    ? {
+        kind: 'exportedAudio',
+        exportedAudioId: target.id,
+      }
+    : {
+        kind: 'practiceResult',
+        practiceResultId: target.id,
+      };
+}
+
 function replaceCurrentWork(
   state: GarakProductState,
   work: Work,
@@ -1844,7 +2073,8 @@ function replaceCurrentWork(
   return {
     ...state,
     counters,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     library: {
       ...state.library,
       works: state.library.works.map((item) => (item.id === work.id ? work : item)),

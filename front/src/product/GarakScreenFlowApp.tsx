@@ -21,10 +21,8 @@ import {
   GarakProductState,
 } from './garakProductState';
 import { runGarakProductEffect } from './garakProductEffects';
-import {
-  createNoopGarakProductServices,
-  type GarakProductServices,
-} from './garakProductServices';
+import type { GarakProductServices } from './garakProductServices';
+import { createLocalGarakProductServices } from './localGarakProductServices';
 import type { InstrumentSampleReadinessInput } from './instrumentSampleReadiness';
 import { LibraryContent, PlayerDetailContent } from './libraryScreens';
 import {
@@ -90,7 +88,7 @@ export function GarakScreenFlowApp({
     nextEffectId: 1,
   }));
   const productServices = useMemo(
-    () => services ?? createNoopGarakProductServices(),
+    () => services ?? createLocalGarakProductServices(),
     [services],
   );
   const state = runtimeState.productState;
@@ -129,6 +127,23 @@ export function GarakScreenFlowApp({
       };
     });
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void productServices.library
+      .loadSnapshot()
+      .then((library) => {
+        if (isMounted) {
+          dispatch({ type: 'replaceLibrarySnapshot', library });
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch, productServices]);
   const playLivePerformanceEvents = useCallback(
     (events: PerformanceEvent[]) => {
       void productServices.audio.playPerformanceEvents(events);

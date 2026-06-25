@@ -44,7 +44,7 @@ test('accepts product services and runs effect follow-up actions after dispatch'
   const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
 
   expect(source).toContain('services?: GarakProductServices');
-  expect(source).toContain('createNoopGarakProductServices');
+  expect(source).toContain('createLocalGarakProductServices');
   expect(source).toContain('runGarakProductEffect');
   expect(source).toContain('followUpActions.forEach(dispatch)');
 });

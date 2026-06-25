@@ -1,6 +1,13 @@
 import type { PerformanceEvent } from '../domain/performanceEvent';
-import type { ExportedAudio, JangdanPresetId, PracticeResult, Work } from '../studio/studioTypes';
+import type {
+  JangdanPresetId,
+  ShareMethod,
+  ShareTargetReference,
+  Work,
+} from '../studio/studioTypes';
 import type { ProductLibraryState } from './garakProductState';
+
+export type { ShareMethod, ShareTargetReference } from '../studio/studioTypes';
 
 export type ServiceUnavailableResult = {
   status: 'unavailable';
@@ -21,9 +28,25 @@ export type ServiceResult<T> =
   | ServiceUnavailableResult
   | ServiceFailureResult;
 
-export type ShareTargetReference =
-  | { kind: 'exportedAudio'; id: ExportedAudio['id'] }
-  | { kind: 'practiceResult'; id: PracticeResult['id'] };
+export type ExportWorkAudioResult = {
+  audioUri: string;
+  durationSeconds?: number;
+};
+
+export type SharePublishInput = {
+  target: ShareTargetReference;
+  title: string;
+  message: string;
+  fileUri?: string;
+  shareUrl?: string;
+};
+
+export type SharePublishResult = {
+  remoteId: string;
+  shareUrl?: string;
+  expiresAtMs?: number;
+  shareMethod: ShareMethod;
+};
 
 export type AccompanimentRecommendationInput = {
   events: readonly PerformanceEvent[];
@@ -46,10 +69,10 @@ export type GarakProductServices = {
     loginAndLoadLibrary: () => Promise<ServiceResult<ProductLibraryState>>;
   };
   share: {
-    publishShareTarget: (target: ShareTargetReference) => Promise<ServiceResult<{ remoteId: string }>>;
+    publishShareTarget: (input: SharePublishInput) => Promise<ServiceResult<SharePublishResult>>;
   };
   audio: {
-    exportWorkAudio: (work: Work) => Promise<ServiceResult<{ audioUri: string }>>;
+    exportWorkAudio: (work: Work) => Promise<ServiceResult<ExportWorkAudioResult>>;
     playPerformanceEvents: (
       events: readonly PerformanceEvent[],
     ) => Promise<ServiceResult<{ handledEvents: number }>>;

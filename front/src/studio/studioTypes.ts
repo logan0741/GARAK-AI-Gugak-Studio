@@ -10,6 +10,8 @@ export type SyncState = 'local_only' | 'synced' | 'account_only' | 'conflict';
 
 export type ShareState = 'ready' | 'shared';
 
+export type ShareMethod = 'file' | 'link';
+
 export type LiveJangdanGuide = {
   presetId: JangdanPresetId;
   bpm: number;
@@ -96,6 +98,11 @@ export type ExportedAudio = {
   createdAt: string;
   audioUri: string;
   shareState: ShareState;
+  remoteShareId?: string;
+  shareUrl?: string;
+  shareExpiresAtMs?: number;
+  shareMethod?: ShareMethod;
+  sharedAt?: string;
   sourceShareId?: string;
   authorDisplayName?: string;
   sourceLabel?: string;
@@ -111,7 +118,16 @@ export type PracticeResult = {
   feedback: string;
   createdAt: string;
   shareState: ShareState;
+  remoteShareId?: string;
+  shareUrl?: string;
+  shareExpiresAtMs?: number;
+  shareMethod?: ShareMethod;
+  sharedAt?: string;
 };
+
+export type ShareTargetReference =
+  | { kind: 'exportedAudio'; id: ExportedAudio['id'] }
+  | { kind: 'practiceResult'; id: PracticeResult['id'] };
 
 export type LibraryShareable = ExportedAudio | PracticeResult;
 

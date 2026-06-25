@@ -1,5 +1,10 @@
 import type { ProductLibraryState } from './garakProductState';
-import type { GarakProductServices, ServiceResult } from './garakProductServices';
+import type {
+  ExportWorkAudioResult,
+  GarakProductServices,
+  ServiceResult,
+  SharePublishResult,
+} from './garakProductServices';
 
 export type GarakFetchInit = {
   method?: string;
@@ -42,14 +47,12 @@ export function createHttpGarakProductServices({
       loginAndLoadLibrary: () => client.serviceJson<ProductLibraryState>('/account/login-sync', 'POST'),
     },
     share: {
-      publishShareTarget: (target) =>
-        client.serviceJson<{ remoteId: string }>('/share/targets/publish', 'POST', {
-          target,
-        }),
+      publishShareTarget: (input) =>
+        client.serviceJson<SharePublishResult>('/share/targets/publish', 'POST', input),
     },
     audio: {
       exportWorkAudio: (work) =>
-        client.serviceJson<{ audioUri: string }>('/audio/exports', 'POST', {
+        client.serviceJson<ExportWorkAudioResult>('/audio/exports', 'POST', {
           work,
         }),
       playPerformanceEvents: (events) =>

@@ -1,6 +1,6 @@
 import { useFonts } from 'expo-font';
 import { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, Share, StyleSheet, View } from 'react-native';
 import { createGarakAuthApi } from './authApi';
 import { GARAK_GOOGLE_WEB_CLIENT_ID } from './authConfig';
 import { restoreAuthSession, signInWithGoogle } from './authFlow';
@@ -41,10 +41,16 @@ export function GarakAuthEntryApp() {
   const [fontsLoaded] = useFonts({
     [GARAK_TYPOGRAPHY.fontFamily]: require('../../assets/fonts/PretendardVariable.ttf'),
   });
-  const sessionStore = useMemo(() => createAuthSessionStore(createDefaultAuthStorage()), []);
+  const authStorage = useMemo(() => createDefaultAuthStorage(), []);
+  const sessionStore = useMemo(() => createAuthSessionStore(authStorage), [authStorage]);
   const productServices = useMemo(
-    () => createRuntimeGarakProductServices({ sessionStore }),
-    [sessionStore],
+    () =>
+      createRuntimeGarakProductServices({
+        sessionStore,
+        libraryStorage: authStorage,
+        share: (content) => Share.share(content),
+      }),
+    [authStorage, sessionStore],
   );
   const [entryState, setEntryState] = useState<AuthEntryState>({ status: 'booting' });
 

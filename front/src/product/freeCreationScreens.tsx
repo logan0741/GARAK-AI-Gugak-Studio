@@ -708,11 +708,14 @@ export function TrackLayerEditorContent({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="프로젝트 저장 및 공유"
-          onPress={() => dispatch({ type: 'exportCurrentWork' })}
+          disabled={state.workExportStatus.status === 'exporting'}
+          onPress={() => dispatch({ type: 'saveAndShareCurrentWork' })}
           style={styles.freeCreationShareButton}
         >
           <ShareOutlineGlyph />
-          <Text style={styles.freeCreationShareButtonText}>{'Save & Share project'}</Text>
+          <Text style={styles.freeCreationShareButtonText}>
+            {state.workExportStatus.status === 'exporting' ? 'Exporting...' : 'Save & Share project'}
+          </Text>
         </Pressable>
       </View>
     </View>

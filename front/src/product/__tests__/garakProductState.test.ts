@@ -637,14 +637,17 @@ test('saves the current S07 work locally without exporting share audio', () => {
     updatedAt: '2026-06-18T00:01:00.000Z',
     syncState: 'local_only',
   });
-  expect(savedState.workSaveStatus).toBe('saved');
+  expect(savedState.workSaveStatus).toBe('saving');
 
-  let newWorkState = applyProductAction(savedState, { type: 'back' });
+  const completedSaveState = applyProductAction(savedState, { type: 'completeCurrentWorkSave' });
+  expect(completedSaveState.workSaveStatus).toBe('saved');
+
+  let newWorkState = applyProductAction(completedSaveState, { type: 'back' });
   newWorkState = applyProductAction(newWorkState, { type: 'startPerformanceRecording' });
   newWorkState = applyProductAction(newWorkState, { type: 'completePerformance' });
 
   expect(newWorkState.currentWorkId).not.toBe(currentWorkId);
-  expect(newWorkState.workSaveStatus).toBeUndefined();
+  expect(newWorkState.workSaveStatus).toBe('idle');
 });
 
 test('previews a jangdan preset without mutating live guide or work tracks', () => {
@@ -928,7 +931,7 @@ test('edits S07 work track mix controls without leaving the editor', () => {
   state = applyProductAction(state, { type: 'deleteWorkTrack', trackId: 'track-2' });
 
   expect(state.screenFlow.currentScreen).toBe('S07');
-  expect(state.workSaveStatus).toBeUndefined();
+  expect(state.workSaveStatus).toBe('idle');
   expect(state.library.works[0].tracks).toHaveLength(1);
   expect(state.library.works[0].tracks[0]).toMatchObject({
     id: 'track-1',
@@ -950,6 +953,7 @@ test('keeps S07 work track edits no-op when they would not change the work', () 
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'saveCurrentWork' });
+  state = applyProductAction(state, { type: 'completeCurrentWorkSave' });
 
   const savedWork = state.library.works[0];
 
@@ -966,6 +970,125 @@ test('keeps S07 work track edits no-op when they would not change the work', () 
   expect(state.library.works[0].tracks[0]).toMatchObject({
     id: 'track-1',
     volume: 1,
+  });
+});
+
+test('moves current work save through saving, saved, and failed states', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+
+  const savingState = applyProductAction(state, { type: 'saveCurrentWork' });
+
+  expect(savingState.workSaveStatus).toBe('saving');
+  expect(savingState.screenFlow.currentScreen).toBe('S07');
+  expect(savingState.library.exportedAudios).toHaveLength(0);
+
+  expect(applyProductAction(savingState, { type: 'completeCurrentWorkSave' }).workSaveStatus).toBe('saved');
+  expect(
+    applyProductAction(savingState, {
+      type: 'failCurrentWorkSave',
+      message: 'local storage write failed',
+    }).workSaveStatus,
+  ).toBe('failed');
+});
+
+test('saves and exports current work before opening share preparation', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  expect(state.workSaveStatus).toBe('saving');
+  expect(state.workExportStatus).toEqual({ status: 'exporting', workId });
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.library.exportedAudios).toHaveLength(0);
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+  });
+
+  expect(state.screenFlow.currentScreen).toBe('S17');
+  expect(state.workExportStatus).toEqual({ status: 'ready', exportedAudioId: 'export-1' });
+  expect(state.selectedPlayerItem).toEqual({ kind: 'exportedAudio', exportedAudioId: 'export-1' });
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    id: 'export-1',
+    workId,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+    shareState: 'ready',
+  });
+});
+
+test('publishes exported audio only after the share service succeeds', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId: state.currentWorkId!,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+  });
+
+  state = applyProductAction(state, { type: 'publishShareTarget' });
+
+  expect(state.screenFlow.currentScreen).toBe('S17');
+  expect(state.sharePublishStatus).toEqual({
+    status: 'publishing',
+    target: { kind: 'exportedAudio', id: 'export-1' },
+  });
+  expect(state.library.exportedAudios[0].shareState).toBe('ready');
+
+  state = applyProductAction(state, {
+    type: 'completeSharePublish',
+    target: { kind: 'exportedAudio', id: 'export-1' },
+    remoteId: 'remote-share-1',
+    shareUrl: 'https://garak.test/share/remote-share-1',
+    expiresAtMs: 1783036800000,
+    shareMethod: 'link',
+  });
+
+  expect(state.screenFlow.currentScreen).toBe('S20');
+  expect(state.sharePublishStatus).toEqual({
+    status: 'shared',
+    target: { kind: 'exportedAudio', id: 'export-1' },
+    remoteId: 'remote-share-1',
+  });
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    shareState: 'shared',
+    remoteShareId: 'remote-share-1',
+    shareUrl: 'https://garak.test/share/remote-share-1',
+    shareExpiresAtMs: 1783036800000,
+    shareMethod: 'link',
+    sharedAt: '2026-06-26T00:00:00.000Z',
   });
 });
 
@@ -1701,12 +1824,32 @@ test('publishes the selected exported audio from S17 and marks it shared', () =>
   };
   state = applyProductAction(state, { type: 'publishShareTarget' });
 
+  expect(state.screenFlow.currentScreen).toBe('S17');
+  expect(state.sharePublishStatus).toEqual({
+    status: 'publishing',
+    target: { kind: 'exportedAudio', id: 'export-1' },
+  });
+  expect(state.library.exportedAudios[0].shareState).toBe('ready');
+
+  state = applyProductAction(state, {
+    type: 'completeSharePublish',
+    target: { kind: 'exportedAudio', id: 'export-1' },
+    remoteId: 'remote-export-1',
+    shareUrl: 'https://garak.test/share/remote-export-1',
+    expiresAtMs: 1783036800000,
+    shareMethod: 'link',
+  });
+
   expect(state.screenFlow.currentScreen).toBe('S20');
   expect(state.screenFlow.history).toEqual(['S01', 'S03', 'S04', 'S04A', 'S05', 'S07', 'S19', 'S17']);
   expect(state.sharePreviewStatus).toBeUndefined();
   expect(state.library.exportedAudios[0]).toMatchObject({
     id: 'export-1',
     shareState: 'shared',
+    remoteShareId: 'remote-export-1',
+    shareUrl: 'https://garak.test/share/remote-export-1',
+    shareExpiresAtMs: 1783036800000,
+    shareMethod: 'link',
   });
   expect(state.selectedPlayerItem).toEqual({
     kind: 'exportedAudio',
@@ -1777,7 +1920,11 @@ test('previews the selected S17 share target without publishing it', () => {
 
   state = applyProductAction(state, { type: 'publishShareTarget' });
 
-  expect(state.screenFlow.currentScreen).toBe('S20');
+  expect(state.screenFlow.currentScreen).toBe('S17');
+  expect(state.sharePublishStatus).toEqual({
+    status: 'publishing',
+    target: { kind: 'exportedAudio', id: 'export-1' },
+  });
   expect(state.sharePreviewStatus).toBeUndefined();
 });
 
@@ -1922,12 +2069,32 @@ test('publishes the selected practice result from S17 and marks it shared', () =
   state = applyProductAction(state, { type: 'sharePracticeResult' });
   state = applyProductAction(state, { type: 'publishShareTarget' });
 
+  expect(state.screenFlow.currentScreen).toBe('S17');
+  expect(state.sharePublishStatus).toEqual({
+    status: 'publishing',
+    target: { kind: 'practiceResult', id: 'practice-1' },
+  });
+  expect(state.library.practiceResults[0].shareState).toBe('ready');
+
+  state = applyProductAction(state, {
+    type: 'completeSharePublish',
+    target: { kind: 'practiceResult', id: 'practice-1' },
+    remoteId: 'remote-practice-1',
+    shareUrl: 'https://garak.test/share/remote-practice-1',
+    expiresAtMs: 1783036800000,
+    shareMethod: 'link',
+  });
+
   expect(state.screenFlow.currentScreen).toBe('S20');
   expect(state.library.practiceResults[0]).toMatchObject({
     id: 'practice-1',
     songId: 'doraji',
     instrument: 'daegeum',
     shareState: 'shared',
+    remoteShareId: 'remote-practice-1',
+    shareUrl: 'https://garak.test/share/remote-practice-1',
+    shareExpiresAtMs: 1783036800000,
+    shareMethod: 'link',
   });
   expect(state.selectedPlayerItem).toEqual({
     kind: 'practiceResult',

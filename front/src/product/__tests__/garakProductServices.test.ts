@@ -4,6 +4,7 @@ import {
   createInMemoryGarakProductServices,
   createNoopGarakProductServices,
 } from '../garakProductServices';
+import { createLocalGarakProductServices } from '../localGarakProductServices';
 
 describe('Garak product service ports', () => {
   test('stores and reloads library snapshots through the public service contract', async () => {
@@ -54,11 +55,70 @@ describe('Garak product service ports', () => {
     await expect(services.ai.recommendAccompaniment({ events: [] })).resolves.toEqual({
       status: 'unavailable',
     });
-    await expect(services.share.publishShareTarget({ kind: 'practiceResult', id: 'practice-1' })).resolves.toEqual({
+    await expect(
+      services.share.publishShareTarget({
+        target: { kind: 'practiceResult', id: 'practice-1' },
+        title: 'Practice result',
+        message: 'Practice result',
+      }),
+    ).resolves.toEqual({
       status: 'unavailable',
     });
     await expect(services.audio.playPerformanceEvents([])).resolves.toEqual({
       status: 'unavailable',
     });
+  });
+
+  test('local services persist snapshots and publish share metadata with an expiring link', async () => {
+    const values = new Map<string, string>();
+    const shareCalls: Array<{ title?: string; message: string; url?: string }> = [];
+    const services = createLocalGarakProductServices({
+      storage: {
+        getItem: async (key) => values.get(key) ?? null,
+        setItem: async (key, value) => {
+          values.set(key, value);
+        },
+        deleteItem: async (key) => {
+          values.delete(key);
+        },
+      },
+      share: async (content) => {
+        shareCalls.push(content);
+      },
+      nowMs: () => 1000,
+      createRemoteId: () => 'uuid-share-1',
+    });
+    const snapshot: ProductLibraryState = {
+      works: [],
+      exportedAudios: [],
+      practiceResults: [],
+    };
+
+    await services.library.saveSnapshot(snapshot);
+    await expect(services.library.loadSnapshot()).resolves.toEqual(snapshot);
+
+    await expect(
+      services.share.publishShareTarget({
+        target: { kind: 'exportedAudio', id: 'export-1' },
+        title: 'My Export',
+        message: 'My Export - GARAK',
+        fileUri: 'file://garak/export-1.wav',
+      }),
+    ).resolves.toEqual({
+      status: 'ok',
+      value: {
+        remoteId: 'uuid-share-1',
+        shareUrl: 'https://garak.local/share/uuid-share-1',
+        expiresAtMs: 604801000,
+        shareMethod: 'file',
+      },
+    });
+    expect(shareCalls).toEqual([
+      {
+        title: 'My Export',
+        message: 'My Export - GARAK\nhttps://garak.local/share/uuid-share-1',
+        url: 'file://garak/export-1.wav',
+      },
+    ]);
   });
 });
