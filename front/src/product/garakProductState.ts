@@ -911,6 +911,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '재생',
         '리믹스',
         '저장',
+        '상세 보기',
       ]);
     case 'S21':
       return summary(screenId, '공유 곡 상세', '쉐어', '공유 곡을 자세히 듣고 리믹스 여부를 결정해요.', [

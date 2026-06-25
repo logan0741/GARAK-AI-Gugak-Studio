@@ -1249,6 +1249,16 @@ test('remixes a shared demo recording into a new editable reference work', () =>
   ]);
 });
 
+test('summarizes S20 share feed detail entry from the detailed document', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['재생', '리믹스', '저장', '상세 보기']),
+  );
+});
+
 test('saves a shared demo recording as a playable library audio item', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

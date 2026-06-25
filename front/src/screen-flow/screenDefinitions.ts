@@ -234,7 +234,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S20',
     name: 'Share Feed',
     mvpStatus: 'recommended',
-    primaryCtas: ['play', 'remix', 'save'],
+    primaryCtas: ['play', 'remix', 'save', 'detail'],
     transitions: [
       { action: 'detail', target: 'S21' },
       { action: 'remix', target: 'S07' },

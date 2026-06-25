@@ -139,6 +139,16 @@ test('defines S19 player management actions from the detailed document', () => {
   );
 });
 
+test('defines S20 share feed detail entry from the detailed document', () => {
+  expect(implementedScreenDefinitions.S20.primaryCtas).toEqual(
+    expect.arrayContaining(['play', 'remix', 'save', 'detail']),
+  );
+  expect(implementedScreenDefinitions.S20.transitions).toContainEqual({
+    action: 'detail',
+    target: 'S21',
+  });
+});
+
 test('documents S23 skip as returning to the entry surface', () => {
   expect(implementedScreenDefinitions.S23.transitions).toContainEqual({
     action: 'skip',
