@@ -887,8 +887,10 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
       ]);
     case 'S17':
       return summary(screenId, '공유 준비', '내보낸 음원 / 결과', '공유할 제목과 미리보기를 확인해요.', [
+        '미리듣기',
         '공유하기',
         '저장만 하기',
+        '취소',
       ]);
     case 'S18':
       return summary(screenId, '보관함', `${state.library.works.length}개 작업`, '작업과 내보낸 음원/결과를 나눠 관리해요.', [

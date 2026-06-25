@@ -197,10 +197,11 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S17',
     name: 'Share Preparation',
     mvpStatus: 'required',
-    primaryCtas: ['share', 'saveOnly'],
+    primaryCtas: ['preview', 'share', 'saveOnly', 'cancel'],
     transitions: [
       { action: 'saveOnly', target: 'S18' },
       { action: 'share', target: 'S20' },
+      { action: 'cancel', target: 'previous' },
     ],
   },
   S18: {

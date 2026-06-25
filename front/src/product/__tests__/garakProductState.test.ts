@@ -1416,6 +1416,25 @@ test('previews the selected S17 share target without publishing it', () => {
   expect(state.sharePreviewStatus).toBeUndefined();
 });
 
+test('summarizes S17 share preparation with preview, publish, save-only, and cancel CTAs', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S17' });
+
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['미리듣기', '공유하기', '저장만 하기', '취소']),
+  );
+});
+
 test('opens S17 from the S19 player for the selected exported audio', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

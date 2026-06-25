@@ -115,6 +115,16 @@ test('keeps settings and login sync primary CTAs aligned with the screen-flow do
   );
 });
 
+test('defines S17 share preparation preview and cancel actions from the detailed document', () => {
+  expect(implementedScreenDefinitions.S17.primaryCtas).toEqual(
+    expect.arrayContaining(['preview', 'share', 'saveOnly', 'cancel']),
+  );
+  expect(implementedScreenDefinitions.S17.transitions).toContainEqual({
+    action: 'cancel',
+    target: 'previous',
+  });
+});
+
 test('documents S23 skip as returning to the entry surface', () => {
   expect(implementedScreenDefinitions.S23.transitions).toContainEqual({
     action: 'skip',
