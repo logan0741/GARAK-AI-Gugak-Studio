@@ -71,6 +71,36 @@ test('summarizes S04A as the Figma performance preview with a single Next CTA', 
   expect(summary.primaryCtas).not.toContain('직접 조정');
 });
 
+test('summarizes free-creation screen CTAs that are exposed by the connected UI actions', () => {
+  let state = createInitialGarakProductState({
+    sampleFallbackInstruments: ['janggu'],
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['녹음', '장단', '레이어 편집', '완료']),
+  );
+
+  const liveJangdanState = applyProductAction(state, { type: 'openLiveJangdanGuide' });
+
+  expect(getCurrentScreenSummary(liveJangdanState).primaryCtas).toEqual(
+    expect.arrayContaining(['미리듣기', '적용하고 연주로 돌아가기', '끄기']),
+  );
+
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
+
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['미리듣기', '반주 트랙 추가', '취소']),
+  );
+});
+
 test('moves through free creation selection to S05 with an MVP instrument', () => {
   let state = createInitialGarakProductState();
 

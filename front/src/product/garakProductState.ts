@@ -825,7 +825,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         `${getInstrumentLabel(state)} 자유연주`,
         '녹음',
         freePlayDescription(state),
-        ['녹음', '장단', '완료'],
+        ['녹음', '장단', '레이어 편집', '완료'],
       );
     case 'S07':
       return summary(screenId, '트랙/레이어 편집', currentWorkTitle(state), '작업 위에 악기와 반주 트랙을 레이어로 쌓아요.', [
@@ -851,11 +851,13 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
       return summary(screenId, '라이브 장단 가이드', '연주 보조', '연주 중 들을 장단과 BPM을 정해요.', [
         '미리듣기',
         '적용하고 연주로 돌아가기',
+        '끄기',
       ]);
     case 'S10B':
       return summary(screenId, '반주 트랙 만들기', currentWorkTitle(state), '작업에 추가할 장단/반주 트랙을 만들어요.', [
         '미리듣기',
         '반주 트랙 추가',
+        '취소',
       ]);
     case 'S13':
       return summary(screenId, '민요 선택', '따라하기', practiceSongSelectDescription(state), [
