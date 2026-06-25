@@ -57,6 +57,13 @@ test('uses the completed free-creation preview with live work and jangdan data',
   expect(source).toContain('previewModel.saveAction');
   expect(source).toContain('previewModel.saveStatusLabel');
   expect(source).toContain("dispatch(previewModel.saveAction)");
+  expect(source).toContain('GARAK_SPACING');
+  expect(source).toContain('GARAK_MONTAGE_BUTTON');
+  expect(source).toContain('<SecondaryPillButton');
+  expect(source).toContain('<PrimaryPillButton');
+  expect(source).toContain('top: GARAK_SPACING.pt0');
+  expect(source).toContain('left: GARAK_SPACING.pt0');
+  expect(source).toContain('right: GARAK_SPACING.pt0');
 });
 
 test('connects S10 jangdan preset previews without applying the preset', () => {

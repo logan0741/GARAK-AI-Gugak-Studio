@@ -24,6 +24,65 @@ export const GARAK_RADIUS = {
   compact: 12,
 } as const;
 
+export const GARAK_SPACING = {
+  pt0: 0,
+  pt01: 1,
+  pt02: 2,
+  pt04: 4,
+  pt06: 6,
+  pt08: 8,
+  pt10: 10,
+  pt12: 12,
+  pt14: 14,
+  pt16: 16,
+  pt20: 20,
+  pt24: 24,
+  pt28: 28,
+  pt32: 32,
+  pt36: 36,
+  pt40: 40,
+  pt48: 48,
+  pt56: 56,
+  pt64: 64,
+  pt72: 72,
+  pt80: 80,
+} as const;
+
+export const GARAK_SEMANTIC_COLORS = {
+  staticWhite: GARAK_COLORS.surfaceCard,
+  labelNormal: GARAK_COLORS.textPrimary,
+  labelNeutral: GARAK_COLORS.textSecondary,
+  labelAlternative: GARAK_COLORS.textMuted,
+  backgroundNormal: GARAK_COLORS.surfaceApp,
+  backgroundElevated: GARAK_COLORS.surfaceCard,
+  backgroundAlternative: GARAK_COLORS.surfaceCanvas,
+  lineNormal: 'rgba(31,32,46,0.22)',
+  lineAlternative: 'rgba(31,32,46,0.08)',
+  fillNormal: 'rgba(31,32,46,0.08)',
+  fillStrong: 'rgba(31,32,46,0.16)',
+  primaryNormal: GARAK_COLORS.brandNavy,
+  accentCautionary: GARAK_COLORS.brandAmber,
+  statusNegative: GARAK_COLORS.brandRed,
+} as const;
+
+export const GARAK_MONTAGE_BUTTON = {
+  large: {
+    minHeight: 48,
+    paddingHorizontal: GARAK_SPACING.pt20,
+    radius: GARAK_RADIUS.pill,
+  },
+  medium: {
+    minHeight: 44,
+    paddingHorizontal: GARAK_SPACING.pt16,
+    radius: GARAK_RADIUS.pill,
+  },
+  small: {
+    minHeight: 32,
+    paddingHorizontal: GARAK_SPACING.pt12,
+    radius: GARAK_RADIUS.pill,
+  },
+} as const;
+
 export const GARAK_LAYOUT = {
   figmaPhoneWidth: 393,
   figmaPhoneHeight: 852,

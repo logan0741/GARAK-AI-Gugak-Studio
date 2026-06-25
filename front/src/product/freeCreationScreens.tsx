@@ -9,7 +9,13 @@ import {
   View,
 } from 'react-native';
 import type { InstrumentId, Track } from '../studio/studioTypes';
-import { GARAK_COLORS, GARAK_RADIUS } from './garakDesignSystem';
+import {
+  GARAK_COLORS,
+  GARAK_MONTAGE_BUTTON,
+  GARAK_RADIUS,
+  GARAK_SEMANTIC_COLORS,
+  GARAK_SPACING,
+} from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
@@ -763,11 +769,13 @@ function FreeCreationCompletedPreviewContent({
       </View>
 
       <View style={styles.freeCreationCompletedPanel}>
-        <TrackAddWaveformGlyph />
-        <Text style={styles.freeCreationCompletedCopy}>
-          연주 한 트랙들과 생성 한 AI 반주로{'\n'}
-          <Text style={styles.freeCreationCompletedCopyStrong}>{previewModel.completionSubjectLabel}</Text>을 완성해요.
-        </Text>
+        <View style={styles.freeCreationCompletedPanelHeader}>
+          <TrackAddWaveformGlyph />
+          <Text style={styles.freeCreationCompletedCopy}>
+            연주 한 트랙들과 생성 한 AI 반주로{'\n'}
+            <Text style={styles.freeCreationCompletedCopyStrong}>{previewModel.completionSubjectLabel}</Text>을 완성해요.
+          </Text>
+        </View>
 
         <TrackControlStack
           trackControls={mixEditorModel.trackControls}
@@ -776,24 +784,21 @@ function FreeCreationCompletedPreviewContent({
         />
 
         {previewModel.saveAction ? (
-          <Pressable
-            accessibilityRole="button"
+          <SecondaryPillButton
             accessibilityLabel="작업 저장"
+            label={previewModel.saveStatusLabel}
             onPress={() => previewModel.saveAction && dispatch(previewModel.saveAction)}
-            style={styles.freeCreationCompletedSaveButton}
-          >
-            <Text style={styles.freeCreationCompletedSaveButtonText}>{previewModel.saveStatusLabel}</Text>
-          </Pressable>
+            style={styles.freeCreationCompletedActionButton}
+            tone="outline"
+          />
         ) : null}
 
-        <Pressable
-          accessibilityRole="button"
+        <PrimaryPillButton
           accessibilityLabel="완성한 가락 내보내기"
+          label="GO"
           onPress={() => dispatch({ type: 'exportCurrentWork' })}
-          style={styles.freeCreationCompletedGoButton}
-        >
-          <Text style={styles.freeCreationTrackAddGoButtonText}>GO</Text>
-        </Pressable>
+          style={styles.freeCreationCompletedActionButton}
+        />
       </View>
     </View>
   );
@@ -2112,17 +2117,21 @@ const styles = StyleSheet.create({
   },
   freeCreationCompletedPanel: {
     alignSelf: 'center',
-    backgroundColor: GARAK_COLORS.surfaceCanvas,
-    borderColor: 'rgba(0,0,0,0.04)',
-    borderRadius: 40,
+    backgroundColor: GARAK_SEMANTIC_COLORS.backgroundAlternative,
+    borderColor: GARAK_SEMANTIC_COLORS.lineAlternative,
+    borderRadius: GARAK_RADIUS.hero,
     borderWidth: 1,
-    height: 697,
+    gap: GARAK_SPACING.pt24,
+    minHeight: 520,
     overflow: 'hidden',
-    paddingHorizontal: 18,
-    paddingTop: 49,
-    position: 'relative',
+    paddingBottom: GARAK_SPACING.pt32,
+    paddingHorizontal: GARAK_SPACING.pt20,
+    paddingTop: GARAK_SPACING.pt40,
     width: '100%',
     ...garakCardShadow,
+  },
+  freeCreationCompletedPanelHeader: {
+    gap: GARAK_SPACING.pt20,
   },
   freeCreationWaveform: {
     alignItems: 'center',
@@ -2165,46 +2174,20 @@ const styles = StyleSheet.create({
     top: 103,
   },
   freeCreationCompletedCopy: {
-    color: '#656565',
-    fontSize: 13.36,
+    color: GARAK_SEMANTIC_COLORS.labelNeutral,
+    fontSize: 14,
     fontWeight: '300',
     letterSpacing: 0,
-    lineHeight: 16.2,
-    marginTop: 20,
-    width: 278,
+    lineHeight: 20,
+    maxWidth: 304,
   },
   freeCreationCompletedCopyStrong: {
-    color: '#656565',
-    fontWeight: '500',
-  },
-  freeCreationCompletedSaveButton: {
-    alignItems: 'center',
-    borderColor: 'rgba(31,32,46,0.24)',
-    borderRadius: GARAK_RADIUS.pill,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 371,
-  },
-  freeCreationCompletedSaveButtonText: {
-    color: GARAK_COLORS.textSecondary,
-    fontSize: 13,
+    color: GARAK_SEMANTIC_COLORS.labelNeutral,
     fontWeight: '700',
-    letterSpacing: 0,
   },
-  freeCreationCompletedGoButton: {
-    alignItems: 'center',
-    backgroundColor: GARAK_COLORS.brandNavy,
-    borderRadius: GARAK_RADIUS.pill,
-    height: 48,
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 424,
+  freeCreationCompletedActionButton: {
+    flex: 0,
+    minHeight: GARAK_MONTAGE_BUTTON.large.minHeight,
   },
   freeCreationMixButton: {
     alignItems: 'center',
@@ -2232,10 +2215,11 @@ const styles = StyleSheet.create({
     top: 224,
   },
   freeCreationCompletedTrackControlScroller: {
-    left: 0,
-    maxHeight: 151,
-    right: 0,
-    top: 156,
+    left: GARAK_SPACING.pt0,
+    maxHeight: 168,
+    position: 'relative',
+    right: GARAK_SPACING.pt0,
+    top: GARAK_SPACING.pt0,
   },
   freeCreationTrackControlStack: {
     gap: 8,

@@ -44,12 +44,14 @@ export function ScreenHeading({
 }
 
 export function PrimaryPillButton({
+  accessibilityLabel,
   label,
   onPress,
   disabled,
   tone = 'navy',
   style,
 }: {
+  accessibilityLabel?: string;
   label: string;
   onPress: () => void;
   disabled?: boolean;
@@ -58,6 +60,7 @@ export function PrimaryPillButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled === true }}
       disabled={disabled}
@@ -72,12 +75,14 @@ export function PrimaryPillButton({
 }
 
 export function SecondaryPillButton({
+  accessibilityLabel,
   label,
   onPress,
   disabled,
   tone = 'light',
   style,
 }: {
+  accessibilityLabel?: string;
   label: string;
   onPress: () => void;
   disabled?: boolean;
@@ -86,6 +91,7 @@ export function SecondaryPillButton({
 }) {
   return (
     <PrimaryPillButton
+      accessibilityLabel={accessibilityLabel}
       label={label}
       onPress={onPress}
       disabled={disabled}
