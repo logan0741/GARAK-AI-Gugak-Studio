@@ -84,6 +84,7 @@ function AuthButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
@@ -93,7 +94,17 @@ function AuthButton({
         disabled ? styles.disabled : null,
       ]}
     >
-      {mark ? <Text style={styles.googleMark}>{mark}</Text> : <View style={styles.markSpacer} />}
+      {mark ? (
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={styles.googleMark}
+        >
+          {mark}
+        </Text>
+      ) : (
+        <View style={styles.markSpacer} />
+      )}
       <Text style={styles.authButtonText}>{disabled ? '처리 중' : label}</Text>
       <View style={styles.markSpacer} />
     </Pressable>
@@ -145,10 +156,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.neutral.canvas,
     flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 22,
+    gap: 104,
+    justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingTop: 168,
   },
   loginBrand: {
     alignItems: 'center',
@@ -200,8 +210,10 @@ const styles = StyleSheet.create({
   homeIndicator: {
     backgroundColor: GARAK_COLORS.text.black,
     borderRadius: GARAK_RADII.circle,
+    bottom: 9,
     height: 3,
     opacity: 0.9,
+    position: 'absolute',
     width: 68,
   },
 });

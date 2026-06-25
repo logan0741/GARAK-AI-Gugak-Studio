@@ -9,8 +9,8 @@ import { GarakLogo } from './GarakLogo';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import { getSettingsViewModel } from './settingsScreenModel';
 import {
+  GarakProgressIndicator,
   PrimaryPillButton,
-  ProgressSteps,
   QuickAccessNav,
   ScreenHeading,
   garakCardShadow,
@@ -112,7 +112,7 @@ export function IntroGuideContent({
           ))}
         </View>
         <View style={[styles.modeGuideBottom, isCompactHeight ? styles.modeGuideBottomCompact : undefined]}>
-          <ProgressSteps step={0} />
+          <GarakProgressIndicator progress={1 / 3} />
           <PrimaryPillButton
             label="NEXT"
             onPress={() => dispatch({ type: 'navigate', target: isPracticeMode ? 'S13' : 'S04' })}
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   },
   syncPreviewLabel: {
     color: GARAK_COLORS.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
   },
   syncPreviewValue: {

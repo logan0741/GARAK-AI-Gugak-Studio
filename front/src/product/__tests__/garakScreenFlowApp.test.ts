@@ -118,6 +118,20 @@ test('uses the language-aware Figma home hero copy in the home screen accessibil
   expect(uiSource).toMatch(/visualHeroPressArea:\s*\{[\s\S]*?bottom: 38/);
 });
 
+test('keeps the home play CTA visible when the hero bitmap cannot render', () => {
+  const uiSource = readFileSync(resolve(process.cwd(), 'src/product/garakUi.tsx'), 'utf8');
+  const visualHeroSource = uiSource.slice(
+    uiSource.indexOf('export function VisualHero'),
+    uiSource.indexOf('export function ArtworkImagePanel'),
+  );
+
+  expect(visualHeroSource).toContain('useState(false)');
+  expect(visualHeroSource).toContain('onError={() => setHeroImageFailed(true)}');
+  expect(visualHeroSource).toContain('heroImageFailed ?');
+  expect(visualHeroSource).toContain('visualHeroFallbackContent');
+  expect(visualHeroSource).toContain('visualHeroFallbackButton');
+});
+
 test('uses the Figma free-creation mode guide for the intro screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
   const introGuideSource = source.slice(
@@ -142,6 +156,38 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).not.toContain('GARAK에 오신 것을 환영해요');
   expect(source).not.toContain('onPress={() => undefined}');
   expect(source).not.toContain("onPress={() => dispatch({ type: 'navigate', target: 'S13' })}");
+});
+
+test('uses Wanted Montage linear progress indicator across free-creation onboarding screens', () => {
+  const uiSource = readFileSync(resolve(process.cwd(), 'src/product/garakUi.tsx'), 'utf8');
+  const settingsSource = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
+  const freeCreationSource = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const introGuideSource = settingsSource.slice(
+    settingsSource.indexOf('export function IntroGuideContent'),
+    settingsSource.indexOf('export function SettingsContent'),
+  );
+  const instrumentSelectSource = freeCreationSource.slice(
+    freeCreationSource.indexOf('export function InstrumentSelectContent'),
+    freeCreationSource.indexOf('export function InstrumentSettingsContent'),
+  );
+  const instrumentSettingsSource = freeCreationSource.slice(
+    freeCreationSource.indexOf('export function InstrumentSettingsContent'),
+    freeCreationSource.indexOf('export function FreePlayContent'),
+  );
+
+  expect(uiSource).toContain('export function GarakProgressIndicator');
+  expect(uiSource).toContain('Math.max(0, Math.min(1, progress))');
+  expect(uiSource).toContain('accessibilityRole="progressbar"');
+  expect(uiSource).toContain('accessibilityValue={{ min: 0, max: 100, now: Math.round(normalizedProgress * 100) }}');
+  expect(uiSource).toContain('progressIndicatorTrack');
+  expect(uiSource).toContain('progressIndicatorFill');
+  expect(uiSource).toMatch(/progressIndicatorTrack:\s*\{[\s\S]*?height: 2/);
+  expect(introGuideSource).toContain('GarakProgressIndicator progress={1 / 3}');
+  expect(instrumentSelectSource).toContain('GarakProgressIndicator progress={2 / 3}');
+  expect(instrumentSettingsSource).toContain('GarakProgressIndicator progress={1}');
+  expect(introGuideSource).not.toContain('ProgressSteps');
+  expect(instrumentSelectSource).not.toContain('ProgressSteps');
+  expect(instrumentSettingsSource).not.toContain('ProgressSteps');
 });
 
 test('connects S23 login sync preview and actions to library data', () => {
@@ -203,6 +249,9 @@ test('connects S18 library tabs, search, sync label, row storage status, and emp
   expect(source).toContain("type: 'loginAndLoadMySongs'");
   expect(source).toContain('row.storageLabel');
   expect(source).toContain('model.emptyState');
+  expect(source).toContain('isEmptyLibrary');
+  expect(source).toContain('myLibraryStackEmpty');
+  expect(source).toContain('myHeroDeckEmpty');
 });
 
 test('keeps home browsing quick access as a shell-level floating bar', () => {
@@ -289,7 +338,7 @@ test('uses the Figma performance preview design before entering free play', () =
   expect(instrumentSettingsSource).toContain('NEXT');
   expect(instrumentSettingsSource).toContain('InstrumentPreviewStageArtwork');
   expect(instrumentSettingsSource).toContain('instrument={instrumentSettingsModel.instrument}');
-  expect(instrumentSettingsSource).toContain('ProgressSteps step={2}');
+  expect(instrumentSettingsSource).toContain('GarakProgressIndicator progress={1}');
   expect(instrumentSettingsSource).toContain('instrumentSettingsStartAction');
   expect(instrumentSettingsSource).toContain('instrumentSettingsModel.primaryAction');
   expect(instrumentSettingsSource).toContain('disabled={instrumentSettingsStartAction === undefined}');
@@ -344,14 +393,63 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
   expect(source).toContain('LandscapeStageActionHits');
   expect(source).toContain('LandscapeStageNotice');
   expect(source).toContain("visible={state.freePlayNotice === 'missingTake'}");
-  expect(source).toContain("accessibilityLabel=\"녹음 시작\"");
+  expect(source).toContain("accessibilityLabel={isRecordingPerformance ? '연주 완료' : '녹음 시작'}");
   expect(source).toContain("type: 'openFreePlayRecordingSetup'");
   expect(source).toContain("accessibilityLabel=\"장단 설정\"");
   expect(source).toContain("type: 'openLiveJangdanGuide'");
-  expect(source).toContain("accessibilityLabel=\"레이어 편집\"");
-  expect(source).toContain("type: 'openLayerEditor'");
-  expect(source).toContain("accessibilityLabel=\"연주 완료\"");
+  expect(source).not.toContain('landscapeStageLayerHit');
   expect(source).toContain("type: 'completePerformance'");
+});
+
+test('keeps S05 landscape control hits on visible controls instead of the instrument corners', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const freePlaySource = source.slice(
+    source.indexOf('export function FreePlayContent'),
+    source.indexOf('function LandscapeStageNotice'),
+  );
+  const actionHitsSource = source.slice(
+    source.indexOf('function LandscapeStageActionHits'),
+    source.indexOf('export function TrackLayerEditorContent'),
+  );
+  const primaryHitStyle = source.slice(
+    source.indexOf('landscapeStagePrimaryHit:'),
+    source.indexOf('landscapeStageJangdanHit:'),
+  );
+
+  expect(freePlaySource).toContain('isRecordingPerformance={isRecordingPerformance}');
+  expect(actionHitsSource).toContain('isRecordingPerformance');
+  expect(actionHitsSource).toContain("type: isRecordingPerformance ? 'completePerformance' : 'openFreePlayRecordingSetup'");
+  expect(actionHitsSource).not.toContain('landscapeStageCompleteHit');
+  expect(primaryHitStyle).toContain('top: 16');
+  expect(primaryHitStyle).toContain('right: 64');
+  expect(primaryHitStyle).toContain('width: 44');
+  expect(primaryHitStyle).not.toContain('bottom: 0');
+});
+
+test('connects S05 and S09 performance surfaces to captured input events', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('createTouchModel');
+  expect(source).toContain('PanResponder');
+  expect(source).toContain('appendFreePlayPerformanceEvents');
+  expect(source).toContain('PerformanceCaptureSurface');
+  expect(source).toContain('performanceCapture.panHandlers');
+  expect(source).toContain('onPerformanceEvents={appendPerformanceEvents}');
+});
+
+test('keeps the performance PanResponder stable across callback prop updates', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('useCallback');
+  expect(source).toContain('useRef');
+  expect(source).toContain('const enabledRef = useRef(enabled);');
+  expect(source).toContain('enabledRef.current = enabled;');
+  expect(source).toContain('const onPerformanceEventsRef = useRef(onPerformanceEvents);');
+  expect(source).toContain('onPerformanceEventsRef.current = onPerformanceEvents;');
+  expect(source).toContain('const handleTouchFrame = useCallback(');
+  expect(source).toContain('onPerformanceEventsRef.current(events);');
+  expect(source).toContain('[handleTouchFrame]');
+  expect(source).not.toContain('[enabled, onPerformanceEvents, touchModel]');
 });
 
 test('connects S05 recording start separately from completion and missing-take guidance', () => {
@@ -523,6 +621,42 @@ test('keeps the share quick access tab active on S20', () => {
   expect(source).toContain("onShare={() => dispatch({ type: 'navigate', target: 'S20' })}");
 });
 
+test('reserves enough scroll room above the floating quick access nav on browsing screens', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+
+  expect(source).toContain('homeBrowsingContent');
+  expect(source).toContain('paddingBottom: GARAK_LAYOUT.quickAccessHeight + 118');
+});
+
+test('labels shell icon buttons for assistive technology', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+
+  expect(source).toContain('accessibilityLabel="언어 변경"');
+  expect(source).toContain('accessibilityLabel="뒤로가기"');
+  expect(source).toContain('accessibilityLabel="마이 및 설정"');
+  expect(source).toContain('accessibilityLabel="새 작업 시작"');
+});
+
+test('labels auth buttons without exposing decorative marks as button names', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/authScreens.tsx'), 'utf8');
+
+  expect(source).toContain('accessibilityLabel={label}');
+  expect(source).toContain('accessibilityElementsHidden');
+  expect(source).toContain('importantForAccessibility="no-hide-descendants"');
+});
+
+test('keeps the login brand and auth actions visually grouped', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/authScreens.tsx'), 'utf8');
+  const loginScreenStyle = source.slice(source.indexOf('loginScreen:'), source.indexOf('loginBrand:'));
+  const homeIndicatorStyle = source.slice(source.indexOf('homeIndicator:'), source.indexOf('});', source.indexOf('homeIndicator:')));
+
+  expect(loginScreenStyle).not.toContain("justifyContent: 'space-between'");
+  expect(loginScreenStyle).toContain("justifyContent: 'center'");
+  expect(loginScreenStyle).toContain('gap: 104');
+  expect(homeIndicatorStyle).toContain("position: 'absolute'");
+  expect(homeIndicatorStyle).toContain('bottom: 9');
+});
+
 test('uses the Figma stacked track add flow for S08', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
@@ -542,6 +676,8 @@ test('uses the Figma stacked track add flow for S08', () => {
   expect(source).toContain("type: 'openInstrumentTrackSelection'");
   expect(source).toContain("state.trackAddSelection === 'instrument'");
   expect(source).toContain('MVP_INSTRUMENTS.map');
+  expect(source).toContain("flexWrap: 'wrap'");
+  expect(source).not.toContain('marginRight: -24');
   expect(source).toContain('accessibilityLabel={`${getInstrumentName(instrument.id)} 추가 녹음`}');
   expect(source).not.toContain('accessibilityLabel="추가 악기 선택"');
   expect(source).toContain("type: 'chooseAccompanimentTrack'");

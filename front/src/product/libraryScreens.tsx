@@ -24,9 +24,10 @@ export function LibraryContent({
   dispatch: ProductDispatch;
 }) {
   const model = getMyLibraryViewModel(state);
+  const isEmptyLibrary = model.emptyState !== undefined;
 
   return (
-    <View style={styles.myLibraryStack}>
+    <View style={[styles.myLibraryStack, isEmptyLibrary ? styles.myLibraryStackEmpty : undefined]}>
       <Text style={styles.myLibraryTitle}>
         <Text style={styles.myLibraryTitleMuted}>나의 GARAK</Text>
         {'\n'}라이브러리
@@ -41,7 +42,7 @@ export function LibraryContent({
         <Text style={styles.librarySyncLabel}>{model.syncLabel}</Text>
       </Pressable>
 
-      <View style={styles.myHeroDeck}>
+      <View style={[styles.myHeroDeck, isEmptyLibrary ? styles.myHeroDeckEmpty : undefined]}>
         {model.heroCards.map((card, index) => (
           <MyLibraryHeroCardView
             key={card.id}
@@ -81,7 +82,7 @@ export function LibraryContent({
         <Text style={styles.sectionLabel}>Playlist</Text>
       </View>
       {model.emptyState !== undefined ? (
-        <View style={styles.libraryEmptyState}>
+        <View style={[styles.libraryEmptyState, isEmptyLibrary ? styles.libraryEmptyStateCompact : undefined]}>
           <Text style={styles.libraryEmptyTitle}>{model.emptyState.title}</Text>
           <Text style={styles.libraryEmptyDescription}>{model.emptyState.description}</Text>
           <Pressable
@@ -719,6 +720,9 @@ const styles = StyleSheet.create({
   myLibraryStack: {
     gap: 18,
   },
+  myLibraryStackEmpty: {
+    gap: 10,
+  },
   myLibraryTitle: {
     color: GARAK_COLORS.textPrimary,
     fontSize: 32,
@@ -743,6 +747,9 @@ const styles = StyleSheet.create({
   },
   myHeroDeck: {
     marginBottom: -10,
+  },
+  myHeroDeckEmpty: {
+    marginBottom: -20,
   },
   librarySearchInput: {
     backgroundColor: GARAK_COLORS.surfaceCard,
@@ -819,7 +826,7 @@ const styles = StyleSheet.create({
   },
   myHeroDate: {
     color: '#BFC0C8',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     marginTop: 13,
   },
@@ -879,7 +886,11 @@ const styles = StyleSheet.create({
   libraryEmptyState: {
     gap: 8,
     paddingHorizontal: 20,
-    paddingVertical: 4,
+    paddingTop: 4,
+    paddingBottom: 20,
+  },
+  libraryEmptyStateCompact: {
+    marginTop: -10,
   },
   libraryEmptyTitle: {
     color: GARAK_COLORS.textPrimary,
@@ -949,17 +960,17 @@ const styles = StyleSheet.create({
     color: GARAK_COLORS.surfaceCard,
   },
   playlistDate: {
-    color: '#9A9A9A',
-    fontSize: 10,
+    color: '#747780',
+    fontSize: 12,
     fontWeight: '600',
     marginTop: 4,
   },
   playlistActiveMeta: {
-    color: '#C9CBD4',
-    fontSize: 9,
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0,
-    marginTop: 3,
+    marginTop: 2,
   },
   playlistProgress: {
     backgroundColor: '#5A5D6D',

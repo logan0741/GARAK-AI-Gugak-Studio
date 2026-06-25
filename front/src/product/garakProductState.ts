@@ -178,6 +178,7 @@ export type GarakProductAction =
   | { type: 'adjustFreePlayRecordingBpm'; delta: number }
   | { type: 'cancelFreePlayRecordingSetup' }
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup }
+  | { type: 'appendFreePlayPerformanceEvents'; events: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | { type: 'setWorkPlayheadBeat'; beat: number }
   | { type: 'adjustWorkTrackVolume'; trackId: string; delta: number }
@@ -449,6 +450,19 @@ export function applyProductAction(
         freePlayRecordingSetup: undefined,
         freePlayNotice: undefined,
       };
+    case 'appendFreePlayPerformanceEvents':
+      if (state.pendingFreePlayTake === undefined || action.events.length === 0) {
+        return state;
+      }
+
+      return {
+        ...state,
+        pendingFreePlayTake: {
+          ...state.pendingFreePlayTake,
+          events: [...state.pendingFreePlayTake.events, ...action.events],
+        },
+        freePlayNotice: undefined,
+      };
     case 'completePerformance':
       return completePerformance(state, action.events);
     case 'setWorkPlayheadBeat':
@@ -479,6 +493,7 @@ export function applyProductAction(
       return {
         ...state,
         freePlayRecordingSetup: undefined,
+        previewingJangdanPreset: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'openLiveJangdanGuide' }),
       };
     case 'applyLiveJangdanGuide':
@@ -764,6 +779,10 @@ export function applyProductAction(
     case 'back':
       return {
         ...state,
+        previewingJangdanPreset:
+          state.screenFlow.currentScreen === 'S10A' || state.screenFlow.currentScreen === 'S10B'
+            ? undefined
+            : state.previewingJangdanPreset,
         sharePreviewStatus: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'back' }),
       };
