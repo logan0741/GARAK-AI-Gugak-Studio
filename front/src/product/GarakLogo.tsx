@@ -1,6 +1,6 @@
 import { StyleProp, ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { GARAK_COLORS } from './designTokens';
+import { GARAK_COLORS } from './garakDesignSystem';
 
 const GARAK_LOGO_PATHS = [
   'M141.393 32.5374L129.773 1.9248H123.251L106.732 45.4446L97.4736 33.0997C104.458 32.8997 111.718 27.9268 111.718 18.4556C111.718 8.24725 106.407 1.9248 94.4498 1.9248H78.5312V51.6421H85.7908V28.6015H85.9282L102.322 51.6421H112.055L117.565 36.9981H135.433L140.943 51.6421H148.665V1.9248H141.418V32.5374H141.393ZM85.7783 27.5894V8.57211H93.4377C99.8851 8.57211 104.458 12.1332 104.458 17.8434C104.458 24.2907 99.5602 27.5894 91.0887 27.5894H85.7783ZM120.102 30.3508L126.487 11.346H126.612L132.922 30.3508H120.089H120.102Z',
@@ -19,16 +19,16 @@ type GarakLogoProps = {
 
 export function GarakLogo({
   variant = 'red',
-  width = 88,
+  width = 101,
   height = Math.round((width * 54) / 177),
   style,
 }: GarakLogoProps) {
   const fill = getLogoFill(variant);
 
   return (
-    <Svg width={width} height={height} viewBox="0 0 177 54" fill="none" style={style}>
+    <Svg accessibilityLabel="GARAK" fill="none" height={height} style={style} viewBox="0 0 177 54" width={width}>
       {GARAK_LOGO_PATHS.map((path) => (
-        <Path key={path} d={path} fill={fill} />
+        <Path d={path} fill={fill} key={path} />
       ))}
     </Svg>
   );
@@ -37,10 +37,10 @@ export function GarakLogo({
 function getLogoFill(variant: GarakLogoVariant): string {
   switch (variant) {
     case 'amber':
-      return GARAK_COLORS.brand.amber;
+      return GARAK_COLORS.brandAmber;
     case 'light':
-      return GARAK_COLORS.neutral.canvas;
+      return GARAK_COLORS.surfaceCanvas;
     case 'red':
-      return GARAK_COLORS.brand.red;
+      return GARAK_COLORS.brandRed;
   }
 }

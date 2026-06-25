@@ -31,9 +31,11 @@ export type ScreenId = ImplementedScreenId | ExcludedScreenId;
 export type ScreenFlowMode = 'freeCreation' | 'practice';
 export type ScreenMvpStatus = 'required' | 'recommended';
 
+export type ScreenTransitionTarget = ImplementedScreenId | 'previous';
+
 export type ScreenTransitionDefinition = {
   action: string;
-  target: ImplementedScreenId;
+  target: ScreenTransitionTarget;
 };
 
 export type ScreenDefinition = {
@@ -55,12 +57,10 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S01',
     name: 'Home',
     mvpStatus: 'required',
-    primaryCtas: ['selectFreeCreationMode', 'selectPracticeMode', 'next'],
+    primaryCtas: ['playHero', 'language', 'library', 'shareFeed', 'settings'],
     transitions: [
       { action: 'language', target: 'S02' },
       { action: 'introGuide', target: 'S03' },
-      { action: 'nextFreeCreation', target: 'S04' },
-      { action: 'nextPractice', target: 'S13' },
       { action: 'library', target: 'S18' },
       { action: 'shareFeed', target: 'S20' },
       { action: 'settings', target: 'S22' },
@@ -75,12 +75,12 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
   },
   S03: {
     id: 'S03',
-    name: 'Intro Guide',
+    name: 'Mode Guide',
     mvpStatus: 'recommended',
-    primaryCtas: ['nextStep', 'skip'],
+    primaryCtas: ['selectFreeCreationMode', 'selectPracticeMode', 'next'],
     transitions: [
-      { action: 'nextStep', target: 'S05' },
-      { action: 'skip', target: 'S04' },
+      { action: 'nextFreeCreation', target: 'S04' },
+      { action: 'nextPractice', target: 'S13' },
     ],
   },
   S04: {
@@ -94,31 +94,35 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S04A',
     name: 'Performance Defaults',
     mvpStatus: 'required',
-    primaryCtas: ['startWithDefaults', 'customize', 'next'],
-    transitions: [
-      { action: 'next', target: 'S05' },
-      { action: 'customize', target: 'S04' },
-    ],
+    primaryCtas: ['next'],
+    transitions: [{ action: 'next', target: 'S05' }],
   },
   S05: {
     id: 'S05',
     name: 'Free Instrument Performance',
     mvpStatus: 'required',
-    primaryCtas: ['record', 'complete', 'jangdan', 'layerEdit'],
+    primaryCtas: [
+      'openFreePlayRecordingSetup',
+      'startPerformanceRecording',
+      'cancelFreePlayRecordingSetup',
+      'completePerformance',
+      'openLiveJangdanGuide',
+      'openLayerEditor',
+    ],
     transitions: [
       { action: 'completePerformance', target: 'S07' },
-      { action: 'jangdan', target: 'S10A' },
-      { action: 'layerEdit', target: 'S07' },
+      { action: 'openLiveJangdanGuide', target: 'S10A' },
+      { action: 'openLayerEditor', target: 'S07' },
     ],
   },
   S07: {
     id: 'S07',
     name: 'Track And Layer Edit',
     mvpStatus: 'required',
-    primaryCtas: ['saveWork', 'exportAudio', 'addTrack', 'recordAgain'],
+    primaryCtas: ['saveCurrentWork', 'exportCurrentWork', 'addTrack'],
     transitions: [
       { action: 'addTrack', target: 'S08' },
-      { action: 'exportAudio', target: 'S19' },
+      { action: 'exportCurrentWork', target: 'S19' },
       { action: 'library', target: 'S18' },
     ],
   },
@@ -126,73 +130,84 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S08',
     name: 'Add Track',
     mvpStatus: 'required',
-    primaryCtas: ['addInstrumentPerformance', 'addAccompaniment', 'cancel'],
+    primaryCtas: [
+      'openInstrumentTrackSelection',
+      'chooseInstrumentTrack',
+      'chooseAccompanimentTrack',
+      'showLockedImportTrackNotice',
+      'cancelTrackAdd',
+    ],
     transitions: [
-      { action: 'addInstrumentPerformance', target: 'S09' },
-      { action: 'addAccompaniment', target: 'S10B' },
-      { action: 'cancel', target: 'S07' },
+      { action: 'chooseInstrumentTrack', target: 'S09' },
+      { action: 'chooseAccompanimentTrack', target: 'S10B' },
+      { action: 'cancelTrackAdd', target: 'S07' },
     ],
   },
   S09: {
     id: 'S09',
     name: 'Record Extra Instrument',
     mvpStatus: 'required',
-    primaryCtas: ['record', 'apply', 'recordAgain', 'cancel'],
+    primaryCtas: [
+      'startPerformanceRecording',
+      'applyInstrumentTrack',
+      'restartInstrumentTrackRecording',
+      'cancelInstrumentTrack',
+    ],
     transitions: [
-      { action: 'apply', target: 'S07' },
-      { action: 'cancel', target: 'S07' },
+      { action: 'applyInstrumentTrack', target: 'S07' },
+      { action: 'cancelInstrumentTrack', target: 'S07' },
     ],
   },
   S10A: {
     id: 'S10A',
     name: 'Live Jangdan Guide',
     mvpStatus: 'required',
-    primaryCtas: ['preview', 'applyAndReturnToPerformance', 'turnOff'],
+    primaryCtas: ['previewJangdanPreset', 'applyLiveJangdanGuide', 'turnOffLiveJangdanGuide'],
     transitions: [
-      { action: 'applyAndReturnToPerformance', target: 'S05' },
-      { action: 'turnOff', target: 'S05' },
+      { action: 'applyLiveJangdanGuide', target: 'S05' },
+      { action: 'turnOffLiveJangdanGuide', target: 'S05' },
     ],
   },
   S10B: {
     id: 'S10B',
     name: 'Create Accompaniment Track',
     mvpStatus: 'required',
-    primaryCtas: ['preview', 'addAccompanimentTrack', 'cancel'],
+    primaryCtas: ['previewJangdanPreset', 'addAccompanimentTrack', 'cancelAccompanimentTrack'],
     transitions: [
       { action: 'addAccompanimentTrack', target: 'S07' },
-      { action: 'cancel', target: 'S07' },
+      { action: 'cancelAccompanimentTrack', target: 'S07' },
     ],
   },
   S13: {
     id: 'S13',
     name: 'Practice Song Select',
     mvpStatus: 'required',
-    primaryCtas: ['selectArirang', 'selectDoraji', 'selectBoatSong'],
-    transitions: [{ action: 'selectSong', target: 'S14' }],
+    primaryCtas: ['selectPracticeSong', 'previewPracticeSong'],
+    transitions: [{ action: 'selectPracticeSong', target: 'S14' }],
   },
   S14: {
     id: 'S14',
     name: 'Practice Instrument Select',
     mvpStatus: 'required',
-    primaryCtas: ['selectGayageum', 'selectJanggu', 'selectDaegeum'],
+    primaryCtas: ['selectPracticeInstrument', 'next'],
     transitions: [{ action: 'next', target: 'S15' }],
   },
   S15: {
     id: 'S15',
     name: 'Practice Performance',
     mvpStatus: 'required',
-    primaryCtas: ['start', 'complete', 'stop'],
-    transitions: [{ action: 'showResult', target: 'S16' }],
+    primaryCtas: ['startPractice', 'pausePractice', 'restartPractice', 'finishPractice'],
+    transitions: [{ action: 'finishPractice', target: 'S16' }],
   },
   S16: {
     id: 'S16',
     name: 'Practice Result And Feedback',
     mvpStatus: 'required',
-    primaryCtas: ['share', 'practiceAgain', 'save'],
+    primaryCtas: ['practiceAgain', 'savePracticeResult', 'sharePracticeResult', 'chooseAnotherSong'],
     transitions: [
       { action: 'practiceAgain', target: 'S15' },
-      { action: 'share', target: 'S17' },
-      { action: 'save', target: 'S18' },
+      { action: 'sharePracticeResult', target: 'S17' },
+      { action: 'savePracticeResult', target: 'S18' },
       { action: 'chooseAnotherSong', target: 'S13' },
     ],
   },
@@ -200,31 +215,52 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S17',
     name: 'Share Preparation',
     mvpStatus: 'required',
-    primaryCtas: ['share', 'saveOnly'],
+    primaryCtas: [
+      'previewShareTarget',
+      'publishShareTarget',
+      'saveShareTargetOnly',
+      'cancelShareTarget',
+    ],
     transitions: [
-      { action: 'saveOnly', target: 'S18' },
-      { action: 'share', target: 'S20' },
+      { action: 'saveShareTargetOnly', target: 'S18' },
+      { action: 'publishShareTarget', target: 'S20' },
+      { action: 'cancelShareTarget', target: 'previous' },
     ],
   },
   S18: {
     id: 'S18',
     name: 'Library',
     mvpStatus: 'required',
-    primaryCtas: ['openWork', 'listen', 'share', 'more'],
+    primaryCtas: [
+      'openWork',
+      'playLibraryItem',
+      'selectLibraryTab',
+      'updateLibrarySearchQuery',
+      'loginAndLoadMySongs',
+    ],
     transitions: [
       { action: 'openWork', target: 'S07' },
-      { action: 'listen', target: 'S19' },
-      { action: 'share', target: 'S17' },
+      { action: 'playLibraryItem', target: 'S19' },
+      { action: 'loginAndLoadMySongs', target: 'S23' },
+      { action: 'home', target: 'S01' },
+      { action: 'shareFeed', target: 'S20' },
     ],
   },
   S19: {
     id: 'S19',
     name: 'Recording Detail Player',
     mvpStatus: 'required',
-    primaryCtas: ['play', 'openEditor', 'share'],
+    primaryCtas: [
+      'playSelectedPlayerItem',
+      'pauseSelectedPlayerItem',
+      'openSelectedPlayerEditor',
+      'shareSelectedPlayerItem',
+      'deleteSelectedPlayerItem',
+    ],
     transitions: [
-      { action: 'openEditor', target: 'S07' },
-      { action: 'share', target: 'S17' },
+      { action: 'openSelectedPlayerEditor', target: 'S07' },
+      { action: 'shareSelectedPlayerItem', target: 'S17' },
+      { action: 'deleteSelectedPlayerItem', target: 'S18' },
       { action: 'backToLibrary', target: 'S18' },
     ],
   },
@@ -232,20 +268,28 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S20',
     name: 'Share Feed',
     mvpStatus: 'recommended',
-    primaryCtas: ['play', 'remix', 'save'],
+    primaryCtas: ['playLibraryItem', 'openSharedRecordingDetail'],
     transitions: [
-      { action: 'detail', target: 'S21' },
-      { action: 'remix', target: 'S07' },
+      { action: 'playLibraryItem', target: 'S19' },
+      { action: 'openSharedRecordingDetail', target: 'S21' },
+      { action: 'home', target: 'S01' },
+      { action: 'library', target: 'S18' },
+      { action: 'settings', target: 'S22' },
     ],
   },
   S21: {
     id: 'S21',
     name: 'Shared Recording Detail',
     mvpStatus: 'recommended',
-    primaryCtas: ['play', 'remix', 'save'],
+    primaryCtas: [
+      'playSelectedSharedRecording',
+      'pauseSelectedSharedRecording',
+      'remixSharedRecording',
+      'saveSharedRecording',
+    ],
     transitions: [
-      { action: 'remix', target: 'S07' },
-      { action: 'save', target: 'S18' },
+      { action: 'remixSharedRecording', target: 'S07' },
+      { action: 'saveSharedRecording', target: 'S18' },
       { action: 'backToShareFeed', target: 'S20' },
     ],
   },
@@ -253,21 +297,23 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S22',
     name: 'My And Settings',
     mvpStatus: 'required',
-    primaryCtas: ['loginAndLoadMySongs', 'changeLanguage'],
+    primaryCtas: ['loginAndLoadMySongs', 'changeLanguage', 'manageLibrary'],
     transitions: [
       { action: 'loginAndLoadMySongs', target: 'S23' },
       { action: 'changeLanguage', target: 'S02' },
       { action: 'manageLibrary', target: 'S18' },
+      { action: 'home', target: 'S01' },
+      { action: 'shareFeed', target: 'S20' },
     ],
   },
   S23: {
     id: 'S23',
     name: 'Login And Library Sync',
     mvpStatus: 'recommended',
-    primaryCtas: ['login', 'sync', 'skip'],
+    primaryCtas: ['completeLoginSync', 'skipLoginSync'],
     transitions: [
-      { action: 'sync', target: 'S18' },
-      { action: 'skip', target: 'S22' },
+      { action: 'completeLoginSync', target: 'S18' },
+      { action: 'skipLoginSync', target: 'previous' },
     ],
   },
 };
@@ -286,13 +332,15 @@ export const excludedScreenDefinitions: Record<ExcludedScreenId, ExcludedScreenD
   S12: {
     id: 'S12',
     name: 'Practice Mode State',
-    reason: 'Practice mode is represented as S01 home selection state.',
+    reason: 'Practice mode is represented as S03 mode guide selection state.',
   },
 };
 
 const directNavigationTargetSet = new Set<ImplementedScreenId>(
   Object.values(implementedScreenDefinitions).flatMap((definition) =>
-    definition.transitions.map((transition) => transition.target),
+    definition.transitions.flatMap((transition) =>
+      isImplementedScreenId(transition.target) ? [transition.target] : [],
+    ),
   ),
 );
 

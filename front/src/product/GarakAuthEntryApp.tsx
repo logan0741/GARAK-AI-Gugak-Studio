@@ -10,6 +10,10 @@ import { createDefaultAuthStorage } from './authStorage';
 import { GARAK_COLORS, GARAK_TYPOGRAPHY } from './designTokens';
 import { AccountState } from './garakProductState';
 import { GarakScreenFlowApp } from './GarakScreenFlowApp';
+import {
+  PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
+  PRODUCT_SAMPLE_MANIFESTS,
+} from './productSampleReadinessConfig';
 import { createRuntimeGoogleIdentityProvider } from './runtimeGoogleIdentity';
 
 const ONBOARDING_STEPS = ['canvasRed', 'navyAmber', 'redLight', 'intro'] as const;
@@ -161,6 +165,8 @@ export function GarakAuthEntryApp() {
         key={entryState.account.status === 'loggedIn' ? entryState.account.userId : 'guest'}
         account={entryState.account}
         onLogout={handleLogout}
+        sampleManifests={PRODUCT_SAMPLE_MANIFESTS}
+        sampleFallbackInstruments={PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS}
       />
     );
   }

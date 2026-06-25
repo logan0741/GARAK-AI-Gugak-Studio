@@ -18,10 +18,12 @@ test('recommends jungmori for slow sparse playing', () => {
   expect(result.reason).toContain('slow tempo');
 });
 
-test('recommends gutgeori for medium tempo playing', () => {
+test('recommends semachi for medium tempo playing', () => {
   const result = recommendJangdan(plucks([0, 650, 1300, 1950, 2600]));
 
-  expect(result.jangdan).toBe('gutgeori');
+  expect(result.jangdan).toBe('semachi');
+  expect(result.reason).toContain('semachi');
+  expect(result.reason).not.toContain('gutgeori');
 });
 
 test('recommends jajinmori for fast dense playing', () => {

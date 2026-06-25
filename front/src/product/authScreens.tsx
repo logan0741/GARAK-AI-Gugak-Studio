@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { GarakLogo } from './GarakLogo';
 import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
+import { GarakText as Text } from './garakTypography';
 
 export type GarakOnboardingStep = 'canvasRed' | 'navyAmber' | 'redLight' | 'intro';
 

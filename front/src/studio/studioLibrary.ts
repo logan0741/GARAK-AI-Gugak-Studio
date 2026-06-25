@@ -3,11 +3,14 @@ import {
   AccompanimentTrack,
   ExportedAudio,
   InstrumentId,
+  InstrumentSettingValues,
   InstrumentTrack,
   JangdanPresetId,
   LibrarySections,
   LiveJangdanGuide,
   PracticeResult,
+  RecordingSetup,
+  ReferenceTrack,
   Take,
   Track,
   Work,
@@ -32,7 +35,9 @@ export function autoSaveTakeAsWork(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 }): Work {
   const take = createTake({
     id: input.takeId,
@@ -40,7 +45,9 @@ export function autoSaveTakeAsWork(input: {
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
+    instrumentSettings: input.instrumentSettings,
   });
 
   return {
@@ -72,6 +79,7 @@ export function addInstrumentTrack(
     durationBeats: number;
     playheadBeat?: number;
     recordingUri?: string;
+    instrumentSettings?: InstrumentSettingValues;
   },
 ): Work {
   const startedAtBeat = resolveStartBeat(input.playheadBeat);
@@ -81,6 +89,7 @@ export function addInstrumentTrack(
     startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    instrumentSettings: input.instrumentSettings,
   });
 
   return {
@@ -182,6 +191,8 @@ export function exportWorkAudioPlaceholder(input: {
   durationSeconds: number;
   createdAt: string;
 }): ExportedAudio {
+  const referenceSource = collectReferenceSource(input.work);
+
   return {
     id: input.id,
     kind: 'exported_audio',
@@ -192,6 +203,7 @@ export function exportWorkAudioPlaceholder(input: {
     createdAt: input.createdAt,
     audioUri: input.audioUri,
     shareState: 'ready',
+    ...referenceSource,
   };
 }
 
@@ -254,7 +266,9 @@ function createTake(input: {
   startedAtBeat: number;
   durationBeats: number;
   recordingUri?: string;
+  recordingSetup?: RecordingSetup;
   liveJangdanGuide?: LiveJangdanGuide;
+  instrumentSettings?: InstrumentSettingValues;
 }): Take {
   return {
     id: input.id,
@@ -262,7 +276,9 @@ function createTake(input: {
     recordingUri: normalizeOptionalText(input.recordingUri),
     startedAtBeat: input.startedAtBeat,
     durationBeats: input.durationBeats,
+    recordingSetup: input.recordingSetup,
     liveJangdanGuide: input.liveJangdanGuide,
+    instrumentSettings: input.instrumentSettings,
   };
 }
 
@@ -302,9 +318,29 @@ function collectInstrumentNames(work: Work): string[] {
     if (track.kind === 'accompaniment') {
       names.add('장단');
     }
+    if (track.kind === 'reference') {
+      names.add(`참조: ${track.title}`);
+    }
   }
 
   return [...names];
+}
+
+function collectReferenceSource(work: Work): Pick<
+  ExportedAudio,
+  'sourceShareId' | 'authorDisplayName' | 'sourceLabel'
+> | undefined {
+  const referenceTrack = work.tracks.find((track): track is ReferenceTrack => track.kind === 'reference');
+
+  if (referenceTrack === undefined) {
+    return undefined;
+  }
+
+  return {
+    sourceShareId: referenceTrack.sourceShareId,
+    authorDisplayName: referenceTrack.authorDisplayName,
+    sourceLabel: referenceTrack.sourceLabel,
+  };
 }
 
 function resolveStartBeat(playheadBeat: number | undefined): number {
