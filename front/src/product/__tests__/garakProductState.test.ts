@@ -71,6 +71,29 @@ test('summarizes S04A as the Figma performance preview with a single Next CTA', 
   expect(summary.primaryCtas).not.toContain('직접 조정');
 });
 
+test('routes S04A Next into free play with default instrument settings', () => {
+  const state = {
+    ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu'] }),
+    selectedInstrument: 'janggu' as const,
+    screenFlow: {
+      currentScreen: 'S04A' as const,
+      history: ['S01' as const, 'S03' as const, 'S04' as const],
+      mode: 'freeCreation' as const,
+    },
+  };
+
+  const nextState = applyProductAction(state, { type: 'next' });
+
+  expect(nextState.screenFlow.currentScreen).toBe('S05');
+  expect(nextState.screenFlow.history).toEqual(['S01', 'S03', 'S04', 'S04A']);
+  expect(nextState.selectedInstrument).toBe('janggu');
+  expect(nextState.activeInstrumentSettings).toMatchObject({
+    instrument: 'janggu',
+    source: 'default',
+  });
+  expect(nextState.instrumentSettingsNotice).toBeUndefined();
+});
+
 test('summarizes free-creation screen CTAs that are exposed by the connected UI actions', () => {
   let state = createInitialGarakProductState({
     sampleFallbackInstruments: ['janggu'],

@@ -362,6 +362,10 @@ export function applyProductAction(
         return startPracticePerformanceScreen(state);
       }
 
+      if (state.screenFlow.currentScreen === 'S04A') {
+        return startFreePlayWithInstrumentSettings(state, 'default');
+      }
+
       return {
         ...state,
         screenFlow: routeProductNext(state),
