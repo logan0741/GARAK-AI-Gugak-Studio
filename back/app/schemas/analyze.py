@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.performance_event import PerformanceEventIn
@@ -5,7 +7,7 @@ from app.schemas.performance_event import PerformanceEventIn
 
 class AnalyzeRequest(BaseModel):
     session_id: str = Field(alias="sessionId")
-    events: list[PerformanceEventIn]
+    events: List[PerformanceEventIn]
 
     model_config = ConfigDict(populate_by_name=True)
 

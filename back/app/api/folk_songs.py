@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +13,7 @@ router = APIRouter(prefix="/api", tags=["folk-songs"])
 _TIMING_TOLERANCE_MS = 200  # ±200ms 이내 → 정확
 
 
-@router.get("/folk-songs", response_model=list[FolkSongOut], response_model_by_alias=True)
+@router.get("/folk-songs", response_model=List[FolkSongOut], response_model_by_alias=True)
 async def list_folk_songs(
     locale: str = Query(default="ko", pattern="^(ko|en)$"),
     db: AsyncSession = Depends(get_db),

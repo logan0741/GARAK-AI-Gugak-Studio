@@ -1,11 +1,11 @@
-from typing import Literal
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 EventType = Literal["string_pluck", "string_bend", "string_mute", "glissando_step", "string_release"]
 
 # 타입별 필수 필드 정의
-_REQUIRED_FIELDS: dict[str, list[str]] = {
+_REQUIRED_FIELDS: Dict[str, List[str]] = {
     "string_pluck":   ["unit_index"],
     "string_bend":    ["unit_index", "cents"],
     "string_mute":    ["unit_index"],
@@ -22,14 +22,14 @@ class PerformanceEventIn(BaseModel):
     # FE: type → DB: event_type
     type: EventType
     # FE에서만 사용하는 포인터 ID — 서버에서 저장하지 않음
-    pointer_id: str | None = Field(None, alias="pointerId", exclude=True)
+    pointer_id: Optional[str] = Field(None, alias="pointerId", exclude=True)
     # FE: stringIndex → DB: unit_index (1~12)
-    unit_index: int | None = Field(None, alias="stringIndex", ge=1, le=12)
+    unit_index: Optional[int] = Field(None, alias="stringIndex", ge=1, le=12)
     # FE: cents → DB: pitch_bend_cents (-120~120)
-    cents: int | None = Field(None, ge=-120, le=120)
-    velocity: float | None = Field(None, ge=0.0, le=1.0)
-    strength: float | None = Field(None, ge=0.0, le=1.0)
-    payload: dict | None = None
+    cents: Optional[int] = Field(None, ge=-120, le=120)
+    velocity: Optional[float] = Field(None, ge=0.0, le=1.0)
+    strength: Optional[float] = Field(None, ge=0.0, le=1.0)
+    payload: Optional[Dict] = None
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -51,10 +51,10 @@ class PerformanceEventOut(BaseModel):
     id: str
     occurred_at_ms: int
     event_type: str
-    unit_index: int | None
-    pitch_bend_cents: int | None
-    velocity: float | None
-    strength: float | None
-    payload: dict | None
+    unit_index: Optional[int]
+    pitch_bend_cents: Optional[int]
+    velocity: Optional[float]
+    strength: Optional[float]
+    payload: Optional[Dict]
 
     model_config = ConfigDict(from_attributes=True)

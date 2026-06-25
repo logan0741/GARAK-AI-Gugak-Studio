@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.performance_event import PerformanceEventIn
@@ -13,7 +15,7 @@ class FolkSongOut(BaseModel):
 
 
 class ScoreRequest(BaseModel):
-    events: list[PerformanceEventIn]
+    events: List[PerformanceEventIn]
 
 
 class ScoreResponse(BaseModel):

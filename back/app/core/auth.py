@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import asyncio
+from functools import partial
+from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -12,7 +16,7 @@ security = HTTPBearer(auto_error=False)
 
 
 def _verify_google_token(token: str) -> dict:
-    """동기 함수. asyncio.to_thread()로 감싸서 호출할 것."""
+    """동기 함수. executor로 감싸서 호출할 것."""
     return id_token.verify_oauth2_token(
         token,
         google_requests.Request(),
@@ -23,7 +27,8 @@ def _verify_google_token(token: str) -> dict:
 async def verify_google_id_token(id_token_str: str) -> dict:
     """Google ID Token 검증. id_info(sub, email 등) 반환."""
     try:
-        return await asyncio.to_thread(_verify_google_token, id_token_str)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, partial(_verify_google_token, id_token_str))
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -37,7 +42,7 @@ async def verify_google_id_token(id_token_str: str) -> dict:
 
 
 async def get_current_user_payload(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> dict:
     """백엔드 JWT 검증 후 payload 전체 반환.
 

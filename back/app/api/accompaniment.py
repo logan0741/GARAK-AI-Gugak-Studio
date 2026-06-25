@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from functools import partial
 from time import time_ns
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -28,12 +29,16 @@ async def accompaniment(
         )
 
     try:
-        result = await asyncio.to_thread(
-            ai_client.generate_pattern_sequence,
-            key=body.key,
-            jangdan=body.jangdan,
-            bpm=body.bpm,
-            temperature=body.temperature,
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None,
+            partial(
+                ai_client.generate_pattern_sequence,
+                key=body.key,
+                jangdan=body.jangdan,
+                bpm=body.bpm,
+                temperature=body.temperature,
+            ),
         )
         pattern_sequence = result["patternSequence"]
         playback_rate = result["playbackRate"]

@@ -241,20 +241,20 @@ def _extract_pitch_classes(events: list[dict]) -> list[int]:
 def _extract_timestamps_seconds(events: list[dict]) -> list[float]:
     timestamps: list[float] = []
     for event in events:
-        raw = event.get("timestampMs")
-        if raw is None:
-            raw = event.get("timestamp_ms")
-        if raw is None:
-            raw = event.get("tsMs")
-        if raw is None:
-            raw = event.get("ts_ms")
-        if raw is None:
-            raw = event.get("timestamp")
+        raw = None
+        is_milliseconds = False
+        for field in ("timestampMs", "timestamp_ms", "tsMs", "ts_ms"):
+            if event.get(field) is not None:
+                raw = event[field]
+                is_milliseconds = True
+                break
+        if raw is None and event.get("timestamp") is not None:
+            raw = event["timestamp"]
         if raw is None:
             continue
 
         value = float(raw)
-        if value > 1000:
+        if is_milliseconds or value > 1000:
             value /= 1000.0
         timestamps.append(value)
     return sorted(timestamps)

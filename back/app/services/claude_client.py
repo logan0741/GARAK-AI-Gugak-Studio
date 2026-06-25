@@ -3,14 +3,23 @@
 API 키 미발급 시 stub 텍스트 반환. 키 설정 시 실제 Claude 호출.
 """
 
-import anthropic
+from __future__ import annotations
+
+from typing import Any, Optional
+
+try:
+    import anthropic
+except ModuleNotFoundError:
+    anthropic = None
 
 from app.core.config import settings
 
-_anthropic_client: anthropic.AsyncAnthropic | None = None
+_anthropic_client: Optional[Any] = None
 
 
-def _get_anthropic_client() -> anthropic.AsyncAnthropic:
+def _get_anthropic_client() -> Any:
+    if anthropic is None:
+        raise RuntimeError("anthropic package is not installed")
     global _anthropic_client
     if _anthropic_client is None:
         _anthropic_client = anthropic.AsyncAnthropic(api_key=settings.claude_api_key)

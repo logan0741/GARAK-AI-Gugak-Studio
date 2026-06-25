@@ -4,6 +4,8 @@ API 키 미설정 시 원문 그대로 반환 (fallback).
 locale이 "ko"이면 번역 없이 반환.
 """
 
+from __future__ import annotations
+
 import logging
 
 import httpx

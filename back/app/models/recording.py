@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import List, Optional
+
 from sqlalchemy import VARCHAR, ForeignKey, Enum, Index
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, FLOAT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -10,7 +14,7 @@ class Recording(Base):
 
     id: Mapped[str] = mapped_column(VARCHAR(64), primary_key=True)
     session_id: Mapped[str] = mapped_column(VARCHAR(64), ForeignKey("session.id", ondelete="CASCADE"), nullable=False)
-    instrument_id: Mapped[str | None] = mapped_column(VARCHAR(64), ForeignKey("instrument.id", ondelete="SET NULL"), nullable=True)
+    instrument_id: Mapped[Optional[str]] = mapped_column(VARCHAR(64), ForeignKey("instrument.id", ondelete="SET NULL"), nullable=True)
     file_uri: Mapped[str] = mapped_column(VARCHAR(512), nullable=False)
     format: Mapped[str] = mapped_column(VARCHAR(16), nullable=False, server_default="aac")
     duration_ms: Mapped[int] = mapped_column(INTEGER(unsigned=True), nullable=False, server_default="0")
@@ -25,8 +29,8 @@ class Recording(Base):
     created_at_ms: Mapped[int] = mapped_column(BIGINT(unsigned=True), nullable=False)
 
     session: Mapped["Session"] = relationship(back_populates="recordings")
-    instrument: Mapped["Instrument | None"] = relationship()
-    share_links: Mapped[list["ShareLink"]] = relationship(back_populates="recording")
+    instrument: Mapped[Optional["Instrument"]] = relationship()
+    share_links: Mapped[List["ShareLink"]] = relationship(back_populates="recording")
 
     __table_args__ = (
         Index("idx_recording_session", "session_id"),

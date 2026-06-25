@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +38,7 @@ async def create_session(
     return SessionCreateResponse(id=session.id, created_at_ms=session.created_at_ms)
 
 
-@router.get("/sessions", response_model=list[SessionSummary])
+@router.get("/sessions", response_model=List[SessionSummary])
 async def list_sessions(
     user_id: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

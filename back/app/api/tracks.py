@@ -2,6 +2,7 @@ import re
 import uuid
 from pathlib import Path
 from time import time_ns
+from typing import Optional
 
 import aiofiles
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -29,7 +30,7 @@ def _now_ms() -> int:
 async def upload_track(
     file: UploadFile = File(...),
     session_id: str = Form(...),
-    instrument_id: str | None = Form(None),
+    instrument_id: Optional[str] = Form(None),
     duration_ms: int = Form(...),
     user_id: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

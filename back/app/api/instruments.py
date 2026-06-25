@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,7 +11,7 @@ router = APIRouter(prefix="/api", tags=["instruments"])
 
 
 # 공개 엔드포인트 — 앱 시작 시 인증 없이 악기 목록 로딩 (CLAUDE.md 명세 참조)
-@router.get("/instruments", response_model=list[InstrumentOut])
+@router.get("/instruments", response_model=List[InstrumentOut])
 async def list_instruments(db: AsyncSession = Depends(get_db)):
     return await jangdan_repo.get_all_instruments(db)
 

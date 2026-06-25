@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -18,7 +20,7 @@ class JangdanPresetOut(BaseModel):
     max_bpm: int
     density_range: str
     meter: str
-    description: str | None
-    pattern_events: list[JangdanPatternEventOut]
+    description: Optional[str]
+    pattern_events: List[JangdanPatternEventOut]
 
     model_config = ConfigDict(from_attributes=True)

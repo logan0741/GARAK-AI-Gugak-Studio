@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -15,12 +15,12 @@ class SessionCreate(BaseModel):
     sample_asset_manifest_id: str = Field(alias="sampleAssetManifestId")
     title: str
     mode: Literal["creative", "practice"] = "creative"
-    folk_song_id: str | None = Field(None, alias="folkSongId")
+    folk_song_id: Optional[str] = Field(None, alias="folkSongId")
     schema_version: str = Field("2026.06.mvp", alias="schemaVersion")
     duration_ms: int = Field(alias="durationMs", ge=0, le=MAX_DURATION_MS)
     created_at_ms: int = Field(alias="createdAtMs", gt=0)
-    replay_settings: dict | None = Field(None, alias="replaySettings")
-    events: list[PerformanceEventIn] = Field(max_length=MAX_EVENTS)
+    replay_settings: Optional[Dict] = Field(None, alias="replaySettings")
+    events: List[PerformanceEventIn] = Field(max_length=MAX_EVENTS)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -36,7 +36,7 @@ class SessionSummary(BaseModel):
     instrument_id: str
     title: str
     mode: str
-    folk_song_id: str | None
+    folk_song_id: Optional[str]
     duration_ms: int
     created_at_ms: int
     updated_at_ms: int
@@ -51,12 +51,12 @@ class SessionDetail(BaseModel):
     sample_asset_manifest_id: str
     title: str
     mode: str
-    folk_song_id: str | None
+    folk_song_id: Optional[str]
     schema_version: str
     duration_ms: int
     created_at_ms: int
     updated_at_ms: int
-    replay_settings: dict | None
-    events: list[PerformanceEventOut]
+    replay_settings: Optional[Dict]
+    events: List[PerformanceEventOut]
 
     model_config = ConfigDict(from_attributes=True)

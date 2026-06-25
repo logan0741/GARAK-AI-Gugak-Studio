@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     google_translate_api_key: str = ""
     server_base_url: str = "http://localhost:8000"
     ai_module_path: str = "../ai"
+    models_dir: str = "../AI/models"
+    segments_dir: str = "../AI/segments"
     bypass_auth: bool = False
     jwt_secret_key: str = "dev-secret-key"
     jwt_expire_minutes: int = 60
