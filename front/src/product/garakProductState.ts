@@ -871,6 +871,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '가야금',
         '장구',
         '대금',
+        'NEXT',
       ]);
     case 'S15':
       return summary(

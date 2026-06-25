@@ -197,6 +197,26 @@ test('defines S13 practice song preview action from the detailed document', () =
   expect(s13Section).toContain('미리듣기');
 });
 
+test('defines S14 practice instrument next action from the detailed document', () => {
+  const screenFlowDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),
+    'utf8',
+  );
+  const s14Section = screenFlowDoc.slice(
+    screenFlowDoc.indexOf('### S14 따라하기 악기 선택'),
+    screenFlowDoc.indexOf('### S15 따라하기 연주'),
+  );
+
+  expect(implementedScreenDefinitions.S14.primaryCtas).toEqual(
+    expect.arrayContaining(['selectGayageum', 'selectJanggu', 'selectDaegeum', 'next']),
+  );
+  expect(implementedScreenDefinitions.S14.transitions).toContainEqual({
+    action: 'next',
+    target: 'S15',
+  });
+  expect(s14Section).toContain('Next');
+});
+
 test('defines S16 choose-another-song action from the detailed document', () => {
   const screenFlowDoc = readFileSync(
     resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),

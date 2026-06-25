@@ -171,7 +171,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S14',
     name: 'Practice Instrument Select',
     mvpStatus: 'required',
-    primaryCtas: ['selectGayageum', 'selectJanggu', 'selectDaegeum'],
+    primaryCtas: ['selectGayageum', 'selectJanggu', 'selectDaegeum', 'next'],
     transitions: [{ action: 'next', target: 'S15' }],
   },
   S15: {

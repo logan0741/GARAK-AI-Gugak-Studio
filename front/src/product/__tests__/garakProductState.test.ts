@@ -1003,6 +1003,19 @@ test('keeps S14 on instrument selection until Next starts practice performance',
   expect(state.screenFlow.currentScreen).toBe('S15');
 });
 
+test('summarizes S14 instrument selection with Next from the detailed document', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'practice' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'arirang' });
+
+  expect(state.screenFlow.currentScreen).toBe('S14');
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['가야금', '장구', '대금', 'NEXT']),
+  );
+});
+
 test('chooses practice mode from the S03 mode guide before opening song selection', () => {
   let state = createInitialGarakProductState();
 
