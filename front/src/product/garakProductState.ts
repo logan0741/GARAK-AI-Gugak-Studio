@@ -864,6 +864,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '아리랑',
         '도라지',
         '뱃노래',
+        '미리듣기',
       ]);
     case 'S14':
       return summary(screenId, '따라하기 악기 선택', selectedSongLabel(state), '추천 악기는 배지로만 보여주고 선택은 열어둬요.', [

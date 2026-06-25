@@ -164,7 +164,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S13',
     name: 'Practice Song Select',
     mvpStatus: 'required',
-    primaryCtas: ['selectArirang', 'selectDoraji', 'selectBoatSong'],
+    primaryCtas: ['selectArirang', 'selectDoraji', 'selectBoatSong', 'previewPracticeSong'],
     transitions: [{ action: 'selectSong', target: 'S14' }],
   },
   S14: {

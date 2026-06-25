@@ -176,6 +176,27 @@ test('defines S15 practice controls from the detailed document', () => {
   expect(s15Section).toContain('다시 시작');
 });
 
+test('defines S13 practice song preview action from the detailed document', () => {
+  const screenFlowDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),
+    'utf8',
+  );
+  const s13Section = screenFlowDoc.slice(
+    screenFlowDoc.indexOf('### S13 민요 선택'),
+    screenFlowDoc.indexOf('### S14 따라하기 악기 선택'),
+  );
+
+  expect(implementedScreenDefinitions.S13.primaryCtas).toEqual(
+    expect.arrayContaining([
+      'selectArirang',
+      'selectDoraji',
+      'selectBoatSong',
+      'previewPracticeSong',
+    ]),
+  );
+  expect(s13Section).toContain('미리듣기');
+});
+
 test('defines S16 choose-another-song action from the detailed document', () => {
   const screenFlowDoc = readFileSync(
     resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),

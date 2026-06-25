@@ -1032,6 +1032,18 @@ test('previews a practice song from S13 without choosing it', () => {
   expect(getCurrentScreenSummary(state).description).toContain('도라지 샘플');
 });
 
+test('summarizes S13 song selection with preview from the detailed document', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'practice' });
+  state = applyProductAction(state, { type: 'next' });
+
+  expect(state.screenFlow.currentScreen).toBe('S13');
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['아리랑', '도라지', '뱃노래', '미리듣기']),
+  );
+});
+
 test('starts S15 with a ready practice attempt for the selected song and instrument', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
