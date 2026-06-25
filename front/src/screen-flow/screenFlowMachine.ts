@@ -19,6 +19,7 @@ export type ScreenFlowEvent =
   | { type: 'applyLiveJangdanGuide' }
   | { type: 'turnOffLiveJangdanGuide' }
   | { type: 'addAccompanimentTrack' }
+  | { type: 'cancelAccompanimentTrack' }
   | { type: 'finishPractice' }
   | { type: 'publishShareTarget' }
   | { type: 'openSelectedPlayerEditor' }
@@ -55,6 +56,8 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
     case 'turnOffLiveJangdanGuide':
       return routeFromScreen(state, 'S10A', 'S05', event.type);
     case 'addAccompanimentTrack':
+      return routeFromScreen(state, 'S10B', 'S07', event.type);
+    case 'cancelAccompanimentTrack':
       return routeFromScreen(state, 'S10B', 'S07', event.type);
     case 'finishPractice':
       return routeFromScreen(state, 'S15', 'S16', event.type);

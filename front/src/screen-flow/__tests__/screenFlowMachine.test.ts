@@ -111,12 +111,21 @@ test('defines documented cancel and disable transitions for track and jangdan fl
   );
 
   expect(implementedScreenDefinitions.S10B.primaryCtas).toEqual(
-    expect.arrayContaining(['preview', 'addAccompanimentTrack', 'cancel']),
+    expect.arrayContaining([
+      'previewJangdanPreset',
+      'addAccompanimentTrack',
+      'cancelAccompanimentTrack',
+    ]),
   );
   expect(implementedScreenDefinitions.S10B.transitions).toContainEqual({
-    action: 'cancel',
+    action: 'cancelAccompanimentTrack',
     target: 'S07',
   });
+  expect(implementedScreenDefinitions.S10B.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'previewJangdanPreset',
+    }),
+  );
 });
 
 test('defines S08 locked import as a documented same-screen action', () => {
@@ -494,6 +503,18 @@ test('routes S10B accompaniment add directly to S07 without entering S11', () =>
   expect(next.currentScreen).toBe('S07');
   expect(next.history).toEqual(['S07', 'S08', 'S10B']);
   expect(next.history).not.toContain('S11');
+});
+
+test('routes S10B cancellation back to S07 with the connected UI action', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S10B',
+    history: ['S01', 'S03', 'S04', 'S04A', 'S05', 'S07', 'S08'],
+  });
+
+  const next = transitionScreenFlow(state, { type: 'cancelAccompanimentTrack' });
+
+  expect(next.currentScreen).toBe('S07');
+  expect(next.history).toEqual(['S01', 'S03', 'S04', 'S04A', 'S05', 'S07', 'S08', 'S10B']);
 });
 
 test('routes S10A live jangdan guide actions back to S05 with connected UI actions', () => {

@@ -583,7 +583,7 @@ export function applyProductAction(
         previewingJangdanPreset: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S10B'
-            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
+            ? transitionScreenFlow(state.screenFlow, { type: 'cancelAccompanimentTrack' })
             : pushTarget(state.screenFlow, 'S07'),
       };
     case 'exportCurrentWork':

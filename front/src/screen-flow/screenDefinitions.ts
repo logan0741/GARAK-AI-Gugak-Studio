@@ -154,10 +154,10 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S10B',
     name: 'Create Accompaniment Track',
     mvpStatus: 'required',
-    primaryCtas: ['preview', 'addAccompanimentTrack', 'cancel'],
+    primaryCtas: ['previewJangdanPreset', 'addAccompanimentTrack', 'cancelAccompanimentTrack'],
     transitions: [
       { action: 'addAccompanimentTrack', target: 'S07' },
-      { action: 'cancel', target: 'S07' },
+      { action: 'cancelAccompanimentTrack', target: 'S07' },
     ],
   },
   S13: {
