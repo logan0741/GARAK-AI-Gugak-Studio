@@ -523,6 +523,15 @@ test('keeps the share quick access tab active on S20', () => {
   expect(source).toContain("onShare={() => dispatch({ type: 'navigate', target: 'S20' })}");
 });
 
+test('labels shell icon buttons for assistive technology', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+
+  expect(source).toContain('accessibilityLabel="언어 변경"');
+  expect(source).toContain('accessibilityLabel="뒤로가기"');
+  expect(source).toContain('accessibilityLabel="마이 및 설정"');
+  expect(source).toContain('accessibilityLabel="새 작업 시작"');
+});
+
 test('uses the Figma stacked track add flow for S08', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
@@ -542,6 +551,8 @@ test('uses the Figma stacked track add flow for S08', () => {
   expect(source).toContain("type: 'openInstrumentTrackSelection'");
   expect(source).toContain("state.trackAddSelection === 'instrument'");
   expect(source).toContain('MVP_INSTRUMENTS.map');
+  expect(source).toContain("flexWrap: 'wrap'");
+  expect(source).not.toContain('marginRight: -24');
   expect(source).toContain('accessibilityLabel={`${getInstrumentName(instrument.id)} 추가 녹음`}');
   expect(source).not.toContain('accessibilityLabel="추가 악기 선택"');
   expect(source).toContain("type: 'chooseAccompanimentTrack'");

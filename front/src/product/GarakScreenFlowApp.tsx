@@ -166,6 +166,7 @@ export function GarakScreenFlowApp({
             <View style={[styles.headerLeftSlot, isLibrary ? styles.headerWideSlot : undefined]}>
               {isHome ? (
                 <Pressable
+                  accessibilityLabel="언어 변경"
                   accessibilityRole="button"
                   onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
                   style={styles.headerButton}
@@ -174,6 +175,7 @@ export function GarakScreenFlowApp({
                 </Pressable>
               ) : isLibrary || isShare ? null : (
                 <Pressable
+                  accessibilityLabel="뒤로가기"
                   accessibilityRole="button"
                   onPress={() => dispatch({ type: 'back' })}
                   style={styles.headerButton}
@@ -186,6 +188,7 @@ export function GarakScreenFlowApp({
             <View style={[styles.headerRightSlot, isLibrary ? styles.headerWideSlot : undefined]}>
               {isHome || isShare ? (
                 <Pressable
+                  accessibilityLabel="마이 및 설정"
                   accessibilityRole="button"
                   onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
                   style={styles.avatarButton}
@@ -195,6 +198,7 @@ export function GarakScreenFlowApp({
               ) : isLibrary ? (
                 <View style={styles.headerActionGroup}>
                   <Pressable
+                    accessibilityLabel="마이 및 설정"
                     accessibilityRole="button"
                     onPress={() => dispatch({ type: 'navigate', target: 'S22' })}
                     style={styles.headerButton}
@@ -202,6 +206,7 @@ export function GarakScreenFlowApp({
                     <Text style={styles.headerButtonText}>...</Text>
                   </Pressable>
                   <Pressable
+                    accessibilityLabel="새 작업 시작"
                     accessibilityRole="button"
                     onPress={() => dispatch({ type: 'navigate', target: 'S01' })}
                     style={styles.headerButton}
@@ -211,6 +216,7 @@ export function GarakScreenFlowApp({
                 </View>
               ) : canOpenLanguage ? (
                 <Pressable
+                  accessibilityLabel="언어 변경"
                   accessibilityRole="button"
                   onPress={() => dispatch({ type: 'navigate', target: 'S02' })}
                   style={styles.headerButton}

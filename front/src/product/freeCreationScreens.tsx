@@ -1269,15 +1269,9 @@ function InstrumentChipRow({
 
   if (variant === 'figma') {
     return (
-      <ScrollView
-        bounces={false}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.instrumentChipScroller}
-        contentContainerStyle={styles.instrumentChipScrollerContent}
-      >
+      <View style={[styles.instrumentChipScroller, styles.instrumentChipScrollerContent]}>
         {chipContent}
-      </ScrollView>
+      </View>
     );
   }
 
@@ -1396,11 +1390,11 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   performancePreviewCalloutText: {
-    color: '#606060',
-    fontSize: 10,
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 12,
     fontWeight: '400',
     letterSpacing: 0,
-    lineHeight: 13,
+    lineHeight: 16,
     textAlign: 'center',
   },
   performancePreviewTopLine: {
@@ -1852,11 +1846,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   freeCreationTrackControlLabel: {
-    color: GARAK_COLORS.textSecondary,
+    color: GARAK_COLORS.textPrimary,
     flex: 1,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0,
+    lineHeight: 16,
     minWidth: 0,
   },
   freeCreationTrackControlIconButton: {
@@ -1879,9 +1874,10 @@ const styles = StyleSheet.create({
   },
   freeCreationTrackControlVolume: {
     color: GARAK_COLORS.textPrimary,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0,
+    lineHeight: 16,
     minWidth: 32,
     textAlign: 'center',
   },
@@ -2522,13 +2518,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   instrumentChipScroller: {
-    marginRight: -24,
     marginTop: 41,
   },
   instrumentChipScrollerContent: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 7,
-    paddingRight: 24,
   },
   instrumentChips: {
     flexDirection: 'row',

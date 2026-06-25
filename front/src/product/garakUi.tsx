@@ -423,8 +423,8 @@ const styles = StyleSheet.create({
   },
   headingDescription: {
     color: GARAK_COLORS.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
   },
   pillButton: {
     alignItems: 'center',
