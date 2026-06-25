@@ -507,7 +507,7 @@ export function applyProductAction(
         ...state,
         trackAddNotice: undefined,
         trackAddSelection: undefined,
-        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S08' }),
+        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'addTrack' }),
       };
     case 'openInstrumentTrackSelection':
       return {
@@ -1352,7 +1352,12 @@ function exportCurrentWork(state: GarakProductState): GarakProductState {
       kind: 'exportedAudio',
       exportedAudioId: exported.id,
     },
-    screenFlow: pushTarget(state.screenFlow, 'S19'),
+    screenFlow: transitionScreenFlow(
+      state.screenFlow.currentScreen === 'S07'
+        ? state.screenFlow
+        : pushTarget(state.screenFlow, 'S07'),
+      { type: 'exportCurrentWork' },
+    ),
   };
 }
 

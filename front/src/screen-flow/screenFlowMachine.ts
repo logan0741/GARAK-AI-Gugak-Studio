@@ -18,6 +18,8 @@ export type ScreenFlowEvent =
   | { type: 'completePerformance' }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'openLayerEditor' }
+  | { type: 'addTrack' }
+  | { type: 'exportCurrentWork' }
   | { type: 'chooseInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'cancelTrackAdd' }
@@ -60,6 +62,10 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S05', 'S10A', event.type);
     case 'openLayerEditor':
       return routeFromScreen(state, 'S05', 'S07', event.type);
+    case 'addTrack':
+      return routeFromScreen(state, 'S07', 'S08', event.type);
+    case 'exportCurrentWork':
+      return routeFromScreen(state, 'S07', 'S19', event.type);
     case 'chooseInstrumentTrack':
       return routeFromScreen(state, 'S08', 'S09', event.type);
     case 'chooseAccompanimentTrack':

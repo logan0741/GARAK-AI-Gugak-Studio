@@ -110,6 +110,23 @@ test('defines S05 free-play actions with connected recording, jangdan, and layer
   );
 });
 
+test('defines S07 track editor actions with connected save, add, and export actions', () => {
+  expect(implementedScreenDefinitions.S07.primaryCtas).toEqual(
+    expect.arrayContaining(['saveCurrentWork', 'exportCurrentWork', 'addTrack']),
+  );
+  expect(implementedScreenDefinitions.S07.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'addTrack', target: 'S08' },
+      { action: 'exportCurrentWork', target: 'S19' },
+    ]),
+  );
+  expect(implementedScreenDefinitions.S07.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'saveCurrentWork',
+    }),
+  );
+});
+
 test('defines documented cancel and disable transitions for track and jangdan flows', () => {
   expect(implementedScreenDefinitions.S09.primaryCtas).toEqual(
     expect.arrayContaining(['record', 'apply', 'recordAgain', 'cancel']),
@@ -540,6 +557,16 @@ test('routes S05 jangdan and layer actions with connected UI actions', () => {
     'S10A',
   );
   expect(transitionScreenFlow(state, { type: 'openLayerEditor' }).currentScreen).toBe('S07');
+});
+
+test('routes S07 add-track and export actions with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S07',
+    history: ['S01', 'S03', 'S04', 'S04A', 'S05'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'addTrack' }).currentScreen).toBe('S08');
+  expect(transitionScreenFlow(state, { type: 'exportCurrentWork' }).currentScreen).toBe('S19');
 });
 
 test('routes S10B accompaniment add directly to S07 without entering S11', () => {
