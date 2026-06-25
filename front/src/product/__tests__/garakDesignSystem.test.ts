@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vitest';
@@ -13,6 +13,7 @@ import {
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const brandAssetsDir = resolve(testDir, '../../../assets/brand');
+const designDocPath = resolve(testDir, '../../../docs/design/DESIGN.md');
 
 test('uses exact Figma design-system color tokens', () => {
   expect(GARAK_COLORS.brandNavy).toBe('#1A1C2D');
@@ -33,6 +34,14 @@ test('keeps product-constrained Figma elements explicit', () => {
   expect(
     FIGMA_IMPLEMENTATION_MAP.find((item) => item.figmaName === '로그인')?.constraint,
   ).toContain('첫 실행 관문 아님');
+});
+
+test('documents Figma MCP as the design authority over user screenshots', () => {
+  const designDoc = readFileSync(designDocPath, 'utf8');
+
+  expect(designDoc).toContain('| Figma MCP 노드/레이어 값 |');
+  expect(designDoc).toContain('사용자 제공 Figma 캡쳐는 판정 기준으로 쓰지 않는다.');
+  expect(designDoc).not.toContain('| 2026-06-19 첨부 Figma 스크린샷 |');
 });
 
 test('uses the Figma login button geometry for S23 auth actions', () => {
