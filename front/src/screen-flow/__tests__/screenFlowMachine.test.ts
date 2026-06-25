@@ -197,6 +197,10 @@ test('defines S15 practice controls from the detailed document', () => {
   expect(implementedScreenDefinitions.S15.primaryCtas).toEqual(
     expect.arrayContaining(['start', 'pause', 'complete', 'stop', 'restart']),
   );
+  expect(implementedScreenDefinitions.S15.transitions).toContainEqual({
+    action: 'finishPractice',
+    target: 'S16',
+  });
   expect(s15Section).toContain('일시정지');
   expect(s15Section).toContain('다시 시작');
 });
@@ -467,6 +471,19 @@ test('routes S10B accompaniment add directly to S07 without entering S11', () =>
   expect(next.currentScreen).toBe('S07');
   expect(next.history).toEqual(['S07', 'S08', 'S10B']);
   expect(next.history).not.toContain('S11');
+});
+
+test('routes S15 practice completion to S16 result with the connected UI action', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S15',
+    history: ['S01', 'S03', 'S13', 'S14'],
+    mode: 'practice',
+  });
+
+  const next = transitionScreenFlow(state, { type: 'finishPractice' });
+
+  expect(next.currentScreen).toBe('S16');
+  expect(next.history).toEqual(['S01', 'S03', 'S13', 'S14', 'S15']);
 });
 
 test('routes S22 login CTA to S23', () => {

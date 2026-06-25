@@ -179,7 +179,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     name: 'Practice Performance',
     mvpStatus: 'required',
     primaryCtas: ['start', 'pause', 'complete', 'stop', 'restart'],
-    transitions: [{ action: 'showResult', target: 'S16' }],
+    transitions: [{ action: 'finishPractice', target: 'S16' }],
   },
   S16: {
     id: 'S16',
