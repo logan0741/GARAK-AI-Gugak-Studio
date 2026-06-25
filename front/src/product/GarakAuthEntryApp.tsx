@@ -9,6 +9,7 @@ import { createAuthSessionStore } from './authSessionStore';
 import { createDefaultAuthStorage } from './authStorage';
 import { GARAK_COLORS, GARAK_TYPOGRAPHY } from './designTokens';
 import { AccountState } from './garakProductState';
+import { createHttpGarakProductServices } from './garakHttpProductServices';
 import { GarakScreenFlowApp } from './GarakScreenFlowApp';
 import {
   PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
@@ -42,6 +43,14 @@ export function GarakAuthEntryApp() {
   });
   const sessionStore = useMemo(() => createAuthSessionStore(createDefaultAuthStorage()), []);
   const [entryState, setEntryState] = useState<AuthEntryState>({ status: 'booting' });
+  const productServices = useMemo(
+    () =>
+      createHttpGarakProductServices({
+        baseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? '',
+        getAccessToken: async () => (await sessionStore.load())?.accessToken,
+      }),
+    [sessionStore],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -167,6 +176,7 @@ export function GarakAuthEntryApp() {
         onLogout={handleLogout}
         sampleManifests={PRODUCT_SAMPLE_MANIFESTS}
         sampleFallbackInstruments={PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS}
+        services={productServices}
       />
     );
   }

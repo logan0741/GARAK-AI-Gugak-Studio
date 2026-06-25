@@ -3,7 +3,7 @@ import type { ProductLibraryState } from '../garakProductState';
 import { createHttpGarakProductServices, type GarakFetch } from '../garakHttpProductServices';
 
 describe('HTTP Garak product services', () => {
-  test('saves library snapshots through the backend JSON contract', async () => {
+  test('saves library works through the backend session contract', async () => {
     const requests: Array<{ url: string; init: Parameters<GarakFetch>[1] }> = [];
     const fetch: GarakFetch = async (url, init) => {
       requests.push({ url, init });
@@ -19,37 +19,74 @@ describe('HTTP Garak product services', () => {
     await services.library.saveSnapshot(snapshot);
 
     expect(requests).toHaveLength(1);
-    expect(requests[0].url).toBe('https://api.garak.test/v1/library/snapshot');
+    expect(requests[0].url).toBe('https://api.garak.test/v1/api/sessions');
     expect(requests[0].init).toMatchObject({
-      method: 'PUT',
+      method: 'POST',
       headers: {
         accept: 'application/json',
         authorization: 'Bearer access-token',
         'content-type': 'application/json',
       },
     });
-    expect(JSON.parse(String(requests[0].init?.body))).toEqual(snapshot);
+    expect(JSON.parse(String(requests[0].init?.body))).toMatchObject({
+      id: 'work-1',
+      instrumentId: 'gayageum_12',
+      sampleAssetManifestId: 'gayageum_samples_2026_06_a',
+      title: 'My Arirang',
+      mode: 'creative',
+      events: [],
+    });
   });
 
   test('maps account sync and AI recommendation responses to service results', async () => {
-    const remoteLibrary = createLibrarySnapshot('remote-work');
     const requests: string[] = [];
     const fetch: GarakFetch = async (url, init) => {
       requests.push(`${init?.method ?? 'GET'} ${url}`);
 
-      if (url.endsWith('/account/login-sync')) {
-        return jsonResponse(200, remoteLibrary);
+      if (url.endsWith('/api/sessions')) {
+        return jsonResponse(200, [
+          {
+            id: 'remote-work',
+            title: 'Remote Work',
+            mode: 'creative',
+            instrument_id: 'gayageum',
+            created_at_ms: 1782345600000,
+            updated_at_ms: 1782345600000,
+          },
+        ]);
       }
 
-      if (url.endsWith('/ai/accompaniment/recommendations')) {
+      if (url.endsWith('/api/analyze')) {
         expect(JSON.parse(String(init?.body))).toEqual({
-          events: [],
+          sessionId: 'local-preview',
+          events: [
+            {
+              id: 'ai-event-1',
+              type: 'string_pluck',
+              tsMs: 0,
+              stringIndex: 1,
+              velocity: 0.8,
+            },
+          ],
         });
         return jsonResponse(200, {
-          presetId: 'jungmori',
+          key: 'pyeongjo',
+          jangdan: 'gutgeori',
+          estimatedBpm: 88,
+          density: 'medium',
+        });
+      }
+
+      if (url.endsWith('/api/accompaniment')) {
+        expect(JSON.parse(String(init?.body))).toMatchObject({
+          key: 'pyeongjo',
+          jangdan: 'jungmori',
           bpm: 88,
-          volume: 0.64,
-          reason: 'server matched a medium tempo phrase',
+        });
+        return jsonResponse(200, {
+          patternSequence: [{ step: 0 }],
+          playbackRate: 1,
+          crossfadeMs: 120,
         });
       }
 
@@ -62,20 +99,36 @@ describe('HTTP Garak product services', () => {
 
     await expect(services.account.loginAndLoadLibrary()).resolves.toEqual({
       status: 'ok',
-      value: remoteLibrary,
+      value: {
+        works: [
+          expect.objectContaining({
+            id: 'remote-work',
+            title: 'Remote Work',
+            source: 'free_creation',
+            syncState: 'synced',
+          }),
+        ],
+        exportedAudios: [],
+        practiceResults: [],
+      },
     });
-    await expect(services.ai.recommendAccompaniment({ events: [] })).resolves.toEqual({
+    await expect(
+      services.ai.recommendAccompaniment({
+        events: [{ type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.8 }],
+      }),
+    ).resolves.toEqual({
       status: 'ok',
       value: {
         presetId: 'jungmori',
         bpm: 88,
-        volume: 0.64,
-        reason: 'server matched a medium tempo phrase',
+        volume: 0.72,
+        reason: 'AI matched gutgeori and generated 1 steps.',
       },
     });
     expect(requests).toEqual([
-      'POST https://api.garak.test/v1/account/login-sync',
-      'POST https://api.garak.test/v1/ai/accompaniment/recommendations',
+      'GET https://api.garak.test/v1/api/sessions',
+      'POST https://api.garak.test/v1/api/analyze',
+      'POST https://api.garak.test/v1/api/accompaniment',
     ]);
   });
 
