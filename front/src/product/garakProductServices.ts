@@ -6,6 +6,10 @@ import type {
   Work,
 } from '../studio/studioTypes';
 import type { ProductLibraryState } from './garakProductState';
+import type {
+  AiAutoAccompanimentCandidate,
+  AiAutoAccompanimentRequest,
+} from './aiAutoAccompaniment';
 
 export type { ShareMethod, ShareTargetReference } from '../studio/studioTypes';
 
@@ -78,6 +82,9 @@ export type GarakProductServices = {
     ) => Promise<ServiceResult<{ handledEvents: number }>>;
   };
   ai: {
+    generateAutoAccompaniment: (
+      input: AiAutoAccompanimentRequest,
+    ) => Promise<ServiceResult<AiAutoAccompanimentCandidate>>;
     recommendAccompaniment: (
       input: AccompanimentRecommendationInput,
     ) => Promise<ServiceResult<AccompanimentRecommendation>>;
@@ -101,6 +108,7 @@ export function createNoopGarakProductServices(): GarakProductServices {
       playPerformanceEvents: async () => ({ status: 'unavailable' }),
     },
     ai: {
+      generateAutoAccompaniment: async () => ({ status: 'unavailable' }),
       recommendAccompaniment: async () => ({ status: 'unavailable' }),
     },
   };

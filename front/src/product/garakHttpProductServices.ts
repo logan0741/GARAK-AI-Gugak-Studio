@@ -61,6 +61,7 @@ export function createHttpGarakProductServices({
         }),
     },
     ai: {
+      generateAutoAccompaniment: async () => ({ status: 'unavailable' }),
       recommendAccompaniment: (input) =>
         client.serviceJson('/ai/accompaniment/recommendations', 'POST', input),
     },

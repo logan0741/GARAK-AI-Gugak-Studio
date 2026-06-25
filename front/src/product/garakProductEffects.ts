@@ -5,6 +5,7 @@ import type {
   GarakProductState,
 } from './garakProductState';
 import type { GarakProductServices, SharePublishInput } from './garakProductServices';
+import { createAutoAccompanimentRequest } from './aiAutoAccompaniment';
 
 export type RunGarakProductEffectInput = {
   state: GarakProductState;
@@ -42,6 +43,14 @@ export async function runGarakProductEffect({
   }
 
   if (action.type === 'chooseAccompanimentTrack') {
+    const autoAccompanimentAction = await generateAutoAccompaniment(state, services);
+    if (autoAccompanimentAction !== undefined) {
+      followUpActions.push(autoAccompanimentAction);
+      if (autoAccompanimentAction.type === 'completeAutoAccompanimentGeneration') {
+        return followUpActions;
+      }
+    }
+
     const recommendationAction = await recommendAccompaniment(state, services);
     if (recommendationAction !== undefined) {
       followUpActions.push(recommendationAction);
@@ -93,6 +102,51 @@ export async function runGarakProductEffect({
   }
 
   return followUpActions;
+}
+
+async function generateAutoAccompaniment(
+  state: GarakProductState,
+  services: GarakProductServices,
+): Promise<GarakProductAction | undefined> {
+  const currentWork = findCurrentWork(state);
+  const request = createAutoAccompanimentRequest({
+    requestId: `auto-accompaniment-${Date.parse(state.now()).toString(36)}`,
+    work: currentWork,
+  });
+
+  if (request === undefined) {
+    return {
+      type: 'failAutoAccompanimentGeneration',
+      code: 'insufficient_events',
+      message: 'AI auto accompaniment needs a recorded instrument take.',
+    };
+  }
+
+  try {
+    const result = await services.ai.generateAutoAccompaniment(request);
+
+    if (result.status === 'ok') {
+      return {
+        type: 'completeAutoAccompanimentGeneration',
+        candidate: result.value,
+      };
+    }
+
+    return {
+      type: 'failAutoAccompanimentGeneration',
+      code: 'model_unavailable',
+      message:
+        result.status === 'error'
+          ? result.message
+          : 'AI auto accompaniment service is unavailable.',
+    };
+  } catch {
+    return {
+      type: 'failAutoAccompanimentGeneration',
+      code: 'model_unavailable',
+      message: 'AI auto accompaniment service is unavailable.',
+    };
+  }
 }
 
 async function loadAccountLibrarySnapshot(

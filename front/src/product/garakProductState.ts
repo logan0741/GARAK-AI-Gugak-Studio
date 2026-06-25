@@ -44,6 +44,12 @@ import {
   type InstrumentSampleReadinessInput,
   type InstrumentSampleStatus,
 } from './instrumentSampleReadiness';
+import type {
+  AiAutoAccompanimentCandidate,
+  AiAutoAccompanimentFailureCode,
+  AiAutoAccompanimentGenerationStage,
+  AiAutoAccompanimentStatus,
+} from './aiAutoAccompaniment';
 import { buildPracticeResultFeedback, evaluatePracticeResult } from './practiceResultEvaluation';
 
 export type { InstrumentSampleStatus } from './instrumentSampleReadiness';
@@ -157,6 +163,7 @@ export type GarakProductState = {
   workSaveErrorMessage?: string;
   workExportStatus: WorkExportStatus;
   sharePublishStatus: SharePublishStatus;
+  autoAccompanimentStatus: AiAutoAccompanimentStatus;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
@@ -225,6 +232,13 @@ export type GarakProductAction =
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
   | { type: 'cancelInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
+  | { type: 'startAutoAccompanimentGeneration'; stage: AiAutoAccompanimentGenerationStage }
+  | { type: 'completeAutoAccompanimentGeneration'; candidate: AiAutoAccompanimentCandidate }
+  | {
+      type: 'failAutoAccompanimentGeneration';
+      code: AiAutoAccompanimentFailureCode;
+      message: string;
+    }
   | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
   | { type: 'cancelAccompanimentTrack' }
   | { type: 'saveCurrentWork' }
@@ -313,6 +327,7 @@ export function createInitialGarakProductState(
     workSaveStatus: 'idle',
     workExportStatus: { status: 'idle' },
     sharePublishStatus: { status: 'idle' },
+    autoAccompanimentStatus: { status: 'idle' },
     instrumentSampleStatuses: resolveInstrumentSampleStatuses({
       sampleManifests: input.sampleManifests,
       fallbackInstruments: input.sampleFallbackInstruments,
@@ -647,7 +662,36 @@ export function applyProductAction(
         ...state,
         trackAddNotice: undefined,
         trackAddSelection: undefined,
+        autoAccompanimentStatus: {
+          status: 'generating',
+          stage: 'analyzing',
+        },
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'chooseAccompanimentTrack' }),
+      };
+    case 'startAutoAccompanimentGeneration':
+      return {
+        ...state,
+        autoAccompanimentStatus: {
+          status: 'generating',
+          stage: action.stage,
+        },
+      };
+    case 'completeAutoAccompanimentGeneration':
+      return {
+        ...state,
+        autoAccompanimentStatus: {
+          status: 'candidateReady',
+          candidate: action.candidate,
+        },
+      };
+    case 'failAutoAccompanimentGeneration':
+      return {
+        ...state,
+        autoAccompanimentStatus: {
+          status: 'failed',
+          code: action.code,
+          message: action.message,
+        },
       };
     case 'addAccompanimentTrack':
       return applyAccompanimentTrack(state, action);
@@ -671,6 +715,7 @@ export function applyProductAction(
       return {
         ...state,
         previewingJangdanPreset: undefined,
+        autoAccompanimentStatus: { status: 'idle' },
         screenFlow:
           state.screenFlow.currentScreen === 'S10B'
             ? transitionScreenFlow(state.screenFlow, { type: 'cancelAccompanimentTrack' })
@@ -1478,6 +1523,7 @@ function applyAccompanimentTrack(
   return {
     ...nextState,
     previewingJangdanPreset: undefined,
+    autoAccompanimentStatus: { status: 'idle' },
   };
 }
 

@@ -56,6 +56,24 @@ describe('Garak product service ports', () => {
       status: 'unavailable',
     });
     await expect(
+      services.ai.generateAutoAccompaniment({
+        requestId: 'request-1',
+        source: 's10b_auto_accompaniment',
+        workId: 'work-1',
+        sourceTrackId: 'track-1',
+        sourceTakeId: 'take-1',
+        sourceInstrument: 'gayageum',
+        events: [],
+        options: {
+          outputKind: 'ensemble_wav_candidate',
+          maxCandidates: 1,
+          temperature: 0.7,
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'unavailable',
+    });
+    await expect(
       services.share.publishShareTarget({
         target: { kind: 'practiceResult', id: 'practice-1' },
         title: 'Practice result',

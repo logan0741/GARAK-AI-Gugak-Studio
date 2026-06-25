@@ -1246,6 +1246,20 @@ function JangdanPresetPanel({
       {model.recommendationMessage ? (
         <Text style={styles.recommendationMessage}>{model.recommendationMessage}</Text>
       ) : null}
+      {mode === 'track' && model.autoAccompaniment ? (
+        <View style={styles.optionPanel}>
+          <Text style={styles.panelTitle}>AI 자동 반주</Text>
+          <Text style={styles.metaText}>{model.autoAccompaniment.message}</Text>
+          {model.autoAccompaniment.confidenceLabel ? (
+            <Text style={styles.metaText}>{model.autoAccompaniment.confidenceLabel}</Text>
+          ) : null}
+          {model.autoAccompaniment.generatedTrackLabels.map((label) => (
+            <Text key={label} style={styles.metaText}>
+              {label}
+            </Text>
+          ))}
+        </View>
+      ) : null}
       <View style={styles.jangdanControlStack}>
         <JangdanStepperControl
           label="BPM"

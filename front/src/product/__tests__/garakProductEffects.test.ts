@@ -214,9 +214,11 @@ describe('Garak product effect runner', () => {
         practiceResults: [],
       },
     };
+    const noopServices = createNoopGarakProductServices();
     const services = {
-      ...createNoopGarakProductServices(),
+      ...noopServices,
       ai: {
+        ...noopServices.ai,
         recommendAccompaniment: async (input: { events: readonly PerformanceEvent[] }) => {
           expect(input.events).toEqual(events);
           return {
@@ -240,11 +242,140 @@ describe('Garak product effect runner', () => {
       }),
     ).resolves.toEqual([
       {
+        type: 'failAutoAccompanimentGeneration',
+        code: 'model_unavailable',
+        message: 'AI auto accompaniment service is unavailable.',
+      },
+      {
         type: 'previewJangdanPreset',
         mode: 'track',
         presetId: 'semachi',
         bpm: 96,
         volume: 0.72,
+      },
+    ]);
+  });
+
+  test('requests an AI auto accompaniment candidate from the current work on S10B entry', async () => {
+    const events: PerformanceEvent[] = [
+      { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.7 },
+    ];
+    const state: GarakProductState = {
+      ...createInitialGarakProductState(),
+      currentWorkId: 'work-1',
+      library: {
+        works: [
+          {
+            ...createWork('work-1'),
+            tracks: [
+              {
+                id: 'track-1',
+                kind: 'instrument' as const,
+                instrument: 'gayageum' as const,
+                takes: [
+                  {
+                    id: 'take-1',
+                    events,
+                    startedAtBeat: 1,
+                    durationBeats: 8,
+                    recordingSetup: {
+                      presetId: 'semachi' as const,
+                      bpm: 84,
+                      beatUnit: '4/4',
+                    },
+                  },
+                ],
+                startedAtBeat: 1,
+                volume: 1,
+                mute: false,
+                solo: false,
+                createdAt: '2026-06-25T00:00:00.000Z',
+              },
+            ],
+          },
+        ],
+        exportedAudios: [],
+        practiceResults: [],
+      },
+    };
+    const candidate = {
+      id: 'candidate-1',
+      status: 'ready' as const,
+      sourceWorkId: 'work-1',
+      sourceTrackId: 'track-1',
+      sourceTakeId: 'take-1',
+      sourceInstrument: 'gayageum' as const,
+      analysis: {
+        jo: 'pyeongjo' as const,
+        jangdan: 'jungmori' as const,
+        bpm: 84,
+        confidence: 0.86,
+      },
+      generatedTracks: [
+        {
+          instrument: 'daegeum' as const,
+          role: 'melody' as const,
+          audioUri: 'file://garak/daegeum.wav',
+          volume: 0.7,
+          startedAtBeat: 1,
+        },
+        {
+          instrument: 'janggu' as const,
+          role: 'rhythm' as const,
+          audioUri: 'file://garak/janggu.wav',
+          volume: 0.6,
+          startedAtBeat: 1,
+        },
+      ],
+      mixedAudioUri: 'file://garak/mix.wav',
+      durationSeconds: 24,
+      model: {
+        pitchModelId: 'pitch-v1',
+        rhythmModelId: 'rhythm-v1',
+        temperature: 0.7,
+      },
+    };
+    const services = {
+      ...createNoopGarakProductServices(),
+      ai: {
+        recommendAccompaniment: async () => ({ status: 'unavailable' as const }),
+        generateAutoAccompaniment: async (
+          input: Parameters<
+            ReturnType<typeof createNoopGarakProductServices>['ai']['generateAutoAccompaniment']
+          >[0],
+        ) => {
+          expect(input).toMatchObject({
+            source: 's10b_auto_accompaniment',
+            workId: 'work-1',
+            sourceTrackId: 'track-1',
+            sourceTakeId: 'take-1',
+            sourceInstrument: 'gayageum',
+            events,
+            options: {
+              outputKind: 'ensemble_wav_candidate',
+              maxCandidates: 1,
+              temperature: 0.7,
+            },
+          });
+
+          return {
+            status: 'ok' as const,
+            value: candidate,
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state,
+        action: { type: 'chooseAccompanimentTrack' },
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeAutoAccompanimentGeneration',
+        candidate,
       },
     ]);
   });
