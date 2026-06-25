@@ -47,6 +47,15 @@ test('builds S16 practice feedback from the completed practice attempt', () => {
   ).toBe('attemptEvidence');
 });
 
+test('exposes connected S16 result actions without direct navigation fallbacks', () => {
+  expect(getPracticeResultModel(createInitialGarakProductState()).actions).toEqual({
+    retry: { type: 'practiceAgain' },
+    save: { type: 'savePracticeResult' },
+    share: { type: 'sharePracticeResult' },
+    chooseAnotherSong: { type: 'chooseAnotherSong' },
+  });
+});
+
 test('keeps a local template result when no input evidence was captured', () => {
   const state = {
     ...createInitialGarakProductState(),

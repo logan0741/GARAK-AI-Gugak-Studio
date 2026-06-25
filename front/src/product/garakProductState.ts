@@ -209,8 +209,10 @@ export type GarakProductAction =
   | { type: 'pausePractice' }
   | { type: 'restartPractice' }
   | { type: 'finishPractice' }
+  | { type: 'practiceAgain' }
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
+  | { type: 'chooseAnotherSong' }
   | { type: 'shareSelectedPlayerItem' }
   | { type: 'deleteSelectedPlayerItem' }
   | { type: 'previewShareTarget' }
@@ -606,7 +608,10 @@ export function applyProductAction(
         selectedPracticeSongId: action.songId,
         previewingPracticeSongId: undefined,
         practiceAttempt: undefined,
-        screenFlow: pushTarget(state.screenFlow, 'S14'),
+        screenFlow:
+          state.screenFlow.currentScreen === 'S13'
+            ? transitionScreenFlow(state.screenFlow, { type: 'selectPracticeSong' })
+            : pushTarget(state.screenFlow, 'S14'),
       };
     case 'selectPracticeInstrument':
       return {
@@ -622,10 +627,14 @@ export function applyProductAction(
       return restartPracticeAttempt(state);
     case 'finishPractice':
       return finishPractice(state);
+    case 'practiceAgain':
+      return practiceAgain(state);
     case 'savePracticeResult':
       return savePracticeResult(state);
     case 'sharePracticeResult':
       return createPracticeResultAndRoute(state, 'S17');
+    case 'chooseAnotherSong':
+      return chooseAnotherSong(state);
     case 'shareSelectedPlayerItem':
       return shareSelectedPlayerItem(state);
     case 'deleteSelectedPlayerItem':
@@ -1111,7 +1120,10 @@ function startPracticePerformanceScreen(state: GarakProductState): GarakProductS
   return {
     ...state,
     practiceAttempt: createReadyPracticeAttempt(state),
-    screenFlow: pushTarget(state.screenFlow, 'S15'),
+    screenFlow:
+      state.screenFlow.currentScreen === 'S14'
+        ? transitionScreenFlow(state.screenFlow, { type: 'next' })
+        : pushTarget(state.screenFlow, 'S15'),
   };
 }
 
@@ -1181,7 +1193,34 @@ function finishPractice(state: GarakProductState): GarakProductState {
       startedAt: attempt.startedAt ?? state.now(),
       completedAt: state.now(),
     },
-    screenFlow: pushTarget(state.screenFlow, 'S16'),
+    screenFlow:
+      state.screenFlow.currentScreen === 'S15'
+        ? transitionScreenFlow(state.screenFlow, { type: 'finishPractice' })
+        : pushTarget(state.screenFlow, 'S16'),
+  };
+}
+
+function practiceAgain(state: GarakProductState): GarakProductState {
+  return {
+    ...state,
+    practiceAttempt: createReadyPracticeAttempt(state),
+    previewingPracticeSongId: undefined,
+    screenFlow:
+      state.screenFlow.currentScreen === 'S16'
+        ? transitionScreenFlow(state.screenFlow, { type: 'practiceAgain' })
+        : pushTarget(state.screenFlow, 'S15'),
+  };
+}
+
+function chooseAnotherSong(state: GarakProductState): GarakProductState {
+  return {
+    ...state,
+    practiceAttempt: undefined,
+    previewingPracticeSongId: undefined,
+    screenFlow:
+      state.screenFlow.currentScreen === 'S16'
+        ? transitionScreenFlow(state.screenFlow, { type: 'chooseAnotherSong' })
+        : pushTarget(state.screenFlow, 'S13'),
   };
 }
 
@@ -1411,6 +1450,12 @@ function createPracticeResultAndRoute(
     feedback: feedback.fullText,
     createdAt: state.now(),
   });
+  const nextScreenFlow =
+    state.screenFlow.currentScreen === 'S16'
+      ? transitionScreenFlow(state.screenFlow, {
+          type: target === 'S17' ? 'sharePracticeResult' : 'savePracticeResult',
+        })
+      : pushTarget(state.screenFlow, target);
 
   return {
     ...state,
@@ -1424,7 +1469,7 @@ function createPracticeResultAndRoute(
       practiceResultId: result.id,
     },
     sharePreviewStatus: undefined,
-    screenFlow: pushTarget(state.screenFlow, target),
+    screenFlow: nextScreenFlow,
   };
 }
 

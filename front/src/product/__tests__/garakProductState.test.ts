@@ -1163,6 +1163,39 @@ test('summarizes S16 result actions including choosing another practice song', (
   );
 });
 
+test('routes S16 retry and choose-another-song actions through connected practice result actions', () => {
+  let retryState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  retryState = applyProductAction(retryState, { type: 'selectMode', mode: 'practice' });
+  retryState = applyProductAction(retryState, { type: 'next' });
+  retryState = applyProductAction(retryState, { type: 'selectPracticeSong', songId: 'doraji' });
+  retryState = applyProductAction(retryState, {
+    type: 'selectPracticeInstrument',
+    instrument: 'janggu',
+  });
+  retryState = applyProductAction(retryState, { type: 'next' });
+  retryState = applyProductAction(retryState, { type: 'finishPractice' });
+  retryState = applyProductAction(retryState, { type: 'practiceAgain' });
+
+  expect(retryState.screenFlow.currentScreen).toBe('S15');
+  expect(retryState.practiceAttempt).toEqual({
+    songId: 'doraji',
+    instrument: 'janggu',
+    status: 'ready',
+    inputEvents: [],
+    timingErrorsMs: [],
+  });
+
+  let chooseAnotherState = applyProductAction(retryState, { type: 'finishPractice' });
+  chooseAnotherState = applyProductAction(chooseAnotherState, { type: 'chooseAnotherSong' });
+
+  expect(chooseAnotherState.screenFlow.currentScreen).toBe('S13');
+  expect(chooseAnotherState.practiceAttempt).toBeUndefined();
+  expect(chooseAnotherState.previewingPracticeSongId).toBeUndefined();
+});
+
 test('routes settings login CTA to S23 while preserving local library state', () => {
   let state = createInitialGarakProductState();
 

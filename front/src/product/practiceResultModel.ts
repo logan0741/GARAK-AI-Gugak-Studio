@@ -35,10 +35,10 @@ export function getPracticeResultModel(state: GarakProductState): PracticeResult
     accuracyScoreLabel: String(draft.accuracyScore),
     timingScoreLabel: `${draft.timingScore}%`,
     actions: {
-      retry: { type: 'navigate', target: 'S15' },
+      retry: { type: 'practiceAgain' },
       save: { type: 'savePracticeResult' },
       share: { type: 'sharePracticeResult' },
-      chooseAnotherSong: { type: 'navigate', target: 'S13' },
+      chooseAnotherSong: { type: 'chooseAnotherSong' },
     },
   };
 }

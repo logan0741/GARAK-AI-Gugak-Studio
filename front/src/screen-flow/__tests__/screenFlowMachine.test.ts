@@ -301,12 +301,27 @@ test('defines S15 practice controls from the detailed document', () => {
   );
 
   expect(implementedScreenDefinitions.S15.primaryCtas).toEqual(
-    expect.arrayContaining(['start', 'pause', 'complete', 'stop', 'restart']),
+    expect.arrayContaining(['startPractice', 'pausePractice', 'restartPractice', 'finishPractice']),
   );
   expect(implementedScreenDefinitions.S15.transitions).toContainEqual({
     action: 'finishPractice',
     target: 'S16',
   });
+  expect(implementedScreenDefinitions.S15.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'startPractice',
+    }),
+  );
+  expect(implementedScreenDefinitions.S15.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'pausePractice',
+    }),
+  );
+  expect(implementedScreenDefinitions.S15.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'restartPractice',
+    }),
+  );
   expect(s15Section).toContain('일시정지');
   expect(s15Section).toContain('다시 시작');
 });
@@ -322,13 +337,12 @@ test('defines S13 practice song preview action from the detailed document', () =
   );
 
   expect(implementedScreenDefinitions.S13.primaryCtas).toEqual(
-    expect.arrayContaining([
-      'selectArirang',
-      'selectDoraji',
-      'selectBoatSong',
-      'previewPracticeSong',
-    ]),
+    expect.arrayContaining(['selectPracticeSong', 'previewPracticeSong']),
   );
+  expect(implementedScreenDefinitions.S13.transitions).toContainEqual({
+    action: 'selectPracticeSong',
+    target: 'S14',
+  });
   expect(s13Section).toContain('미리듣기');
 });
 
@@ -343,7 +357,7 @@ test('defines S14 practice instrument next action from the detailed document', (
   );
 
   expect(implementedScreenDefinitions.S14.primaryCtas).toEqual(
-    expect.arrayContaining(['selectGayageum', 'selectJanggu', 'selectDaegeum', 'next']),
+    expect.arrayContaining(['selectPracticeInstrument', 'next']),
   );
   expect(implementedScreenDefinitions.S14.transitions).toContainEqual({
     action: 'next',
@@ -363,12 +377,21 @@ test('defines S16 choose-another-song action from the detailed document', () => 
   );
 
   expect(implementedScreenDefinitions.S16.primaryCtas).toEqual(
-    expect.arrayContaining(['practiceAgain', 'save', 'share', 'chooseAnotherSong']),
+    expect.arrayContaining([
+      'practiceAgain',
+      'savePracticeResult',
+      'sharePracticeResult',
+      'chooseAnotherSong',
+    ]),
   );
-  expect(implementedScreenDefinitions.S16.transitions).toContainEqual({
-    action: 'chooseAnotherSong',
-    target: 'S13',
-  });
+  expect(implementedScreenDefinitions.S16.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'practiceAgain', target: 'S15' },
+      { action: 'savePracticeResult', target: 'S18' },
+      { action: 'sharePracticeResult', target: 'S17' },
+      { action: 'chooseAnotherSong', target: 'S13' },
+    ]),
+  );
   expect(s16Section).toContain('다른 민요 선택');
 });
 
@@ -650,6 +673,19 @@ test('routes S10A live jangdan guide actions back to S05 with connected UI actio
   );
 });
 
+test('routes S13 selected practice song to S14 with the connected UI action', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S13',
+    history: ['S01', 'S03'],
+    mode: 'practice',
+  });
+
+  const next = transitionScreenFlow(state, { type: 'selectPracticeSong' });
+
+  expect(next.currentScreen).toBe('S14');
+  expect(next.history).toEqual(['S01', 'S03', 'S13']);
+});
+
 test('routes S15 practice completion to S16 result with the connected UI action', () => {
   const state = createInitialScreenFlowState({
     currentScreen: 'S15',
@@ -661,6 +697,19 @@ test('routes S15 practice completion to S16 result with the connected UI action'
 
   expect(next.currentScreen).toBe('S16');
   expect(next.history).toEqual(['S01', 'S03', 'S13', 'S14', 'S15']);
+});
+
+test('routes S16 result actions with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S16',
+    history: ['S01', 'S03', 'S13', 'S14', 'S15'],
+    mode: 'practice',
+  });
+
+  expect(transitionScreenFlow(state, { type: 'practiceAgain' }).currentScreen).toBe('S15');
+  expect(transitionScreenFlow(state, { type: 'savePracticeResult' }).currentScreen).toBe('S18');
+  expect(transitionScreenFlow(state, { type: 'sharePracticeResult' }).currentScreen).toBe('S17');
+  expect(transitionScreenFlow(state, { type: 'chooseAnotherSong' }).currentScreen).toBe('S13');
 });
 
 test('routes S19 player management with the connected UI actions', () => {

@@ -29,7 +29,12 @@ export type ScreenFlowEvent =
   | { type: 'turnOffLiveJangdanGuide' }
   | { type: 'addAccompanimentTrack' }
   | { type: 'cancelAccompanimentTrack' }
+  | { type: 'selectPracticeSong' }
   | { type: 'finishPractice' }
+  | { type: 'practiceAgain' }
+  | { type: 'savePracticeResult' }
+  | { type: 'sharePracticeResult' }
+  | { type: 'chooseAnotherSong' }
   | { type: 'publishShareTarget' }
   | { type: 'openSelectedPlayerEditor' }
   | { type: 'shareSelectedPlayerItem' }
@@ -86,8 +91,18 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S10B', 'S07', event.type);
     case 'cancelAccompanimentTrack':
       return routeFromScreen(state, 'S10B', 'S07', event.type);
+    case 'selectPracticeSong':
+      return routeFromScreen(state, 'S13', 'S14', event.type);
     case 'finishPractice':
       return routeFromScreen(state, 'S15', 'S16', event.type);
+    case 'practiceAgain':
+      return routeFromScreen(state, 'S16', 'S15', event.type);
+    case 'savePracticeResult':
+      return routeFromScreen(state, 'S16', 'S18', event.type);
+    case 'sharePracticeResult':
+      return routeFromScreen(state, 'S16', 'S17', event.type);
+    case 'chooseAnotherSong':
+      return routeFromScreen(state, 'S16', 'S13', event.type);
     case 'publishShareTarget':
       return routeFromScreen(state, 'S17', 'S20', event.type);
     case 'openSelectedPlayerEditor':
