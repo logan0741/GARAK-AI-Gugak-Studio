@@ -13,7 +13,6 @@ import {
   ProgressSteps,
   QuickAccessNav,
   ScreenHeading,
-  SecondaryPillButton,
   garakCardShadow,
 } from './garakUi';
 import { getLoginSyncViewModel } from './loginSyncScreenModel';
@@ -110,11 +109,6 @@ export function IntroGuideContent({
           <PrimaryPillButton
             label="NEXT"
             onPress={() => dispatch({ type: 'navigate', target: isPracticeMode ? 'S13' : 'S04' })}
-          />
-          <SecondaryPillButton
-            label="건너뛰기"
-            onPress={() => dispatch({ type: 'navigate', target: 'S04' })}
-            style={styles.modeGuideSkipButton}
           />
         </View>
       </View>
@@ -466,9 +460,6 @@ const styles = StyleSheet.create({
   },
   modeGuideBottomCompact: {
     marginTop: 26,
-  },
-  modeGuideSkipButton: {
-    minHeight: 42,
   },
   bodyText: {
     color: GARAK_COLORS.textSecondary,

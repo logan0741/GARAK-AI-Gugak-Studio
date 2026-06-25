@@ -169,37 +169,6 @@ export function InstrumentSelectContent({
       {state.instrumentSelectNotice === 'futureInstrument' ? (
         <Text style={styles.instrumentSelectNotice}>새로운 악기가 업데이트될 예정이에요.</Text>
       ) : null}
-      <View
-        accessible
-        accessibilityLabel={`${instrumentSelectSampleModel.instrumentName} 샘플 상태. ${instrumentSelectSampleModel.sampleStatusLabel}. ${instrumentSelectSampleModel.sampleStatusDescription}`}
-        style={styles.instrumentSelectSampleStatusRow}
-      >
-        <View
-          style={[
-            styles.instrumentSampleStatusPill,
-            instrumentSelectSampleModel.sampleStatus === 'downloadRequired'
-              ? styles.instrumentSampleStatusPillWarning
-              : undefined,
-            instrumentSelectSampleModel.sampleStatus === 'fallback'
-              ? styles.instrumentSampleStatusPillFallback
-              : undefined,
-          ]}
-        >
-          <Text
-            style={[
-              styles.instrumentSampleStatusText,
-              instrumentSelectSampleModel.sampleStatus === 'downloadRequired'
-                ? styles.instrumentSampleStatusTextWarning
-                : undefined,
-            ]}
-          >
-            {instrumentSelectSampleModel.sampleStatusLabel}
-          </Text>
-        </View>
-        <Text style={styles.instrumentSelectSampleStatusDescription}>
-          {instrumentSelectSampleModel.sampleStatusDescription}
-        </Text>
-      </View>
       {selectedInstrument === DEFAULT_FREE_CREATION_INSTRUMENT ? (
         <View
           accessible
@@ -248,18 +217,7 @@ export function InstrumentSettingsContent({
   const { height } = useWindowDimensions();
   const isCompactHeight = height < 820;
   const instrumentSettingsModel = getInstrumentSettingsModel(state);
-  const instrumentSettingSummary = instrumentSettingsModel.settingRows
-    .map((row) => `${row.label} ${row.value}`)
-    .join(', ');
-  const instrumentSettingsStartAction = instrumentSettingsModel.isAdjustmentOpen
-    ? instrumentSettingsModel.nextAction
-    : instrumentSettingsModel.primaryAction;
-  const instrumentSettingsStartLabel = instrumentSettingsModel.isAdjustmentOpen
-    ? 'NEXT'
-    : '기본값으로 시작';
-  const instrumentSettingsSecondaryLabel = instrumentSettingsModel.isAdjustmentOpen
-    ? '기본값 유지'
-    : '직접 조정';
+  const instrumentSettingsStartAction = instrumentSettingsModel.primaryAction;
   const performancePreviewCallouts = PERFORMANCE_PREVIEW_CALLOUTS[instrumentSettingsModel.instrument];
 
   return (
@@ -299,88 +257,6 @@ export function InstrumentSettingsContent({
           <Text style={styles.performancePreviewCalloutText}>{performancePreviewCallouts.bottom}</Text>
         </View>
       </View>
-      <View style={styles.instrumentSettingsSummaryCard}>
-        <View
-          accessible
-          accessibilityLabel={`${instrumentSettingsModel.instrumentName} 기본 설정. ${instrumentSettingsModel.sampleStatusLabel}. ${instrumentSettingsModel.sampleStatusDescription} ${instrumentSettingSummary}`}
-          style={styles.instrumentSettingsSummaryContent}
-        >
-          <View style={styles.instrumentSettingsSummaryHeader}>
-            <View>
-              <Text style={styles.instrumentSettingsEyebrow}>기본 연주 상태</Text>
-              <Text style={styles.instrumentSettingsTitle}>{instrumentSettingsModel.instrumentName}</Text>
-            </View>
-            <View
-              style={[
-                styles.instrumentSampleStatusPill,
-                instrumentSettingsModel.sampleStatus === 'downloadRequired'
-                  ? styles.instrumentSampleStatusPillWarning
-                  : undefined,
-                instrumentSettingsModel.sampleStatus === 'fallback'
-                  ? styles.instrumentSampleStatusPillFallback
-                  : undefined,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.instrumentSampleStatusText,
-                  instrumentSettingsModel.sampleStatus === 'downloadRequired'
-                    ? styles.instrumentSampleStatusTextWarning
-                    : undefined,
-                ]}
-              >
-                {instrumentSettingsModel.sampleStatusLabel}
-              </Text>
-            </View>
-          </View>
-          {instrumentSettingsModel.notice ? (
-            <Text style={styles.instrumentSettingsNotice}>{instrumentSettingsModel.notice}</Text>
-          ) : null}
-          <Text style={styles.instrumentSettingsDescription}>
-            {instrumentSettingsModel.sampleStatusDescription}
-          </Text>
-          <View style={styles.instrumentSettingsRows}>
-            {instrumentSettingsModel.settingRows.map((row) => (
-              <View key={row.label} style={styles.instrumentSettingsRow}>
-                <Text style={styles.instrumentSettingsRowLabel}>{row.label}</Text>
-                <Text style={styles.instrumentSettingsRowValue}>{row.value}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-        {instrumentSettingsModel.isAdjustmentOpen ? (
-          <View style={styles.instrumentSettingsAdjustmentPanel}>
-            {instrumentSettingsModel.settingControls.map((control) => (
-              <View key={control.label} style={styles.instrumentSettingsAdjustmentGroup}>
-                <Text style={styles.instrumentSettingsAdjustmentLabel}>{control.label}</Text>
-                <View style={styles.instrumentSettingsOptionRow}>
-                  {control.options.map((option) => (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: option.isSelected }}
-                      key={option.value}
-                      onPress={() => dispatch(option.selectAction)}
-                      style={[
-                        styles.instrumentSettingsOptionButton,
-                        option.isSelected ? styles.instrumentSettingsOptionButtonActive : undefined,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.instrumentSettingsOptionText,
-                          option.isSelected ? styles.instrumentSettingsOptionTextActive : undefined,
-                        ]}
-                      >
-                        {option.value}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : null}
-      </View>
       <View
         style={[
           styles.performancePreviewFooter,
@@ -388,13 +264,9 @@ export function InstrumentSettingsContent({
         ]}
       >
         <ProgressSteps step={2} />
-        <SecondaryPillButton
-          label={instrumentSettingsSecondaryLabel}
-          onPress={() => dispatch(instrumentSettingsModel.secondaryAction)}
-        />
         <PrimaryPillButton
           disabled={instrumentSettingsStartAction === undefined}
-          label={instrumentSettingsStartLabel}
+          label="NEXT"
           onPress={() =>
             instrumentSettingsStartAction === undefined
               ? undefined
@@ -1468,21 +1340,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  instrumentSelectSampleStatusRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-  },
-  instrumentSelectSampleStatusDescription: {
-    color: GARAK_COLORS.textSecondary,
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0,
-    lineHeight: 15,
-    minWidth: 0,
-  },
   instrumentSelectArtworkWrap: {
     marginTop: 12,
   },
@@ -1613,143 +1470,6 @@ const styles = StyleSheet.create({
   },
   performancePreviewFooterCompact: {
     marginTop: 8,
-  },
-  instrumentSettingsSummaryCard: {
-    backgroundColor: GARAK_COLORS.surfaceCard,
-    borderColor: 'rgba(31,32,46,0.08)',
-    borderRadius: 22,
-    borderWidth: 1,
-    gap: 10,
-    marginTop: 14,
-    padding: 16,
-  },
-  instrumentSettingsSummaryContent: {
-    gap: 10,
-  },
-  instrumentSettingsSummaryHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  instrumentSettingsEyebrow: {
-    color: GARAK_COLORS.brandAmber,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0,
-    lineHeight: 15,
-  },
-  instrumentSettingsTitle: {
-    color: GARAK_COLORS.textPrimary,
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0,
-    lineHeight: 23,
-    marginTop: 2,
-  },
-  instrumentSampleStatusPill: {
-    alignItems: 'center',
-    backgroundColor: GARAK_COLORS.surfaceSoft,
-    borderRadius: 15,
-    justifyContent: 'center',
-    minHeight: 30,
-    paddingHorizontal: 12,
-  },
-  instrumentSampleStatusPillWarning: {
-    backgroundColor: 'rgba(190,30,30,0.12)',
-  },
-  instrumentSampleStatusPillFallback: {
-    backgroundColor: 'rgba(229,145,0,0.16)',
-  },
-  instrumentSampleStatusText: {
-    color: GARAK_COLORS.brandNavy,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0,
-  },
-  instrumentSampleStatusTextWarning: {
-    color: GARAK_COLORS.brandRed,
-  },
-  instrumentSettingsNotice: {
-    color: GARAK_COLORS.brandRed,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0,
-    lineHeight: 17,
-  },
-  instrumentSettingsDescription: {
-    color: GARAK_COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0,
-    lineHeight: 17,
-  },
-  instrumentSettingsRows: {
-    gap: 8,
-  },
-  instrumentSettingsRow: {
-    alignItems: 'center',
-    backgroundColor: GARAK_COLORS.surfaceCanvas,
-    borderRadius: 14,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 38,
-    paddingHorizontal: 12,
-  },
-  instrumentSettingsRowLabel: {
-    color: GARAK_COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  instrumentSettingsRowValue: {
-    color: GARAK_COLORS.textPrimary,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0,
-  },
-  instrumentSettingsAdjustmentPanel: {
-    borderTopColor: 'rgba(31,32,46,0.12)',
-    borderTopWidth: 1,
-    gap: 12,
-    paddingTop: 2,
-  },
-  instrumentSettingsAdjustmentGroup: {
-    gap: 7,
-  },
-  instrumentSettingsAdjustmentLabel: {
-    color: GARAK_COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0,
-  },
-  instrumentSettingsOptionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-  },
-  instrumentSettingsOptionButton: {
-    alignItems: 'center',
-    backgroundColor: GARAK_COLORS.surfaceCanvas,
-    borderColor: 'rgba(31,32,46,0.12)',
-    borderRadius: 14,
-    borderWidth: 1,
-    minHeight: 30,
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-  },
-  instrumentSettingsOptionButtonActive: {
-    backgroundColor: GARAK_COLORS.brandNavy,
-    borderColor: GARAK_COLORS.brandNavy,
-  },
-  instrumentSettingsOptionText: {
-    color: GARAK_COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  instrumentSettingsOptionTextActive: {
-    color: GARAK_COLORS.surfaceCard,
   },
   landscapePerformanceStack: {
     flex: 1,

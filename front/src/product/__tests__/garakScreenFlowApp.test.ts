@@ -109,6 +109,10 @@ test('uses the language-aware Figma home hero copy in the home screen accessibil
 
 test('uses the Figma free-creation mode guide for the intro screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
+  const introGuideSource = source.slice(
+    source.indexOf('export function IntroGuideContent'),
+    source.indexOf('export function SettingsContent'),
+  );
 
   expect(source).toContain('원하는');
   expect(source).toContain('연주모드');
@@ -121,9 +125,9 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).toContain("mode: 'freeCreation'");
   expect(source).toContain("mode: 'practice'");
   expect(source).toContain("target: isPracticeMode ? 'S13' : 'S04'");
-  expect(source).toContain('modeGuideSkipButton');
-  expect(source).toMatch(/label="건너뛰기"[\s\S]*?target: 'S04'/);
-  expect(source).toContain("target: 'S04'");
+  expect(introGuideSource).not.toContain('SecondaryPillButton');
+  expect(introGuideSource).not.toContain('modeGuideSkipButton');
+  expect(introGuideSource).not.toContain('label="건너뛰기"');
   expect(source).not.toContain('GARAK에 오신 것을 환영해요');
   expect(source).not.toContain('onPress={() => undefined}');
   expect(source).not.toContain("onPress={() => dispatch({ type: 'navigate', target: 'S13' })}");
@@ -234,7 +238,8 @@ test('uses the Figma instrument selection design for the free-creation instrumen
   expect(instrumentSelectSource).toContain('instrumentSelectSampleModel');
   expect(instrumentSelectSource).toContain('instrumentSelectSampleModel.sampleStatusLabel');
   expect(instrumentSelectSource).toContain('instrumentSelectSampleModel.sampleStatusDescription');
-  expect(instrumentSelectSource).toContain('styles.instrumentSelectSampleStatusRow');
+  expect(instrumentSelectSource).not.toContain('styles.instrumentSelectSampleStatusRow');
+  expect(instrumentSelectSource).not.toContain('instrumentSampleStatusPill');
 });
 
 test('uses the Figma performance preview design before entering free play', () => {
@@ -249,21 +254,21 @@ test('uses the Figma performance preview design before entering free play', () =
   expect(source).toContain('양손으로 궁편과 열편을');
   expect(instrumentSettingsSource).toContain('연주 할 화면');
   expect(instrumentSettingsSource).toContain('미리 볼 수 있어요');
-  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.instrumentName');
-  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.sampleStatusLabel');
-  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.settingRows.map');
-  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.settingControls.map');
-  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.isAdjustmentOpen');
-  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.secondaryAction');
-  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.notice');
-  expect(instrumentSettingsSource).toContain('직접 조정');
   expect(instrumentSettingsSource).toContain('NEXT');
   expect(instrumentSettingsSource).toContain('InstrumentPreviewStageArtwork');
   expect(instrumentSettingsSource).toContain('instrument={instrumentSettingsModel.instrument}');
   expect(instrumentSettingsSource).toContain('ProgressSteps step={2}');
   expect(instrumentSettingsSource).toContain('instrumentSettingsStartAction');
+  expect(instrumentSettingsSource).toContain('instrumentSettingsModel.primaryAction');
   expect(instrumentSettingsSource).toContain('disabled={instrumentSettingsStartAction === undefined}');
   expect(instrumentSettingsSource).toContain('dispatch(instrumentSettingsStartAction)');
+  expect(instrumentSettingsSource).not.toContain('instrumentSettingsSummaryCard');
+  expect(instrumentSettingsSource).not.toContain('instrumentSettingsModel.secondaryAction');
+  expect(instrumentSettingsSource).not.toContain('instrumentSettingsModel.settingRows.map');
+  expect(instrumentSettingsSource).not.toContain('instrumentSettingsModel.settingControls.map');
+  expect(instrumentSettingsSource).not.toContain('직접 조정');
+  expect(instrumentSettingsSource).not.toContain('기본값으로 시작');
+  expect(instrumentSettingsSource).not.toContain('<SecondaryPillButton');
   expect(instrumentSettingsSource).not.toContain('BPM');
   expect(instrumentSettingsSource).not.toContain('장단');
 });
