@@ -137,6 +137,39 @@ test('adds new tracks at the provided playhead beat', () => {
   });
 });
 
+test('toggles mute and solo controls for the current S07 work', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
+  state = applyProductAction(state, {
+    type: 'addAccompanimentTrack',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.7,
+  });
+
+  state = {
+    ...state,
+    now: () => '2026-06-18T00:05:00.000Z',
+  };
+  state = applyProductAction(state, { type: 'toggleTrackMute', trackId: 'track-2' });
+  state = applyProductAction(state, { type: 'toggleTrackSolo', trackId: 'track-2' });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.library.works[0].updatedAt).toBe('2026-06-18T00:05:00.000Z');
+  expect(state.library.works[0].tracks.map((track) => track.mute)).toEqual([false, true]);
+  expect(state.library.works[0].tracks.map((track) => track.solo)).toEqual([false, true]);
+});
+
 test('opens a selected library work in S07 and sets it current', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

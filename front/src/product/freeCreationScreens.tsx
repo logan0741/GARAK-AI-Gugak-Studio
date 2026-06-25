@@ -229,14 +229,50 @@ export function TrackLayerEditorContent({
         </View>
         {work?.tracks.map((track, index) => (
           <View key={track.id} style={styles.trackRow}>
-            <Text style={styles.trackName}>
-              {track.kind === 'instrument'
-                ? getInstrumentName(track.instrument)
-                : track.kind === 'accompaniment'
-                  ? '장단 반주'
-                  : track.title}
-            </Text>
-            <Text style={styles.trackMeta}>Track {index + 1}</Text>
+            <View style={styles.trackTextGroup}>
+              <Text style={styles.trackName}>
+                {track.kind === 'instrument'
+                  ? getInstrumentName(track.instrument)
+                  : track.kind === 'accompaniment'
+                    ? '장단 반주'
+                    : track.title}
+              </Text>
+              <Text style={styles.trackMeta}>
+                Track {index + 1} · {track.startedAtBeat}박
+              </Text>
+            </View>
+            <View style={styles.trackControls}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Toggle mute for track ${index + 1}`}
+                onPress={() => dispatch({ type: 'toggleTrackMute', trackId: track.id })}
+                style={[styles.trackControlButton, track.mute ? styles.trackControlButtonActive : undefined]}
+              >
+                <Text
+                  style={[
+                    styles.trackControlText,
+                    track.mute ? styles.trackControlTextActive : undefined,
+                  ]}
+                >
+                  M
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Toggle solo for track ${index + 1}`}
+                onPress={() => dispatch({ type: 'toggleTrackSolo', trackId: track.id })}
+                style={[styles.trackControlButton, track.solo ? styles.trackControlButtonActive : undefined]}
+              >
+                <Text
+                  style={[
+                    styles.trackControlText,
+                    track.solo ? styles.trackControlTextActive : undefined,
+                  ]}
+                >
+                  S
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ))}
       </View>
@@ -630,9 +666,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#eeeeee',
     borderRadius: 6,
     flexDirection: 'row',
+    gap: 10,
     justifyContent: 'space-between',
     minHeight: 44,
     paddingHorizontal: 12,
+  },
+  trackTextGroup: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
   },
   trackName: {
     color: '#444444',
@@ -642,6 +684,29 @@ const styles = StyleSheet.create({
   trackMeta: {
     color: '#777777',
     fontSize: 12,
+  },
+  trackControls: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  trackControlButton: {
+    alignItems: 'center',
+    backgroundColor: '#d7d7d7',
+    borderRadius: 6,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  trackControlButtonActive: {
+    backgroundColor: '#5f5f5f',
+  },
+  trackControlText: {
+    color: '#555555',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  trackControlTextActive: {
+    color: '#ffffff',
   },
   optionCard: {
     backgroundColor: '#d6d6d6',

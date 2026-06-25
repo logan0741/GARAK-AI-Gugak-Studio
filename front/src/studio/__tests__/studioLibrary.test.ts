@@ -8,6 +8,8 @@ import {
   isWorkShareable,
   mergeAccountLibraryPreview,
   selectLibrarySections,
+  toggleWorkTrackMute,
+  toggleWorkTrackSolo,
 } from '../studioLibrary';
 
 const pluck = {
@@ -203,4 +205,77 @@ test('previews account sync without deleting local library items', () => {
   expect(preview.localPreserved).toBe(true);
   expect(preview.conflictWorkIds).toEqual(['work-1']);
   expect(preview.mergedWorkCount).toBe(2);
+});
+
+test('toggles a track mute state without changing the other layers', () => {
+  const work = autoSaveTakeAsWork({
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    title: '뮤트 작업',
+    instrument: 'gayageum',
+    events: [pluck],
+    createdAt: '2026-06-18T00:00:00.000Z',
+    startedAtBeat: 1,
+    durationBeats: 4,
+  });
+  const layered = addAccompanimentTrack(work, {
+    trackId: 'track-2',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.7,
+    createdAt: '2026-06-18T00:01:00.000Z',
+  });
+
+  const muted = toggleWorkTrackMute(layered, {
+    trackId: 'track-2',
+    updatedAt: '2026-06-18T00:02:00.000Z',
+  });
+  const unmuted = toggleWorkTrackMute(muted, {
+    trackId: 'track-2',
+    updatedAt: '2026-06-18T00:03:00.000Z',
+  });
+
+  expect(muted.updatedAt).toBe('2026-06-18T00:02:00.000Z');
+  expect(muted.tracks.map((track) => track.mute)).toEqual([false, true]);
+  expect(unmuted.updatedAt).toBe('2026-06-18T00:03:00.000Z');
+  expect(unmuted.tracks.map((track) => track.mute)).toEqual([false, false]);
+});
+
+test('toggles one solo layer at a time in the track editor model', () => {
+  const work = autoSaveTakeAsWork({
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    title: '솔로 작업',
+    instrument: 'gayageum',
+    events: [pluck],
+    createdAt: '2026-06-18T00:00:00.000Z',
+    startedAtBeat: 1,
+    durationBeats: 4,
+  });
+  const layered = addAccompanimentTrack(work, {
+    trackId: 'track-2',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.7,
+    createdAt: '2026-06-18T00:01:00.000Z',
+  });
+
+  const firstSolo = toggleWorkTrackSolo(layered, {
+    trackId: 'track-1',
+    updatedAt: '2026-06-18T00:02:00.000Z',
+  });
+  const secondSolo = toggleWorkTrackSolo(firstSolo, {
+    trackId: 'track-2',
+    updatedAt: '2026-06-18T00:03:00.000Z',
+  });
+  const cleared = toggleWorkTrackSolo(secondSolo, {
+    trackId: 'track-2',
+    updatedAt: '2026-06-18T00:04:00.000Z',
+  });
+
+  expect(firstSolo.tracks.map((track) => track.solo)).toEqual([true, false]);
+  expect(secondSolo.tracks.map((track) => track.solo)).toEqual([false, true]);
+  expect(cleared.tracks.map((track) => track.solo)).toEqual([false, false]);
 });
