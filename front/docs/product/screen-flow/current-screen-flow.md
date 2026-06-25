@@ -4,7 +4,7 @@
 작성일: 2026-06-11
 문서 책임: GARAK의 현재 화면 목적, CTA, 화면 연결, 데이터 흐름을 한곳에 정리한다.
 
-관련 문서: `../garak-product-brief.md`, `screen-composition-standards.md`, `../../design/DESIGN.md`, `../../document-authority-index.md`, `../../architecture/ai-model-pipeline-contract.md`
+관련 문서: `../garak-product-brief.md`, `screen-composition-standards.md`, `../../design/DESIGN.md`, `../../document-authority-index.md`, `../../architecture/ai-model-pipeline-contract.md`, `../../architecture/ai-auto-accompaniment-generation.md`, `../../architecture/multitrack-editing-and-mixing.md`
 
 이 문서는 구현 계획이 아니다. 실제 구현 순서, 파일 경로, 테스트 명령은 이후 `docs/plans/implementation/` 문서에서 다룬다. 화면 변경 이력은 `changes/` 하위 문서에 분리한다.
 

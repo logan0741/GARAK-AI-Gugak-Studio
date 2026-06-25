@@ -24,6 +24,20 @@ const INSTRUMENT_NAMES: Record<InstrumentId, string> = {
   daegeum: '대금',
 };
 
+export type WorkMixPlanTrack = {
+  trackId: string;
+  kind: Track['kind'];
+  startedAtBeat: number;
+  volume: number;
+};
+
+export type WorkMixPlan = {
+  workId: string;
+  title: string;
+  hasSoloTracks: boolean;
+  tracks: WorkMixPlanTrack[];
+};
+
 export function autoSaveTakeAsWork(input: {
   workId: string;
   trackId: string;
@@ -180,6 +194,33 @@ export function toggleWorkTrackSolo(
     ...work,
     updatedAt: input.updatedAt,
     tracks: work.tracks.map((track) => setTrackSolo(track, track.id === input.trackId && shouldSoloTarget)),
+  };
+}
+
+export function createWorkMixPlan(work: Work): WorkMixPlan {
+  const unmutedTracks = work.tracks.filter((track) => !track.mute);
+  const soloTracks = unmutedTracks.filter((track) => track.solo);
+  const audibleTracks = soloTracks.length > 0 ? soloTracks : unmutedTracks;
+  const orderedTracks = audibleTracks
+    .map((track, index) => ({
+      index,
+      track,
+    }))
+    .sort((left, right) => {
+      const beatDiff = left.track.startedAtBeat - right.track.startedAtBeat;
+      return beatDiff === 0 ? left.index - right.index : beatDiff;
+    });
+
+  return {
+    workId: work.id,
+    title: work.title,
+    hasSoloTracks: soloTracks.length > 0,
+    tracks: orderedTracks.map(({ track }) => ({
+      trackId: track.id,
+      kind: track.kind,
+      startedAtBeat: resolveStartBeat(track.startedAtBeat),
+      volume: clamp01(track.volume),
+    })),
   };
 }
 

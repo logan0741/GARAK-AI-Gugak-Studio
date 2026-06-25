@@ -31,6 +31,8 @@
 | S05 자유연주 기능의 코드 / 데이터 흐름은 무엇인가? | `docs/architecture/free-play-performance-flow.md` | `docs/product/screen-flow/current-screen-flow.md`, `docs/architecture/runtime-architecture.md`, `docs/domain/README.md` |
 | S05에서 녹음을 시작하면 데이터와 state는 어떻게 바뀌는가? | `docs/architecture/free-play-recording-flow.md` | `docs/architecture/free-play-performance-flow.md`, `docs/architecture/runtime-architecture.md`, `docs/domain/README.md` |
 | AI 모델 서버에 어떤 입력을 보내고 어떤 출력을 받는가? | `docs/architecture/ai-model-pipeline-contract.md` | `docs/architecture/runtime-architecture.md`, `docs/product/screen-flow/current-screen-flow.md` |
+| AI 자동 반주 생성은 어떤 화면과 파일에서 구현되는가? | `docs/architecture/ai-auto-accompaniment-generation.md` | `docs/architecture/ai-model-pipeline-contract.md`, `docs/architecture/tech-stack.md`, `docs/product/screen-flow/current-screen-flow.md` |
+| 멀티트랙 편집 및 믹싱은 어떤 화면과 파일에서 구현되는가? | `docs/architecture/multitrack-editing-and-mixing.md` | `docs/architecture/free-play-recording-flow.md`, `docs/architecture/ai-auto-accompaniment-generation.md`, `docs/product/screen-flow/current-screen-flow.md` |
 | 기술 스택과 dependency 판단은 무엇인가? | `docs/architecture/tech-stack.md` | `docs/adr/` |
 | 되돌리기 어려운 기술 결정의 이유는 무엇인가? | `docs/adr/` | `docs/architecture/tech-stack.md` |
 | 구현 순서, 파일 경로, 검증 명령은 어디에 있는가? | `docs/plans/implementation/` | `docs/plans/backlog/`, `docs/system/conventions.md` |

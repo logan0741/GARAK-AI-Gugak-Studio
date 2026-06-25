@@ -3,6 +3,7 @@ import {
   addAccompanimentTrack,
   addInstrumentTrack,
   autoSaveTakeAsWork,
+  createWorkMixPlan,
   createPracticeResult,
   exportWorkAudioPlaceholder,
   isWorkShareable,
@@ -333,4 +334,85 @@ test('toggles one solo layer at a time in the track editor model', () => {
   expect(firstSolo.tracks.map((track) => track.solo)).toEqual([true, false]);
   expect(secondSolo.tracks.map((track) => track.solo)).toEqual([false, true]);
   expect(cleared.tracks.map((track) => track.solo)).toEqual([false, false]);
+});
+
+test('creates a work mix plan sorted by start beat with track volume', () => {
+  const work = autoSaveTakeAsWork({
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    title: '믹스 플랜 작업',
+    instrument: 'gayageum',
+    events: [pluck],
+    createdAt: '2026-06-18T00:00:00.000Z',
+    startedAtBeat: 1,
+    durationBeats: 4,
+  });
+  const withAccompaniment = addAccompanimentTrack(work, {
+    trackId: 'track-2',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.6,
+    createdAt: '2026-06-18T00:01:00.000Z',
+    playheadBeat: 5,
+  });
+  const layered = addInstrumentTrack(withAccompaniment, {
+    trackId: 'track-3',
+    takeId: 'take-3',
+    instrument: 'daegeum',
+    events: [],
+    createdAt: '2026-06-18T00:02:00.000Z',
+    durationBeats: 2,
+    playheadBeat: 3,
+  });
+
+  expect(createWorkMixPlan(layered)).toEqual({
+    workId: 'work-1',
+    title: '믹스 플랜 작업',
+    hasSoloTracks: false,
+    tracks: [
+      { trackId: 'track-1', kind: 'instrument', startedAtBeat: 1, volume: 1 },
+      { trackId: 'track-3', kind: 'instrument', startedAtBeat: 3, volume: 1 },
+      { trackId: 'track-2', kind: 'accompaniment', startedAtBeat: 5, volume: 0.6 },
+    ],
+  });
+});
+
+test('creates a work mix plan from unmuted solo tracks when solo is active', () => {
+  const work = autoSaveTakeAsWork({
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    title: '솔로 믹스 작업',
+    instrument: 'gayageum',
+    events: [pluck],
+    createdAt: '2026-06-18T00:00:00.000Z',
+    startedAtBeat: 1,
+    durationBeats: 4,
+  });
+  const layered = addAccompanimentTrack(work, {
+    trackId: 'track-2',
+    presetId: 'semachi',
+    bpm: 84,
+    volume: 0.6,
+    createdAt: '2026-06-18T00:01:00.000Z',
+    playheadBeat: 1,
+  });
+  const muted = toggleWorkTrackMute(layered, {
+    trackId: 'track-1',
+    updatedAt: '2026-06-18T00:02:00.000Z',
+  });
+  const soloed = toggleWorkTrackSolo(muted, {
+    trackId: 'track-2',
+    updatedAt: '2026-06-18T00:03:00.000Z',
+  });
+
+  expect(createWorkMixPlan(soloed)).toEqual({
+    workId: 'work-1',
+    title: '솔로 믹스 작업',
+    hasSoloTracks: true,
+    tracks: [
+      { trackId: 'track-2', kind: 'accompaniment', startedAtBeat: 1, volume: 0.6 },
+    ],
+  });
 });
