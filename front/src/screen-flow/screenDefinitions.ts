@@ -222,10 +222,11 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S19',
     name: 'Recording Detail Player',
     mvpStatus: 'required',
-    primaryCtas: ['play', 'openEditor', 'share'],
+    primaryCtas: ['play', 'pause', 'openEditor', 'share', 'delete'],
     transitions: [
       { action: 'openEditor', target: 'S07' },
       { action: 'share', target: 'S17' },
+      { action: 'delete', target: 'S18' },
       { action: 'backToLibrary', target: 'S18' },
     ],
   },

@@ -125,6 +125,20 @@ test('defines S17 share preparation preview and cancel actions from the detailed
   });
 });
 
+test('defines S19 player management actions from the detailed document', () => {
+  expect(implementedScreenDefinitions.S19.primaryCtas).toEqual(
+    expect.arrayContaining(['play', 'pause', 'openEditor', 'share', 'delete']),
+  );
+  expect(implementedScreenDefinitions.S19.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'openEditor', target: 'S07' },
+      { action: 'share', target: 'S17' },
+      { action: 'delete', target: 'S18' },
+      { action: 'backToLibrary', target: 'S18' },
+    ]),
+  );
+});
+
 test('documents S23 skip as returning to the entry surface', () => {
   expect(implementedScreenDefinitions.S23.transitions).toContainEqual({
     action: 'skip',

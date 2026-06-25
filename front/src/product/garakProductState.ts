@@ -901,8 +901,10 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
     case 'S19':
       return summary(screenId, '연주 상세 / 플레이어', '내보낸 음원', '저장된 결과물을 듣고 공유하거나 편집으로 돌아가요.', [
         '재생',
+        '일시정지',
         '편집으로 열기',
         '공유',
+        '삭제',
       ]);
     case 'S20':
       return summary(screenId, '쉐어 / 둘러보기', '데모 피드', '다른 GARAK을 듣고 리믹스할 수 있어요.', [

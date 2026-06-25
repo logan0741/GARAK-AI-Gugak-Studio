@@ -1456,6 +1456,25 @@ test('opens S17 from the S19 player for the selected exported audio', () => {
   });
 });
 
+test('summarizes S19 player management CTAs from the detailed document', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+
+  expect(state.screenFlow.currentScreen).toBe('S19');
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['재생', '일시정지', '편집으로 열기', '공유', '삭제']),
+  );
+});
+
 test('opens the original work editor from the S19 player when the export has a work source', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
