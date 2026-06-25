@@ -32,11 +32,11 @@ import {
 } from './garakArtworkPanels';
 import { GarakText as Text } from './garakTypography';
 import {
+  GarakProgressIndicator,
   InstrumentBadge,
   InstrumentVisual,
   MiniTrackPlayer,
   PrimaryPillButton,
-  ProgressSteps,
   ScreenHeading,
   SecondaryPillButton,
   VisualHero,
@@ -258,7 +258,7 @@ export function InstrumentSelectContent({
         </View>
       )}
       <View style={[styles.instrumentSelectFooter, isCompactHeight ? styles.instrumentSelectFooterCompact : undefined]}>
-        <ProgressSteps step={0} />
+        <GarakProgressIndicator progress={2 / 3} />
         <PrimaryPillButton
           label="NEXT"
           onPress={confirmSelectionAndContinue}
@@ -324,7 +324,7 @@ export function InstrumentSettingsContent({
           isCompactHeight ? styles.performancePreviewFooterCompact : undefined,
         ]}
       >
-        <ProgressSteps step={2} />
+        <GarakProgressIndicator progress={1} />
         <PrimaryPillButton
           disabled={instrumentSettingsStartAction === undefined}
           label="NEXT"

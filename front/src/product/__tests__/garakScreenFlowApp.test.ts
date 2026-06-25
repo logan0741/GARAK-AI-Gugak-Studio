@@ -144,6 +144,38 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).not.toContain("onPress={() => dispatch({ type: 'navigate', target: 'S13' })}");
 });
 
+test('uses Wanted Montage linear progress indicator across free-creation onboarding screens', () => {
+  const uiSource = readFileSync(resolve(process.cwd(), 'src/product/garakUi.tsx'), 'utf8');
+  const settingsSource = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
+  const freeCreationSource = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const introGuideSource = settingsSource.slice(
+    settingsSource.indexOf('export function IntroGuideContent'),
+    settingsSource.indexOf('export function SettingsContent'),
+  );
+  const instrumentSelectSource = freeCreationSource.slice(
+    freeCreationSource.indexOf('export function InstrumentSelectContent'),
+    freeCreationSource.indexOf('export function InstrumentSettingsContent'),
+  );
+  const instrumentSettingsSource = freeCreationSource.slice(
+    freeCreationSource.indexOf('export function InstrumentSettingsContent'),
+    freeCreationSource.indexOf('export function FreePlayContent'),
+  );
+
+  expect(uiSource).toContain('export function GarakProgressIndicator');
+  expect(uiSource).toContain('Math.max(0, Math.min(1, progress))');
+  expect(uiSource).toContain('accessibilityRole="progressbar"');
+  expect(uiSource).toContain('accessibilityValue={{ min: 0, max: 100, now: Math.round(normalizedProgress * 100) }}');
+  expect(uiSource).toContain('progressIndicatorTrack');
+  expect(uiSource).toContain('progressIndicatorFill');
+  expect(uiSource).toMatch(/progressIndicatorTrack:\s*\{[\s\S]*?height: 2/);
+  expect(introGuideSource).toContain('GarakProgressIndicator progress={1 / 3}');
+  expect(instrumentSelectSource).toContain('GarakProgressIndicator progress={2 / 3}');
+  expect(instrumentSettingsSource).toContain('GarakProgressIndicator progress={1}');
+  expect(introGuideSource).not.toContain('ProgressSteps');
+  expect(instrumentSelectSource).not.toContain('ProgressSteps');
+  expect(instrumentSettingsSource).not.toContain('ProgressSteps');
+});
+
 test('connects S23 login sync preview and actions to library data', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
 
@@ -292,7 +324,7 @@ test('uses the Figma performance preview design before entering free play', () =
   expect(instrumentSettingsSource).toContain('NEXT');
   expect(instrumentSettingsSource).toContain('InstrumentPreviewStageArtwork');
   expect(instrumentSettingsSource).toContain('instrument={instrumentSettingsModel.instrument}');
-  expect(instrumentSettingsSource).toContain('ProgressSteps step={2}');
+  expect(instrumentSettingsSource).toContain('GarakProgressIndicator progress={1}');
   expect(instrumentSettingsSource).toContain('instrumentSettingsStartAction');
   expect(instrumentSettingsSource).toContain('instrumentSettingsModel.primaryAction');
   expect(instrumentSettingsSource).toContain('disabled={instrumentSettingsStartAction === undefined}');

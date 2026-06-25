@@ -114,6 +114,30 @@ export function ProgressSteps({ step, total = 3 }: { step: number; total?: numbe
   );
 }
 
+export function GarakProgressIndicator({
+  progress,
+  accessibilityLabel = '진행률',
+  style,
+}: {
+  progress: number;
+  accessibilityLabel?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const normalizedProgress = Math.max(0, Math.min(1, progress));
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(normalizedProgress * 100) }}
+      style={[styles.progressIndicatorTrack, style]}
+    >
+      <View style={[styles.progressIndicatorFill, { width: `${normalizedProgress * 100}%` }]} />
+    </View>
+  );
+}
+
 export function QuickAccessNav({
   active,
   labels = {
@@ -463,6 +487,18 @@ const styles = StyleSheet.create({
   },
   progressSegmentActive: {
     backgroundColor: GARAK_COLORS.brandNavy,
+  },
+  progressIndicatorTrack: {
+    alignSelf: 'stretch',
+    backgroundColor: GARAK_COLORS.lineSoft,
+    borderRadius: 2,
+    height: 2,
+    overflow: 'hidden',
+  },
+  progressIndicatorFill: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    borderRadius: 2,
+    height: '100%',
   },
   quickAccess: {
     alignSelf: 'center',
