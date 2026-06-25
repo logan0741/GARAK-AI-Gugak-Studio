@@ -12,7 +12,14 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-_http_client = httpx.AsyncClient(timeout=5.0)
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None:
+        _http_client = httpx.AsyncClient(timeout=5.0)
+    return _http_client
 
 
 async def translate_batch_to_locale(texts: list[str], locale: str) -> list[str]:
@@ -24,7 +31,7 @@ async def translate_batch_to_locale(texts: list[str], locale: str) -> list[str]:
         return texts
 
     try:
-        response = await _http_client.post(
+        response = await _get_http_client().post(
             "https://translation.googleapis.com/language/translate/v2",
             params={"key": settings.google_translate_api_key},
             json={"q": texts, "source": "ko", "target": "en", "format": "text"},
@@ -49,7 +56,7 @@ async def translate_to_locale(text: str, locale: str) -> str:
         return text  # 키 없으면 원문 fallback
 
     try:
-        response = await _http_client.post(
+        response = await _get_http_client().post(
             "https://translation.googleapis.com/language/translate/v2",
             params={"key": settings.google_translate_api_key},
             json={"q": text, "source": "ko", "target": "en", "format": "text"},
