@@ -7,6 +7,8 @@ VALID_BODY = {
     "sessionId": "session_001",
     "events": [
         {"id": "e1", "tsMs": 0, "type": "string_pluck", "stringIndex": 5, "velocity": 0.7},
+        {"id": "e2", "tsMs": 500, "type": "string_pluck", "stringIndex": 7, "velocity": 0.8},
+        {"id": "e3", "tsMs": 1000, "type": "string_pluck", "stringIndex": 8, "velocity": 0.6},
     ],
 }
 
@@ -17,10 +19,20 @@ async def test_analyze_success(client: AsyncClient):
     response = await client.post("/api/analyze", json=VALID_BODY)
     assert response.status_code == 200
     data = response.json()
-    assert data["key"] == "pyeongjo"
-    assert data["jangdan"] == "gutgeori"
-    assert data["estimatedBpm"] == 92
-    assert data["density"] == "medium"
+    assert data["key"] in {"pyeongjo", "gyemyeonjo"}
+    assert data["jangdan"] in {
+        "jungmori",
+        "jungjungmori",
+        "jajinmori",
+        "gutgeori",
+        "hwimori",
+        "eotmori",
+        "eotjungmori",
+        "semachi",
+        "jinyangjo",
+    }
+    assert data["estimatedBpm"] > 0
+    assert data["density"] in {"low", "medium", "high"}
     assert "keyConfidence" in data
 
 

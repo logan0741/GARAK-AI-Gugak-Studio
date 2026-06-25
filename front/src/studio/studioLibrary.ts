@@ -127,8 +127,8 @@ export function addAccompanimentTrack(
   };
 }
 
-export function isWorkShareable(_work: Work): boolean {
-  return false;
+export function isWorkShareable(work: Work): boolean {
+  return work.tracks.length > 0;
 }
 
 export function exportWorkAudioPlaceholder(input: {

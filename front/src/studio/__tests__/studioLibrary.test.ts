@@ -17,7 +17,7 @@ const pluck = {
   velocity: 1,
 } as const;
 
-test('auto-saves a free-play take as an editable work that is not directly shareable', () => {
+test('auto-saves a free-play take as an editable shareable work', () => {
   const work = autoSaveTakeAsWork({
     workId: 'work-1',
     trackId: 'track-1',
@@ -49,7 +49,7 @@ test('auto-saves a free-play take as an editable work that is not directly share
     volume: 0.6,
     startedAtBeat: 1,
   });
-  expect(isWorkShareable(work)).toBe(false);
+  expect(isWorkShareable(work)).toBe(true);
 });
 
 test('adds an instrument track at the playhead or falls back to the first beat', () => {
@@ -145,16 +145,16 @@ test('separates editable works from exported audio and practice results in the l
     id: 'export-1',
     work,
     title: '내보낸 보관함 작업',
-    audioUri: 'placeholder://export-1.wav',
-    durationSeconds: 24,
+    audioUri: 'pending://export-1.wav',
+    durationSeconds: 18,
     createdAt: '2026-06-18T00:05:00.000Z',
   });
   const practiceResult = createPracticeResult({
     id: 'practice-1',
     songId: 'arirang',
     instrument: 'daegeum',
-    accuracyScore: 82,
-    timingScore: 78,
+    accuracyScore: 73,
+    timingScore: 69,
     feedback: '박자 흐름이 안정적이에요.',
     createdAt: '2026-06-18T00:06:00.000Z',
   });

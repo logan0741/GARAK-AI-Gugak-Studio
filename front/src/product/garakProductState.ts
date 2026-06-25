@@ -487,12 +487,13 @@ function exportCurrentWork(state: GarakProductState): GarakProductState {
   }
 
   const nextCounters = incrementCounters(state.counters, ['export']);
+  const estimatedDuration = estimateWorkDuration(currentWork);
   const exported = exportWorkAudioPlaceholder({
     id: `export-${nextCounters.export}`,
     work: currentWork,
     title: `${currentWork.title} 내보내기`,
-    audioUri: `placeholder://export-${nextCounters.export}.wav`,
-    durationSeconds: 24,
+    audioUri: `pending://export-${nextCounters.export}.wav`,
+    durationSeconds: estimatedDuration,
     createdAt: state.now(),
   });
 
@@ -516,13 +517,14 @@ function createPracticeResultAndRoute(
   target: ImplementedScreenId,
 ): GarakProductState {
   const nextCounters = incrementCounters(state.counters, ['practiceResult']);
+  const scores = evaluatePracticePerformance(state);
   const result = createPracticeResult({
     id: `practice-${nextCounters.practiceResult}`,
     songId: state.selectedPracticeSongId ?? 'arirang',
     instrument: state.selectedInstrument ?? 'gayageum',
-    accuracyScore: 82,
-    timingScore: 78,
-    feedback: '박자 흐름이 안정적이에요.',
+    accuracyScore: scores.accuracyScore,
+    timingScore: scores.timingScore,
+    feedback: scores.feedback,
     createdAt: state.now(),
   });
 
@@ -619,4 +621,94 @@ function summary(
     description,
     primaryCtas,
   };
+}
+
+function evaluatePracticePerformance(state: GarakProductState): {
+  accuracyScore: number;
+  timingScore: number;
+  feedback: string;
+} {
+  // 현재 작업에서 연주 이벤트 추출
+  const work = findCurrentWork(state);
+  const events: PerformanceEvent[] = [];
+
+  if (work) {
+    for (const track of work.tracks) {
+      if (track.kind === 'instrument') {
+        for (const take of track.takes) {
+          events.push(...take.events);
+        }
+      }
+    }
+  }
+
+  // 이벤트가 없으면 기본 점수
+  if (events.length === 0) {
+    return {
+      accuracyScore: 50,
+      timingScore: 50,
+      feedback: '연주 이벤트를 감지하지 못했어요. 다시 시도해보세요.',
+    };
+  }
+
+  // 이벤트 수 기반 정확도 계산 (다양한 현을 사용할수록 높은 점수)
+  const uniqueStrings = new Set(events.map((e) => e.stringIndex));
+  const stringVariety = Math.min(uniqueStrings.size / 6, 1.0); // 6현 이상 사용 시 만점
+
+  // 타이밍 안정성 계산 (IOI 변동 계수가 낮을수록 높은 점수)
+  const pluckEvents = events.filter((e) => e.type === 'string_pluck');
+  let timingStability = 0.7;
+
+  if (pluckEvents.length >= 3) {
+    const timestamps = pluckEvents.map((e) => e.tsMs).sort((a, b) => a - b);
+    const intervals: number[] = [];
+    for (let i = 1; i < timestamps.length; i++) {
+      intervals.push(timestamps[i] - timestamps[i - 1]);
+    }
+
+    if (intervals.length >= 2) {
+      const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const variance = intervals.reduce((sum, v) => sum + (v - mean) ** 2, 0) / intervals.length;
+      const cv = mean > 0 ? Math.sqrt(variance) / mean : 1.0; // 변동 계수
+      timingStability = Math.max(0, Math.min(1, 1.0 - cv)); // CV가 낮을수록 안정적
+    }
+  }
+
+  // 이벤트 밀도 보너스 (적절한 밀도일 때 보너스)
+  const densityBonus = Math.min(pluckEvents.length / 16, 1.0) * 0.15;
+
+  const accuracyScore = Math.round(
+    Math.min(100, (stringVariety * 45 + timingStability * 40 + densityBonus * 100) * 1.0),
+  );
+  const timingScore = Math.round(Math.min(100, timingStability * 85 + densityBonus * 100));
+
+  // 점수 기반 피드백 생성
+  let feedback: string;
+  if (accuracyScore >= 85) {
+    feedback = '훌륭해요! 다양한 현을 골고루 사용하며 안정적인 박자를 유지하셨어요.';
+  } else if (accuracyScore >= 70) {
+    feedback = '박자 흐름이 안정적이에요. 더 다양한 현을 활용하면 표현이 풍부해질 거예요.';
+  } else if (accuracyScore >= 55) {
+    feedback = '기본 흐름은 잡혔어요. 박자를 좀 더 일정하게 유지하는 연습을 해보세요.';
+  } else {
+    feedback = '천천히 한 박자씩 맞춰가며 연습해보세요. 큰 박부터 잡으면 좋아요.';
+  }
+
+  return { accuracyScore, timingScore, feedback };
+}
+
+function estimateWorkDuration(work: Work): number {
+  let maxDurationMs = 0;
+  for (const track of work.tracks) {
+    if (track.kind === 'instrument') {
+      for (const take of track.takes) {
+        const events = take.events;
+        if (events.length > 0) {
+          const lastTs = Math.max(...events.map((e) => e.tsMs));
+          maxDurationMs = Math.max(maxDurationMs, lastTs);
+        }
+      }
+    }
+  }
+  return maxDurationMs > 0 ? Math.ceil(maxDurationMs / 1000) + 2 : 10;
 }
