@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Image,
   ImageBackground,
@@ -233,20 +234,48 @@ export function VisualHero({
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
+  const [heroImageFailed, setHeroImageFailed] = useState(false);
+
   return (
-    <ImageBackground
+    <View
+      accessible
       accessibilityLabel={`${title}. ${description}`}
-      imageStyle={styles.visualHeroImage}
-      source={GARAK_SCREEN_ASSETS.home.playHero}
-      style={[styles.visualHero, style]}
+      style={[styles.visualHero, heroImageFailed ? styles.visualHeroFallback : undefined, style]}
     >
-      <Pressable
-        accessibilityLabel={cta}
-        accessibilityRole="button"
-        onPress={onPress}
-        style={styles.visualHeroPressArea}
-      />
-    </ImageBackground>
+      {heroImageFailed ? (
+        <View style={styles.visualHeroFallbackContent}>
+          <View>
+            <Text style={styles.visualHeroFallbackTitle}>{title}</Text>
+            <Text style={styles.visualHeroFallbackDescription}>{description}</Text>
+          </View>
+          <Pressable
+            accessibilityLabel={cta}
+            accessibilityRole="button"
+            onPress={onPress}
+            style={styles.visualHeroFallbackButton}
+          >
+            <Text style={styles.visualHeroFallbackButtonText}>{cta}</Text>
+            <Text style={styles.visualHeroFallbackButtonIcon}>{'>'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {!heroImageFailed ? (
+        <Image
+          accessibilityIgnoresInvertColors
+          onError={() => setHeroImageFailed(true)}
+          source={GARAK_SCREEN_ASSETS.home.playHero}
+          style={styles.visualHeroImage}
+        />
+      ) : null}
+      {!heroImageFailed ? (
+        <Pressable
+          accessibilityLabel={cta}
+          accessibilityRole="button"
+          onPress={onPress}
+          style={styles.visualHeroPressArea}
+        />
+      ) : null}
+    </View>
   );
 }
 
@@ -592,14 +621,64 @@ const styles = StyleSheet.create({
     width: 14,
   },
   visualHero: {
+    borderRadius: GARAK_RADIUS.hero,
     height: 485,
     overflow: 'hidden',
     position: 'relative',
     width: '100%',
   },
   visualHeroImage: {
+    ...StyleSheet.absoluteFillObject,
     borderRadius: GARAK_RADIUS.hero,
     resizeMode: 'cover',
+    height: '100%',
+    width: '100%',
+  },
+  visualHeroFallback: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+  },
+  visualHeroFallbackContent: {
+    backgroundColor: GARAK_COLORS.brandNavy,
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 34,
+    paddingHorizontal: 24,
+    paddingTop: 42,
+  },
+  visualHeroFallbackTitle: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 36,
+    maxWidth: 250,
+  },
+  visualHeroFallbackDescription: {
+    color: GARAK_COLORS.surfaceSoft,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    marginTop: 14,
+    maxWidth: 235,
+  },
+  visualHeroFallbackButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    backgroundColor: GARAK_COLORS.brandAmber,
+    borderRadius: 30,
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 59,
+    paddingHorizontal: 26,
+  },
+  visualHeroFallbackButtonText: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  visualHeroFallbackButtonIcon: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 20,
+    fontWeight: '800',
   },
   visualHeroPressArea: {
     bottom: 38,

@@ -118,6 +118,20 @@ test('uses the language-aware Figma home hero copy in the home screen accessibil
   expect(uiSource).toMatch(/visualHeroPressArea:\s*\{[\s\S]*?bottom: 38/);
 });
 
+test('keeps the home play CTA visible when the hero bitmap cannot render', () => {
+  const uiSource = readFileSync(resolve(process.cwd(), 'src/product/garakUi.tsx'), 'utf8');
+  const visualHeroSource = uiSource.slice(
+    uiSource.indexOf('export function VisualHero'),
+    uiSource.indexOf('export function ArtworkImagePanel'),
+  );
+
+  expect(visualHeroSource).toContain('useState(false)');
+  expect(visualHeroSource).toContain('onError={() => setHeroImageFailed(true)}');
+  expect(visualHeroSource).toContain('heroImageFailed ?');
+  expect(visualHeroSource).toContain('visualHeroFallbackContent');
+  expect(visualHeroSource).toContain('visualHeroFallbackButton');
+});
+
 test('uses the Figma free-creation mode guide for the intro screen', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/settingsScreens.tsx'), 'utf8');
   const introGuideSource = source.slice(
