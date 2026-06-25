@@ -80,6 +80,36 @@ test('documents S04A as the Figma performance preview with a single Next CTA', (
   expect(s04aSection).not.toContain('기본값으로 시작');
 });
 
+test('defines S05 free-play actions with connected recording, jangdan, and layer actions', () => {
+  expect(implementedScreenDefinitions.S05.primaryCtas).toEqual(
+    expect.arrayContaining([
+      'openFreePlayRecordingSetup',
+      'startPerformanceRecording',
+      'cancelFreePlayRecordingSetup',
+      'completePerformance',
+      'openLiveJangdanGuide',
+      'openLayerEditor',
+    ]),
+  );
+  expect(implementedScreenDefinitions.S05.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'completePerformance', target: 'S07' },
+      { action: 'openLiveJangdanGuide', target: 'S10A' },
+      { action: 'openLayerEditor', target: 'S07' },
+    ]),
+  );
+  expect(implementedScreenDefinitions.S05.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'openFreePlayRecordingSetup',
+    }),
+  );
+  expect(implementedScreenDefinitions.S05.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'startPerformanceRecording',
+    }),
+  );
+});
+
 test('defines documented cancel and disable transitions for track and jangdan flows', () => {
   expect(implementedScreenDefinitions.S09.primaryCtas).toEqual(
     expect.arrayContaining(['record', 'apply', 'recordAgain', 'cancel']),
@@ -498,6 +528,18 @@ test('routes S05 completion directly to S07 without entering S06', () => {
   expect(next.currentScreen).toBe('S07');
   expect(next.history).toEqual(['S04A', 'S05']);
   expect(next.history).not.toContain('S06');
+});
+
+test('routes S05 jangdan and layer actions with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S05',
+    history: ['S01', 'S03', 'S04', 'S04A'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'openLiveJangdanGuide' }).currentScreen).toBe(
+    'S10A',
+  );
+  expect(transitionScreenFlow(state, { type: 'openLayerEditor' }).currentScreen).toBe('S07');
 });
 
 test('routes S10B accompaniment add directly to S07 without entering S11', () => {

@@ -16,6 +16,8 @@ export type ScreenFlowEvent =
   | { type: 'selectMode'; mode: ScreenFlowMode }
   | { type: 'next' }
   | { type: 'completePerformance' }
+  | { type: 'openLiveJangdanGuide' }
+  | { type: 'openLayerEditor' }
   | { type: 'chooseInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'cancelTrackAdd' }
@@ -53,6 +55,10 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
     case 'next':
       return routeNext(state);
     case 'completePerformance':
+      return routeFromScreen(state, 'S05', 'S07', event.type);
+    case 'openLiveJangdanGuide':
+      return routeFromScreen(state, 'S05', 'S10A', event.type);
+    case 'openLayerEditor':
       return routeFromScreen(state, 'S05', 'S07', event.type);
     case 'chooseInstrumentTrack':
       return routeFromScreen(state, 'S08', 'S09', event.type);

@@ -466,7 +466,7 @@ export function applyProductAction(
       return {
         ...state,
         freePlayRecordingSetup: undefined,
-        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S10A' }),
+        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'openLiveJangdanGuide' }),
       };
     case 'applyLiveJangdanGuide':
       return {
@@ -1086,7 +1086,7 @@ function openLayerEditor(state: GarakProductState): GarakProductState {
             state.screenFlow.currentScreen === 'S05'
               ? state.screenFlow
               : pushTarget(state.screenFlow, 'S05'),
-            { type: 'navigate', target: 'S07' },
+            { type: 'openLayerEditor' },
           ),
   };
 }

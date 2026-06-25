@@ -101,11 +101,18 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S05',
     name: 'Free Instrument Performance',
     mvpStatus: 'required',
-    primaryCtas: ['record', 'complete', 'jangdan', 'layerEdit'],
+    primaryCtas: [
+      'openFreePlayRecordingSetup',
+      'startPerformanceRecording',
+      'cancelFreePlayRecordingSetup',
+      'completePerformance',
+      'openLiveJangdanGuide',
+      'openLayerEditor',
+    ],
     transitions: [
       { action: 'completePerformance', target: 'S07' },
-      { action: 'jangdan', target: 'S10A' },
-      { action: 'layerEdit', target: 'S07' },
+      { action: 'openLiveJangdanGuide', target: 'S10A' },
+      { action: 'openLayerEditor', target: 'S07' },
     ],
   },
   S07: {
