@@ -563,7 +563,7 @@ export function applyProductAction(
         freePlayRecordingSetup: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S09'
-            ? transitionScreenFlow(state.screenFlow, { type: 'navigate', target: 'S07' })
+            ? transitionScreenFlow(state.screenFlow, { type: 'cancelInstrumentTrack' })
             : pushTarget(state.screenFlow, 'S07'),
       };
     case 'chooseAccompanimentTrack':
@@ -1214,9 +1214,13 @@ function applyInstrumentTrack(
     playheadBeat: playheadBeat ?? state.workPlayheadBeat,
     instrumentSettings: getRecordingInstrumentSettings(state, instrument),
   });
+  const nextScreenFlow =
+    state.screenFlow.currentScreen === 'S09'
+      ? transitionScreenFlow(state.screenFlow, { type: 'applyInstrumentTrack' })
+      : pushTarget(state.screenFlow, 'S07');
 
   return {
-    ...replaceCurrentWork(state, nextWork, nextCounters, 'S07'),
+    ...replaceCurrentWork(state, nextWork, nextCounters, nextScreenFlow),
     pendingFreePlayTake: undefined,
   };
 }

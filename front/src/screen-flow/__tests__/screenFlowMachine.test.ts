@@ -129,12 +129,31 @@ test('defines S07 track editor actions with connected save, add, and export acti
 
 test('defines documented cancel and disable transitions for track and jangdan flows', () => {
   expect(implementedScreenDefinitions.S09.primaryCtas).toEqual(
-    expect.arrayContaining(['record', 'apply', 'recordAgain', 'cancel']),
+    expect.arrayContaining([
+      'startPerformanceRecording',
+      'applyInstrumentTrack',
+      'restartInstrumentTrackRecording',
+      'cancelInstrumentTrack',
+    ]),
   );
   expect(implementedScreenDefinitions.S09.transitions).toContainEqual({
-    action: 'cancel',
+    action: 'applyInstrumentTrack',
     target: 'S07',
   });
+  expect(implementedScreenDefinitions.S09.transitions).toContainEqual({
+    action: 'cancelInstrumentTrack',
+    target: 'S07',
+  });
+  expect(implementedScreenDefinitions.S09.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'startPerformanceRecording',
+    }),
+  );
+  expect(implementedScreenDefinitions.S09.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'restartInstrumentTrackRecording',
+    }),
+  );
 
   expect(implementedScreenDefinitions.S10A.primaryCtas).toEqual(
     expect.arrayContaining([
@@ -593,6 +612,16 @@ test('routes S08 track add choices with connected UI actions', () => {
     'S10B',
   );
   expect(transitionScreenFlow(state, { type: 'cancelTrackAdd' }).currentScreen).toBe('S07');
+});
+
+test('routes S09 apply and cancel actions back to S07 with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S09',
+    history: ['S01', 'S03', 'S04', 'S04A', 'S05', 'S07', 'S08'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'applyInstrumentTrack' }).currentScreen).toBe('S07');
+  expect(transitionScreenFlow(state, { type: 'cancelInstrumentTrack' }).currentScreen).toBe('S07');
 });
 
 test('routes S10B cancellation back to S07 with the connected UI action', () => {

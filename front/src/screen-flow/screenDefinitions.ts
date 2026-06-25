@@ -147,10 +147,15 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S09',
     name: 'Record Extra Instrument',
     mvpStatus: 'required',
-    primaryCtas: ['record', 'apply', 'recordAgain', 'cancel'],
+    primaryCtas: [
+      'startPerformanceRecording',
+      'applyInstrumentTrack',
+      'restartInstrumentTrackRecording',
+      'cancelInstrumentTrack',
+    ],
     transitions: [
-      { action: 'apply', target: 'S07' },
-      { action: 'cancel', target: 'S07' },
+      { action: 'applyInstrumentTrack', target: 'S07' },
+      { action: 'cancelInstrumentTrack', target: 'S07' },
     ],
   },
   S10A: {

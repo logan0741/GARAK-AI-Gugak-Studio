@@ -23,6 +23,8 @@ export type ScreenFlowEvent =
   | { type: 'chooseInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'cancelTrackAdd' }
+  | { type: 'applyInstrumentTrack' }
+  | { type: 'cancelInstrumentTrack' }
   | { type: 'applyLiveJangdanGuide' }
   | { type: 'turnOffLiveJangdanGuide' }
   | { type: 'addAccompanimentTrack' }
@@ -72,6 +74,10 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S08', 'S10B', event.type);
     case 'cancelTrackAdd':
       return routeFromScreen(state, 'S08', 'S07', event.type);
+    case 'applyInstrumentTrack':
+      return routeFromScreen(state, 'S09', 'S07', event.type);
+    case 'cancelInstrumentTrack':
+      return routeFromScreen(state, 'S09', 'S07', event.type);
     case 'applyLiveJangdanGuide':
       return routeFromScreen(state, 'S10A', 'S05', event.type);
     case 'turnOffLiveJangdanGuide':
