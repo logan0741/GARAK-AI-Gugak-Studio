@@ -18,7 +18,7 @@ export function getHomeScreenViewModel(state: GarakProductState): HomeScreenView
       description: 'Play traditional instruments and complete your own garak with AI.',
       ctaLabel: 'PLAY',
       quickAccessLabels: {
-        library: 'My',
+        library: 'Library',
         home: 'Home',
         share: 'Share',
       },
@@ -30,7 +30,7 @@ export function getHomeScreenViewModel(state: GarakProductState): HomeScreenView
     description: '전통 악기를 연주하고, AI와 함께 자신만의 가락을 완성할 수 있습니다.',
     ctaLabel: 'PLAY',
     quickAccessLabels: {
-      library: '마이',
+      library: '라이브러리',
       home: '홈',
       share: '쉐어',
     },

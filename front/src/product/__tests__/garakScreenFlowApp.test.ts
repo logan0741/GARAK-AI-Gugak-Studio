@@ -203,6 +203,9 @@ test('connects S18 library tabs, search, sync label, row storage status, and emp
   expect(source).toContain("type: 'loginAndLoadMySongs'");
   expect(source).toContain('row.storageLabel');
   expect(source).toContain('model.emptyState');
+  expect(source).toContain('isEmptyLibrary');
+  expect(source).toContain('myLibraryStackEmpty');
+  expect(source).toContain('myHeroDeckEmpty');
 });
 
 test('keeps home browsing quick access as a shell-level floating bar', () => {
@@ -348,10 +351,20 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
   expect(source).toContain("type: 'openFreePlayRecordingSetup'");
   expect(source).toContain("accessibilityLabel=\"장단 설정\"");
   expect(source).toContain("type: 'openLiveJangdanGuide'");
-  expect(source).toContain("accessibilityLabel=\"레이어 편집\"");
-  expect(source).toContain("type: 'openLayerEditor'");
+  expect(source).not.toContain('landscapeStageLayerHit');
   expect(source).toContain("accessibilityLabel=\"연주 완료\"");
   expect(source).toContain("type: 'completePerformance'");
+});
+
+test('connects S05 and S09 performance surfaces to captured input events', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+
+  expect(source).toContain('createTouchModel');
+  expect(source).toContain('PanResponder');
+  expect(source).toContain('appendFreePlayPerformanceEvents');
+  expect(source).toContain('PerformanceCaptureSurface');
+  expect(source).toContain('performanceCapture.panHandlers');
+  expect(source).toContain('onPerformanceEvents={appendPerformanceEvents}');
 });
 
 test('connects S05 recording start separately from completion and missing-take guidance', () => {
@@ -523,6 +536,13 @@ test('keeps the share quick access tab active on S20', () => {
   expect(source).toContain("onShare={() => dispatch({ type: 'navigate', target: 'S20' })}");
 });
 
+test('reserves enough scroll room above the floating quick access nav on browsing screens', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+
+  expect(source).toContain('homeBrowsingContent');
+  expect(source).toContain('paddingBottom: GARAK_LAYOUT.quickAccessHeight + 118');
+});
+
 test('labels shell icon buttons for assistive technology', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
 
@@ -530,6 +550,14 @@ test('labels shell icon buttons for assistive technology', () => {
   expect(source).toContain('accessibilityLabel="뒤로가기"');
   expect(source).toContain('accessibilityLabel="마이 및 설정"');
   expect(source).toContain('accessibilityLabel="새 작업 시작"');
+});
+
+test('labels auth buttons without exposing decorative marks as button names', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/authScreens.tsx'), 'utf8');
+
+  expect(source).toContain('accessibilityLabel={label}');
+  expect(source).toContain('accessibilityElementsHidden');
+  expect(source).toContain('importantForAccessibility="no-hide-descendants"');
 });
 
 test('uses the Figma stacked track add flow for S08', () => {

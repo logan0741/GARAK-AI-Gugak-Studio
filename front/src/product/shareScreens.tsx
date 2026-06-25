@@ -522,11 +522,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   shareHeroDescription: {
-    color: 'rgba(255,255,255,0.88)',
-    fontSize: 9,
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 12,
     fontWeight: '500',
     letterSpacing: 0,
-    lineHeight: 13,
+    lineHeight: 16,
     marginTop: 10,
     textAlign: 'center',
   },
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   },
   shareRecentSortLabel: {
     color: GARAK_COLORS.textSecondary,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0,
     marginTop: 2,
@@ -699,11 +699,11 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   shareRecentSubtitle: {
-    color: 'rgba(255,255,255,0.86)',
-    fontSize: 9,
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0,
-    lineHeight: 12,
+    lineHeight: 15,
   },
   prepareCard: {
     backgroundColor: GARAK_COLORS.surfaceCard,

@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   },
   syncPreviewLabel: {
     color: GARAK_COLORS.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
   },
   syncPreviewValue: {

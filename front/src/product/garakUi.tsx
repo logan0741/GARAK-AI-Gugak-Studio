@@ -117,7 +117,7 @@ export function ProgressSteps({ step, total = 3 }: { step: number; total?: numbe
 export function QuickAccessNav({
   active,
   labels = {
-    library: '마이',
+    library: '라이브러리',
     home: '홈',
     share: '쉐어',
   },
@@ -765,8 +765,8 @@ const styles = StyleSheet.create({
     backgroundColor: GARAK_COLORS.brandNavy,
   },
   categoryChipText: {
-    color: '#ACACAC',
-    fontSize: 11,
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
     fontWeight: '800',
   },
   categoryChipTextActive: {

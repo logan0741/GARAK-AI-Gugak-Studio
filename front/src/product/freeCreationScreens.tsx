@@ -1,12 +1,18 @@
+import { useMemo, type ReactNode } from 'react';
 import {
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
+  type GestureResponderEvent,
+  type PanResponderGestureState,
   type StyleProp,
   type ViewStyle,
   useWindowDimensions,
   View,
 } from 'react-native';
+import type { PerformanceEvent } from '../domain/performanceEvent';
+import { createTouchModel, type TouchFrame } from '../interaction/touchModel';
 import type { InstrumentId, Track } from '../studio/studioTypes';
 import {
   GARAK_COLORS,
@@ -84,6 +90,11 @@ const PERFORMANCE_PREVIEW_CALLOUTS: Record<InstrumentId, { top: string; bottom: 
     bottom: '대금은 운지와 호흡으로 음정과 세기를 조절해요.',
   },
 };
+const PRODUCT_TOUCH_LAYOUT = {
+  topY: 0,
+  height: 390,
+  stringCount: 12,
+} as const;
 
 function isInstrumentTrack(track: Track): track is Extract<Track, { kind: 'instrument' }> {
   return track.kind === 'instrument';
@@ -91,6 +102,66 @@ function isInstrumentTrack(track: Track): track is Extract<Track, { kind: 'instr
 
 function isAccompanimentTrack(track: Track): track is Extract<Track, { kind: 'accompaniment' }> {
   return track.kind === 'accompaniment';
+}
+
+function PerformanceCaptureSurface({
+  children,
+  enabled,
+  onPerformanceEvents,
+  style,
+}: {
+  children: ReactNode;
+  enabled: boolean;
+  onPerformanceEvents: (events: PerformanceEvent[]) => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const touchModel = useMemo(() => createTouchModel({ layout: PRODUCT_TOUCH_LAYOUT }), []);
+  const performanceCapture = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => enabled,
+        onMoveShouldSetPanResponder: () => enabled,
+        onPanResponderGrant: (event, gestureState) => handleTouchFrame('start', event, gestureState),
+        onPanResponderMove: (event, gestureState) => handleTouchFrame('move', event, gestureState),
+        onPanResponderRelease: (event, gestureState) => handleTouchFrame('end', event, gestureState),
+        onPanResponderTerminate: (event, gestureState) => handleTouchFrame('cancel', event, gestureState),
+        onPanResponderTerminationRequest: () => true,
+      }),
+    [enabled, onPerformanceEvents, touchModel],
+  );
+  const captureHandlers = enabled ? performanceCapture.panHandlers : undefined;
+
+  function handleTouchFrame(
+    phase: TouchFrame['phase'],
+    event: GestureResponderEvent,
+    gestureState: PanResponderGestureState,
+  ) {
+    if (!enabled) {
+      return;
+    }
+
+    const nativeEvent = event.nativeEvent as GestureResponderEvent['nativeEvent'] & {
+      force?: number;
+    };
+    const events = touchModel.handleFrame({
+      phase,
+      pointerId: String(gestureState.stateID),
+      tsMs: Date.now(),
+      x: nativeEvent.locationX,
+      y: nativeEvent.locationY,
+      force: typeof nativeEvent.force === 'number' ? nativeEvent.force : undefined,
+    });
+
+    if (events.length > 0) {
+      onPerformanceEvents(events);
+    }
+  }
+
+  return (
+    <View {...captureHandlers} style={style}>
+      {children}
+    </View>
+  );
 }
 
 function getNextTrackInstrument(existingInstruments: InstrumentId[]): InstrumentId {
@@ -284,24 +355,45 @@ export function FreePlayContent({
   const usesFigmaJangguLandscapeStage = isLandscapeFrame && instrument === 'janggu';
   const usesFigmaLandscapeStage =
     usesFigmaDaegeumLandscapeStage || usesFigmaGayageumLandscapeStage || usesFigmaJangguLandscapeStage;
+  const isRecordingPerformance = state.pendingFreePlayTake !== undefined;
+  const appendPerformanceEvents = (events: PerformanceEvent[]) =>
+    dispatch({ type: 'appendFreePlayPerformanceEvents', events });
 
   return (
     <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
       {usesFigmaDaegeumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
-          <DaegeumLandscapeStageArtwork />
+          <PerformanceCaptureSurface
+            enabled={isRecordingPerformance}
+            onPerformanceEvents={appendPerformanceEvents}
+            style={styles.landscapePerformanceCapture}
+          >
+            <DaegeumLandscapeStageArtwork />
+          </PerformanceCaptureSurface>
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : usesFigmaGayageumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
-          <GayageumLandscapeStageArtwork />
+          <PerformanceCaptureSurface
+            enabled={isRecordingPerformance}
+            onPerformanceEvents={appendPerformanceEvents}
+            style={styles.landscapePerformanceCapture}
+          >
+            <GayageumLandscapeStageArtwork />
+          </PerformanceCaptureSurface>
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} />
         </View>
       ) : usesFigmaJangguLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
-          <JangguLandscapeStageArtwork />
+          <PerformanceCaptureSurface
+            enabled={isRecordingPerformance}
+            onPerformanceEvents={appendPerformanceEvents}
+            style={styles.landscapePerformanceCapture}
+          >
+            <JangguLandscapeStageArtwork />
+          </PerformanceCaptureSurface>
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} />
         </View>
@@ -314,7 +406,13 @@ export function FreePlayContent({
               <Text style={styles.inlineControlAmber}>●</Text>
             </View>
           </View>
-          <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
+          <PerformanceCaptureSurface
+            enabled={isRecordingPerformance}
+            onPerformanceEvents={appendPerformanceEvents}
+            style={styles.instrumentPerformanceCapture}
+          >
+            <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
+          </PerformanceCaptureSurface>
         </View>
       )}
       {!usesFigmaLandscapeStage ? (
@@ -462,12 +560,6 @@ function LandscapeStageActionHits({ dispatch }: { dispatch: ProductDispatch }) {
         accessibilityRole="button"
         onPress={() => dispatch({ type: 'openLiveJangdanGuide' })}
         style={[styles.landscapeStageActionHit, styles.landscapeStageJangdanHit]}
-      />
-      <Pressable
-        accessibilityLabel="레이어 편집"
-        accessibilityRole="button"
-        onPress={() => dispatch({ type: 'openLayerEditor' })}
-        style={[styles.landscapeStageActionHit, styles.landscapeStageLayerHit]}
       />
       <Pressable
         accessibilityLabel="연주 완료"
@@ -1007,7 +1099,13 @@ export function ExtraInstrumentRecordContent({
         </Text>
       </View>
       <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
-        <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
+        <PerformanceCaptureSurface
+          enabled={state.pendingFreePlayTake !== undefined}
+          onPerformanceEvents={(events) => dispatch({ type: 'appendFreePlayPerformanceEvents', events })}
+          style={styles.instrumentPerformanceCapture}
+        >
+          <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
+        </PerformanceCaptureSurface>
       </View>
       <View
         style={[
@@ -2271,6 +2369,15 @@ const styles = StyleSheet.create({
     minHeight: 0,
     padding: 12,
   },
+  instrumentPerformanceCapture: {
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 0,
+  },
+  landscapePerformanceCapture: {
+    flex: 1,
+    minHeight: 0,
+  },
   jangguLandscapeStageWrap: {
     flex: 1,
     minHeight: 0,
@@ -2299,12 +2406,6 @@ const styles = StyleSheet.create({
     right: 0,
     top: 82,
     width: 44,
-  },
-  landscapeStageLayerHit: {
-    bottom: 94,
-    left: '31%',
-    right: '31%',
-    top: 94,
   },
   landscapeStageCompleteHit: {
     bottom: 0,
@@ -2353,7 +2454,7 @@ const styles = StyleSheet.create({
   },
   recordingSetupEyebrow: {
     color: GARAK_COLORS.brandAmber,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0,
   },
@@ -2394,10 +2495,10 @@ const styles = StyleSheet.create({
   },
   recordingPresetMeta: {
     color: GARAK_COLORS.textSecondary,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0,
-    lineHeight: 15,
+    lineHeight: 16,
     marginTop: 3,
   },
   recordingPresetMetaActive: {
@@ -2459,8 +2560,8 @@ const styles = StyleSheet.create({
   },
   noteBubbleText: {
     color: GARAK_COLORS.textPrimary,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 17,
   },
   instrumentDescription: {
     color: GARAK_COLORS.textSecondary,

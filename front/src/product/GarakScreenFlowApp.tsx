@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     paddingBottom: 72,
   },
   homeBrowsingContent: {
-    paddingBottom: 122,
+    paddingBottom: GARAK_LAYOUT.quickAccessHeight + 118,
   },
   landscapeContent: {
     flex: 1,

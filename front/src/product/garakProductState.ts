@@ -178,6 +178,7 @@ export type GarakProductAction =
   | { type: 'adjustFreePlayRecordingBpm'; delta: number }
   | { type: 'cancelFreePlayRecordingSetup' }
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup }
+  | { type: 'appendFreePlayPerformanceEvents'; events: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | { type: 'setWorkPlayheadBeat'; beat: number }
   | { type: 'adjustWorkTrackVolume'; trackId: string; delta: number }
@@ -447,6 +448,19 @@ export function applyProductAction(
           ),
         },
         freePlayRecordingSetup: undefined,
+        freePlayNotice: undefined,
+      };
+    case 'appendFreePlayPerformanceEvents':
+      if (state.pendingFreePlayTake === undefined || action.events.length === 0) {
+        return state;
+      }
+
+      return {
+        ...state,
+        pendingFreePlayTake: {
+          ...state.pendingFreePlayTake,
+          events: [...state.pendingFreePlayTake.events, ...action.events],
+        },
         freePlayNotice: undefined,
       };
     case 'completePerformance':

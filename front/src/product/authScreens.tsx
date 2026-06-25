@@ -84,6 +84,7 @@ function AuthButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
@@ -93,7 +94,17 @@ function AuthButton({
         disabled ? styles.disabled : null,
       ]}
     >
-      {mark ? <Text style={styles.googleMark}>{mark}</Text> : <View style={styles.markSpacer} />}
+      {mark ? (
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={styles.googleMark}
+        >
+          {mark}
+        </Text>
+      ) : (
+        <View style={styles.markSpacer} />
+      )}
       <Text style={styles.authButtonText}>{disabled ? '처리 중' : label}</Text>
       <View style={styles.markSpacer} />
     </Pressable>
