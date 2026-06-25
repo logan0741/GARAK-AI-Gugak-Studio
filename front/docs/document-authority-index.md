@@ -28,11 +28,17 @@
 | 도메인 용어, aggregate, invariant는 무엇인가? | `docs/domain/README.md` | `docs/architecture/gukak-studio-erd.md` |
 | 세션 저장 구조와 엔티티 관계는 무엇인가? | `docs/architecture/gukak-studio-erd.md` | `docs/domain/README.md` |
 | 런타임 경계와 데이터 흐름은 무엇인가? | `docs/architecture/runtime-architecture.md` | `docs/architecture/tech-stack.md` |
+| S05 자유연주 기능의 코드 / 데이터 흐름은 무엇인가? | `docs/architecture/free-play-performance-flow.md` | `docs/product/screen-flow/current-screen-flow.md`, `docs/architecture/runtime-architecture.md`, `docs/domain/README.md` |
+| S05에서 녹음을 시작하면 데이터와 state는 어떻게 바뀌는가? | `docs/architecture/free-play-recording-flow.md` | `docs/architecture/free-play-performance-flow.md`, `docs/architecture/runtime-architecture.md`, `docs/domain/README.md` |
 | AI 모델 서버에 어떤 입력을 보내고 어떤 출력을 받는가? | `docs/architecture/ai-model-pipeline-contract.md` | `docs/architecture/runtime-architecture.md`, `docs/product/screen-flow/current-screen-flow.md` |
 | 기술 스택과 dependency 판단은 무엇인가? | `docs/architecture/tech-stack.md` | `docs/adr/` |
 | 되돌리기 어려운 기술 결정의 이유는 무엇인가? | `docs/adr/` | `docs/architecture/tech-stack.md` |
 | 구현 순서, 파일 경로, 검증 명령은 어디에 있는가? | `docs/plans/implementation/` | `docs/plans/backlog/`, `docs/system/conventions.md` |
+| 저장, Save & Share, 공유 publish 구현 계획은 어디에서 추적하는가? | `docs/plans/implementation/2026-06-26-save-share-implementation-plan.md` | `docs/product/screen-flow/current-screen-flow.md`, `docs/architecture/tech-stack.md`, `docs/plans/backlog/` |
 | 사용자 입력, 실기기, API 계약 때문에 막힌 구현 항목은 어디에 있는가? | `docs/plans/backlog/` | `docs/qa/`, `docs/architecture/`, `docs/reports/` |
+| 따라하기 모드 선택 차단과 재활성화 작업은 어디에서 추적하는가? | `docs/plans/backlog/2026-06-26-practice-mode-backlog.md` | `docs/product/screen-flow/current-screen-flow.md`, `docs/product/garak-product-brief.md` |
+| S05 연주 개선 작업은 어디에서 추적하는가? | `docs/plans/backlog/2026-06-26-s05-performance-backlog.md` | `docs/architecture/free-play-performance-flow.md`, `docs/architecture/free-play-recording-flow.md` |
+| S05 녹음 개선 작업은 어디에서 추적하는가? | `docs/plans/backlog/2026-06-26-s05-recording-backlog.md` | `docs/architecture/free-play-recording-flow.md`, `docs/architecture/free-play-performance-flow.md` |
 | 브랜치, 커밋, 코드 작업 컨벤션은 무엇인가? | `docs/system/conventions.md` | `AGENTS.md` |
 | 문서를 새로 만들거나 옮길 때의 규칙은 무엇인가? | `docs/system/documentation-standard.md` | 이 문서 |
 | 수동 QA와 오디오/기기 검증 기준은 무엇인가? | `docs/qa/` | `docs/architecture/runtime-architecture.md` |

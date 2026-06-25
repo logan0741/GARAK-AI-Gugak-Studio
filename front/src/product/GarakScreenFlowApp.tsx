@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import type { PerformanceEvent } from '../domain/performanceEvent';
 import {
   AccompanimentTrackContent,
   AddTrackContent,
@@ -128,6 +129,12 @@ export function GarakScreenFlowApp({
       };
     });
   }, []);
+  const playLivePerformanceEvents = useCallback(
+    (events: PerformanceEvent[]) => {
+      void productServices.audio.playPerformanceEvents(events);
+    },
+    [productServices],
+  );
 
   useEffect(() => {
     const effectsToRun = runtimeState.pendingEffects.filter(
@@ -240,11 +247,17 @@ export function GarakScreenFlowApp({
             ]}
             showsVerticalScrollIndicator={false}
           >
-            {renderScreenContent(state, dispatch, frameConfig.mode, onLogout)}
+            {renderScreenContent(state, dispatch, frameConfig.mode, {
+              onLivePerformanceEvents: playLivePerformanceEvents,
+              onLogout,
+            })}
           </ScrollView>
         ) : (
           <View key={currentScreen} style={[styles.content, contentStyle]}>
-            {renderScreenContent(state, dispatch, frameConfig.mode, onLogout)}
+            {renderScreenContent(state, dispatch, frameConfig.mode, {
+              onLivePerformanceEvents: playLivePerformanceEvents,
+              onLogout,
+            })}
           </View>
         )}
         {isHomeBrowsingSurface ? (
@@ -267,7 +280,10 @@ function renderScreenContent(
   state: GarakProductState,
   dispatch: (action: GarakProductAction) => void,
   frameMode: GarakScreenFrameMode,
-  onLogout?: () => void,
+  runtime: {
+    onLivePerformanceEvents: (events: PerformanceEvent[]) => void;
+    onLogout?: () => void;
+  },
 ) {
   switch (state.screenFlow.currentScreen) {
     case 'S01':
@@ -281,13 +297,27 @@ function renderScreenContent(
     case 'S04A':
       return <InstrumentSettingsContent state={state} dispatch={dispatch} />;
     case 'S05':
-      return <FreePlayContent state={state} dispatch={dispatch} frameMode={frameMode} />;
+      return (
+        <FreePlayContent
+          state={state}
+          dispatch={dispatch}
+          frameMode={frameMode}
+          onLivePerformanceEvents={runtime.onLivePerformanceEvents}
+        />
+      );
     case 'S07':
       return <TrackLayerEditorContent state={state} dispatch={dispatch} />;
     case 'S08':
       return <AddTrackContent state={state} dispatch={dispatch} />;
     case 'S09':
-      return <ExtraInstrumentRecordContent state={state} dispatch={dispatch} frameMode={frameMode} />;
+      return (
+        <ExtraInstrumentRecordContent
+          state={state}
+          dispatch={dispatch}
+          frameMode={frameMode}
+          onLivePerformanceEvents={runtime.onLivePerformanceEvents}
+        />
+      );
     case 'S10A':
       return <LiveJangdanContent state={state} dispatch={dispatch} />;
     case 'S10B':
@@ -311,7 +341,7 @@ function renderScreenContent(
     case 'S21':
       return <SharedDetailContent state={state} dispatch={dispatch} />;
     case 'S22':
-      return <SettingsContent state={state} dispatch={dispatch} onLogout={onLogout} />;
+      return <SettingsContent state={state} dispatch={dispatch} onLogout={runtime.onLogout} />;
     case 'S23':
       return <LoginSyncContent state={state} dispatch={dispatch} />;
   }

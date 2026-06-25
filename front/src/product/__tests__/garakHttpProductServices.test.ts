@@ -89,6 +89,30 @@ describe('HTTP Garak product services', () => {
       status: 'unavailable',
     });
   });
+
+  test('posts live performance events to the audio playback service boundary', async () => {
+    const requests: Array<{ url: string; init: Parameters<GarakFetch>[1] }> = [];
+    const services = createHttpGarakProductServices({
+      baseUrl: 'https://api.garak.test/v1',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        return jsonResponse(200, { handledEvents: 1 });
+      },
+    });
+    const events = [
+      { type: 'string_pluck' as const, tsMs: 120, stringIndex: 2, velocity: 0.7 },
+    ];
+
+    await expect(services.audio.playPerformanceEvents(events)).resolves.toEqual({
+      status: 'ok',
+      value: { handledEvents: 1 },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].url).toBe('https://api.garak.test/v1/audio/performance-events/play');
+    expect(requests[0].init?.method).toBe('POST');
+    expect(JSON.parse(String(requests[0].init?.body))).toEqual({ events });
+  });
 });
 
 function createLibrarySnapshot(workId = 'work-1'): ProductLibraryState {

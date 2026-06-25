@@ -75,6 +75,7 @@ export type ProductLanguage = 'ko' | 'en';
 export type PendingFreePlayTake = {
   events: PerformanceEvent[];
   recordingSetup: RecordingSetup;
+  startedAtMs: number;
 };
 
 export type FreePlayNotice = 'missingTake';
@@ -358,6 +359,10 @@ export function applyProductAction(
         }),
       };
     case 'selectIntroGuideMode':
+      if (action.mode !== 'freeCreation') {
+        return state;
+      }
+
       return {
         ...state,
         selectedMode: action.mode,
@@ -439,6 +444,10 @@ export function applyProductAction(
         freePlayRecordingSetup: undefined,
       };
     case 'startPerformanceRecording':
+      if (state.pendingFreePlayTake !== undefined) {
+        return state;
+      }
+
       return {
         ...state,
         pendingFreePlayTake: {
@@ -446,6 +455,7 @@ export function applyProductAction(
           recordingSetup: normalizeRecordingSetup(
             action.recordingSetup ?? state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
           ),
+          startedAtMs: toEpochMs(state.now()),
         },
         freePlayRecordingSetup: undefined,
         freePlayNotice: undefined,
@@ -464,7 +474,7 @@ export function applyProductAction(
         freePlayNotice: undefined,
       };
     case 'completePerformance':
-      return completePerformance(state, action.events);
+      return completePerformance(state);
     case 'setWorkPlayheadBeat':
       return {
         ...state,
@@ -575,6 +585,7 @@ export function applyProductAction(
         pendingFreePlayTake: {
           events: action.events ?? [],
           recordingSetup: createDefaultRecordingSetup(),
+          startedAtMs: toEpochMs(state.now()),
         },
         freePlayRecordingSetup: undefined,
         screenFlow:
@@ -1033,7 +1044,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
   }
 }
 
-function completePerformance(state: GarakProductState, events?: PerformanceEvent[]): GarakProductState {
+function completePerformance(state: GarakProductState): GarakProductState {
   if (state.pendingFreePlayTake === undefined) {
     return {
       ...state,
@@ -1045,7 +1056,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
   const nextCounters = incrementCounters(state.counters, ['work', 'track', 'take']);
   const now = state.now();
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
-  const takeEvents = events ?? state.pendingFreePlayTake.events;
+  const takeEvents = state.pendingFreePlayTake.events;
   const instrumentSettings = getRecordingInstrumentSettings(state, instrument);
   const work = autoSaveTakeAsWork({
     workId: `work-${nextCounters.work}`,
@@ -1056,7 +1067,10 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     events: takeEvents,
     createdAt: now,
     startedAtBeat: 1,
-    durationBeats: 4,
+    durationBeats: getPerformanceTakeDurationBeats(
+      takeEvents,
+      state.pendingFreePlayTake.recordingSetup,
+    ),
     instrumentSettings,
     recordingSetup: state.pendingFreePlayTake.recordingSetup,
     liveJangdanGuide: state.pendingLiveJangdanGuide
@@ -1133,6 +1147,30 @@ function adjustRecordingSetupBpm(setup: RecordingSetup, delta: number): Recordin
 
 function normalizeRecordingSetup(setup: RecordingSetup): RecordingSetup {
   return createRecordingSetup(setup.presetId, setup.bpm);
+}
+
+function toEpochMs(isoDate: string): number {
+  const epochMs = Date.parse(isoDate);
+
+  return Number.isFinite(epochMs) ? epochMs : 0;
+}
+
+function getPerformanceTakeDurationBeats(
+  events: PerformanceEvent[],
+  recordingSetup: RecordingSetup,
+): number {
+  if (events.length === 0) {
+    return 4;
+  }
+
+  const lastEventTsMs = Math.max(...events.map((event) => event.tsMs));
+  const msPerBeat = 60_000 / recordingSetup.bpm;
+
+  if (!Number.isFinite(lastEventTsMs) || !Number.isFinite(msPerBeat) || msPerBeat <= 0) {
+    return 4;
+  }
+
+  return Math.max(1, Math.ceil(lastEventTsMs / msPerBeat));
 }
 
 function clampBpm(preset: { minBpm: number; maxBpm: number }, bpm: number): number {

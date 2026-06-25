@@ -129,6 +129,36 @@ describe('Garak product effect runner', () => {
       },
     ]);
   });
+
+  test('keeps captured free-play event effects limited to state persistence follow-ups', async () => {
+    const events: PerformanceEvent[] = [
+      { type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 },
+    ];
+    let playedEvents: readonly PerformanceEvent[] | undefined;
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        playPerformanceEvents: async (inputEvents: readonly PerformanceEvent[]) => {
+          playedEvents = inputEvents;
+          return {
+            status: 'ok' as const,
+            value: { handledEvents: inputEvents.length },
+          };
+        },
+      },
+    };
+
+    const followUpActions = await runGarakProductEffect({
+      state: createInitialGarakProductState(),
+      action: { type: 'appendFreePlayPerformanceEvents', events },
+      services,
+    });
+
+    expect(playedEvents).toBeUndefined();
+    expect(followUpActions).toEqual([]);
+  });
 });
 
 function createWork(id: string): Work {

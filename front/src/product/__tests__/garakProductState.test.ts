@@ -252,7 +252,7 @@ test('opens S05 recording setup before recording and stores confirmed tempo meta
   state = applyProductAction(state, { type: 'startPerformanceRecording', events });
 
   expect(state.freePlayRecordingSetup).toBeUndefined();
-  expect(state.pendingFreePlayTake).toEqual({
+  expect(state.pendingFreePlayTake).toMatchObject({
     events,
     recordingSetup: {
       presetId: 'jungmori',
@@ -362,6 +362,126 @@ test('appends captured S05 performance events to the pending take before complet
 
   expect(firstTrack?.kind).toBe('instrument');
   expect(firstTrack?.kind === 'instrument' ? firstTrack.takes[0].events : []).toEqual(capturedEvents);
+});
+
+test('stores the S05 recording start timestamp on the pending take', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T09:30:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+
+  expect(state.pendingFreePlayTake?.startedAtMs).toBe(Date.parse('2026-06-18T09:30:00.000Z'));
+});
+
+test('ignores duplicate S05 recording starts without replacing the pending take', () => {
+  const firstEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 },
+  ];
+  const duplicateEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 900, stringIndex: 8, velocity: 1 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T09:30:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: firstEvents,
+    recordingSetup: { presetId: 'semachi', bpm: 84, beatUnit: '4/4' },
+  });
+
+  const pendingTake = state.pendingFreePlayTake;
+
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: duplicateEvents,
+    recordingSetup: { presetId: 'jungmori', bpm: 72, beatUnit: '4/4' },
+  });
+
+  expect(state.pendingFreePlayTake).toBe(pendingTake);
+  expect(state.pendingFreePlayTake?.events).toEqual(firstEvents);
+  expect(state.pendingFreePlayTake?.recordingSetup).toMatchObject({
+    presetId: 'semachi',
+    bpm: 84,
+  });
+});
+
+test('saves only pending S05 recording events when completing a performance', () => {
+  const pendingEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 },
+  ];
+  const staleOverrideEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 999, stringIndex: 8, velocity: 1 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T09:30:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording', events: pendingEvents });
+  state = applyProductAction(state, { type: 'completePerformance', events: staleOverrideEvents });
+
+  const firstTrack = state.library.works[0]?.tracks[0];
+
+  expect(firstTrack?.kind === 'instrument' ? firstTrack.takes[0].events : []).toEqual(pendingEvents);
+});
+
+test('derives the saved S05 take duration from event timestamps and recording BPM', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 500, stringIndex: 2, velocity: 0.7 },
+    { type: 'string_release', tsMs: 2500, stringIndex: 2 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T09:30:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: capturedEvents,
+    recordingSetup: { presetId: 'jajinmori', bpm: 120, beatUnit: '4/4' },
+  });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  const firstTrack = state.library.works[0]?.tracks[0];
+
+  expect(firstTrack?.kind === 'instrument' ? firstTrack.takes[0].durationBeats : undefined).toBe(5);
+});
+
+test('does not store captured S05 performance events before recording starts', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 },
+  ];
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'appendFreePlayPerformanceEvents', events: capturedEvents });
+
+  expect(state.pendingFreePlayTake).toBeUndefined();
+  expect(state.library.works).toHaveLength(0);
 });
 
 test('opens the layer editor from S05 when a saved work exists', () => {
@@ -1094,20 +1214,20 @@ test('summarizes S14 instrument selection with Next from the detailed document',
   );
 });
 
-test('chooses practice mode from the S03 mode guide before opening song selection', () => {
+test('keeps practice mode unavailable from the S03 mode guide', () => {
   let state = createInitialGarakProductState();
 
   state = applyProductAction(state, { type: 'navigate', target: 'S03' });
   state = applyProductAction(state, { type: 'selectIntroGuideMode', mode: 'practice' });
 
-  expect(state.selectedMode).toBe('practice');
-  expect(state.screenFlow.mode).toBe('practice');
+  expect(state.selectedMode).toBe('freeCreation');
+  expect(state.screenFlow.mode).toBe('freeCreation');
   expect(state.screenFlow.currentScreen).toBe('S03');
 
-  state = applyProductAction(state, { type: 'navigate', target: 'S13' });
+  state = applyProductAction(state, { type: 'next' });
 
-  expect(state.screenFlow.currentScreen).toBe('S13');
-  expect(getCurrentScreenSummary(state).title).toBe('민요 선택');
+  expect(state.screenFlow.currentScreen).toBe('S04');
+  expect(getCurrentScreenSummary(state).title).toBe('악기 선택');
 });
 
 test('previews a practice song from S13 without choosing it', () => {

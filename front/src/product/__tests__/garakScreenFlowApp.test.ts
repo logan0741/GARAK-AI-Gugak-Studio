@@ -31,6 +31,15 @@ test('wires bundled sample readiness into the product app entry point', () => {
   });
 });
 
+test('injects runtime product services from the auth entry point', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakAuthEntryApp.tsx'), 'utf8');
+
+  expect(source).toContain('createRuntimeGarakProductServices');
+  expect(source).toContain('const productServices = useMemo(');
+  expect(source).toContain('sessionStore');
+  expect(source).toContain('services={productServices}');
+});
+
 test('accepts product services and runs effect follow-up actions after dispatch', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
 
@@ -148,8 +157,12 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).toContain('modeGuidePanelCompact');
   expect(source).toContain("type: 'selectIntroGuideMode'");
   expect(source).toContain("mode: 'freeCreation'");
-  expect(source).toContain("mode: 'practice'");
-  expect(source).toContain("target: isPracticeMode ? 'S13' : 'S04'");
+  expect(source).toContain('PRACTICE_MODE_AVAILABLE');
+  expect(source).toContain('disabled={!PRACTICE_MODE_AVAILABLE}');
+  expect(source).toContain('modeToggleButtonDisabled');
+  expect(source).toContain('modeToggleTextDisabled');
+  expect(introGuideSource).not.toContain("mode: 'practice'");
+  expect(source).not.toContain("target: isPracticeMode ? 'S13' : 'S04'");
   expect(introGuideSource).not.toContain('SecondaryPillButton');
   expect(introGuideSource).not.toContain('modeGuideSkipButton');
   expect(introGuideSource).not.toContain('label="건너뛰기"');
@@ -309,7 +322,8 @@ test('uses the Figma instrument selection design for the free-creation instrumen
   expect(source).toContain('악기');
   expect(source).toContain('장구 Janggu');
   expect(source).toContain('장구는 한국 전통 음악에서');
-  expect(source).toContain('InstrumentSelectionArtworkPanel');
+  expect(source).toContain('InstrumentSelectionPreviewCard');
+  expect(source).toContain('InstrumentPreviewStageArtwork');
   expect(source).toContain('FUTURE_INSTRUMENT_CHIPS');
   expect(source).toContain('onLockedInstrumentPress');
   expect(source).toContain("type: 'showFutureInstrumentNotice'");
@@ -323,6 +337,34 @@ test('uses the Figma instrument selection design for the free-creation instrumen
   expect(instrumentSelectSource).not.toContain('instrumentSampleStatusPill');
 });
 
+test('uses full instrument performance previews and complete janggu copy on S04', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const instrumentSelectSource = source.slice(
+    source.indexOf('export function InstrumentSelectContent'),
+    source.indexOf('export function InstrumentSettingsContent'),
+  );
+
+  expect(source).toContain('민속기악에서는 열편에만 열채를 쓰고');
+  expect(source).toContain('풍물놀이나 일부 무속음악 계통에서는 양손에 열채와 궁굴채를 들고 친다고 합니다.');
+  expect(instrumentSelectSource).toContain('InstrumentSelectionPreviewCard');
+  expect(instrumentSelectSource).toContain('InstrumentPreviewStageArtwork');
+  expect(instrumentSelectSource).toContain('instrument={selectedInstrument}');
+  expect(instrumentSelectSource).not.toContain('InstrumentVisual instrument={selectedInstrument}');
+});
+
+test('keeps S04A preview copy in normal flow below the stage artwork', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const instrumentSettingsSource = source.slice(
+    source.indexOf('export function InstrumentSettingsContent'),
+    source.indexOf('export function FreePlayContent'),
+  );
+
+  expect(instrumentSettingsSource).toContain('performancePreviewDescription');
+  expect(instrumentSettingsSource).toContain('{performancePreviewCallouts.bottom}');
+  expect(instrumentSettingsSource).not.toContain('performancePreviewBottomCallout');
+  expect(instrumentSettingsSource).not.toContain('performancePreviewBottomDrop');
+});
+
 test('uses the Figma performance preview design before entering free play', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
   const instrumentSettingsSource = source.slice(
@@ -332,7 +374,7 @@ test('uses the Figma performance preview design before entering free play', () =
 
   expect(source).toContain('getInstrumentSettingsModel');
   expect(source).toContain('연주를 시작하고 녹음하고');
-  expect(source).toContain('양손으로 궁편과 열편을');
+  expect(source).toContain('궁편은 그냥 손으로 때리며');
   expect(instrumentSettingsSource).toContain('연주 할 화면');
   expect(instrumentSettingsSource).toContain('미리 볼 수 있어요');
   expect(instrumentSettingsSource).toContain('NEXT');
@@ -435,6 +477,22 @@ test('connects S05 and S09 performance surfaces to captured input events', () =>
   expect(source).toContain('PerformanceCaptureSurface');
   expect(source).toContain('performanceCapture.panHandlers');
   expect(source).toContain('onPerformanceEvents={appendPerformanceEvents}');
+  expect(source).toContain('onLivePerformanceEvents');
+  expect(source).toContain('onLivePerformanceEventsRef.current?.(events)');
+});
+
+test('keeps S05 performance capture enabled separately from recording state', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const freePlaySource = source.slice(
+    source.indexOf('export function FreePlayContent'),
+    source.indexOf('function LandscapeStageNotice'),
+  );
+
+  expect(source).toContain('getFreePlayPerformanceCaptureModel');
+  expect(freePlaySource).toContain('const performanceCaptureModel = getFreePlayPerformanceCaptureModel(state);');
+  expect(freePlaySource).toContain('const isRecordingPerformance = performanceCaptureModel.isRecording;');
+  expect(freePlaySource).toContain('enabled={performanceCaptureModel.captureEnabled}');
+  expect(freePlaySource).not.toContain('enabled={isRecordingPerformance}');
 });
 
 test('keeps the performance PanResponder stable across callback prop updates', () => {

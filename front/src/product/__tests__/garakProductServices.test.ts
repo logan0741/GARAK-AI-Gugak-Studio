@@ -57,5 +57,8 @@ describe('Garak product service ports', () => {
     await expect(services.share.publishShareTarget({ kind: 'practiceResult', id: 'practice-1' })).resolves.toEqual({
       status: 'unavailable',
     });
+    await expect(services.audio.playPerformanceEvents([])).resolves.toEqual({
+      status: 'unavailable',
+    });
   });
 });

@@ -52,6 +52,10 @@ export function createHttpGarakProductServices({
         client.serviceJson<{ audioUri: string }>('/audio/exports', 'POST', {
           work,
         }),
+      playPerformanceEvents: (events) =>
+        client.serviceJson<{ handledEvents: number }>('/audio/performance-events/play', 'POST', {
+          events,
+        }),
     },
     ai: {
       recommendAccompaniment: (input) =>

@@ -507,7 +507,8 @@ test('documents S01 hero entry and S03 mode selection as the current authority',
   );
 
   expect(screenFlowDoc).toContain('S01 홈은 Figma의 단일 hero entry를 우선한다.');
-  expect(screenFlowDoc).toContain('S03 `홈-자유창작모드`에서 `자유창작 모드 / 따라하기 모드`를 선택한다.');
+  expect(screenFlowDoc).toContain('S03 `홈-자유창작모드`에서는 현재 자유창작 모드만 선택 가능하다.');
+  expect(screenFlowDoc).toContain('따라하기 모드는 당장 미구현이므로 S03 UI에서 비활성화하고');
   expect(screenFlowDoc).not.toContain('홈의 1차 선택은 `자유창작 모드 / 따라하기 모드`이다.');
   expect(screenFlowDoc).not.toContain('S01 홈의 따라하기 모드 선택 상태로 흡수한다.');
   expect(designDoc).toContain('홈의 1차 행동은 hero `PLAY` 진입이다.');

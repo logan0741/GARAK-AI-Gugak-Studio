@@ -14,6 +14,7 @@ import {
   PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
   PRODUCT_SAMPLE_MANIFESTS,
 } from './productSampleReadinessConfig';
+import { createRuntimeGarakProductServices } from './garakRuntimeProductServices';
 import { createRuntimeGoogleIdentityProvider } from './runtimeGoogleIdentity';
 
 const ONBOARDING_STEPS = ['canvasRed', 'navyAmber', 'redLight', 'intro'] as const;
@@ -41,6 +42,10 @@ export function GarakAuthEntryApp() {
     [GARAK_TYPOGRAPHY.fontFamily]: require('../../assets/fonts/PretendardVariable.ttf'),
   });
   const sessionStore = useMemo(() => createAuthSessionStore(createDefaultAuthStorage()), []);
+  const productServices = useMemo(
+    () => createRuntimeGarakProductServices({ sessionStore }),
+    [sessionStore],
+  );
   const [entryState, setEntryState] = useState<AuthEntryState>({ status: 'booting' });
 
   useEffect(() => {
@@ -167,6 +172,7 @@ export function GarakAuthEntryApp() {
         onLogout={handleLogout}
         sampleManifests={PRODUCT_SAMPLE_MANIFESTS}
         sampleFallbackInstruments={PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS}
+        services={productServices}
       />
     );
   }

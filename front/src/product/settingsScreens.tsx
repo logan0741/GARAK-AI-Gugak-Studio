@@ -19,6 +19,7 @@ import { getLoginSyncViewModel } from './loginSyncScreenModel';
 import { GarakText as Text } from './garakTypography';
 
 type ProductDispatch = (action: GarakProductAction) => void;
+const PRACTICE_MODE_AVAILABLE = false;
 const FREE_CREATION_GUIDE_STEPS = ['악기 선택', '연주 & 녹음', '트랙추가', '믹싱', 'AI 반주 추가', '저장 및 공유'] as const;
 
 export function LanguageContent({
@@ -61,7 +62,7 @@ export function IntroGuideContent({
   const { height } = useWindowDimensions();
   const isCompactHeight = height < 820;
   const isFreeCreationMode = state.selectedMode === 'freeCreation';
-  const isPracticeMode = state.selectedMode === 'practice';
+  const isPracticeMode = PRACTICE_MODE_AVAILABLE && state.selectedMode === 'practice';
 
   return (
     <View style={styles.modeGuideScreen}>
@@ -81,11 +82,21 @@ export function IntroGuideContent({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ selected: isPracticeMode }}
-          onPress={() => dispatch({ type: 'selectIntroGuideMode', mode: 'practice' })}
-          style={[styles.modeToggleButton, isPracticeMode ? styles.modeToggleButtonActive : undefined]}
+          accessibilityState={{ selected: isPracticeMode, disabled: !PRACTICE_MODE_AVAILABLE }}
+          disabled={!PRACTICE_MODE_AVAILABLE}
+          style={[
+            styles.modeToggleButton,
+            isPracticeMode ? styles.modeToggleButtonActive : undefined,
+            !PRACTICE_MODE_AVAILABLE ? styles.modeToggleButtonDisabled : undefined,
+          ]}
         >
-          <Text style={[styles.modeToggleText, isPracticeMode ? styles.modeToggleTextActive : undefined]}>
+          <Text
+            style={[
+              styles.modeToggleText,
+              isPracticeMode ? styles.modeToggleTextActive : undefined,
+              !PRACTICE_MODE_AVAILABLE ? styles.modeToggleTextDisabled : undefined,
+            ]}
+          >
             따라하기 모드
           </Text>
         </Pressable>
@@ -115,7 +126,7 @@ export function IntroGuideContent({
           <GarakProgressIndicator progress={1 / 3} />
           <PrimaryPillButton
             label="NEXT"
-            onPress={() => dispatch({ type: 'navigate', target: isPracticeMode ? 'S13' : 'S04' })}
+            onPress={() => dispatch({ type: 'navigate', target: 'S04' })}
           />
         </View>
       </View>
@@ -394,6 +405,9 @@ const styles = StyleSheet.create({
   modeToggleButtonActive: {
     backgroundColor: GARAK_COLORS.brandNavy,
   },
+  modeToggleButtonDisabled: {
+    opacity: 0.56,
+  },
   modeToggleText: {
     color: '#ACACAC',
     fontSize: 14,
@@ -403,6 +417,9 @@ const styles = StyleSheet.create({
   modeToggleTextActive: {
     color: GARAK_COLORS.surfaceCard,
     fontWeight: '700',
+  },
+  modeToggleTextDisabled: {
+    color: '#C8C8C8',
   },
   modeGuidePanel: {
     alignItems: 'center',

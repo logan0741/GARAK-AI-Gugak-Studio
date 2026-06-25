@@ -50,6 +50,9 @@ export type GarakProductServices = {
   };
   audio: {
     exportWorkAudio: (work: Work) => Promise<ServiceResult<{ audioUri: string }>>;
+    playPerformanceEvents: (
+      events: readonly PerformanceEvent[],
+    ) => Promise<ServiceResult<{ handledEvents: number }>>;
   };
   ai: {
     recommendAccompaniment: (
@@ -72,6 +75,7 @@ export function createNoopGarakProductServices(): GarakProductServices {
     },
     audio: {
       exportWorkAudio: async () => ({ status: 'unavailable' }),
+      playPerformanceEvents: async () => ({ status: 'unavailable' }),
     },
     ai: {
       recommendAccompaniment: async () => ({ status: 'unavailable' }),
