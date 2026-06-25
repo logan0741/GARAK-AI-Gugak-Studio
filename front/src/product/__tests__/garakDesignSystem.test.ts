@@ -13,6 +13,7 @@ import {
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 const brandAssetsDir = resolve(testDir, '../../../assets/brand');
+const fontAssetsDir = resolve(testDir, '../../../assets/fonts');
 const designDocPath = resolve(testDir, '../../../docs/design/DESIGN.md');
 
 test('uses exact Figma design-system color tokens', () => {
@@ -80,4 +81,19 @@ test('ships the three onboarding logo SVG assets', () => {
     true,
     true,
   ]);
+});
+
+test('loads Pretendard as the GARAK app font', () => {
+  const appSource = readFileSync(resolve(testDir, '../../../app/index.tsx'), 'utf8');
+  const typographySource = readFileSync(resolve(testDir, '../garakTypography.ts'), 'utf8');
+
+  expect(typographySource).toContain("export const GARAK_FONT_FAMILY = 'Pretendard'");
+  expect(typographySource).toContain('fontFamily: GARAK_FONT_FAMILY');
+  expect(typographySource).toContain("[GARAK_FONT_FAMILY]: require('../../assets/fonts/PretendardVariable.ttf')");
+  expect(existsSync(resolve(fontAssetsDir, 'PretendardVariable.ttf'))).toBe(true);
+  expect(existsSync(resolve(fontAssetsDir, 'Pretendard-LICENSE.txt'))).toBe(true);
+  expect(appSource).toContain('useFonts(GARAK_FONT_ASSETS)');
+  expect(appSource).toContain('applyGarakTextDefaults()');
+  expect(typographySource).toContain('React.cloneElement');
+  expect(typographySource).toContain('TextInput');
 });
