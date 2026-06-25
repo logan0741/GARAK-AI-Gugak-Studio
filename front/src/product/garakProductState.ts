@@ -897,6 +897,9 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '작업 열기',
         '들어보기',
         '공유',
+        '더보기',
+        '검색',
+        '보관함 동기화',
       ]);
     case 'S19':
       return summary(screenId, '연주 상세 / 플레이어', '내보낸 음원', '저장된 결과물을 듣고 공유하거나 편집으로 돌아가요.', [

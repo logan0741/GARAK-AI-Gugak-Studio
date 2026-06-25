@@ -1152,6 +1152,16 @@ test('routes library sync CTA to S23 while preserving local library state', () =
   expect(state.library.works[0].id).toBe('work-1');
 });
 
+test('summarizes S18 library search and sync actions from the detailed document', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S18' });
+
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['작업 열기', '들어보기', '공유', '더보기', '검색', '보관함 동기화']),
+  );
+});
+
 test('changes the display language from S02 without touching local library data', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',

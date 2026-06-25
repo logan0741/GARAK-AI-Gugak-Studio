@@ -125,6 +125,16 @@ test('defines S17 share preparation preview and cancel actions from the detailed
   });
 });
 
+test('defines S18 library search and sync actions from the detailed document', () => {
+  expect(implementedScreenDefinitions.S18.primaryCtas).toEqual(
+    expect.arrayContaining(['openWork', 'listen', 'share', 'more', 'search', 'sync']),
+  );
+  expect(implementedScreenDefinitions.S18.transitions).toContainEqual({
+    action: 'sync',
+    target: 'S23',
+  });
+});
+
 test('defines S19 player management actions from the detailed document', () => {
   expect(implementedScreenDefinitions.S19.primaryCtas).toEqual(
     expect.arrayContaining(['play', 'pause', 'openEditor', 'share', 'delete']),

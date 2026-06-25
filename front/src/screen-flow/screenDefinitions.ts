@@ -208,7 +208,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S18',
     name: 'Library',
     mvpStatus: 'required',
-    primaryCtas: ['openWork', 'listen', 'share', 'more', 'sync'],
+    primaryCtas: ['openWork', 'listen', 'share', 'more', 'search', 'sync'],
     transitions: [
       { action: 'openWork', target: 'S07' },
       { action: 'listen', target: 'S19' },
