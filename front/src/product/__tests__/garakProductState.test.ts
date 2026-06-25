@@ -13,7 +13,23 @@ test('starts on the GARAK home in guest free creation mode', () => {
   expect(state.account.status).toBe('guest');
   expect(state.selectedMode).toBe('freeCreation');
   expect(summary.title).toBe('GARAK');
-  expect(summary.primaryCtas).toContain('Next');
+  expect(summary.primaryCtas).toContain('다음');
+});
+
+test('can start the product flow with a logged-in Google account', () => {
+  const state = createInitialGarakProductState({
+    account: {
+      status: 'loggedIn',
+      userId: 'google-user-1',
+      email: 'user@example.com',
+    },
+  });
+
+  expect(state.account).toEqual({
+    status: 'loggedIn',
+    userId: 'google-user-1',
+    email: 'user@example.com',
+  });
 });
 
 test('moves through free creation selection to S05 with an MVP instrument', () => {

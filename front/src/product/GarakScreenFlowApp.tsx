@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
@@ -12,6 +13,7 @@ import {
   TrackLayerEditorContent,
 } from './freeCreationScreens';
 import {
+  AccountState,
   applyProductAction,
   createInitialGarakProductState,
   GarakProductAction,
@@ -25,7 +27,8 @@ import {
   PracticeResultContent,
   PracticeSongSelectContent,
 } from './practiceScreens';
-import { GARAK_BRAND } from './productFixtures';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
+import { GarakLogo } from './GarakLogo';
 import { ShareFeedContent, SharedDetailContent, SharePrepareContent } from './shareScreens';
 import {
   IntroGuideContent,
@@ -34,14 +37,26 @@ import {
   SettingsContent,
 } from './settingsScreens';
 
-export function GarakScreenFlowApp() {
-  const [state, setState] = useState(() => createInitialGarakProductState());
+type GarakScreenFlowAppProps = {
+  account?: AccountState;
+  onLogout?: () => void;
+};
+
+export function GarakScreenFlowApp({ account, onLogout }: GarakScreenFlowAppProps = {}) {
+  const [fontsLoaded] = useFonts({
+    [GARAK_TYPOGRAPHY.fontFamily]: require('../../assets/fonts/PretendardVariable.ttf'),
+  });
+  const [state, setState] = useState(() => createInitialGarakProductState({ account }));
   const summary = useMemo(() => getCurrentScreenSummary(state), [state]);
   const canOpenLanguage =
     state.screenFlow.currentScreen === 'S01' || state.screenFlow.currentScreen === 'S22';
 
   function dispatch(action: GarakProductAction) {
     setState((current) => applyProductAction(current, action));
+  }
+
+  if (!fontsLoaded) {
+    return <SafeAreaView style={styles.safeArea} />;
   }
 
   return (
@@ -56,8 +71,7 @@ export function GarakScreenFlowApp() {
             <Text style={styles.headerButtonText}>‹</Text>
           </Pressable>
           <View style={styles.logoBlock}>
-            <Text style={styles.logo}>{GARAK_BRAND.serviceName}</Text>
-            <Text style={styles.subtitle}>{GARAK_BRAND.subtitle}</Text>
+            <GarakLogo variant="red" width={76} />
           </View>
           {canOpenLanguage ? (
             <Pressable
@@ -78,7 +92,7 @@ export function GarakScreenFlowApp() {
             <Text style={styles.screenTitle}>{summary.title}</Text>
             <Text style={styles.description}>{summary.description}</Text>
           </View>
-          {renderScreenContent(state, dispatch)}
+          {renderScreenContent(state, dispatch, onLogout)}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -88,6 +102,7 @@ export function GarakScreenFlowApp() {
 function renderScreenContent(
   state: GarakProductState,
   dispatch: (action: GarakProductAction) => void,
+  onLogout?: () => void,
 ) {
   switch (state.screenFlow.currentScreen) {
     case 'S01':
@@ -131,7 +146,7 @@ function renderScreenContent(
     case 'S21':
       return <SharedDetailContent state={state} dispatch={dispatch} />;
     case 'S22':
-      return <SettingsContent state={state} dispatch={dispatch} />;
+      return <SettingsContent state={state} dispatch={dispatch} onLogout={onLogout} />;
     case 'S23':
       return <LoginSyncContent state={state} dispatch={dispatch} />;
   }
@@ -139,28 +154,33 @@ function renderScreenContent(
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.brand.navy,
     flex: 1,
   },
   phoneFrame: {
     alignSelf: 'center',
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.neutral.app,
     flex: 1,
     maxWidth: 430,
     width: '100%',
   },
   header: {
     alignItems: 'center',
+    backgroundColor: GARAK_COLORS.neutral.canvas,
+    borderBottomColor: GARAK_COLORS.neutral.muted,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 72,
+    minHeight: 76,
     paddingHorizontal: 20,
     paddingTop: 10,
   },
   headerButton: {
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 17,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.circle,
+    borderWidth: 1,
     height: 34,
     justifyContent: 'center',
     width: 34,
@@ -170,7 +190,8 @@ const styles = StyleSheet.create({
     width: 34,
   },
   headerButtonText: {
-    color: '#777777',
+    color: GARAK_COLORS.brand.navy,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -178,37 +199,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    color: '#a0a0a0',
+    color: GARAK_COLORS.brand.red,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 22,
     fontWeight: '800',
   },
   subtitle: {
-    color: '#a0a0a0',
+    color: GARAK_COLORS.brand.navy,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0,
   },
   content: {
-    gap: 18,
-    padding: 24,
+    gap: GARAK_SPACING.lg,
+    padding: GARAK_SPACING.xl,
     paddingBottom: 36,
   },
   titleBlock: {
-    gap: 6,
+    gap: GARAK_SPACING.xs,
   },
   eyebrow: {
-    color: '#9c9c9c',
+    color: GARAK_COLORS.brand.amber,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 12,
     fontWeight: '700',
   },
   screenTitle: {
-    color: '#4f4f4f',
+    color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 28,
-    fontWeight: '500',
+    fontWeight: '700',
     lineHeight: 34,
   },
   description: {
-    color: '#858585',
+    color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     lineHeight: 19,
   },

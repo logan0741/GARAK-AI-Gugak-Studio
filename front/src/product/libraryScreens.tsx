@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 import { getInstrumentName } from './productFixtures';
 
@@ -95,46 +96,53 @@ function SecondaryButton({ label, onPress }: { label: string; onPress: () => voi
 
 const styles = StyleSheet.create({
   stack: {
-    gap: 12,
+    gap: GARAK_SPACING.md,
   },
   sectionTitle: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 16,
     fontWeight: '700',
   },
   listItem: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 5,
     padding: 16,
   },
   itemTitle: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 16,
     fontWeight: '700',
   },
   itemMeta: {
-    color: '#777777',
+    color: GARAK_COLORS.text.secondary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 12,
   },
   emptyState: {
-    backgroundColor: '#eeeeee',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.muted,
+    borderRadius: GARAK_RADII.card,
     padding: 16,
   },
   playerPanel: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 18,
     padding: 20,
   },
   progressBar: {
-    backgroundColor: '#eeeeee',
+    backgroundColor: GARAK_COLORS.neutral.muted,
     borderRadius: 4,
     height: 8,
   },
   progressFill: {
-    backgroundColor: '#8f8f8f',
+    backgroundColor: GARAK_COLORS.brand.amber,
     borderRadius: 4,
     height: 8,
     width: '38%',
@@ -145,14 +153,17 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
-    backgroundColor: '#dedede',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.neutral.soft,
+    borderColor: GARAK_COLORS.neutral.border,
+    borderRadius: GARAK_RADII.button,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
     minHeight: 44,
   },
   secondaryButtonText: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
   },

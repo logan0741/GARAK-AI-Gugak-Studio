@@ -28,9 +28,15 @@ import {
   PracticeSong,
 } from './productFixtures';
 
-export type AccountState = {
-  status: 'guest' | 'loggedIn';
-};
+export type AccountState =
+  | {
+      status: 'guest';
+    }
+  | {
+      status: 'loggedIn';
+      userId: string;
+      email: string;
+    };
 
 export type ProductLibraryState = {
   works: Work[];
@@ -95,7 +101,9 @@ export type ScreenSummary = {
   primaryCtas: string[];
 };
 
-export function createInitialGarakProductState(input: { now?: () => string } = {}): GarakProductState {
+export function createInitialGarakProductState(
+  input: { now?: () => string; account?: AccountState } = {},
+): GarakProductState {
   return {
     screenFlow: createInitialScreenFlowState(),
     selectedMode: 'freeCreation',
@@ -104,7 +112,7 @@ export function createInitialGarakProductState(input: { now?: () => string } = {
       exportedAudios: [],
       practiceResults: [],
     },
-    account: {
+    account: input.account ?? {
       status: 'guest',
     },
     counters: {
@@ -254,11 +262,11 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
           state.selectedMode === 'freeCreation'
             ? '자유창작 모드에서 가야금, 장구, 대금을 골라 나만의 국악 작업을 시작해요.'
             : '따라하기 모드에서 민요를 고르고 악기별 가이드에 맞춰 연습해요.',
-        primaryCtas: ['자유창작 모드', '따라하기 모드', 'Next'],
+        primaryCtas: ['자유창작 모드', '따라하기 모드', '다음'],
       };
     case 'S04':
       return summary(screenId, '악기 선택', '자유창작', '가야금, 장구, 대금 중 연주할 악기를 선택해요.', [
-        'Next',
+        '다음',
       ]);
     case 'S04A':
       return summary(screenId, '연주 기본 설정', getInstrumentLabel(state), '초보자는 기본값으로 바로 시작할 수 있어요.', [

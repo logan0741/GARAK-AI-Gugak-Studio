@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GARAK_COLORS, GARAK_RADII, GARAK_SPACING, GARAK_TYPOGRAPHY } from './designTokens';
 import { GarakProductAction, GarakProductState } from './garakProductState';
 
 type ProductDispatch = (action: GarakProductAction) => void;
@@ -49,8 +50,8 @@ export function ShareFeedContent({ dispatch }: { state: GarakProductState; dispa
           onPress={() => dispatch({ type: 'navigate', target: 'S21' })}
           style={styles.feedItem}
         >
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.bodyText}>GARAK 데모 피드 · 재생 · 리믹스</Text>
+          <Text style={[styles.title, styles.feedTitle]}>{title}</Text>
+          <Text style={[styles.bodyText, styles.feedBodyText]}>GARAK 데모 피드 · 재생 · 리믹스</Text>
         </Pressable>
       ))}
     </View>
@@ -96,30 +97,40 @@ function SecondaryButton({
 
 const styles = StyleSheet.create({
   stack: {
-    gap: 12,
+    gap: GARAK_SPACING.md,
   },
   previewPanel: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.brand.navy,
+    borderRadius: GARAK_RADII.card,
     gap: 12,
     minHeight: 220,
     padding: 20,
   },
   title: {
-    color: '#555555',
+    color: GARAK_COLORS.text.inverse,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 16,
     fontWeight: '700',
   },
   bodyText: {
-    color: '#777777',
+    color: GARAK_COLORS.neutral.canvas,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     lineHeight: 19,
   },
   feedItem: {
-    backgroundColor: '#d6d6d6',
-    borderRadius: 8,
+    backgroundColor: GARAK_COLORS.neutral.card,
+    borderColor: GARAK_COLORS.neutral.soft,
+    borderRadius: GARAK_RADII.card,
+    borderWidth: 1,
     gap: 6,
     padding: 16,
+  },
+  feedTitle: {
+    color: GARAK_COLORS.text.primary,
+  },
+  feedBodyText: {
+    color: GARAK_COLORS.text.secondary,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -127,8 +138,10 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     alignItems: 'center',
-    backgroundColor: '#dedede',
-    borderRadius: 18,
+    backgroundColor: GARAK_COLORS.neutral.soft,
+    borderColor: GARAK_COLORS.neutral.border,
+    borderRadius: GARAK_RADII.button,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
     minHeight: 44,
@@ -137,7 +150,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   secondaryButtonText: {
-    color: '#555555',
+    color: GARAK_COLORS.text.primary,
+    fontFamily: GARAK_TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
   },

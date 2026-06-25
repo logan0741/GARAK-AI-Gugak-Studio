@@ -110,6 +110,9 @@ S23: 로그인 상태 > 로컬/계정 보관함 비교 > 동기화 선택
 ## 7. 재사용할 기존 기준
 
 - Figma 6/10의 큰 단일 카드 중심 구성과 2026-06-19 디자인 시스템 스냅샷의 off-white, navy, red, amber 브랜드 방향을 S01/S04 계열에 우선 참고한다.
+- 2026-06-23 Figma 실제 레이어 조회 기준으로 S01-S23 제품 화면 구현은 `#F7F8F7` 앱 배경, `#FFFFFF` 카드, `#1A1C2D` primary/dark surface, `#B51A14` 브랜드 강조, `#E59100` 보조 강조를 우선 사용한다.
+- 앱 셸의 `GARAK` wordmark는 red, 화면의 1차 CTA와 selected segment는 navy, 진행/추천/active quick access는 amber로 구분한다.
+- 반복 카드와 panel은 8px radius를 기본으로 두고, Figma의 pill radius는 버튼, segmented control, 원형/칩 컨트롤에 한정한다.
 - 회색 중심 화면은 최종 시각 언어가 아니라 와이어프레임 placeholder로 해석한다.
 - `산조-가야금.html`의 현 중심 연주 영역은 가야금 연주면의 참고 자료로 둔다.
 - `연주-모달.html`의 녹음, 장단, 레이어 액션은 S05/S09 하단 조작의 참고 자료로 둔다.
