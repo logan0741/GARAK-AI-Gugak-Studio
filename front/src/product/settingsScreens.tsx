@@ -27,16 +27,22 @@ export function LanguageContent({
   state: GarakProductState;
   dispatch: ProductDispatch;
 }) {
+  const isEn = state.language === 'en';
+  const selectedLabel = isEn ? 'Selected' : '선택됨';
+  const availableLabel = isEn ? 'Available' : '사용 가능';
+
   return (
     <View style={styles.stack}>
-      <ScreenHeading title="언어 전환" compact />
+      <ScreenHeading title={isEn ? 'Language' : '언어 전환'} compact />
       <LanguageOptionRow
         label="한국어"
+        value={state.language === 'ko' ? selectedLabel : availableLabel}
         selected={state.language === 'ko'}
         onPress={() => dispatch({ type: 'setLanguage', language: 'ko' })}
       />
       <LanguageOptionRow
         label="English"
+        value={state.language === 'en' ? selectedLabel : availableLabel}
         selected={state.language === 'en'}
         onPress={() => dispatch({ type: 'setLanguage', language: 'en' })}
       />
@@ -306,10 +312,12 @@ function SettingRow({ label, value }: { label: string; value: string }) {
 
 function LanguageOptionRow({
   label,
+  value,
   selected,
   onPress,
 }: {
   label: string;
+  value: string;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -321,7 +329,7 @@ function LanguageOptionRow({
       style={({ pressed }) => [styles.settingRow, pressed ? styles.pressedCapsuleButton : undefined]}
     >
       <Text style={styles.settingLabel}>{label}</Text>
-      <Text style={styles.settingValue}>{selected ? '선택됨' : '사용 가능'}</Text>
+      <Text style={styles.settingValue}>{value}</Text>
     </Pressable>
   );
 }

@@ -49,7 +49,7 @@ export function getInstrumentSettingsModel(state: GarakProductState): Instrument
     instrument,
     state.instrumentSettingSelections[instrument],
   );
-  const sampleStatusCopy = getSampleStatusCopy(sampleStatus);
+  const sampleStatusCopy = getSampleStatusCopy(sampleStatus, state.language);
   const settingRows = INSTRUMENT_SETTING_DEFINITIONS[instrument].map((setting) => ({
     label: setting.label,
     value: values[setting.label],
@@ -86,31 +86,49 @@ export function getInstrumentSettingsModel(state: GarakProductState): Instrument
     isAdjustmentOpen,
     notice:
       state.instrumentSettingsNotice === 'sampleRequired'
-        ? '필수 샘플 준비 후 연주를 시작할 수 있어요.'
+        ? sampleStatusCopy.sampleRequiredNotice
         : undefined,
   };
 }
 
-function getSampleStatusCopy(status: InstrumentSampleStatus): {
+function getSampleStatusCopy(
+  status: InstrumentSampleStatus,
+  language: GarakProductState['language'],
+): {
   label: string;
   description: string;
+  sampleRequiredNotice: string;
 } {
+  const isEn = language === 'en';
+  const sampleRequiredNotice = isEn
+    ? 'Prepare the required samples before starting.'
+    : '필수 샘플 준비 후 연주를 시작할 수 있어요.';
+
   switch (status) {
     case 'fallback':
       return {
-        label: '기본 샘플 사용 중',
-        description: '고급 샘플 없이도 기본 연주로 시작할 수 있어요.',
+        label: isEn ? 'Using Default Samples' : '기본 샘플 사용 중',
+        description: isEn
+          ? 'You can start playing with basic samples without high-quality ones.'
+          : '고급 샘플 없이도 기본 연주로 시작할 수 있어요.',
+        sampleRequiredNotice,
       };
     case 'downloadRequired':
       return {
-        label: '다운로드 필요',
-        description: '필수 샘플 준비 후 연주를 시작할 수 있어요.',
+        label: isEn ? 'Download Required' : '다운로드 필요',
+        description: isEn
+          ? 'You can start playing after preparing the required samples.'
+          : '필수 샘플 준비 후 연주를 시작할 수 있어요.',
+        sampleRequiredNotice,
       };
     case 'ready':
     default:
       return {
-        label: '샘플 준비 완료',
-        description: '기본 연주 상태로 바로 시작할 수 있어요.',
+        label: isEn ? 'Samples Ready' : '샘플 준비 완료',
+        description: isEn
+          ? 'You can start playing with default settings immediately.'
+          : '기본 연주 상태로 바로 시작할 수 있어요.',
+        sampleRequiredNotice,
       };
   }
 }

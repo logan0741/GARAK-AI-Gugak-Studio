@@ -287,7 +287,7 @@ export function InstrumentVisual({
   return (
     <View style={[styles.instrumentVisual, compact ? styles.instrumentVisualCompact : undefined]}>
       <View style={styles.gayageumBoard}>
-        {Array.from({ length: 9 }, (_, index) => (
+        {Array.from({ length: 12 }, (_, index) => (
           <View key={index} style={styles.gayageumString} />
         ))}
         <View style={styles.touchPointOne} />

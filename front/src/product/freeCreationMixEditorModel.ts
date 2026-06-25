@@ -32,17 +32,24 @@ export function getFreeCreationMixEditorModel(
   state: GarakProductState,
 ): FreeCreationMixEditorModel {
   const work = state.library.works.find((item) => item.id === state.currentWorkId);
-  const playerTitle = work?.title ?? '현재 작업';
+  const isEn = state.language === 'en';
+  const playerTitle = work?.title ?? (isEn ? 'Current Work' : '현재 작업');
   const playheadBeat = normalizePlayheadBeat(state.workPlayheadBeat);
+  const saveStatusLabel =
+    state.workSaveStatus === 'saved'
+      ? (isEn ? 'Saved' : '저장됨')
+      : (isEn ? 'Save Work' : '작업 저장');
 
   return {
     playerTitle,
-    playerAccessibilityLabel: `${playerTitle} 재생 미리보기`,
+    playerAccessibilityLabel: isEn ? `${playerTitle} Playback Preview` : `${playerTitle} 재생 미리보기`,
     trackControls:
-      work?.tracks.map((track, index) => createTrackControlModel(track, index, work.tracks.length)) ??
+      work?.tracks.map((track, index) =>
+        createTrackControlModel(track, index, work.tracks.length, state.language),
+      ) ??
       [],
     playheadBeat,
-    playheadBeatLabel: `${playheadBeat}박`,
+    playheadBeatLabel: isEn ? `Beat ${playheadBeat}` : `${playheadBeat}박`,
     decreasePlayheadAction: {
       type: 'setWorkPlayheadBeat',
       beat: Math.max(1, playheadBeat - 1),
@@ -52,7 +59,7 @@ export function getFreeCreationMixEditorModel(
       beat: playheadBeat + 1,
     },
     saveAction: work === undefined ? undefined : { type: 'saveCurrentWork' },
-    saveStatusLabel: state.workSaveStatus === 'saved' ? '저장됨' : '작업 저장',
+    saveStatusLabel,
   };
 }
 
@@ -64,10 +71,11 @@ function createTrackControlModel(
   track: Track,
   index: number,
   trackCount: number,
+  language: GarakProductState['language'],
 ): FreeCreationTrackControlModel {
   return {
     trackId: track.id,
-    label: getTrackLabel(track, index),
+    label: getTrackLabel(track, index, language),
     volumeLabel: `${Math.round(track.volume * 100)}%`,
     isMuted: track.mute,
     isSoloed: track.solo,
@@ -80,15 +88,23 @@ function createTrackControlModel(
   };
 }
 
-function getTrackLabel(track: Track, index: number): string {
+function getTrackLabel(
+  track: Track,
+  index: number,
+  language: GarakProductState['language'],
+): string {
+  const isEn = language === 'en';
+
   if (track.kind === 'instrument') {
     return `Track ${index + 1} : ${getInstrumentName(track.instrument)}`;
   }
 
   if (track.kind === 'accompaniment') {
     const preset = JANGDAN_PRESETS.find((item) => item.id === track.presetId);
-    return `AI 반주 : ${preset?.name ?? track.presetId}`;
+    return isEn
+      ? `AI Accompaniment: ${preset?.name ?? track.presetId}`
+      : `AI 반주 : ${preset?.name ?? track.presetId}`;
   }
 
-  return `참조 : ${track.title}`;
+  return isEn ? `Reference: ${track.title}` : `참조 : ${track.title}`;
 }

@@ -31,17 +31,24 @@ export function getFreeCreationCompletedPreviewModel(
   const accompanimentTrack = work?.tracks.find(isAccompanimentTrack);
   const accompanimentPreset =
     JANGDAN_PRESETS.find((preset) => preset.id === accompanimentTrack?.presetId) ?? JANGDAN_PRESETS[0];
-  const playerTitle = work?.title ?? '나만의 가락';
+  const isEn = state.language === 'en';
+  const playerTitle = work?.title ?? (isEn ? 'My Garak' : '나만의 가락');
+  const saveStatusLabel =
+    state.workSaveStatus === 'saved'
+      ? (isEn ? 'Saved' : '저장됨')
+      : (isEn ? 'Save Work' : '작업 저장');
 
   return {
     playerTitle,
-    playerAccessibilityLabel: `${playerTitle} 재생 미리보기`,
+    playerAccessibilityLabel: isEn ? `${playerTitle} Playback Preview` : `${playerTitle} 재생 미리보기`,
     completionSubjectLabel: playerTitle,
-    accompanimentTrackLabel: `AI 반주 : ${accompanimentPreset.name}`,
+    accompanimentTrackLabel: isEn
+      ? `AI Accompaniment: ${accompanimentPreset.name}`
+      : `AI 반주 : ${accompanimentPreset.name}`,
     firstInstrumentTrackLabel: `Track 1 : ${getInstrumentName(firstInstrument)}`,
     secondInstrumentTrackLabel: `Track 2 : ${getInstrumentName(secondInstrument)}`,
     saveAction: work === undefined ? undefined : { type: 'saveCurrentWork' },
-    saveStatusLabel: state.workSaveStatus === 'saved' ? '저장됨' : '작업 저장',
+    saveStatusLabel,
   };
 }
 

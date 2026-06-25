@@ -25,6 +25,31 @@ export function getLoginSyncViewModel(state: GarakProductState): LoginSyncViewMo
     accountWorks: ACCOUNT_LIBRARY_WORKS,
   });
   const shareableCount = state.library.exportedAudios.length + state.library.practiceResults.length;
+  const isEn = state.language === 'en';
+  const actions = {
+    login: { type: 'completeLoginSync' },
+    sync: { type: 'completeLoginSync' },
+    importSelected: { type: 'completeLoginSync' },
+    skip: { type: 'back' },
+  } satisfies LoginSyncViewModel['actions'];
+
+  if (isEn) {
+    return {
+      statusLabel:
+        state.account.status === 'guest'
+          ? 'Before login · Keep local library'
+          : 'Logged in · Ready to sync account',
+      localSummary: `Local works: ${state.library.works.length} · Exported audio/results: ${shareableCount}`,
+      accountSummary: `Account library: ${ACCOUNT_LIBRARY_WORKS.length}`,
+      conflictLabel: `Conflicts: ${preview.conflictWorkIds.length}`,
+      syncPreviewLabel: `Sync result: ${preview.mergedWorkCount} works · ${
+        preview.localPreserved ? 'Local items preserved' : 'Local items need verification'
+      }`,
+      emptyAccountMessage:
+        ACCOUNT_LIBRARY_WORKS.length === 0 ? 'No songs saved in your account.' : undefined,
+      actions,
+    };
+  }
 
   return {
     statusLabel:
@@ -39,11 +64,6 @@ export function getLoginSyncViewModel(state: GarakProductState): LoginSyncViewMo
     }`,
     emptyAccountMessage:
       ACCOUNT_LIBRARY_WORKS.length === 0 ? '계정에 저장된 곡이 없어요.' : undefined,
-    actions: {
-      login: { type: 'completeLoginSync' },
-      sync: { type: 'completeLoginSync' },
-      importSelected: { type: 'completeLoginSync' },
-      skip: { type: 'back' },
-    },
+    actions,
   };
 }

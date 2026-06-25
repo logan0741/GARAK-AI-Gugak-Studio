@@ -17,16 +17,29 @@ export type SettingsViewModel = {
 
 export function getSettingsViewModel(state: GarakProductState): SettingsViewModel {
   const shareableCount = state.library.exportedAudios.length + state.library.practiceResults.length;
-  const localLibrarySummary = `작업 ${state.library.works.length}개 · 내보낸 음원/결과 ${shareableCount}개`;
-  const syncPrefix = state.account.status === 'guest' ? '로컬 저장' : '계정 동기화';
+  const isEn = state.language === 'en';
+  const localLibrarySummary = isEn
+    ? `Works: ${state.library.works.length} · Exported audio/results: ${shareableCount}`
+    : `작업 ${state.library.works.length}개 · 내보낸 음원/결과 ${shareableCount}개`;
+  const syncPrefix =
+    state.account.status === 'guest'
+      ? (isEn ? 'Local storage' : '로컬 저장')
+      : (isEn ? 'Account sync' : '계정 동기화');
+  const accountStatusLabel =
+    state.account.status === 'guest'
+      ? (isEn ? 'Guest' : '게스트')
+      : (isEn ? 'Logged In' : '로그인');
 
   return {
     rows: [
-      { label: '현재 상태', value: state.account.status === 'guest' ? '게스트' : '로그인' },
-      { label: '로컬 보관함 저장 상태', value: localLibrarySummary },
-      { label: '동기화 상태', value: `${syncPrefix} · ${localLibrarySummary}` },
-      { label: '언어', value: languageLabel(state.language) },
-      { label: '앱 정보', value: `${GARAK_BRAND.serviceName} · ${GARAK_BRAND.subtitle}` },
+      {
+        label: isEn ? 'Current Status' : '현재 상태',
+        value: accountStatusLabel,
+      },
+      { label: isEn ? 'Local Library Storage' : '로컬 보관함 저장 상태', value: localLibrarySummary },
+      { label: isEn ? 'Sync Status' : '동기화 상태', value: `${syncPrefix} · ${localLibrarySummary}` },
+      { label: isEn ? 'Language' : '언어', value: languageLabel(state.language) },
+      { label: isEn ? 'App Info' : '앱 정보', value: `${GARAK_BRAND.serviceName} · ${GARAK_BRAND.subtitle}` },
     ],
     actions: {
       changeLanguage: { type: 'navigate', target: 'S02' },

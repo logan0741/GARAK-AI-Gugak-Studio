@@ -152,6 +152,32 @@ test('models S07 track volume mute solo and delete controls', () => {
       canDelete: true,
     },
   ]);
+
+  expect(getFreeCreationMixEditorModel({ ...state, language: 'en' as const }).trackControls).toMatchObject([
+    {
+      trackId: 'track-1',
+      label: 'Track 1 : 장구',
+    },
+    {
+      trackId: 'track-2',
+      label: 'AI Accompaniment: 중모리',
+    },
+  ]);
+});
+
+test('localizes S07 mix player status labels for English users', () => {
+  const state = {
+    ...createInitialGarakProductState(),
+    language: 'en' as const,
+    workPlayheadBeat: 5,
+  };
+
+  expect(getFreeCreationMixEditorModel(state)).toMatchObject({
+    playerTitle: 'Current Work',
+    playerAccessibilityLabel: 'Current Work Playback Preview',
+    playheadBeatLabel: 'Beat 5',
+    saveStatusLabel: 'Save Work',
+  });
 });
 
 test('marks a single S07 track as not deletable', () => {

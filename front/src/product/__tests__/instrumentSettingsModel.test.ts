@@ -22,6 +22,19 @@ test('models S04A default settings and sample readiness for the selected instrum
   });
 });
 
+test('localizes S04A sample readiness copy for English users', () => {
+  const state = {
+    ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu', 'daegeum'] }),
+    language: 'en' as const,
+    selectedInstrument: 'daegeum' as const,
+  };
+
+  expect(getInstrumentSettingsModel(state)).toMatchObject({
+    sampleStatusLabel: 'Using Default Samples',
+    sampleStatusDescription: 'You can start playing with basic samples without high-quality ones.',
+  });
+});
+
 test('keeps S04A instrument settings specific instead of showing generic controls', () => {
   const state = {
     ...createInitialGarakProductState(),

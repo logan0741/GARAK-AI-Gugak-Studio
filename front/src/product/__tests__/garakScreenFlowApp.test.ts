@@ -173,6 +173,9 @@ test('connects S02 language choices to the product language state', () => {
   expect(settingsSource).toContain("language: 'ko'");
   expect(settingsSource).toContain("language: 'en'");
   expect(settingsSource).toContain('state.language');
+  expect(settingsSource).toContain("const selectedLabel = isEn ? 'Selected' : '선택됨'");
+  expect(settingsSource).toContain("const availableLabel = isEn ? 'Available' : '사용 가능'");
+  expect(settingsSource).toContain('value={state.language ===');
 });
 
 test('connects S18 library tabs, search, sync label, row storage status, and empty state CTA', () => {
@@ -275,10 +278,17 @@ test('uses the Figma performance preview design before entering free play', () =
 
 test('uses the Figma gayageum stage for landscape free play', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const uiSource = readFileSync(resolve(process.cwd(), 'src/product/garakUi.tsx'), 'utf8');
+  const instrumentVisualSource = uiSource.slice(
+    uiSource.indexOf('export function InstrumentVisual'),
+    uiSource.indexOf('export function InstrumentBadge'),
+  );
 
   expect(source).toContain('GayageumLandscapeStageArtwork');
   expect(source).toContain('usesFigmaGayageumLandscapeStage');
   expect(source).toContain("instrument === 'gayageum'");
+  expect(instrumentVisualSource).toContain('Array.from({ length: 12 }');
+  expect(instrumentVisualSource).not.toContain('Array.from({ length: 9 }');
 });
 
 test('uses the Figma daegeum stage for landscape free play', () => {

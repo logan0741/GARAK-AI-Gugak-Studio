@@ -37,6 +37,22 @@ test('previews S23 account sync without dropping local library items', () => {
   });
 });
 
+test('localizes S23 account sync copy for English users', () => {
+  const state = {
+    ...createInitialGarakProductState(),
+    language: 'en' as const,
+  };
+
+  expect(getLoginSyncViewModel(state)).toMatchObject({
+    statusLabel: 'Before login · Keep local library',
+    localSummary: 'Local works: 0 · Exported audio/results: 0',
+    accountSummary: 'Account library: 0',
+    conflictLabel: 'Conflicts: 0',
+    syncPreviewLabel: 'Sync result: 0 works · Local items preserved',
+    emptyAccountMessage: 'No songs saved in your account.',
+  });
+});
+
 test('returns to the S23 entry surface when skipping login sync', () => {
   let settingsState = createInitialGarakProductState();
   settingsState = applyProductAction(settingsState, { type: 'navigate', target: 'S22' });

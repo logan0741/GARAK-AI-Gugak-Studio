@@ -40,11 +40,11 @@ test('models S22 settings status rows and actions from local library state', () 
   });
 
   expect(model.rows).toEqual([
-    { label: '현재 상태', value: '게스트' },
-    { label: '로컬 보관함 저장 상태', value: '작업 1개 · 내보낸 음원/결과 1개' },
-    { label: '동기화 상태', value: '로컬 저장 · 작업 1개 · 내보낸 음원/결과 1개' },
-    { label: '언어', value: 'English' },
-    { label: '앱 정보', value: 'GARAK · AI GUGAK STUDIO' },
+    { label: 'Current Status', value: 'Guest' },
+    { label: 'Local Library Storage', value: 'Works: 1 · Exported audio/results: 1' },
+    { label: 'Sync Status', value: 'Local storage · Works: 1 · Exported audio/results: 1' },
+    { label: 'Language', value: 'English' },
+    { label: 'App Info', value: 'GARAK · AI GUGAK STUDIO' },
   ]);
   expect(model.actions).toEqual({
     changeLanguage: { type: 'navigate', target: 'S02' },

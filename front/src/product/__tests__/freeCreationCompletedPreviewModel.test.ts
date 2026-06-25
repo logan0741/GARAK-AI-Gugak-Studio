@@ -54,4 +54,15 @@ test('uses current work title and accepted jangdan preset in the completed free-
       workSaveStatus: 'saved',
     }).saveStatusLabel,
   ).toBe('저장됨');
+
+  expect(
+    getFreeCreationCompletedPreviewModel({
+      ...state,
+      language: 'en' as const,
+    }),
+  ).toMatchObject({
+    playerAccessibilityLabel: '장구 작업 7 Playback Preview',
+    accompanimentTrackLabel: 'AI Accompaniment: 중모리',
+    saveStatusLabel: 'Save Work',
+  });
 });
