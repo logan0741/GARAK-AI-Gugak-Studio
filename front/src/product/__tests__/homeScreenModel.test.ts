@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import { createInitialGarakProductState } from '../garakProductState';
+import { applyProductAction, createInitialGarakProductState } from '../garakProductState';
 import { getHomeScreenViewModel } from '../homeScreenModel';
 
 test('uses the selected language for the S01 home labels', () => {
@@ -30,4 +30,36 @@ test('uses the selected language for the S01 home labels', () => {
       share: 'Share',
     },
   });
+});
+
+test('models the S01 free-creation and practice mode choices', () => {
+  const freeCreationModel = getHomeScreenViewModel(createInitialGarakProductState());
+
+  expect(freeCreationModel.modeOptions).toEqual([
+    {
+      id: 'freeCreation',
+      label: '자유창작 모드',
+      isSelected: true,
+      selectAction: { type: 'selectMode', mode: 'freeCreation' },
+    },
+    {
+      id: 'practice',
+      label: '따라하기 모드',
+      isSelected: false,
+      selectAction: { type: 'selectMode', mode: 'practice' },
+    },
+  ]);
+  expect(freeCreationModel.selectedModeTitle).toBe('자유창작 모드');
+  expect(freeCreationModel.selectedModeDescription).toContain('나만의 가락');
+
+  const practiceModel = getHomeScreenViewModel(
+    applyProductAction(createInitialGarakProductState(), { type: 'selectMode', mode: 'practice' }),
+  );
+
+  expect(practiceModel.modeOptions).toMatchObject([
+    { id: 'freeCreation', isSelected: false },
+    { id: 'practice', isSelected: true },
+  ]);
+  expect(practiceModel.selectedModeTitle).toBe('따라하기 모드');
+  expect(practiceModel.selectedModeDescription).toContain('민요');
 });

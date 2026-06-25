@@ -107,11 +107,31 @@ export function HomeScreenContent({
 
   return (
     <View style={styles.screenStack}>
+      <View
+        accessible
+        accessibilityLabel={`연주 모드 선택. ${homeModel.selectedModeTitle}. ${homeModel.selectedModeDescription}`}
+        style={styles.homeModeCard}
+      >
+        <View style={styles.segmented}>
+          {homeModel.modeOptions.map((option) => (
+            <ModeButton
+              active={option.isSelected}
+              key={option.id}
+              label={option.label}
+              onPress={() => dispatch(option.selectAction)}
+            />
+          ))}
+        </View>
+        <Text style={styles.homeModeTitle}>{homeModel.selectedModeTitle}</Text>
+        <Text style={styles.homeModeDescription}>{homeModel.selectedModeDescription}</Text>
+      </View>
+
       <VisualHero
         title={homeModel.title}
         description={homeModel.description}
         cta={homeModel.ctaLabel}
         onPress={() => dispatch({ type: 'next' })}
+        style={styles.homeVisualHero}
       />
 
       <QuickAccessNav
@@ -1772,7 +1792,32 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   homeQuickAccess: {
-    marginTop: 71,
+    marginTop: 18,
+  },
+  homeVisualHero: {
+    height: 438,
+  },
+  homeModeCard: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: 'rgba(31,32,46,0.08)',
+    borderRadius: 24,
+    gap: 10,
+    padding: 12,
+    ...garakCardShadow,
+  },
+  homeModeTitle: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 20,
+  },
+  homeModeDescription: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 17,
   },
   homeTopRow: {
     alignItems: 'center',

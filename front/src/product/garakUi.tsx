@@ -195,18 +195,20 @@ export function VisualHero({
   description,
   cta,
   onPress,
+  style,
 }: {
   title: string;
   description: string;
   cta: string;
   onPress: () => void;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
     <ImageBackground
       accessibilityLabel={`${title}. ${description}`}
       imageStyle={styles.visualHeroImage}
       source={GARAK_SCREEN_ASSETS.home.playHero}
-      style={styles.visualHero}
+      style={[styles.visualHero, style]}
     >
       <Pressable
         accessibilityLabel={cta}

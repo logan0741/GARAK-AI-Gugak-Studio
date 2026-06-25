@@ -88,6 +88,10 @@ test('uses the language-aware Figma home hero copy in the home screen accessibil
   expect(source).toContain('homeModel.title');
   expect(source).toContain('homeModel.description');
   expect(source).toContain('cta={homeModel.ctaLabel}');
+  expect(source).toContain('homeModel.modeOptions.map');
+  expect(source).toContain('dispatch(option.selectAction)');
+  expect(source).toContain('homeModel.selectedModeTitle');
+  expect(source).toContain('homeModel.selectedModeDescription');
   expect(source).toContain('labels={homeModel.quickAccessLabels}');
   expect(modelSource).toContain('AI와 함께');
   expect(modelSource).not.toContain('장단 추천으로');
