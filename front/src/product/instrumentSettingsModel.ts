@@ -76,7 +76,7 @@ export function getInstrumentSettingsModel(state: GarakProductState): Instrument
         },
       })),
     })),
-    primaryAction: canStart ? { type: 'startWithDefaults' } : undefined,
+    primaryAction: canStart ? { type: 'next' } : undefined,
     secondaryAction: {
       type: isAdjustmentOpen
         ? 'cancelInstrumentSettingsAdjustment'

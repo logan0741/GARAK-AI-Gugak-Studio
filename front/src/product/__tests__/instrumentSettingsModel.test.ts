@@ -13,7 +13,7 @@ test('models S04A default settings and sample readiness for the selected instrum
     instrumentName: '대금',
     sampleStatusLabel: '기본 샘플 사용 중',
     sampleStatusDescription: '고급 샘플 없이도 기본 연주로 시작할 수 있어요.',
-    primaryAction: { type: 'startWithDefaults' },
+    primaryAction: { type: 'next' },
     settingRows: [
       { label: '운지 입력 방식', value: '기본 운지' },
       { label: '호흡 입력 민감도', value: '중간' },
