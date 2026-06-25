@@ -35,6 +35,12 @@ export type ScreenFlowEvent =
   | { type: 'savePracticeResult' }
   | { type: 'sharePracticeResult' }
   | { type: 'chooseAnotherSong' }
+  | { type: 'openWork' }
+  | { type: 'playLibraryItem' }
+  | { type: 'loginAndLoadMySongs' }
+  | { type: 'openSharedRecordingDetail' }
+  | { type: 'remixSharedRecording' }
+  | { type: 'saveSharedRecording' }
   | { type: 'publishShareTarget' }
   | { type: 'openSelectedPlayerEditor' }
   | { type: 'shareSelectedPlayerItem' }
@@ -103,6 +109,18 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S16', 'S17', event.type);
     case 'chooseAnotherSong':
       return routeFromScreen(state, 'S16', 'S13', event.type);
+    case 'openWork':
+      return routeFromScreen(state, 'S18', 'S07', event.type);
+    case 'playLibraryItem':
+      return routeFromScreens(state, ['S18', 'S20'], 'S19', event.type);
+    case 'loginAndLoadMySongs':
+      return routeFromScreens(state, ['S18', 'S22'], 'S23', event.type);
+    case 'openSharedRecordingDetail':
+      return routeFromScreen(state, 'S20', 'S21', event.type);
+    case 'remixSharedRecording':
+      return routeFromScreen(state, 'S21', 'S07', event.type);
+    case 'saveSharedRecording':
+      return routeFromScreen(state, 'S21', 'S18', event.type);
     case 'publishShareTarget':
       return routeFromScreen(state, 'S17', 'S20', event.type);
     case 'openSelectedPlayerEditor':

@@ -290,10 +290,10 @@ export function applyProductAction(
         ...state,
         selectedPlayerItem: action.item,
         playingPlayerItem: undefined,
-        screenFlow: transitionScreenFlow(state.screenFlow, {
-          type: 'navigate',
-          target: 'S19',
-        }),
+        screenFlow:
+          state.screenFlow.currentScreen === 'S18' || state.screenFlow.currentScreen === 'S20'
+            ? transitionScreenFlow(state.screenFlow, { type: 'playLibraryItem' })
+            : pushTarget(state.screenFlow, 'S19'),
       };
     case 'playSelectedPlayerItem':
       return state.selectedPlayerItem === undefined
@@ -315,10 +315,10 @@ export function applyProductAction(
         currentWorkId: action.workId,
         workSaveStatus: undefined,
         workPlayheadBeat: 1,
-        screenFlow: transitionScreenFlow(state.screenFlow, {
-          type: 'navigate',
-          target: 'S07',
-        }),
+        screenFlow:
+          state.screenFlow.currentScreen === 'S18'
+            ? transitionScreenFlow(state.screenFlow, { type: 'openWork' })
+            : pushTarget(state.screenFlow, 'S07'),
       };
     case 'selectMode':
       if (state.screenFlow.currentScreen === 'S01') {
@@ -652,7 +652,10 @@ export function applyProductAction(
         selectedSharedRecordingId: action.recordingId,
         playingSharedRecordingId: undefined,
         sharePreviewStatus: undefined,
-        screenFlow: pushTarget(state.screenFlow, 'S21'),
+        screenFlow:
+          state.screenFlow.currentScreen === 'S20'
+            ? transitionScreenFlow(state.screenFlow, { type: 'openSharedRecordingDetail' })
+            : pushTarget(state.screenFlow, 'S21'),
       };
     case 'playSelectedSharedRecording':
       return {
@@ -671,7 +674,7 @@ export function applyProductAction(
     case 'loginAndLoadMySongs':
       return {
         ...state,
-        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'loginCta' }),
+        screenFlow: transitionScreenFlow(state.screenFlow, { type: 'loginAndLoadMySongs' }),
       };
     case 'completeLoginSync':
       return {
@@ -1516,7 +1519,10 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
       ...state.library,
       works: [...state.library.works, work],
     },
-    screenFlow: pushTarget(state.screenFlow, 'S07'),
+    screenFlow:
+      state.screenFlow.currentScreen === 'S21'
+        ? transitionScreenFlow(state.screenFlow, { type: 'remixSharedRecording' })
+        : pushTarget(state.screenFlow, 'S07'),
   };
 }
 
@@ -1548,7 +1554,10 @@ function saveSharedRecording(state: GarakProductState): GarakProductState {
       kind: 'exportedAudio',
       exportedAudioId: exported.id,
     },
-    screenFlow: pushTarget(state.screenFlow, 'S18'),
+    screenFlow:
+      state.screenFlow.currentScreen === 'S21'
+        ? transitionScreenFlow(state.screenFlow, { type: 'saveSharedRecording' })
+        : pushTarget(state.screenFlow, 'S18'),
   };
 }
 

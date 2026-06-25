@@ -252,12 +252,21 @@ test('defines S17 share preparation actions with connected preview and publish a
 
 test('defines S18 library search and sync actions from the detailed document', () => {
   expect(implementedScreenDefinitions.S18.primaryCtas).toEqual(
-    expect.arrayContaining(['openWork', 'listen', 'share', 'more', 'search', 'sync']),
+    expect.arrayContaining([
+      'openWork',
+      'playLibraryItem',
+      'selectLibraryTab',
+      'updateLibrarySearchQuery',
+      'loginAndLoadMySongs',
+    ]),
   );
-  expect(implementedScreenDefinitions.S18.transitions).toContainEqual({
-    action: 'sync',
-    target: 'S23',
-  });
+  expect(implementedScreenDefinitions.S18.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'openWork', target: 'S07' },
+      { action: 'playLibraryItem', target: 'S19' },
+      { action: 'loginAndLoadMySongs', target: 'S23' },
+    ]),
+  );
 });
 
 test('defines S19 player management actions from the detailed document', () => {
@@ -282,12 +291,36 @@ test('defines S19 player management actions from the detailed document', () => {
 
 test('defines S20 share feed detail entry from the detailed document', () => {
   expect(implementedScreenDefinitions.S20.primaryCtas).toEqual(
-    expect.arrayContaining(['play', 'remix', 'save', 'detail']),
+    expect.arrayContaining(['playLibraryItem', 'openSharedRecordingDetail']),
   );
-  expect(implementedScreenDefinitions.S20.transitions).toContainEqual({
-    action: 'detail',
-    target: 'S21',
-  });
+  expect(implementedScreenDefinitions.S20.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'playLibraryItem', target: 'S19' },
+      { action: 'openSharedRecordingDetail', target: 'S21' },
+    ]),
+  );
+});
+
+test('defines S21 shared detail actions with connected playback, remix, and save actions', () => {
+  expect(implementedScreenDefinitions.S21.primaryCtas).toEqual(
+    expect.arrayContaining([
+      'playSelectedSharedRecording',
+      'pauseSelectedSharedRecording',
+      'remixSharedRecording',
+      'saveSharedRecording',
+    ]),
+  );
+  expect(implementedScreenDefinitions.S21.transitions).toEqual(
+    expect.arrayContaining([
+      { action: 'remixSharedRecording', target: 'S07' },
+      { action: 'saveSharedRecording', target: 'S18' },
+    ]),
+  );
+  expect(implementedScreenDefinitions.S21.transitions).not.toContainEqual(
+    expect.objectContaining({
+      action: 'playSelectedSharedRecording',
+    }),
+  );
 });
 
 test('defines S15 practice controls from the detailed document', () => {
@@ -727,6 +760,39 @@ test('routes S19 player management with the connected UI actions', () => {
   expect(transitionScreenFlow(state, { type: 'deleteSelectedPlayerItem' }).currentScreen).toBe(
     'S18',
   );
+});
+
+test('routes S18 library item actions with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S18',
+    history: ['S01'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'openWork' }).currentScreen).toBe('S07');
+  expect(transitionScreenFlow(state, { type: 'playLibraryItem' }).currentScreen).toBe('S19');
+  expect(transitionScreenFlow(state, { type: 'loginAndLoadMySongs' }).currentScreen).toBe('S23');
+});
+
+test('routes S20 share feed player and detail actions with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S20',
+    history: ['S01'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'playLibraryItem' }).currentScreen).toBe('S19');
+  expect(transitionScreenFlow(state, { type: 'openSharedRecordingDetail' }).currentScreen).toBe(
+    'S21',
+  );
+});
+
+test('routes S21 shared detail remix and save with connected UI actions', () => {
+  const state = createInitialScreenFlowState({
+    currentScreen: 'S21',
+    history: ['S01', 'S20'],
+  });
+
+  expect(transitionScreenFlow(state, { type: 'remixSharedRecording' }).currentScreen).toBe('S07');
+  expect(transitionScreenFlow(state, { type: 'saveSharedRecording' }).currentScreen).toBe('S18');
 });
 
 test('routes S17 publishing with the connected share action', () => {

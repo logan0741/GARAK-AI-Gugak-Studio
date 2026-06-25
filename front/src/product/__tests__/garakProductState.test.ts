@@ -1366,6 +1366,21 @@ test('summarizes S20 share feed detail entry from the detailed document', () => 
   );
 });
 
+test('opens the S20 share feed player through the connected library player action', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, {
+    type: 'playLibraryItem',
+    item: { kind: 'demo', title: 'My Arirang' },
+  });
+
+  expect(state.screenFlow.currentScreen).toBe('S19');
+  expect(state.selectedPlayerItem).toEqual({ kind: 'demo', title: 'My Arirang' });
+});
+
 test('saves a shared demo recording as a playable library audio item', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
