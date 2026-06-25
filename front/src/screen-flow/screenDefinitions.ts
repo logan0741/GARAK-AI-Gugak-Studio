@@ -294,7 +294,7 @@ export const excludedScreenDefinitions: Record<ExcludedScreenId, ExcludedScreenD
   S12: {
     id: 'S12',
     name: 'Practice Mode State',
-    reason: 'Practice mode is represented as S01 home selection state.',
+    reason: 'Practice mode is represented as S03 mode guide selection state.',
   },
 };
 

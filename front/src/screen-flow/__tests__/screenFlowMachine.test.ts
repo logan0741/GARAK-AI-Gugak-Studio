@@ -5,6 +5,7 @@ import {
   EXCLUDED_SCREEN_IDS,
   IMPLEMENTED_SCREEN_IDS,
   directNavigationTargets,
+  excludedScreenDefinitions,
   implementedScreenDefinitions,
   isDirectNavigationTarget,
 } from '../screenDefinitions';
@@ -49,6 +50,14 @@ test('keeps excluded screens out of direct navigation targets', () => {
   expect(isDirectNavigationTarget('S06')).toBe(false);
   expect(isDirectNavigationTarget('S11')).toBe(false);
   expect(isDirectNavigationTarget('S12')).toBe(false);
+});
+
+test('documents S12 as absorbed into the S03 mode guide state', () => {
+  expect(implementedScreenDefinitions.S03.primaryCtas).toEqual(
+    expect.arrayContaining(['selectPracticeMode', 'next']),
+  );
+  expect(excludedScreenDefinitions.S12.reason).toContain('S03');
+  expect(excludedScreenDefinitions.S12.reason).not.toContain('S01 home selection');
 });
 
 test('defines documented cancel and disable transitions for track and jangdan flows', () => {
