@@ -884,6 +884,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
         '다시 연주',
         '저장',
         '공유',
+        '다른 민요 선택',
       ]);
     case 'S17':
       return summary(screenId, '공유 준비', '내보낸 음원 / 결과', '공유할 제목과 미리보기를 확인해요.', [

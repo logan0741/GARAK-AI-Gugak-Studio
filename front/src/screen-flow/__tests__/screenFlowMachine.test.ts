@@ -176,6 +176,26 @@ test('defines S15 practice controls from the detailed document', () => {
   expect(s15Section).toContain('다시 시작');
 });
 
+test('defines S16 choose-another-song action from the detailed document', () => {
+  const screenFlowDoc = readFileSync(
+    resolve(process.cwd(), 'docs/product/screen-flow/current-screen-flow.md'),
+    'utf8',
+  );
+  const s16Section = screenFlowDoc.slice(
+    screenFlowDoc.indexOf('### S16 결과 / AI 피드백'),
+    screenFlowDoc.indexOf('### S17 공유 준비'),
+  );
+
+  expect(implementedScreenDefinitions.S16.primaryCtas).toEqual(
+    expect.arrayContaining(['practiceAgain', 'save', 'share', 'chooseAnotherSong']),
+  );
+  expect(implementedScreenDefinitions.S16.transitions).toContainEqual({
+    action: 'chooseAnotherSong',
+    target: 'S13',
+  });
+  expect(s16Section).toContain('다른 민요 선택');
+});
+
 test('documents S23 skip as returning to the entry surface', () => {
   expect(implementedScreenDefinitions.S23.transitions).toContainEqual({
     action: 'skip',

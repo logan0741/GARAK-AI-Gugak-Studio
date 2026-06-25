@@ -1099,6 +1099,22 @@ test('records S15 practice start, pause, restart, and completion without creatin
   expect(state.library.works).toHaveLength(0);
 });
 
+test('summarizes S16 result actions including choosing another practice song', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'practice' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectPracticeSong', songId: 'arirang' });
+  state = applyProductAction(state, { type: 'selectPracticeInstrument', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'finishPractice' });
+
+  expect(state.screenFlow.currentScreen).toBe('S16');
+  expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
+    expect.arrayContaining(['다시 연주', '저장', '공유', '다른 민요 선택']),
+  );
+});
+
 test('routes settings login CTA to S23 while preserving local library state', () => {
   let state = createInitialGarakProductState();
 

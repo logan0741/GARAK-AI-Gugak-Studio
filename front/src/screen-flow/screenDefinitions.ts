@@ -185,7 +185,7 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S16',
     name: 'Practice Result And Feedback',
     mvpStatus: 'required',
-    primaryCtas: ['share', 'practiceAgain', 'save'],
+    primaryCtas: ['share', 'practiceAgain', 'save', 'chooseAnotherSong'],
     transitions: [
       { action: 'practiceAgain', target: 'S15' },
       { action: 'share', target: 'S17' },
