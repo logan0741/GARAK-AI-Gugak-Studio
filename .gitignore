@@ -1,8 +1,26 @@
 # Claude Code settings
 CLAUDE.md
+.claude/
 
 # Personal documents
 front/docs/
+AI_COMPLETION_PLAN.md
+CODE_INVENTORY.md
+AI/DEV_STATUS.md
+AI/GUKAK_STUDIO_Tech_Explanation.md
+AI/data/README.md
+AI/data_ensemble/README.md
+
+# Legacy local scaffolds kept out of the current main layout
+back/core/
+back/main.py
+back/middleware/
+back/readme
+back/routers/
+back/schemas/
+back/services/
+back/static/
+front/readme
 
 # Environment variables
 .env
