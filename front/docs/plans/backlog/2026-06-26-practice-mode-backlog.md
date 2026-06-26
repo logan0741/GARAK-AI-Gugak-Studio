@@ -1,39 +1,34 @@
-﻿# 2026-06-26 Practice Mode Backlog
+# 따라하기 모드 백로그
 
-?곹깭: product backlog
-踰붿쐞: S03 `???먯쑀李쎌옉紐⑤뱶`?먯꽌 ?뱀옣 誘멸뎄?꾪븯湲곕줈 寃곗젙???곕씪?섍린 紐⑤뱶瑜?UI?먯꽌 ?좏깮 遺덇?濡??좎??섍퀬, ?섏쨷??S13-S16 ?곕씪?섍린 ?먮쫫???ㅼ떆 ?닿린 ?꾪븳 ?묒뾽 ??ぉ
-愿??臾몄꽌: `../../product/garak-product-brief.md`, `../../product/screen-flow/current-screen-flow.md`
+범위: S03 `자유창작모드`에서 당장 미구현으로 결정한 `따라하기` 모드를 UI에서 선택하지 못하게 유지하고, 나중에 S13-S16 흐름을 다시 열기 위한 작업을 추적한다.
 
-??臾몄꽌???곕씪?섍린 紐⑤뱶瑜??ㅼ떆 援ы쁽 ??곸쑝濡??щ┫ ???꾩슂???묒뾽??異붿쟻?쒕떎. ?꾩옱 ?쒗뭹 ?숈옉? ?먯쑀李쎌옉 吏꾩엯留??덉슜?섍퀬, ?곕씪?섍린 踰꾪듉? 鍮꾪솢???곹깭濡??몄텧?쒕떎.
+관련 문서: `../../product/garak-product-brief.md`, `../../product/screen-flow/current-screen-flow.md`
 
-## Already Addressed
+## 현재 결정
 
-| ID | ??ぉ | ?꾩옱 ?곹깭 | 湲곗? 臾몄꽌 |
+따라하기 모드는 현재 제품 범위에서 미구현이다. UI에는 기능의 존재를 보여줄 수 있지만, 사용자가 토글하거나 다음 화면으로 진입할 수 있으면 안 된다.
+
+## 완료된 항목
+
+| ID | 항목 | 현재 상태 | 기준 문서 |
 | --- | --- | --- | --- |
-| PRACTICE-DONE-01 | S03 ?곕씪?섍린 ?좏깮 李⑤떒 | `?곕씪?섍린 紐⑤뱶` 踰꾪듉? disabled?닿퀬 S03??`NEXT`??S04 `?낃린 ?좏깮`?쇰줈 ?대룞?쒕떎 | `../../product/screen-flow/current-screen-flow.md` |
-| PRACTICE-DONE-02 | S03 ?곹깭 蹂댄샇 | `selectIntroGuideMode`?먯꽌 `practice` ?≪뀡???ㅼ뼱????곹깭瑜??먯쑀李쎌옉?쇰줈 ?좎??쒕떎 | `../../product/screen-flow/current-screen-flow.md` |
+| PRACTICE-DONE-01 | S03 따라하기 선택 비활성화 | 따라하기 버튼은 disabled 상태로 노출된다 | `../../product/screen-flow/current-screen-flow.md` |
+| PRACTICE-DONE-02 | S03 상태 보호 | `selectIntroGuideMode`에 `practice` option이 들어와도 자유창작 상태를 유지한다 | `../../product/screen-flow/current-screen-flow.md` |
 
-## Implementation Ready
+## 재개 전 필요한 작업
 
-| ID | ??ぉ | ?꾩옱 洹쇨굅 | 蹂寃?諛⑺뼢 | 寃利?湲곗? |
-| --- | --- | --- | --- | --- |
-| PRACTICE-01 | ?곕씪?섍린 ?ы솢?깊솕 議곌굔 ?뺤쓽 | S13-S16 ?붾㈃? 議댁옱?섏?留??뱀옣 ?쒗뭹 ?먮쫫?먯꽌 ?댁? ?딅뒗??| 誘쇱슂 ?섑뵆, ?낃린蹂?媛?대뱶, 寃곌낵 ?쇰뱶諛?湲곗????뺤젙????S03 toggle???ㅼ떆 ?쒖꽦?뷀븳??| ?쒗뭹 臾몄꽌???ы솢?깊솕 湲곗?怨?QA 踰붿쐞媛 紐낆떆?쒕떎 |
-| PRACTICE-02 | S03 -> S13 ?쇱슦??蹂듦뎄 | ?꾩옱 `NEXT`??S04濡?怨좎젙?섏뼱 ?덈떎 | ?곕씪?섍린 ?좏깮 ?곹깭?먯꽌 `NEXT`媛 S13 `誘쇱슂 ?좏깮`?쇰줈 ?대룞?섎룄濡?蹂듦뎄?쒕떎 | reducer? UI ?뚯뒪?멸? ?먯쑀李쎌옉/S13 遺꾧린 紐⑤몢瑜?寃利앺븳??|
-| PRACTICE-03 | ?곕씪?섍린 踰꾪듉 copy? ?묎렐??| ?꾩옱 踰꾪듉? 鍮꾪솢???곹깭 ?쒖떆留??쒕떎 | 以鍮?以?copy, accessibility label, disabled affordance瑜?理쒖쥌 ?붿옄?몄뿉 留욎텣??| ?ㅽ겕由곕━???곹깭? ?쒓컖 disabled ?곹깭媛 ?뚯뒪???먮뒗 QA?먯꽌 ?뺤씤?쒕떎 |
+| ID | 항목 | 현재 상태 | 완료 조건 |
+| --- | --- | --- | --- |
+| PRACTICE-01 | 따라하기 재활성화 조건 정의 | S13-S16 화면은 존재하지만 제품 흐름에서 닫혀 있다 | 민요 샘플, 악기별 가이드, 결과 피드백 기준을 확정한다 |
+| PRACTICE-02 | S03 -> S13 라우팅 복구 | `NEXT`는 자유창작 흐름으로 이동한다 | 따라하기 선택 상태에서 S13 `민요 선택`으로 이동한다 |
+| PRACTICE-03 | disabled copy와 접근성 정리 | 준비 중 상태만 표시한다 | 스크린리더 라벨과 시각적 disabled affordance를 확정한다 |
+| PRACTICE-04 | 민요별 가이드 데이터 | S15 연습 기준 데이터가 확정되지 않았다 | song guide event, BPM, 지원 악기 데이터를 정의한다 |
+| PRACTICE-05 | 정확도 피드백 산정 | S16 결과 산식이 확정되지 않았다 | timing, pitch, rhythm 평가 모델을 정의한다 |
+| PRACTICE-06 | 결과 저장 및 공유 | 결과가 보관/공유 대상인지 일부만 정리되어 있다 | S16 결과를 `PracticeResult`로 저장하고 S17-S21 공유 흐름에 연결한다 |
 
-## Blocked Or Larger Scope
+## 작업 원칙
 
-| ID | ??ぉ | 留됲옒 ?댁쑀 | Unblock 議곌굔 | ?ㅼ쓬 PR 踰붿쐞 |
-| --- | --- | --- | --- | --- |
-| PRACTICE-04 | 誘쇱슂蹂?媛?대뱶 ?곗씠??| S15?먯꽌 ?곕씪??湲곗? ?뚯썝/??대컢 ?곗씠?곌? ?뺤젙?섏? ?딆븯??| 誘쇱슂蹂?guide event, BPM, 吏???낃린 ?곗씠???뺤젙 | `PracticeGuide` ?곗씠??紐⑤뜽怨?fixture |
-| PRACTICE-05 | ?뺥솗???쇰뱶諛??곗젙 | S16 寃곌낵媛 ?ㅼ젣 ?낅젰 ?곗씠?곗? ?대뼡 湲곗??쇰줈 ?곌껐?좎? 遺덈챸?뺥븯??| ??대컢/?뚯젙/由щ벉 ?됯? 湲곗? ?뺤젙 | `PracticeAttempt` scoring model |
-| PRACTICE-06 | ?곕씪?섍린 寃곌낵 ???怨듭쑀 | 寃곌낵瑜?蹂닿???怨듭쑀 ??곸쑝濡??좎??좎? ?쒗뭹 湲곗????⑥븘 ?덈떎 | ?????? 怨듭쑀 copy, export 踰붿쐞 ?뺤젙 | S16-S19 寃곌낵 ???諛?怨듭쑀 ?곌껐 |
-
-## Promotion Rule
-
-??ぉ??援ы쁽 ?묒뾽?쇰줈 ?щ┫ ?뚮뒗 ?ㅼ쓬??癒쇱? 梨꾩슫??
-
-1. 湲곗? 臾몄꽌: `current-screen-flow.md`?먯꽌 S03, S13-S16???ㅼ젣 吏꾩엯 媛???곹깭瑜?媛깆떊?쒕떎.
-2. 蹂寃??뚯씪: reducer, S03 UI, S13-S16 screen, practice model 以??ㅼ젣 ?섏젙 寃쎈줈瑜?紐낆떆?쒕떎.
-3. ?뚯뒪?? S03 toggle, S13 吏꾩엯, S15 guide playback, S16 result ???湲곗???遺꾨━??寃利앺븳??
-4. QA: ?섑뵆/媛?대뱶 誘몄?鍮??곹깭?먯꽌 ?곕씪?섍린 ?먮쫫???대━吏 ?딅뒗吏 ?뺤씤?쒕떎.
+1. 기준 문서에서 S03, S13-S16의 실제 진입 가능 상태를 먼저 갱신한다.
+2. 변경 파일은 reducer, S03 UI, S13-S16 screen, practice model 중 실제 수정 경로를 명시한다.
+3. 따라하기가 다시 열릴 때는 자유창작 흐름과 회귀 테스트를 함께 갱신한다.
+4. 샘플/가이드가 없는 상태에서 따라하기 흐름이 열리지 않도록 QA한다.

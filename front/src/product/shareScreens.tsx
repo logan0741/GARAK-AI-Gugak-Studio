@@ -68,7 +68,7 @@ export function SharePrepareContent({
         />
         <SecondaryPillButton
           disabled={!model.canShare || model.isPublishing}
-          label="공유하기"
+          label={model.publishButtonLabel}
           onPress={() => dispatch({ type: 'publishShareTarget' })}
           style={styles.prepareActionButton}
         />

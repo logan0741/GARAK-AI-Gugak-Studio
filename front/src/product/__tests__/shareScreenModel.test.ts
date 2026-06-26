@@ -302,7 +302,62 @@ test('prepares the selected exported audio as the S17 share target', () => {
     sourceLabel: '출처 작업',
     isPreviewing: false,
     isPublishing: false,
-    publishButtonLabel: expect.any(String),
+    publishButtonLabel: '공유하기',
+  });
+});
+
+test('labels the S17 publish button from share publish state', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  const baseState = {
+    ...state,
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-1' },
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio' as const,
+          workId: 'work-1',
+          title: '공유 상태 내보내기',
+          durationSeconds: 30,
+          instrumentNames: ['장구'],
+          createdAt: '2026-06-18T00:00:00.000Z',
+          audioUri: 'placeholder://export-1.wav',
+          shareState: 'ready' as const,
+        },
+      ],
+    },
+  };
+
+  expect(
+    getSharePrepareViewModel({
+      ...baseState,
+      sharePublishStatus: {
+        status: 'publishing',
+        target: { kind: 'exportedAudio', id: 'export-1' },
+      },
+    }),
+  ).toMatchObject({
+    isPublishing: true,
+    publishButtonLabel: 'Sharing...',
+  });
+
+  expect(
+    getSharePrepareViewModel({
+      ...baseState,
+      sharePublishStatus: {
+        status: 'failed',
+        target: { kind: 'exportedAudio', id: 'export-1' },
+        message: '공유 링크 생성에 실패했습니다.',
+      },
+    }),
+  ).toMatchObject({
+    isPublishing: false,
+    publishButtonLabel: '공유하기',
+    publishErrorMessage: '공유 링크 생성에 실패했습니다.',
   });
 });
 
@@ -370,7 +425,7 @@ test('prepares the latest practice result when S17 is opened from practice shari
     sourceLabel: '따라하기 결과',
     isPreviewing: false,
     isPublishing: false,
-    publishButtonLabel: expect.any(String),
+    publishButtonLabel: '공유하기',
   });
 });
 
@@ -496,7 +551,7 @@ test('does not prepare an auto-saved work as a direct S17 share target', () => {
     sourceLabel: '공유 대상 없음',
     isPreviewing: false,
     isPublishing: false,
-    publishButtonLabel: expect.any(String),
+    publishButtonLabel: '공유하기',
   });
 });
 

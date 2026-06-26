@@ -1723,7 +1723,7 @@ function completeWorkAudioExport(
   const exported = exportWorkAudioPlaceholder({
     id: `export-${nextCounters.export}`,
     work,
-    title: `${work.title} ?대낫?닿린`,
+    title: `${work.title} 내보내기`,
     audioUri: action.audioUri,
     durationSeconds: action.durationSeconds ?? 24,
     createdAt: state.now(),

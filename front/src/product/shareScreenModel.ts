@@ -177,14 +177,14 @@ function getSharePreparePublishState(
   if (state.sharePublishStatus.status === 'failed') {
     return {
       isPublishing: false,
-      publishButtonLabel: '怨듭쑀?섍린',
+      publishButtonLabel: '공유하기',
       publishErrorMessage: state.sharePublishStatus.message,
     };
   }
 
   return {
     isPublishing: false,
-    publishButtonLabel: '怨듭쑀?섍린',
+    publishButtonLabel: '공유하기',
   };
 }
 

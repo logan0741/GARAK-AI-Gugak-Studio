@@ -1,236 +1,88 @@
-﻿# S05 ?먯쑀?곗＜ 湲곕뒫 ?먮쫫
+# S05 자유창작 연주 흐름
 
-?곹깭: 援ы쁽 諛섏쁺 諛?湲곕뒫 湲곗?
-?묒꽦?? 2026-06-26
-踰붿쐞: S05 `?낃린 ?먯쑀?곗＜` ?붾㈃ 吏꾩엯 ?댄썑 ?ъ슜?먭? 吏곸젒 ?낃린瑜??곗튂???곗＜?섍퀬, ?꾩슂?????뱀쓬 ?뚯씠?щ? ?묒뾽?쇰줈 ??ν븯??肄붾뱶 諛??곗씠???먮쫫
-愿??臾몄꽌: `../product/screen-flow/current-screen-flow.md`, `runtime-architecture.md`, `../domain/README.md`, `../qa/day-4-touch-model-smoke.md`
+범위: S05 `악기 자유연주` 화면에 진입한 뒤 사용자가 직접 악기를 터치해 연주하는 코드 및 데이터 흐름.
 
-## 寃곕줎
+관련 문서: `../product/screen-flow/current-screen-flow.md`, `runtime-architecture.md`, `../domain/README.md`, `../qa/day-4-touch-model-smoke.md`
 
-?ㅻⅨ履????쇨컖??踰꾪듉? 湲곕낯 ?곗＜瑜??쒖옉?섎뒗 踰꾪듉???꾨땲?댁빞 ?쒕떎. ?쒗뭹 湲곗??쇰줈 S05??吏꾩엯???쒓컙 ?ъ슜?먮뒗 ?좏깮???낃린 ?낅젰硫댁쓣 諛붾줈 ?곗튂???뚮━瑜??????덉뼱???쒕떎. ?쇨컖??踰꾪듉? ?꾩옱 ?뱀쓬 ?곹깭???곕씪 `?뱀쓬 ???ㅼ젙 ?닿린` ?먮뒗 `?곗＜ ?꾨즺`瑜??대떦?섎뒗 而⑦듃濡ㅼ씠??
+## 결론
 
-?꾩옱 ?쒗뭹 肄붾뱶????湲곗???留욊쾶 S05 ?낅젰 罹≪쿂瑜??뱀쓬 ?곹깭? 遺꾨━?쒕떎. `PerformanceCaptureSurface`??S05 吏꾩엯 吏곹썑遺???쒖꽦?붾릺怨? ?앹꽦??`PerformanceEvent[]`??癒쇱? `onLivePerformanceEvents`瑜??듯빐 live audio service boundary濡??꾨떖?쒕떎. 洹??ㅼ쓬 `appendFreePlayPerformanceEvents` action??reducer濡??꾨떖?섎ŉ, ?뱀쓬 以묒씪 ?뚮쭔 媛숈? ?대깽?멸? `pendingFreePlayTake.events`?먮룄 ??λ맂??
+S05의 오른쪽 위 삼각형 버튼은 “연주 시작” 버튼이 아니다. 사용자는 S05에 진입하자마자 선택한 악기의 입력면을 터치해 연주할 수 있어야 한다. 삼각형 버튼은 현재 녹음 상태와 연결된 보조 컨트롤이며, 기본 연주 가능 여부를 켜는 조건이 아니다.
 
-## ?ъ슜??湲곗? ?먮쫫
+현재 구조에서는 `PerformanceCaptureSurface`가 화면 입력을 `PerformanceEvent[]`로 변환하고, `GarakScreenFlowApp`이 이를 `appendFreePlayPerformanceEvents` action과 live audio service boundary로 전달한다. 녹음이 시작되지 않은 상태의 이벤트는 즉시 발음에만 쓰이고, 녹음 중인 이벤트만 `pendingFreePlayTake.events`에 누적된다.
 
-```text
-S05 吏꾩엯
-  -> ?낃린 ?낅젰硫??곗튂
-  -> 利됱떆 諛쒖쓬
-  -> ?ъ슜?먭? ?뱀쓬 而⑦듃濡??좏깮
-  -> BPM / 諛뺤옄 / ?λ떒 ?뺤씤
-  -> ?뱀쓬 ?쒖옉
-  -> ?댄썑 ?낅젰 ?대깽?몃? Take???꾩쟻
-  -> ?곗＜ ?꾨즺
-  -> Work / Track / Take ?먮룞 ???  -> S07 ?몃옓/?덉씠???몄쭛
-```
+## 구현 화면 및 파일
 
-湲곕낯 ?곗＜? ?뱀쓬? 遺꾨━?쒕떎.
-
-- 湲곕낯 ?곗＜: ?ъ슜?먭? ?낃린 ?낅젰硫댁쓣 ?곗튂?섎㈃ 利됱떆 ?뚮━媛 ?쒕떎.
-- ?뱀쓬: ?ъ슜?먭? ?뱀쓬 ?쒖옉??紐낆떆???ㅻ???`Take.events`???대깽?몃? ??ν븳??
-- ?꾨즺: ?뱀쓬 以묒씤 `Take`瑜?`Work`??泥?`InstrumentTrack`?쇰줈 ?먮룞 ??ν븳??
-
-## ?꾩옱 肄붾뱶 吏꾩엯??
-| ?④퀎 | 肄붾뱶 | 梨낆엫 |
+| 구분 | 파일 | 역할 |
 | --- | --- | --- |
-| S05 ?쇱슦??| `src/product/GarakScreenFlowApp.tsx` `renderScreenContent` | `screenFlow.currentScreen === 'S05'`????`FreePlayContent` ?뚮뜑留?|
-| ?붾㈃ 援ъ꽦 | `src/product/freeCreationScreens.tsx` `FreePlayContent` | ?좏깮 ?낃린??留욌뒗 媛濡??곗＜ ?붾㈃ ?먯뀑怨?而⑦듃濡??덊듃 ?곸뿭 諛곗튂 |
-| ?곗튂 罹≪쿂 | `src/product/freeCreationScreens.tsx` `PerformanceCaptureSurface` | `PanResponder` ?낅젰??`TouchFrame`?쇰줈 蹂??|
-| ?곗튂 紐⑤뜽 | `src/interaction/touchModel.ts` | `start`, `move`, `end`, `cancel` ?꾨젅?꾩쓣 `PerformanceEvent[]`濡?蹂??|
-| ?쒖뒪泥?留ㅽ븨 | `src/interaction/gestureMapper.ts` | tap, swipe, hold drag, cover, release瑜??꾨찓???대깽?몃줈 ?뺢퇋??|
-| ?꾨찓???대깽??| `src/domain/performanceEvent.ts` | `string_pluck`, `glissando_step`, `string_bend`, `string_mute`, `string_release` ??낃낵 寃利?洹쒖튃 |
-| ?쒗뭹 ?곹깭 | `src/product/garakProductState.ts` | ?뱀쓬 ?ㅼ젙, pending take, ?꾨즺 ??? ?붾㈃ ?꾪솚 泥섎━ |
-| ?묒뾽 ???| `src/studio/studioLibrary.ts` | `autoSaveTakeAsWork`濡?`Work -> InstrumentTrack -> Take` ?앹꽦 |
-| ?꾩냽 ?④낵 | `src/product/garakProductEffects.ts` | `completePerformance` ???쇱씠釉뚮윭由??ㅻ깄??????쒕퉬???몄텧. 罹≪쿂 ?대깽?몄쓽 live playback? effect runner瑜??듯븯吏 ?딅뒗?? |
+| 화면 | `src/product/freeCreationScreens.tsx` | S05 자유연주 화면, 악기별 stage, 상단 컨트롤 배치 |
+| 캡처 컴포넌트 | `src/interaction/PerformanceCaptureSurface.tsx` | 포인터 입력 수집, 터치 프레임 생성 |
+| 입력 모델 | `src/product/freePlayTouchModel.ts` | 악기/화면 설정을 `TouchModel`로 변환 |
+| 제스처 매핑 | `src/interaction/gestureMapper.ts` | tap, swipe, hold drag, cover, release를 연주 이벤트로 정규화 |
+| 상태 전이 | `src/product/garakProductState.ts` | S05 진입, 이벤트 append, 녹음 완료 reducer |
+| 화면 앱 | `src/product/GarakScreenFlowApp.tsx` | UI event와 product action, audio service 연결 |
+| 효과 | `src/product/garakProductEffects.ts` | 저장/공유 등 외부 side effect 처리 |
 
-## ?꾩옱 援ы쁽 ?곗씠???먮쫫
+## 진입 흐름
 
-?꾩옱 S05?먯꽌 ?좏깮 ?낃린 ?붾㈃???ㅼ뼱媛硫?`startFreePlayWithInstrumentSettings`媛 ?ㅽ뻾?쒕떎. ???⑥닔???좏깮 ?낃린? ?ㅼ젙媛믪쓣 `activeInstrumentSettings`??蹂댁〈?섍퀬 S05濡??대룞?섏?留? `pendingFreePlayTake`??鍮꾩슫??
+1. 사용자가 S04 악기 선택 화면에서 악기와 설정을 고른다.
+2. `startFreePlayWithInstrumentSettings` action이 실행된다.
+3. reducer는 `activeInstrumentSettings`를 갱신하고 S05로 이동한다.
+4. 이 시점의 `pendingFreePlayTake`는 비어 있다. 즉, 연주는 가능하지만 저장 대상 take는 아직 없다.
 
-```text
-startWithDefaults ?먮뒗 startWithAdjustedSettings
-  -> startFreePlayWithInstrumentSettings
-  -> activeInstrumentSettings ???  -> pendingFreePlayTake = undefined
-  -> freePlayRecordingSetup = undefined
-  -> screenFlow = S05
+## 연주 입력 흐름
+
+```mermaid
+flowchart TD
+  A["S05 진입"] --> B["PerformanceCaptureSurface 활성화"]
+  B --> C["사용자 포인터 입력"]
+  C --> D["createTouchModel.handleFrame"]
+  D --> E["PerformanceEvent[] 생성"]
+  E --> F["onLivePerformanceEvents"]
+  F --> G["audio.playPerformanceEvents"]
+  E --> H["appendFreePlayPerformanceEvents action"]
+  H --> I{"pendingFreePlayTake 존재?"}
+  I -->|아니오| J["state 저장 없이 연주만 유지"]
+  I -->|예| K["pendingFreePlayTake.events에 append"]
 ```
 
-`FreePlayContent`??`getFreePlayPerformanceCaptureModel`濡??낅젰 罹≪쿂 媛???щ?? ?뱀쓬 以??щ?瑜?遺꾨━?쒕떎.
+## 핵심 상태
 
-```text
-performanceCaptureModel.captureEnabled = true
-performanceCaptureModel.isRecording = state.pendingFreePlayTake !== undefined
-PerformanceCaptureSurface.enabled = performanceCaptureModel.captureEnabled
-```
+| 상태 | 의미 |
+| --- | --- |
+| `activeInstrumentSettings` | 현재 S05에서 연주할 악기와 악기별 설정 |
+| `pendingFreePlayTake` | 녹음 중인 take 초안. 없으면 자유연주만 수행 |
+| `freePlayNotice` | 저장 가능한 take가 없을 때 등 사용자 안내 상태 |
+| `pendingLiveJangdanGuide` | 라이브 장단 가이드 설정 정보 |
 
-?곕씪??S05 吏꾩엯 吏곹썑???곗튂??`TouchModel`源뚯? ?꾨떖?쒕떎. ???쒖젏?먮뒗 `pendingFreePlayTake`媛 ?놁쑝誘濡???μ? ?섏? ?딆?留? ?쇱씠釉??ъ깮 effect???ㅽ뻾?쒕떎.
+## 연주와 녹음의 분리
 
-```text
-S05 吏꾩엯 吏곹썑 ?곗튂
-  -> PerformanceCaptureSurface.enabled = true
-  -> PanResponder ?쒖꽦
-  -> TouchFrame ?앹꽦
-  -> createTouchModel.handleFrame
-  -> GestureMapper
-  -> PerformanceEvent[] ?앹꽦
-  -> onLivePerformanceEvents
-  -> services.audio.playPerformanceEvents(events)
-  -> appendFreePlayPerformanceEvents
-  -> Take ?꾩쟻 ?놁쓬
-```
+연주 가능 여부는 `PerformanceCaptureSurface`의 활성화 여부로 결정한다. 녹음 여부는 `pendingFreePlayTake` 존재 여부로 결정한다.
 
-?뱀쓬 而⑦듃濡ㅼ쓣 ?꾨Ⅴ硫?`openFreePlayRecordingSetup`???뱀쓬 ???ㅼ젙??留뚮뱺?? ?ㅼ젙 ?쒗듃?먯꽌 `?뱀쓬 ?쒖옉`???꾨Ⅴ硫?`startPerformanceRecording`??`pendingFreePlayTake`瑜?留뚮뱺??
+따라서 S05에서는 다음 조건을 지켜야 한다.
 
-```text
-openFreePlayRecordingSetup
-  -> freePlayRecordingSetup = createRecordingSetupSuggestion(state)
+| 조건 | 기대 동작 |
+| --- | --- |
+| S05 진입 직후 | 악기 입력면 터치 시 즉시 `PerformanceEvent[]`가 생성되고 발음된다 |
+| 녹음 전 | 이벤트는 live audio로만 전달되고 library에는 저장되지 않는다 |
+| 녹음 중 | 같은 이벤트가 live audio와 `pendingFreePlayTake.events` 양쪽으로 전달된다 |
+| 녹음 완료 | `pendingFreePlayTake`가 `Work`, `InstrumentTrack`, `Take`로 저장된다 |
 
-startPerformanceRecording
-  -> pendingFreePlayTake = {
-       events: [],
-       recordingSetup: normalizeRecordingSetup(...),
-       startedAtMs: Date.parse(state.now())
-     }
-  -> freePlayRecordingSetup = undefined
-```
+## 컨트롤 의미
 
-洹????곗튂媛 ?ㅼ뼱?ㅻ㈃ 媛숈? live playback 寃쎈줈瑜??硫댁꽌, reducer媛 ?대깽?몃? `pendingFreePlayTake.events`?먮룄 ?꾩쟻?쒕떎.
-
-```text
-?곗튂 start / move / end
-  -> TouchFrame
-  -> createTouchModel.handleFrame
-  -> GestureMapper
-  -> PerformanceEvent[]
-  -> onLivePerformanceEvents
-  -> services.audio.playPerformanceEvents(events)
-  -> appendFreePlayPerformanceEvents
-  -> pendingFreePlayTake.events += events
-```
-
-?곗＜ ?꾨즺??`completePerformance`媛 泥섎━?쒕떎. `pendingFreePlayTake`媛 ?놁쑝硫???ν븯吏 ?딄퀬 `freePlayNotice = 'missingTake'`瑜??쒖떆?쒕떎. `pendingFreePlayTake`媛 ?덉쑝硫??대깽??臾띠쓬???묒뾽?쇰줈 ??ν븳??
-
-```text
-completePerformance
-  -> takeEvents = pendingFreePlayTake.events
-  -> autoSaveTakeAsWork({
-       workId,
-       trackId,
-       takeId,
-       instrument,
-       events: takeEvents,
-       recordingSetup,
-       instrumentSettings,
-       liveJangdanGuide
-     })
-  -> library.works += work
-  -> currentWorkId = work.id
-  -> pendingFreePlayTake = undefined
-  -> screenFlow = S07
-  -> runGarakProductEffect
-  -> services.library.saveSnapshot(state.library)
-```
-
-??λ릺???듭떖 ?곗씠??援ъ“???ㅼ쓬怨?媛숇떎.
-
-```text
-Work
-  tracks[0]: InstrumentTrack
-    instrument: selectedInstrument
-    takes[0]: Take
-      events: PerformanceEvent[]
-      recordingSetup?: RecordingSetup
-      liveJangdanGuide?: LiveJangdanGuide
-      instrumentSettings?: InstrumentSettingValues
-```
-
-## ?곗튂 ?대깽??留ㅽ븨
-
-?꾩옱 ?쒗뭹 S05媛 ?ъ슜?섎뒗 `createTouchModel`? 12??媛?쇨툑 湲곗? ?덉씠?꾩썐?대떎.
-
-```text
-PRODUCT_TOUCH_LAYOUT = {
-  topY: 0,
-  height: 390,
-  stringCount: 12
-}
-```
-
-?꾩옱 留ㅽ븨? ?ㅼ쓬怨?媛숇떎.
-
-| ?ъ슜???낅젰 | 肄붾뱶 寃쎈줈 | ?앹꽦 ?대깽??|
+| UI | action | 의미 |
 | --- | --- | --- |
-| ?곗튂 ?쒖옉 | `handleStart` -> `mapTap` | `string_pluck` |
-| ?볦? ?묒큺 ?쒖옉 | `handleStart` -> `mapCover` | `string_mute` |
-| ?ㅻⅨ ?꾩쑝濡??대룞 | `handleMove` -> `mapSwipeAcrossStrings` | `glissando_step[]` |
-| 媛숈? ?꾩뿉???쇱젙 ?쒓컙 ?댁긽 媛濡??대룞 | `handleMove` -> `mapHoldDrag` | `string_bend` |
-| ?곗튂 醫낅즺 | `handleEnd` -> `mapRelease` | `string_release` |
+| 왼쪽 뒤로가기 | `back` | 이전 화면으로 이동 |
+| 오른쪽 삼각형 버튼 | 녹음 전 `openFreePlayRecordingSetup`, 녹음 중 `completePerformance` | 녹음 설정 또는 연주 완료 컨트롤 |
+| 오른쪽 주황 버튼 | `openLiveJangdanGuide` | 라이브 장단 가이드 설정 |
 
-??紐⑤뜽? ?꾩옱 ?κ뎄 ?寃⑸㈃?대굹 ?湲??댁?/?명씉??蹂꾨룄 ?꾨찓???대깽?몃줈 ?쒗쁽?섏? ?딅뒗?? ?κ뎄? ?湲덈룄 S05 ?붾㈃ ?먯뀑? 蹂댁씠吏留? ?낅젰 紐⑤뜽? ?꾩쭅 ?낃린蹂꾨줈 遺꾨━?섏? ?딆븯??
+삼각형 버튼을 “연주 시작”으로 해석하면 안 된다. 연주는 화면 진입 직후 가능한 기본 상태이고, 삼각형 버튼은 녹음 흐름의 상태 전이를 담당한다.
 
-## 踰꾪듉 ?섎?
+## 현재 완료된 항목
 
-S05 媛濡??곗＜ ?붾㈃???덊듃 ?곸뿭? `LandscapeStageActionHits`媛 留뚮뱺??
+- S05 진입 직후 입력 캡처가 가능하도록 연주 캡처와 녹음 저장 조건을 분리했다.
+- `PerformanceCaptureSurface`가 생성한 이벤트를 live playback callback과 reducer dispatch로 나누어 전달한다.
+- 녹음 중인 경우에만 이벤트를 `pendingFreePlayTake.events`에 누적한다.
 
-| UI ?꾩튂 | ?꾩옱 ?묎렐???쇰꺼 | ?꾩옱 action | ?섎? |
-| --- | --- | --- | --- |
-| ?쇱そ ??| `?ㅻ줈媛湲? | `back` | ?댁쟾 ?붾㈃?쇰줈 ?대룞 |
-| ?ㅻⅨ履????쇨컖??| ?뱀쓬 ??`?뱀쓬 ?쒖옉`, ?뱀쓬 以?`?곗＜ ?꾨즺` | `openFreePlayRecordingSetup` ?먮뒗 `completePerformance` | ?뱀쓬 ?ㅼ젙 ?닿린 ?먮뒗 ?뱀쓬 ?뚯씠?????|
-| ?ㅻⅨ履???二쇳솴 踰꾪듉 | `?λ떒 ?ㅼ젙` | `openLiveJangdanGuide` | ?쇱씠釉??λ떒 媛?대뱶 ?ㅼ젙 |
+## 남은 작업
 
-?쇨컖??踰꾪듉? 湲곕낯 ?곗＜瑜?耳쒕뒗 踰꾪듉?쇰줈 ?댁꽍?섎㈃ ???쒕떎. ?쒗뭹 湲곗??먯꽌??S05 吏꾩엯 利됱떆 ?낃린 ?낅젰硫댁씠 ?곗＜ 媛?ν빐???섎ŉ, ?쇨컖??踰꾪듉? ?뱀쓬怨??꾨즺???곹깭 ?꾩씠瑜??대떦?쒕떎.
-
-## 援ы쁽 ?곹깭
-
-| ??ぉ | ?쒗뭹 湲곗? | ?꾩옱 ?쒗뭹 肄붾뱶 |
-| --- | --- | --- |
-| S05 吏꾩엯 吏곹썑 ?곗＜ | 媛?ν빐????| `captureEnabled = true`濡??곗튂 ?대깽???앹꽦 媛??|
-| ?쇨컖??踰꾪듉 | ?뱀쓬 ?ㅼ젙 ?먮뒗 ?꾨즺 而⑦듃濡?| ?뱀쓬 ?ㅼ젙 ?먮뒗 ?꾨즺 而⑦듃濡ㅻ줈 援ы쁽??|
-| ?곗튂 -> ?대깽??| 湲곕낯 ?곗＜?먯꽌???앹꽦 媛?ν빐????| ?뱀쓬 ?꾧낵 ?뱀쓬 以?紐⑤몢 `PerformanceEvent[]` ?앹꽦 |
-| ?곗튂 -> ?뚮━ | 利됱떆 諛쒖쓬?댁빞 ??| `PerformanceCaptureSurface`媛 `onLivePerformanceEvents`瑜?癒쇱? ?몄텧?섍퀬 `GarakScreenFlowApp`??`services.audio.playPerformanceEvents(events)`濡??꾨떖 |
-| ?대깽?????| ?뱀쓬 以??대깽?몃쭔 `Take.events`?????| ?뱀쓬 以??대깽?몃쭔 ???|
-| ?꾨즺 ???| ?뱀쓬??Take瑜?Work濡??먮룞 ???| `pendingFreePlayTake`媛 ?덉쓣 ?뚮쭔 ???|
-
-?꾩옱 援ы쁽??遺꾨━???ㅼ쓬怨?媛숇떎.
-
-```text
-?곗튂 ?낅젰
-  -> PerformanceEvent ?먮뒗 ?낃린蹂??대깽??  -> 利됱떆 諛쒖쓬 寃쎈줈
-  -> ?뱀쓬 以묒씠硫?pending take?먮룄 append
-```
-
-利? `PerformanceCaptureSurface`???뱀쓬 ?щ?? ?낅┰?곸쑝濡??쒖꽦?붾맂?? ?뱀쓬 ?щ????대깽?몃? ??ν븷吏 寃곗젙?섎뒗 議곌굔?댁?, ?낃린 ?낅젰硫댁씠 ?곗＜ 媛?ν븳吏 寃곗젙?섎뒗 議곌굔???꾨땲??
-
-## 援ы쁽 寃쎄퀎
-
-S05??吏곸젒 ?곗＜???ㅼ쓬 寃쎄퀎瑜??좎??쒕떎.
-
-1. UI???곗튂瑜??섏쭛?섍퀬 ?쒓컖 ?쇰뱶諛깆쓣 ?쒖떆?쒕떎.
-2. ?낃린蹂??낅젰 紐⑤뜽? raw touch瑜??꾨찓???대깽?몃줈 ?뺢퇋?뷀븳??
-3. 利됱떆 諛쒖쓬 寃쎈줈??`onLivePerformanceEvents`瑜??듯빐 ?대깽?몃? `audio.playPerformanceEvents` ?쒕퉬???ы듃??蹂대궦??
-4. ?뱀쓬 以묒씠硫?媛숈? ?대깽?몃? `pendingFreePlayTake.events`??異붽??쒕떎.
-5. ?꾨즺 ?쒖뿉??`pendingFreePlayTake`留?`Work / Track / Take`濡???ν븳??
-6. ????ㅽ뙣???ㅻ뵒??罹≪쿂 ?ㅽ뙣媛 ?덉뼱??`PerformanceEvent[]`??蹂댁〈 媛?ν븳 湲곗? ?곗씠?곕줈 ?④릿??
-
-沅뚯옣 ?곹깭 遺꾨━???ㅼ쓬怨?媛숇떎.
-
-```text
-livePerformance
-  instrument
-  activeInstrumentSettings
-  samplerReadiness
-
-recording
-  pendingFreePlayTake?
-  recordingSetup?
-
-work
-  currentWorkId?
-  library.works
-```
-
-?대젃寃??섎늻硫??붾㈃ 吏꾩엯 吏곹썑 ?곗＜????긽 媛?ν븯怨? ?뱀쓬? ??μ쓣 ?꾪븳 ?좏깮 ?곹깭濡??⑤뒗??
-
-## 媛쒖꽑 諛깅줈洹?
-??臾몄꽌???꾩옱 ?곗＜ ?숈옉怨?肄붾뱶 / ?곗씠???먮쫫???ㅻ챸?쒕떎. S05 ?곗＜ 寃쏀뿕?먯꽌 諛붽퓭?????묒뾽 ??ぉ? `../plans/backlog/2026-06-26-s05-performance-backlog.md`瑜?湲곗??쇰줈 異붿쟻?쒕떎.
+구체 작업은 `../plans/backlog/2026-06-26-s05-performance-backlog.md`에서 관리한다.
