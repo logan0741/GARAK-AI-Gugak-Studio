@@ -538,6 +538,8 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
   expect(source).toContain('getFreeCreationMixEditorModel');
   expect(source).toContain('mixEditorModel.playerTitle');
   expect(source).toContain('mixEditorModel.playerAccessibilityLabel');
+  expect(source).toContain("onPlay={() => dispatch({ type: 'playCurrentWorkMix' })}");
+  expect(source).toContain('accessibilityLabel="가락 믹스 재생"');
   expect(source).toContain('mixEditorModel.saveAction');
   expect(source).toContain('mixEditorModel.saveStatusLabel');
   expect(source).toContain('mixEditorModel.playheadBeatLabel');

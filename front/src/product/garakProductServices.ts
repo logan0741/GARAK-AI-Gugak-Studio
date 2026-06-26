@@ -5,6 +5,7 @@ import type {
   ShareTargetReference,
   Work,
 } from '../studio/studioTypes';
+import type { WorkMixPlan } from '../studio/studioLibrary';
 import type { ProductLibraryState } from './garakProductState';
 import type {
   AiAutoAccompanimentCandidate,
@@ -35,6 +36,10 @@ export type ServiceResult<T> =
 export type ExportWorkAudioResult = {
   audioUri: string;
   durationSeconds?: number;
+};
+
+export type PlayWorkMixResult = {
+  handledTracks: number;
 };
 
 export type SharePublishInput = {
@@ -77,6 +82,10 @@ export type GarakProductServices = {
   };
   audio: {
     exportWorkAudio: (work: Work) => Promise<ServiceResult<ExportWorkAudioResult>>;
+    playWorkMix: (
+      work: Work,
+      mixPlan: WorkMixPlan,
+    ) => Promise<ServiceResult<PlayWorkMixResult>>;
     playPerformanceEvents: (
       events: readonly PerformanceEvent[],
     ) => Promise<ServiceResult<{ handledEvents: number }>>;
@@ -105,6 +114,7 @@ export function createNoopGarakProductServices(): GarakProductServices {
     },
     audio: {
       exportWorkAudio: async () => ({ status: 'unavailable' }),
+      playWorkMix: async () => ({ status: 'unavailable' }),
       playPerformanceEvents: async () => ({ status: 'unavailable' }),
     },
     ai: {

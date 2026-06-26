@@ -93,6 +93,7 @@ export function addInstrumentTrack(
     durationBeats: number;
     playheadBeat?: number;
     recordingUri?: string;
+    recordingSetup?: RecordingSetup;
     instrumentSettings?: InstrumentSettingValues;
   },
 ): Work {
@@ -103,6 +104,7 @@ export function addInstrumentTrack(
     startedAtBeat,
     durationBeats: input.durationBeats,
     recordingUri: input.recordingUri,
+    recordingSetup: input.recordingSetup,
     instrumentSettings: input.instrumentSettings,
   });
 

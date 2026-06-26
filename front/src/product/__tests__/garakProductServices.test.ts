@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { createWorkMixPlan } from '../../studio/studioLibrary';
+import type { Work } from '../../studio/studioTypes';
 import type { ProductLibraryState } from '../garakProductState';
 import {
   createInMemoryGarakProductServices,
@@ -85,6 +87,10 @@ describe('Garak product service ports', () => {
     await expect(services.audio.playPerformanceEvents([])).resolves.toEqual({
       status: 'unavailable',
     });
+    const work = createWork('work-1');
+    await expect(services.audio.playWorkMix(work, createWorkMixPlan(work))).resolves.toEqual({
+      status: 'unavailable',
+    });
   });
 
   test('local services persist snapshots and publish share metadata with an expiring link', async () => {
@@ -140,3 +146,15 @@ describe('Garak product service ports', () => {
     ]);
   });
 });
+
+function createWork(id: string): Work {
+  return {
+    id,
+    title: 'My Arirang',
+    createdAt: '2026-06-25T00:00:00.000Z',
+    updatedAt: '2026-06-25T00:00:00.000Z',
+    source: 'free_creation',
+    syncState: 'local_only',
+    tracks: [],
+  };
+}

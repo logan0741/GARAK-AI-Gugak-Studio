@@ -2,6 +2,7 @@ import type { ProductLibraryState } from './garakProductState';
 import type {
   ExportWorkAudioResult,
   GarakProductServices,
+  PlayWorkMixResult,
   ServiceResult,
   SharePublishResult,
 } from './garakProductServices';
@@ -54,6 +55,11 @@ export function createHttpGarakProductServices({
       exportWorkAudio: (work) =>
         client.serviceJson<ExportWorkAudioResult>('/audio/exports', 'POST', {
           work,
+        }),
+      playWorkMix: (work, mixPlan) =>
+        client.serviceJson<PlayWorkMixResult>('/audio/work-mixes/play', 'POST', {
+          work,
+          mixPlan,
         }),
       playPerformanceEvents: (events) =>
         client.serviceJson<{ handledEvents: number }>('/audio/performance-events/play', 'POST', {

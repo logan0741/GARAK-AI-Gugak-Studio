@@ -662,7 +662,7 @@ export function TrackLayerEditorContent({
           <View style={styles.freeCreationPlayerProgress}>
             <View style={styles.freeCreationPlayerProgressFill} />
           </View>
-          <MixPlayerControls />
+          <MixPlayerControls onPlay={() => dispatch({ type: 'playCurrentWorkMix' })} />
         </View>
       </View>
 
@@ -758,7 +758,7 @@ function FreeCreationCompletedPreviewContent({
           <View style={styles.freeCreationCompletedPlayerProgress}>
             <View style={styles.freeCreationPlayerProgressFill} />
           </View>
-          <MixPlayerControls />
+          <MixPlayerControls onPlay={() => dispatch({ type: 'playCurrentWorkMix' })} />
         </View>
       </View>
 
@@ -902,12 +902,17 @@ function TrackControlStack({
   );
 }
 
-function MixPlayerControls() {
+function MixPlayerControls({ onPlay }: { onPlay: () => void }) {
   return (
     <View style={styles.freeCreationPlayerControls}>
-      <View style={styles.freeCreationPlayerControlCircle}>
+      <Pressable
+        accessibilityLabel="가락 믹스 재생"
+        accessibilityRole="button"
+        onPress={onPlay}
+        style={styles.freeCreationPlayerControlCircle}
+      >
         <Text style={styles.freeCreationPlayerControlIcon}>▶</Text>
-      </View>
+      </Pressable>
       <View style={styles.freeCreationPlayerPauseCircle}>
         <View style={styles.freeCreationPauseBar} />
         <View style={styles.freeCreationPauseBar} />

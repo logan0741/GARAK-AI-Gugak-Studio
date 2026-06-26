@@ -409,6 +409,90 @@ describe('Garak product effect runner', () => {
     expect(playedEvents).toBeUndefined();
     expect(followUpActions).toEqual([]);
   });
+
+  test('plays the current work through the work mix service boundary', async () => {
+    const currentWork: Work = {
+      ...createWork('work-1'),
+      tracks: [
+        {
+          id: 'track-muted',
+          kind: 'instrument',
+          instrument: 'janggu',
+          takes: [],
+          startedAtBeat: 1,
+          volume: 1,
+          mute: true,
+          solo: false,
+          createdAt: '2026-06-25T00:00:00.000Z',
+        },
+        {
+          id: 'track-solo',
+          kind: 'accompaniment',
+          presetId: 'jungmori',
+          bpm: 84,
+          startedAtBeat: 4,
+          volume: 0.6,
+          mute: false,
+          solo: true,
+          createdAt: '2026-06-25T00:00:00.000Z',
+        },
+      ],
+    };
+    const state: GarakProductState = {
+      ...createInitialGarakProductState(),
+      currentWorkId: currentWork.id,
+      library: {
+        works: [currentWork],
+        exportedAudios: [],
+        practiceResults: [],
+      },
+    };
+    const playedMixes: Array<{
+      workId: string;
+      trackIds: string[];
+      hasSoloTracks: boolean;
+    }> = [];
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        playWorkMix: async (
+          work: Work,
+          mixPlan: { tracks: Array<{ trackId: string }>; hasSoloTracks: boolean },
+        ) => {
+          playedMixes.push({
+            workId: work.id,
+            trackIds: mixPlan.tracks.map((track) => track.trackId),
+            hasSoloTracks: mixPlan.hasSoloTracks,
+          });
+
+          return {
+            status: 'ok' as const,
+            value: {
+              handledTracks: mixPlan.tracks.length,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state,
+        action: { type: 'playCurrentWorkMix' },
+        services,
+      }),
+    ).resolves.toEqual([]);
+
+    expect(playedMixes).toEqual([
+      {
+        workId: 'work-1',
+        trackIds: ['track-solo'],
+        hasSoloTracks: true,
+      },
+    ]);
+  });
 });
 
 function createWork(id: string): Work {

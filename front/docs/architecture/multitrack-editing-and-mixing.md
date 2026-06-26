@@ -292,6 +292,8 @@ Reducer는 Work의 구조 변경만 담당하고, 실제 오디오 export/publis
 
 S07 플레이 버튼은 현재 시각 UI에 가깝다. 목표는 `services.audio.playWorkMix(work, mixOptions)` 같은 서비스 포트를 만들고, Work의 트랙 상태를 반영해 재생을 요청하는 것이다.
 
+2026-06-26 반영: S07 기본 믹스 화면과 완료형 `가락 미리듣기`의 플레이 버튼이 `playCurrentWorkMix` 액션을 dispatch한다. `front/src/product/garakProductEffects.ts`는 현재 Work를 `createWorkMixPlan`으로 변환해 `services.audio.playWorkMix(work, mixPlan)`에 전달하며, 서비스 포트와 HTTP 준비 endpoint(`/audio/work-mixes/play`)를 추가했다.
+
 ### Task 3: S09 추가 악기 녹음 데이터 완성
 
 **Files**
@@ -301,6 +303,8 @@ S07 플레이 버튼은 현재 시각 UI에 가깝다. 목표는 `services.audio
 - Test: `front/src/product/__tests__/garakProductState.test.ts`
 
 S09에서 생성되는 추가 악기 트랙도 첫 S05 녹음과 같은 수준의 `recordingSetup`, `durationBeats`, `recordingUri`를 가져야 한다.
+
+2026-06-26 반영: `PendingFreePlayTake`가 `recordingUri`를 보관하고, S09 `applyInstrumentTrack`은 pending take의 `recordingSetup`으로 `durationBeats`를 계산해 `addInstrumentTrack`에 전달한다. 테스트는 `front/src/product/__tests__/garakProductState.test.ts`의 S09 recording metadata 케이스에서 검증한다.
 
 ### Task 4: AI 후보 수락을 멀티트랙 Work에 연결
 

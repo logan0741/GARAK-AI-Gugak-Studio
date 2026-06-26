@@ -1126,8 +1126,45 @@ test('does not add an S09 instrument track until recording starts, then applies 
   expect(
     state.library.works[0].tracks[1].kind === 'instrument'
       ? state.library.works[0].tracks[1].takes[0].events
-      : undefined,
+    : undefined,
   ).toEqual([]);
+});
+
+test('stores S09 extra instrument take recording metadata like the first free-play take', () => {
+  const recordedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 500, stringIndex: 2, velocity: 0.7 },
+    { type: 'string_release', tsMs: 2500, stringIndex: 2 },
+  ];
+  const recordingSetup = { presetId: 'jajinmori' as const, bpm: 120, beatUnit: '4/4' };
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: recordedEvents,
+    recordingSetup,
+    recordingUri: 'file://garak/takes/extra-daegeum.wav',
+  });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack' });
+
+  const extraTrack = state.library.works[0].tracks[1];
+  const take = extraTrack.kind === 'instrument' ? extraTrack.takes[0] : undefined;
+
+  expect(take).toMatchObject({
+    events: recordedEvents,
+    recordingSetup,
+    recordingUri: 'file://garak/takes/extra-daegeum.wav',
+    durationBeats: 5,
+  });
 });
 
 test('records, restarts, and cancels an S09 extra instrument take before adding a track', () => {

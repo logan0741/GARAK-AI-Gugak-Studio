@@ -83,6 +83,7 @@ export type ProductLanguage = 'ko' | 'en';
 export type PendingFreePlayTake = {
   events: PerformanceEvent[];
   recordingSetup: RecordingSetup;
+  recordingUri?: string;
   startedAtMs: number;
 };
 
@@ -204,7 +205,7 @@ export type GarakProductAction =
   | { type: 'selectFreePlayRecordingPreset'; presetId: JangdanPresetId }
   | { type: 'adjustFreePlayRecordingBpm'; delta: number }
   | { type: 'cancelFreePlayRecordingSetup' }
-  | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup }
+  | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup; recordingUri?: string }
   | { type: 'appendFreePlayPerformanceEvents'; events: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | { type: 'setWorkPlayheadBeat'; beat: number }
@@ -212,6 +213,7 @@ export type GarakProductAction =
   | { type: 'toggleWorkTrackMute'; trackId: string }
   | { type: 'toggleWorkTrackSolo'; trackId: string }
   | { type: 'deleteWorkTrack'; trackId: string }
+  | { type: 'playCurrentWorkMix' }
   | { type: 'openLayerEditor' }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
@@ -228,7 +230,7 @@ export type GarakProductAction =
   | { type: 'showLockedImportTrackNotice' }
   | { type: 'cancelTrackAdd' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
-  | { type: 'restartInstrumentTrackRecording'; events?: PerformanceEvent[] }
+  | { type: 'restartInstrumentTrackRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup; recordingUri?: string }
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
   | { type: 'cancelInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
@@ -507,6 +509,7 @@ export function applyProductAction(
           recordingSetup: normalizeRecordingSetup(
             action.recordingSetup ?? state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
           ),
+          recordingUri: normalizeOptionalText(action.recordingUri),
           startedAtMs: toEpochMs(state.now()),
         },
         freePlayRecordingSetup: undefined,
@@ -549,6 +552,8 @@ export function applyProductAction(
       }));
     case 'deleteWorkTrack':
       return deleteCurrentWorkTrack(state, action.trackId);
+    case 'playCurrentWorkMix':
+      return state;
     case 'openLayerEditor':
       return openLayerEditor(state);
     case 'openLiveJangdanGuide':
@@ -636,7 +641,8 @@ export function applyProductAction(
         ...state,
         pendingFreePlayTake: {
           events: action.events ?? [],
-          recordingSetup: createDefaultRecordingSetup(),
+          recordingSetup: normalizeRecordingSetup(action.recordingSetup ?? createDefaultRecordingSetup()),
+          recordingUri: normalizeOptionalText(action.recordingUri),
           startedAtMs: toEpochMs(state.now()),
         },
         freePlayRecordingSetup: undefined,
@@ -1189,6 +1195,7 @@ function completePerformance(state: GarakProductState): GarakProductState {
       takeEvents,
       state.pendingFreePlayTake.recordingSetup,
     ),
+    recordingUri: state.pendingFreePlayTake.recordingUri,
     instrumentSettings,
     recordingSetup: state.pendingFreePlayTake.recordingSetup,
     liveJangdanGuide: state.pendingLiveJangdanGuide
@@ -1265,7 +1272,12 @@ function adjustRecordingSetupBpm(setup: RecordingSetup, delta: number): Recordin
 }
 
 function normalizeRecordingSetup(setup: RecordingSetup): RecordingSetup {
-  return createRecordingSetup(setup.presetId, setup.bpm);
+  const normalized = createRecordingSetup(setup.presetId, setup.bpm);
+
+  return {
+    ...normalized,
+    beatUnit: setup.beatUnit.trim().length > 0 ? setup.beatUnit : normalized.beatUnit,
+  };
 }
 
 function toEpochMs(isoDate: string): number {
@@ -1290,6 +1302,15 @@ function getPerformanceTakeDurationBeats(
   }
 
   return Math.max(1, Math.ceil(lastEventTsMs / msPerBeat));
+}
+
+function normalizeOptionalText(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 function clampBpm(preset: { minBpm: number; maxBpm: number }, bpm: number): number {
@@ -1459,11 +1480,13 @@ function applyInstrumentTrack(
     return state;
   }
 
-  const hasRecordedTake = state.pendingFreePlayTake !== undefined || events.length > 0;
+  const pendingTake = state.pendingFreePlayTake;
+  const hasRecordedTake = pendingTake !== undefined || events.length > 0;
   if (!hasRecordedTake) {
     return state;
   }
-  const takeEvents = events.length > 0 ? events : state.pendingFreePlayTake?.events ?? [];
+  const takeEvents = events.length > 0 ? events : pendingTake?.events ?? [];
+  const recordingSetup = pendingTake?.recordingSetup ?? createDefaultRecordingSetup();
 
   const nextCounters = incrementCounters(state.counters, ['track', 'take']);
   const now = state.now();
@@ -1474,8 +1497,10 @@ function applyInstrumentTrack(
     instrument,
     events: takeEvents,
     createdAt: now,
-    durationBeats: 4,
+    durationBeats: getPerformanceTakeDurationBeats(takeEvents, recordingSetup),
     playheadBeat: playheadBeat ?? state.workPlayheadBeat,
+    recordingUri: pendingTake?.recordingUri,
+    recordingSetup,
     instrumentSettings: getRecordingInstrumentSettings(state, instrument),
   });
   const nextScreenFlow =

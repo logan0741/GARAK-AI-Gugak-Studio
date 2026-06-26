@@ -1,5 +1,6 @@
 import type { PerformanceEvent } from '../domain/performanceEvent';
 import type { ExportedAudio, PracticeResult, ShareTargetReference, Work } from '../studio/studioTypes';
+import { createWorkMixPlan } from '../studio/studioLibrary';
 import type {
   GarakProductAction,
   GarakProductState,
@@ -89,6 +90,11 @@ export async function runGarakProductEffect({
     return followUpActions;
   }
 
+  if (action.type === 'playCurrentWorkMix') {
+    await playCurrentWorkMix(state, services);
+    return followUpActions;
+  }
+
   if (action.type === 'publishShareTarget') {
     const publishAction = await publishSelectedShareTarget(state, services);
     if (publishAction !== undefined) {
@@ -102,6 +108,23 @@ export async function runGarakProductEffect({
   }
 
   return followUpActions;
+}
+
+async function playCurrentWorkMix(
+  state: GarakProductState,
+  services: GarakProductServices,
+): Promise<void> {
+  const currentWork = findCurrentWork(state);
+
+  if (currentWork === undefined) {
+    return;
+  }
+
+  try {
+    await services.audio.playWorkMix(currentWork, createWorkMixPlan(currentWork));
+  } catch {
+    return;
+  }
 }
 
 async function generateAutoAccompaniment(
