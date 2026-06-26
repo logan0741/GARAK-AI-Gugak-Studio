@@ -1,0 +1,282 @@
+import {
+  ImplementedScreenId,
+  ScreenFlowMode,
+  implementedScreenDefinitions,
+  isExcludedScreenId,
+  isImplementedScreenId,
+} from './screenDefinitions';
+
+export type ScreenFlowState = {
+  currentScreen: ImplementedScreenId;
+  history: ImplementedScreenId[];
+  mode: ScreenFlowMode;
+};
+
+export type ScreenFlowEvent =
+  | { type: 'selectMode'; mode: ScreenFlowMode }
+  | { type: 'next' }
+  | { type: 'completePerformance' }
+  | { type: 'openLiveJangdanGuide' }
+  | { type: 'openLayerEditor' }
+  | { type: 'addTrack' }
+  | { type: 'exportCurrentWork' }
+  | { type: 'chooseInstrumentTrack' }
+  | { type: 'chooseAccompanimentTrack' }
+  | { type: 'cancelTrackAdd' }
+  | { type: 'applyInstrumentTrack' }
+  | { type: 'cancelInstrumentTrack' }
+  | { type: 'applyLiveJangdanGuide' }
+  | { type: 'turnOffLiveJangdanGuide' }
+  | { type: 'addAccompanimentTrack' }
+  | { type: 'cancelAccompanimentTrack' }
+  | { type: 'selectPracticeSong' }
+  | { type: 'finishPractice' }
+  | { type: 'practiceAgain' }
+  | { type: 'savePracticeResult' }
+  | { type: 'sharePracticeResult' }
+  | { type: 'chooseAnotherSong' }
+  | { type: 'openWork' }
+  | { type: 'playLibraryItem' }
+  | { type: 'loginAndLoadMySongs' }
+  | { type: 'openSharedRecordingDetail' }
+  | { type: 'remixSharedRecording' }
+  | { type: 'saveSharedRecording' }
+  | { type: 'saveShareTargetOnly' }
+  | { type: 'cancelShareTarget' }
+  | { type: 'publishShareTarget' }
+  | { type: 'completeLoginSync' }
+  | { type: 'skipLoginSync' }
+  | { type: 'openSelectedPlayerEditor' }
+  | { type: 'shareSelectedPlayerItem' }
+  | { type: 'deleteSelectedPlayerItem' }
+  | { type: 'loginCta' }
+  | { type: 'navigate'; target: string }
+  | { type: 'back' };
+
+export function createInitialScreenFlowState(input: Partial<ScreenFlowState> = {}): ScreenFlowState {
+  const currentScreen = input.currentScreen ?? 'S01';
+  const history = input.history ?? [];
+
+  assertImplementedScreenId(currentScreen);
+  history.forEach(assertImplementedScreenId);
+
+  return {
+    currentScreen,
+    history: [...history],
+    mode: input.mode ?? 'freeCreation',
+  };
+}
+
+export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEvent): ScreenFlowState {
+  switch (event.type) {
+    case 'selectMode':
+      return selectMode(state, event.mode);
+    case 'next':
+      return routeNext(state);
+    case 'completePerformance':
+      return routeFromScreen(state, 'S05', 'S07', event.type);
+    case 'openLiveJangdanGuide':
+      return routeFromScreen(state, 'S05', 'S10A', event.type);
+    case 'openLayerEditor':
+      return routeFromScreen(state, 'S05', 'S07', event.type);
+    case 'addTrack':
+      return routeFromScreen(state, 'S07', 'S08', event.type);
+    case 'exportCurrentWork':
+      return routeFromScreen(state, 'S07', 'S19', event.type);
+    case 'chooseInstrumentTrack':
+      return routeFromScreen(state, 'S08', 'S09', event.type);
+    case 'chooseAccompanimentTrack':
+      return routeFromScreen(state, 'S08', 'S10B', event.type);
+    case 'cancelTrackAdd':
+      return routeFromScreen(state, 'S08', 'S07', event.type);
+    case 'applyInstrumentTrack':
+      return routeFromScreen(state, 'S09', 'S07', event.type);
+    case 'cancelInstrumentTrack':
+      return routeFromScreen(state, 'S09', 'S07', event.type);
+    case 'applyLiveJangdanGuide':
+      return routeFromScreen(state, 'S10A', 'S05', event.type);
+    case 'turnOffLiveJangdanGuide':
+      return routeFromScreen(state, 'S10A', 'S05', event.type);
+    case 'addAccompanimentTrack':
+      return routeFromScreen(state, 'S10B', 'S07', event.type);
+    case 'cancelAccompanimentTrack':
+      return routeFromScreen(state, 'S10B', 'S07', event.type);
+    case 'selectPracticeSong':
+      return routeFromScreen(state, 'S13', 'S14', event.type);
+    case 'finishPractice':
+      return routeFromScreen(state, 'S15', 'S16', event.type);
+    case 'practiceAgain':
+      return routeFromScreen(state, 'S16', 'S15', event.type);
+    case 'savePracticeResult':
+      return routeFromScreen(state, 'S16', 'S18', event.type);
+    case 'sharePracticeResult':
+      return routeFromScreen(state, 'S16', 'S17', event.type);
+    case 'chooseAnotherSong':
+      return routeFromScreen(state, 'S16', 'S13', event.type);
+    case 'openWork':
+      return routeFromScreen(state, 'S18', 'S07', event.type);
+    case 'playLibraryItem':
+      return routeFromScreens(state, ['S18', 'S20'], 'S19', event.type);
+    case 'loginAndLoadMySongs':
+      return routeFromScreens(state, ['S18', 'S22'], 'S23', event.type);
+    case 'openSharedRecordingDetail':
+      return routeFromScreen(state, 'S20', 'S21', event.type);
+    case 'remixSharedRecording':
+      return routeFromScreen(state, 'S21', 'S07', event.type);
+    case 'saveSharedRecording':
+      return routeFromScreen(state, 'S21', 'S18', event.type);
+    case 'saveShareTargetOnly':
+      return routeFromScreen(state, 'S17', 'S18', event.type);
+    case 'cancelShareTarget':
+      return routeBackFromScreen(state, 'S17', event.type);
+    case 'publishShareTarget':
+      return routeFromScreen(state, 'S17', 'S20', event.type);
+    case 'completeLoginSync':
+      return routeFromScreen(state, 'S23', 'S18', event.type);
+    case 'skipLoginSync':
+      return routeBackFromScreen(state, 'S23', event.type);
+    case 'openSelectedPlayerEditor':
+      return routeFromScreen(state, 'S19', 'S07', event.type);
+    case 'shareSelectedPlayerItem':
+      return routeFromScreen(state, 'S19', 'S17', event.type);
+    case 'deleteSelectedPlayerItem':
+      return routeFromScreen(state, 'S19', 'S18', event.type);
+    case 'loginCta':
+      return routeFromScreens(state, ['S18', 'S22'], 'S23', event.type);
+    case 'navigate':
+      return pushScreen(state, resolveNavigationTarget(state, event.target));
+    case 'back':
+      return popScreen(state);
+  }
+}
+
+function selectMode(state: ScreenFlowState, mode: ScreenFlowMode): ScreenFlowState {
+  if (state.currentScreen !== 'S03') {
+    throw new Error('selectMode is only available from S03');
+  }
+
+  return {
+    ...state,
+    mode,
+  };
+}
+
+function routeNext(state: ScreenFlowState): ScreenFlowState {
+  if (state.currentScreen === 'S03') {
+    return pushScreen(state, state.mode === 'freeCreation' ? 'S04' : 'S13');
+  }
+
+  const nextTransition = implementedScreenDefinitions[state.currentScreen].transitions.find(
+    (transition) => transition.action === 'next',
+  );
+
+  if (nextTransition !== undefined && isImplementedScreenId(nextTransition.target)) {
+    return pushScreen(state, nextTransition.target);
+  }
+
+  throw new Error(`next is not available from ${state.currentScreen}`);
+}
+
+function routeFromScreen(
+  state: ScreenFlowState,
+  expectedScreen: ImplementedScreenId,
+  target: ImplementedScreenId,
+  eventType: ScreenFlowEvent['type'],
+): ScreenFlowState {
+  if (state.currentScreen !== expectedScreen) {
+    throw new Error(`${eventType} is not available from ${state.currentScreen}`);
+  }
+
+  return pushScreen(state, target);
+}
+
+function routeFromScreens(
+  state: ScreenFlowState,
+  expectedScreens: ImplementedScreenId[],
+  target: ImplementedScreenId,
+  eventType: ScreenFlowEvent['type'],
+): ScreenFlowState {
+  if (!expectedScreens.includes(state.currentScreen)) {
+    throw new Error(`${eventType} is not available from ${state.currentScreen}`);
+  }
+
+  return pushScreen(state, target);
+}
+
+function routeBackFromScreen(
+  state: ScreenFlowState,
+  expectedScreen: ImplementedScreenId,
+  eventType: ScreenFlowEvent['type'],
+): ScreenFlowState {
+  if (state.currentScreen !== expectedScreen) {
+    throw new Error(`${eventType} is not available from ${state.currentScreen}`);
+  }
+
+  return popScreen(state);
+}
+
+function pushScreen(state: ScreenFlowState, target: ImplementedScreenId): ScreenFlowState {
+  if (state.currentScreen === target) {
+    return {
+      ...state,
+      history: [...state.history],
+    };
+  }
+
+  return {
+    ...state,
+    currentScreen: target,
+    history: [...state.history, state.currentScreen],
+  };
+}
+
+function popScreen(state: ScreenFlowState): ScreenFlowState {
+  if (state.history.length === 0) {
+    return {
+      ...state,
+      history: [],
+    };
+  }
+
+  const history = state.history.slice(0, -1);
+  const currentScreen = state.history[state.history.length - 1];
+
+  return {
+    ...state,
+    currentScreen,
+    history,
+  };
+}
+
+function resolveNavigationTarget(state: ScreenFlowState, screenId: string): ImplementedScreenId {
+  if (isExcludedScreenId(screenId)) {
+    throw new Error(`${screenId} is excluded from standalone navigation`);
+  }
+
+  assertImplementedScreenId(screenId);
+
+  if (screenId === state.currentScreen) {
+    return screenId;
+  }
+
+  if (!hasTransitionToTarget(state.currentScreen, screenId)) {
+    throw new Error(`${screenId} is not reachable from ${state.currentScreen}`);
+  }
+
+  return screenId;
+}
+
+function hasTransitionToTarget(
+  currentScreen: ImplementedScreenId,
+  target: ImplementedScreenId,
+): boolean {
+  return implementedScreenDefinitions[currentScreen].transitions.some(
+    (transition) => transition.target === target,
+  );
+}
+
+function assertImplementedScreenId(screenId: string): asserts screenId is ImplementedScreenId {
+  if (!isImplementedScreenId(screenId)) {
+    throw new Error(`${screenId} is not an implemented screen`);
+  }
+}

@@ -1,0 +1,45 @@
+# Node
+node_modules/
+.expo/
+front/android/
+front/.env
+front/android/build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+back/.env
+back/static/generated/
+back/static/audio/
+back/uvicorn*.log
+back/..uvicorn.log
+
+# AI models & data (large files)
+AI/models/
+AI/segments/
+AI/data/
+AI/data_aihub/
+AI/data_ensemble/
+AI/data_instruments/
+AI/preprocessed_smoke/
+AI/tmp_demucs/
+AI/__pycache__/
+AI/*.log
+AI/.env
+phrase.zip
+phrase/
+monotone/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.omc/
