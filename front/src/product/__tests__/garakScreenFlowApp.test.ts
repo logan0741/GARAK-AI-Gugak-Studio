@@ -231,6 +231,10 @@ test('connects S22 settings actions to language and library management', () => {
   expect(source).toContain('model.actions.changeLanguage');
   expect(source).toContain('model.actions.manageLibrary');
   expect(source).toContain('model.actions.loginAndLoadMySongs');
+  expect(source).toContain('model.audioSourceNotice');
+  expect(source).toContain('audioSourceNoticeCard');
+  expect(source).toContain('flexShrink: 1');
+  expect(source).toContain("textAlign: 'right'");
 });
 
 test('connects S02 language choices to the product language state', () => {

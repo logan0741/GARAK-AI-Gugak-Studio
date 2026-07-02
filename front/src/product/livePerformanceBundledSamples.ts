@@ -6,6 +6,9 @@ export const NGC_MONOTONE_SOURCE_NAME =
   'National Gugak Center Korean Traditional Instrument Digital Sound - Monotone';
 export const NGC_MONOTONE_LICENSE_NOTE =
   'KOGL Type 1 attribution required. Source: National Gugak Center, Monotone Download.';
+export const NGC_MONOTONE_SOURCE_URL =
+  'https://www.gugak.go.kr/digitaleum/front/monotone/list.do';
+export const KOGL_TYPE_1_LICENSE_URL = 'http://www.kogl.or.kr/open/info/license_info/by.do';
 
 const GAYAGEUM_REQUIRED_STRING_INDEXES = createSequentialStringIndexes(12);
 const JANGGU_REQUIRED_STRING_INDEXES = [3, 6, 10] as const;

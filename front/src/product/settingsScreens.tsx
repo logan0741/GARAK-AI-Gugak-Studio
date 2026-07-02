@@ -154,6 +154,12 @@ export function SettingsContent({
           <SettingRow key={row.label} label={row.label} value={row.value} />
         ))}
       </View>
+      <View style={styles.audioSourceNoticeCard}>
+        <Text style={styles.audioSourceNoticeTitle}>{model.audioSourceNotice.title}</Text>
+        <Text style={styles.audioSourceNoticeBody}>{model.audioSourceNotice.body}</Text>
+        <Text style={styles.audioSourceNoticeLink}>{model.audioSourceNotice.sourceUrl}</Text>
+        <Text style={styles.audioSourceNoticeLink}>{model.audioSourceNotice.licenseUrl}</Text>
+      </View>
       <View style={styles.settingsActionRow}>
         <SettingsActionButton
           label="언어 변경"
@@ -501,24 +507,56 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...garakCardShadow,
   },
+  audioSourceNoticeCard: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    borderColor: GARAK_COLORS.lineSoft,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 8,
+    padding: 16,
+    ...garakCardShadow,
+  },
+  audioSourceNoticeTitle: {
+    color: GARAK_COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  audioSourceNoticeBody: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
+  audioSourceNoticeLink: {
+    color: GARAK_COLORS.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
   settingRow: {
     alignItems: 'center',
     borderBottomColor: GARAK_COLORS.lineSoft,
     borderBottomWidth: 1,
     flexDirection: 'row',
+    gap: 12,
     justifyContent: 'space-between',
     minHeight: 58,
     paddingHorizontal: 18,
   },
   settingLabel: {
     color: GARAK_COLORS.textPrimary,
+    flexShrink: 0,
     fontSize: 14,
     fontWeight: '800',
   },
   settingValue: {
     color: GARAK_COLORS.textSecondary,
+    flexShrink: 1,
     fontSize: 13,
     fontWeight: '700',
+    lineHeight: 18,
+    textAlign: 'right',
   },
   settingsActionRow: {
     flexDirection: 'row',
