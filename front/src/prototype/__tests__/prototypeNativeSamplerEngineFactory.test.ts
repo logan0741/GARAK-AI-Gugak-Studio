@@ -115,6 +115,62 @@ test('creates and preloads the expo-audio candidate through injected runtime por
   expect(createdPlayerUris).toEqual(resolvedUris);
 });
 
+test('creates native samplers for instrument manifests with explicit required string indexes', async () => {
+  const jangguManifest: SampleAssetManifest = {
+    version: 'test-janggu-manifest',
+    assets: [3, 6, 10].map((stringIndex) => ({
+      id: `janggu-hit-${stringIndex}`,
+      instrument: 'janggu',
+      stringIndex,
+      pitchHz: 110 + stringIndex,
+      fileUri: `asset://janggu/hit-${stringIndex}.wav`,
+      sourceLayer: 'public_asset',
+      sourceName: 'National Gugak Center monotone candidate',
+      licenseNote: 'KOGL type 1 attribution required',
+    })),
+  };
+  const createdPlayerUris: string[] = [];
+  const runtime: ExpoAudioRuntimePort = {
+    setAudioModeAsync: async () => undefined,
+    downloadAudioSource: async (source) => source,
+    createAudioPlayer: (source) => {
+      createdPlayerUris.push(source.uri);
+      return {
+        volume: 1,
+        play: () => undefined,
+        pause: () => undefined,
+        seekTo: async () => undefined,
+        setPlaybackRate: () => undefined,
+      };
+    },
+    requestRecordingPermissionsAsync: async () => ({ granted: true }),
+    createAudioRecorder: () => {
+      throw new Error('recording is not part of preload');
+    },
+  };
+
+  await createAndPreloadPrototypeNativeSamplerEngine({
+    candidate: 'expo-audio',
+    manifest: jangguManifest,
+    requiredStringIndexes: [3, 6, 10],
+    assetResolver: {
+      resolveFileUri: async (fileUri) => `file://resolved/${fileUri}`,
+    },
+    runtimePorts: {
+      createExpoAudioRuntimePort: () => runtime,
+      createReactNativeAudioApiRuntimePort: () => {
+        throw new Error('react-native-audio-api runtime should not be created');
+      },
+    },
+  });
+
+  expect(createdPlayerUris).toEqual([
+    'file://resolved/asset://janggu/hit-3.wav',
+    'file://resolved/asset://janggu/hit-6.wav',
+    'file://resolved/asset://janggu/hit-10.wav',
+  ]);
+});
+
 test('trims local sample source URIs before asset resolution and native preload', async () => {
   const resolverInputs: string[] = [];
   const downloadedUris: string[] = [];

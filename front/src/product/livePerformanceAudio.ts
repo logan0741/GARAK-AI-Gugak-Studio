@@ -7,6 +7,10 @@ import type {
   PrepareLivePerformanceAudioResult,
   ServiceResult,
 } from './garakProductServices';
+import {
+  getLivePerformanceBundledSampleManifest,
+  getLivePerformanceRequiredStringIndexes,
+} from './livePerformanceBundledSamples';
 
 export type LivePerformanceAudioPort = Pick<
   GarakProductServices['audio'],
@@ -162,40 +166,69 @@ async function createDefaultLivePerformanceSampler(input: {
   manifest?: SampleAssetManifest;
 }): Promise<LivePerformanceSamplerBundle> {
   const candidates: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
+  const requiredStringIndexes = getLivePerformanceRequiredStringIndexes(input.instrument);
+  const bundledManifest = input.manifest ?? getLivePerformanceBundledSampleManifest(input.instrument);
   let lastError: unknown;
 
   for (const candidate of candidates) {
     try {
-      return await createNativeSampler(candidate, input.manifest);
+      return await createNativeSampler({
+        candidate,
+        manifest: bundledManifest,
+        requiredStringIndexes,
+        useLivePerformanceAssetResolver: bundledManifest !== undefined,
+      });
     } catch (error) {
       lastError = error;
+    }
+  }
+
+  if (bundledManifest !== undefined && input.manifest === undefined) {
+    for (const candidate of candidates) {
+      try {
+        return await createNativeSampler({
+          candidate,
+          requiredStringIndexes: getLivePerformanceRequiredStringIndexes('gayageum'),
+          useLivePerformanceAssetResolver: false,
+        });
+      } catch (error) {
+        lastError = error;
+      }
     }
   }
 
   throw new Error(`Live performance sampler failed to start: ${getErrorMessage(lastError)}`);
 }
 
-async function createNativeSampler(
-  candidate: AudioEngineCandidateId,
-  manifest: SampleAssetManifest | undefined,
-): Promise<LivePerformanceSamplerBundle> {
+async function createNativeSampler(input: {
+  candidate: AudioEngineCandidateId;
+  manifest?: SampleAssetManifest;
+  requiredStringIndexes: readonly number[];
+  useLivePerformanceAssetResolver: boolean;
+}): Promise<LivePerformanceSamplerBundle> {
   const [
     { createAndPreloadPrototypeNativeSamplerEngine },
     { prototypeGayageumSampleManifest, summarizePrototypeSampleManifestProvenance },
+    livePerformanceAssetRegistry,
   ] = await Promise.all([
     import('../prototype/prototypeNativeSamplerEngineFactory'),
     import('../prototype/prototypeSampleManifest'),
+    input.useLivePerformanceAssetResolver
+      ? import('./livePerformanceBundledSampleAssetRegistry')
+      : Promise.resolve(undefined),
   ]);
-  const samplerManifest = manifest ?? prototypeGayageumSampleManifest;
+  const samplerManifest = input.manifest ?? prototypeGayageumSampleManifest;
   const provenance = summarizePrototypeSampleManifestProvenance(samplerManifest);
   const engine = await createAndPreloadPrototypeNativeSamplerEngine({
-    candidate,
+    candidate: input.candidate,
     manifest: samplerManifest,
+    requiredStringIndexes: input.requiredStringIndexes,
+    assetResolver: livePerformanceAssetRegistry?.createLivePerformanceBundledSampleAssetResolver(),
   });
 
   return {
     engine,
-    sampleSourceLabel: `${candidate} / ${provenance.sourceNames.join(', ')}`,
+    sampleSourceLabel: `${input.candidate} / ${provenance.sourceNames.join(', ')}`,
     releaseReady: provenance.releaseReady,
   };
 }
