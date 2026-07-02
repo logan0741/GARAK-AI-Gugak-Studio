@@ -84,7 +84,9 @@ describe('Garak product service ports', () => {
     ).resolves.toEqual({
       status: 'unavailable',
     });
-    await expect(services.audio.playPerformanceEvents([])).resolves.toEqual({
+    await expect(
+      services.audio.playPerformanceEvents({ instrument: 'gayageum', events: [] }),
+    ).resolves.toEqual({
       status: 'unavailable',
     });
     const work = createWork('work-1');
@@ -144,6 +146,55 @@ describe('Garak product service ports', () => {
         url: 'file://garak/export-1.wav',
       },
     ]);
+  });
+
+  test('local services route S05 live performance through the injected live audio port', async () => {
+    const events = [
+      { type: 'string_pluck' as const, tsMs: 120, stringIndex: 2, velocity: 0.7 },
+    ];
+    const preparedInstruments: string[] = [];
+    const playedInputs: unknown[] = [];
+    const services = createLocalGarakProductServices({
+      liveAudio: {
+        prepareLivePerformanceAudio: async (input) => {
+          preparedInstruments.push(input.instrument);
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: 'bundled dev sampler',
+              releaseReady: false,
+            },
+          };
+        },
+        playPerformanceEvents: async (input) => {
+          playedInputs.push(input);
+          return {
+            status: 'ok' as const,
+            value: { handledEvents: input.events.length },
+          };
+        },
+      },
+    });
+
+    await expect(
+      services.audio.prepareLivePerformanceAudio({ instrument: 'janggu' }),
+    ).resolves.toEqual({
+      status: 'ok',
+      value: {
+        instrument: 'janggu',
+        sampleSourceLabel: 'bundled dev sampler',
+        releaseReady: false,
+      },
+    });
+    await expect(
+      services.audio.playPerformanceEvents({ instrument: 'janggu', events }),
+    ).resolves.toEqual({
+      status: 'ok',
+      value: { handledEvents: 1 },
+    });
+    expect(preparedInstruments).toEqual(['janggu']);
+    expect(playedInputs).toEqual([{ instrument: 'janggu', events }]);
   });
 });
 

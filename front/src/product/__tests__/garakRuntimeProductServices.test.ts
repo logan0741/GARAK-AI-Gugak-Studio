@@ -13,6 +13,7 @@ describe('runtime Garak product services', () => {
 
   test('keeps live performance playback local instead of using the HTTP product API', async () => {
     const requests: Array<{ url: string; init?: Parameters<GarakFetch>[1] }> = [];
+    const playedEvents: unknown[] = [];
     const fetchImpl: GarakFetch = async (url, init) => {
       requests.push({ url, init });
 
@@ -27,16 +28,51 @@ describe('runtime Garak product services', () => {
       apiBaseUrl: 'https://api.garak.test',
       fetch: fetchImpl,
       getAccessToken: async () => 'token-1',
+      liveAudio: {
+        prepareLivePerformanceAudio: async (input) => ({
+          status: 'ok' as const,
+          value: {
+            instrument: input.instrument,
+            sampleSourceLabel: 'local sampler',
+            releaseReady: false,
+          },
+        }),
+        playPerformanceEvents: async (input) => {
+          playedEvents.push(input);
+          return {
+            status: 'ok' as const,
+            value: { handledEvents: input.events.length },
+          };
+        },
+      },
     });
 
     await expect(
-      services.audio.playPerformanceEvents([
-        { type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 },
-      ]),
+      services.audio.prepareLivePerformanceAudio({ instrument: 'janggu' }),
     ).resolves.toEqual({
-      status: 'unavailable',
+      status: 'ok',
+      value: {
+        instrument: 'janggu',
+        sampleSourceLabel: 'local sampler',
+        releaseReady: false,
+      },
+    });
+    await expect(
+      services.audio.playPerformanceEvents({
+        instrument: 'janggu',
+        events: [{ type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 }],
+      }),
+    ).resolves.toEqual({
+      status: 'ok',
+      value: { handledEvents: 1 },
     });
     expect(requests).toEqual([]);
+    expect(playedEvents).toEqual([
+      {
+        instrument: 'janggu',
+        events: [{ type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 }],
+      },
+    ]);
 
     await services.library.saveSnapshot({
       works: [],

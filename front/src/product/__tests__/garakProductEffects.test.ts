@@ -390,11 +390,11 @@ describe('Garak product effect runner', () => {
       ...noopServices,
       audio: {
         ...noopServices.audio,
-        playPerformanceEvents: async (inputEvents: readonly PerformanceEvent[]) => {
-          playedEvents = inputEvents;
+        playPerformanceEvents: async (input: { events: readonly PerformanceEvent[] }) => {
+          playedEvents = input.events;
           return {
             status: 'ok' as const,
-            value: { handledEvents: inputEvents.length },
+            value: { handledEvents: input.events.length },
           };
         },
       },
@@ -408,6 +408,148 @@ describe('Garak product effect runner', () => {
 
     expect(playedEvents).toBeUndefined();
     expect(followUpActions).toEqual([]);
+  });
+
+  test('prepares live performance audio when S05 starts', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu'] }),
+      selectedInstrument: 'janggu',
+      screenFlow: {
+        currentScreen: 'S04A',
+        history: ['S01', 'S03', 'S04'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'next' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          expect(input).toEqual({ instrument: 'janggu' });
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: 'bundled dev sampler',
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    expect(nextState.livePerformanceAudioStatus).toEqual({
+      status: 'preparing',
+      instrument: 'janggu',
+    });
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeLivePerformanceAudioPreparation',
+        instrument: 'janggu',
+        sampleSourceLabel: 'bundled dev sampler',
+        releaseReady: false,
+      },
+    ]);
+  });
+
+  test('surfaces live performance audio preparation failures on S05', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['daegeum'] }),
+      selectedInstrument: 'daegeum',
+      screenFlow: {
+        currentScreen: 'S04A',
+        history: ['S01', 'S03', 'S04'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'next' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async () => ({
+          status: 'error' as const,
+          message: 'native sampler failed',
+        }),
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'failLivePerformanceAudioPreparation',
+        instrument: 'daegeum',
+        message: 'native sampler failed',
+      },
+    ]);
+  });
+
+  test('retries live performance audio preparation through the S05 service boundary', async () => {
+    const failedState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['daegeum'] }),
+      selectedInstrument: 'daegeum',
+      screenFlow: {
+        currentScreen: 'S05',
+        history: ['S01', 'S03', 'S04', 'S04A'],
+        mode: 'freeCreation',
+      },
+      livePerformanceAudioStatus: {
+        status: 'failed',
+        instrument: 'daegeum',
+        message: 'native sampler failed',
+      },
+    };
+    const action = { type: 'retryLivePerformanceAudioPreparation' } as const;
+    const nextState = applyProductAction(failedState, action);
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          expect(input).toEqual({ instrument: 'daegeum' });
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: 'bundled dev sampler',
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeLivePerformanceAudioPreparation',
+        instrument: 'daegeum',
+        sampleSourceLabel: 'bundled dev sampler',
+        releaseReady: false,
+      },
+    ]);
   });
 
   test('plays the current work through the work mix service boundary', async () => {

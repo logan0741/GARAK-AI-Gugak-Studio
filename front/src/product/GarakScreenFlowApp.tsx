@@ -40,6 +40,7 @@ import {
 } from './settingsScreens';
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
+import { DEFAULT_FREE_CREATION_INSTRUMENT } from './productFixtures';
 import {
   GarakScreenFrameMode,
   getGarakScreenFrameConfig,
@@ -93,6 +94,7 @@ export function GarakScreenFlowApp({
   );
   const state = runtimeState.productState;
   const currentScreen = state.screenFlow.currentScreen;
+  const livePerformanceInstrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isHome = currentScreen === 'S01';
   const isLibrary = currentScreen === 'S18';
   const isShare = currentScreen === 'S20';
@@ -146,9 +148,32 @@ export function GarakScreenFlowApp({
   }, [dispatch, productServices]);
   const playLivePerformanceEvents = useCallback(
     (events: PerformanceEvent[]) => {
-      void productServices.audio.playPerformanceEvents(events);
+      void productServices.audio
+        .playPerformanceEvents({
+          instrument: livePerformanceInstrument,
+          events,
+        })
+        .then((result) => {
+          if (result.status !== 'ok') {
+            dispatch({
+              type: 'failLivePerformanceAudioPreparation',
+              instrument: livePerformanceInstrument,
+              message:
+                result.status === 'error'
+                  ? result.message
+                  : 'Live performance audio service is unavailable.',
+            });
+          }
+        })
+        .catch((error: unknown) => {
+          dispatch({
+            type: 'failLivePerformanceAudioPreparation',
+            instrument: livePerformanceInstrument,
+            message: error instanceof Error ? error.message : 'Live performance audio failed.',
+          });
+        });
     },
-    [productServices],
+    [dispatch, livePerformanceInstrument, productServices],
   );
 
   useEffect(() => {
@@ -182,7 +207,13 @@ export function GarakScreenFlowApp({
   return (
     <SafeAreaProvider style={styles.provider}>
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <View style={[styles.appFrame, isLandscapeFrame ? styles.landscapeFrame : styles.phoneFrame]}>
+      <View
+        style={[
+          styles.appFrame,
+          isLandscapeFrame ? styles.landscapeFrame : styles.phoneFrame,
+          usesEmbeddedHeader ? styles.embeddedLandscapeFrame : undefined,
+        ]}
+      >
         {!usesEmbeddedHeader && !usesImmersiveFrame ? (
           <View style={[styles.header, isLandscapeFrame ? styles.landscapeHeader : undefined]}>
             <View style={[styles.headerLeftSlot, isLibrary ? styles.headerWideSlot : undefined]}>
@@ -388,6 +419,10 @@ const styles = StyleSheet.create({
   landscapeFrame: {
     maxHeight: GARAK_LAYOUT.figmaPhoneWidth,
     maxWidth: GARAK_LAYOUT.figmaPhoneHeight,
+  },
+  embeddedLandscapeFrame: {
+    maxHeight: '100%',
+    maxWidth: '100%',
   },
   header: {
     alignItems: 'center',

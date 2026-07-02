@@ -139,6 +139,28 @@ test('moves through free creation selection to S05 with an MVP instrument', () =
   expect(getCurrentScreenSummary(state).title).toBe('장구 자유연주');
 });
 
+test('retries S05 live performance audio preparation after a failed start', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'failLivePerformanceAudioPreparation',
+    instrument: 'janggu',
+    message: 'native sampler failed',
+  });
+  state = applyProductAction(state, { type: 'retryLivePerformanceAudioPreparation' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.livePerformanceAudioStatus).toEqual({
+    status: 'preparing',
+    instrument: 'janggu',
+  });
+});
+
 test('uses the visible default free-creation instrument when starting with defaults', () => {
   let state = createInitialGarakProductState();
 

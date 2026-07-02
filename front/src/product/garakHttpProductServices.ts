@@ -61,9 +61,11 @@ export function createHttpGarakProductServices({
           work,
           mixPlan,
         }),
-      playPerformanceEvents: (events) =>
+      prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
+      playPerformanceEvents: (input) =>
         client.serviceJson<{ handledEvents: number }>('/audio/performance-events/play', 'POST', {
-          events,
+          instrument: input.instrument,
+          events: input.events,
         }),
     },
     ai: {

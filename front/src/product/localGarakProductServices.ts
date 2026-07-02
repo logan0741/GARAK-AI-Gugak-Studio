@@ -4,6 +4,10 @@ import {
   createNoopGarakProductServices,
   type GarakProductServices,
 } from './garakProductServices';
+import {
+  createLivePerformanceAudioPort,
+  type LivePerformanceAudioPort,
+} from './livePerformanceAudio';
 import type { Work } from '../studio/studioTypes';
 
 const LIBRARY_SNAPSHOT_STORAGE_KEY = 'garak.library.snapshot.v1';
@@ -18,6 +22,7 @@ export type GarakSharePort = (content: {
 export type LocalGarakProductServicesInput = {
   storage?: AuthStoragePort;
   share?: GarakSharePort;
+  liveAudio?: LivePerformanceAudioPort;
   nowMs?: () => number;
   createRemoteId?: () => string;
 };
@@ -25,6 +30,7 @@ export type LocalGarakProductServicesInput = {
 export function createLocalGarakProductServices({
   storage = createDefaultLocalStorage(),
   share = async () => undefined,
+  liveAudio = createLivePerformanceAudioPort(),
   nowMs = () => Date.now(),
   createRemoteId = createShareId,
 }: LocalGarakProductServicesInput = {}): GarakProductServices {
@@ -40,6 +46,8 @@ export function createLocalGarakProductServices({
     },
     audio: {
       ...noopServices.audio,
+      prepareLivePerformanceAudio: liveAudio.prepareLivePerformanceAudio,
+      playPerformanceEvents: liveAudio.playPerformanceEvents,
       exportWorkAudio: async (work) => ({
         status: 'ok',
         value: {

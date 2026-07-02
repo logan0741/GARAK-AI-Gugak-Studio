@@ -131,6 +131,17 @@ export type SharePublishStatus =
   | { status: 'shared'; target: ShareTargetReference; remoteId: string }
   | { status: 'failed'; target: ShareTargetReference; message: string };
 
+export type LivePerformanceAudioStatus =
+  | { status: 'idle' }
+  | { status: 'preparing'; instrument: InstrumentId }
+  | {
+      status: 'ready';
+      instrument: InstrumentId;
+      sampleSourceLabel: string;
+      releaseReady: boolean;
+    }
+  | { status: 'failed'; instrument: InstrumentId; message: string };
+
 export type JangdanPresetPreviewMode = 'live' | 'track';
 
 export type GarakProductState = {
@@ -164,6 +175,7 @@ export type GarakProductState = {
   workSaveErrorMessage?: string;
   workExportStatus: WorkExportStatus;
   sharePublishStatus: SharePublishStatus;
+  livePerformanceAudioStatus: LivePerformanceAudioStatus;
   autoAccompanimentStatus: AiAutoAccompanimentStatus;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
@@ -208,6 +220,14 @@ export type GarakProductAction =
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup; recordingUri?: string }
   | { type: 'appendFreePlayPerformanceEvents'; events: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
+  | {
+      type: 'completeLivePerformanceAudioPreparation';
+      instrument: InstrumentId;
+      sampleSourceLabel: string;
+      releaseReady: boolean;
+    }
+  | { type: 'failLivePerformanceAudioPreparation'; instrument: InstrumentId; message: string }
+  | { type: 'retryLivePerformanceAudioPreparation' }
   | { type: 'setWorkPlayheadBeat'; beat: number }
   | { type: 'adjustWorkTrackVolume'; trackId: string; delta: number }
   | { type: 'toggleWorkTrackMute'; trackId: string }
@@ -329,6 +349,7 @@ export function createInitialGarakProductState(
     workSaveStatus: 'idle',
     workExportStatus: { status: 'idle' },
     sharePublishStatus: { status: 'idle' },
+    livePerformanceAudioStatus: { status: 'idle' },
     autoAccompanimentStatus: { status: 'idle' },
     instrumentSampleStatuses: resolveInstrumentSampleStatuses({
       sampleManifests: input.sampleManifests,
@@ -530,6 +551,27 @@ export function applyProductAction(
       };
     case 'completePerformance':
       return completePerformance(state);
+    case 'completeLivePerformanceAudioPreparation':
+      return {
+        ...state,
+        livePerformanceAudioStatus: {
+          status: 'ready',
+          instrument: action.instrument,
+          sampleSourceLabel: action.sampleSourceLabel,
+          releaseReady: action.releaseReady,
+        },
+      };
+    case 'failLivePerformanceAudioPreparation':
+      return {
+        ...state,
+        livePerformanceAudioStatus: {
+          status: 'failed',
+          instrument: action.instrument,
+          message: normalizeOptionalText(action.message) ?? 'Live performance audio is unavailable.',
+        },
+      };
+    case 'retryLivePerformanceAudioPreparation':
+      return retryLivePerformanceAudioPreparation(state);
     case 'setWorkPlayheadBeat':
       return {
         ...state,
@@ -959,7 +1001,32 @@ function startFreePlayWithInstrumentSettings(
     pendingFreePlayTake: undefined,
     freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
+    livePerformanceAudioStatus: {
+      status: 'preparing',
+      instrument,
+    },
     screenFlow: pushTarget(state.screenFlow, 'S05'),
+  };
+}
+
+function retryLivePerformanceAudioPreparation(state: GarakProductState): GarakProductState {
+  if (state.screenFlow.currentScreen !== 'S05') {
+    return state;
+  }
+
+  const instrument =
+    state.livePerformanceAudioStatus.status === 'failed' ||
+    state.livePerformanceAudioStatus.status === 'preparing' ||
+    state.livePerformanceAudioStatus.status === 'ready'
+      ? state.livePerformanceAudioStatus.instrument
+      : state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+
+  return {
+    ...state,
+    livePerformanceAudioStatus: {
+      status: 'preparing',
+      instrument,
+    },
   };
 }
 
@@ -1239,6 +1306,14 @@ function freePlayDescription(state: GarakProductState): string {
 
   if (state.freePlayNotice === 'missingTake') {
     return '저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.';
+  }
+
+  if (state.livePerformanceAudioStatus.status === 'preparing') {
+    return '연주 소리를 준비하는 중입니다. 준비가 끝나면 터치한 소리가 바로 납니다.';
+  }
+
+  if (state.livePerformanceAudioStatus.status === 'failed') {
+    return `연주 소리를 준비하지 못했습니다. ${state.livePerformanceAudioStatus.message}`;
   }
 
   return '악기를 직접 연주하고 완료하면 작업으로 자동 저장돼요.';

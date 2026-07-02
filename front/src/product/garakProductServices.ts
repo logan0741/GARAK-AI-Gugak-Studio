@@ -1,6 +1,7 @@
 import type { PerformanceEvent } from '../domain/performanceEvent';
 import type {
   JangdanPresetId,
+  InstrumentId,
   ShareMethod,
   ShareTargetReference,
   Work,
@@ -40,6 +41,21 @@ export type ExportWorkAudioResult = {
 
 export type PlayWorkMixResult = {
   handledTracks: number;
+};
+
+export type PrepareLivePerformanceAudioInput = {
+  instrument: InstrumentId;
+};
+
+export type PrepareLivePerformanceAudioResult = {
+  instrument: InstrumentId;
+  sampleSourceLabel: string;
+  releaseReady: boolean;
+};
+
+export type PlayPerformanceEventsInput = {
+  instrument: InstrumentId;
+  events: readonly PerformanceEvent[];
 };
 
 export type SharePublishInput = {
@@ -86,8 +102,11 @@ export type GarakProductServices = {
       work: Work,
       mixPlan: WorkMixPlan,
     ) => Promise<ServiceResult<PlayWorkMixResult>>;
+    prepareLivePerformanceAudio: (
+      input: PrepareLivePerformanceAudioInput,
+    ) => Promise<ServiceResult<PrepareLivePerformanceAudioResult>>;
     playPerformanceEvents: (
-      events: readonly PerformanceEvent[],
+      input: PlayPerformanceEventsInput,
     ) => Promise<ServiceResult<{ handledEvents: number }>>;
   };
   ai: {
@@ -115,6 +134,7 @@ export function createNoopGarakProductServices(): GarakProductServices {
     audio: {
       exportWorkAudio: async () => ({ status: 'unavailable' }),
       playWorkMix: async () => ({ status: 'unavailable' }),
+      prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
       playPerformanceEvents: async () => ({ status: 'unavailable' }),
     },
     ai: {

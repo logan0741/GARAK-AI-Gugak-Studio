@@ -111,7 +111,9 @@ describe('HTTP Garak product services', () => {
       { type: 'string_pluck' as const, tsMs: 120, stringIndex: 2, velocity: 0.7 },
     ];
 
-    await expect(services.audio.playPerformanceEvents(events)).resolves.toEqual({
+    await expect(
+      services.audio.playPerformanceEvents({ instrument: 'daegeum', events }),
+    ).resolves.toEqual({
       status: 'ok',
       value: { handledEvents: 1 },
     });
@@ -119,7 +121,10 @@ describe('HTTP Garak product services', () => {
     expect(requests).toHaveLength(1);
     expect(requests[0].url).toBe('https://api.garak.test/v1/audio/performance-events/play');
     expect(requests[0].init?.method).toBe('POST');
-    expect(JSON.parse(String(requests[0].init?.body))).toEqual({ events });
+    expect(JSON.parse(String(requests[0].init?.body))).toEqual({
+      instrument: 'daegeum',
+      events,
+    });
   });
 
   test('posts work mix playback requests with the resolved mix plan', async () => {

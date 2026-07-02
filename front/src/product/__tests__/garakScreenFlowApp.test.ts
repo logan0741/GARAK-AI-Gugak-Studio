@@ -424,9 +424,14 @@ test('lets embedded Figma landscape stages own the full viewport', () => {
   const freePlaySource = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
   expect(appSource).toContain('embeddedLandscapeContent');
+  expect(appSource).toContain('embeddedLandscapeFrame');
   expect(appSource).toContain('landscapeContentStyle = usesEmbeddedHeader ? styles.embeddedLandscapeContent');
   expect(freePlaySource).toContain('usesFigmaLandscapeStage');
-  expect(freePlaySource).toContain('!usesFigmaLandscapeStage ?');
+  expect(freePlaySource).toContain('usesMobilePortraitPerformanceStage');
+  expect(freePlaySource).toContain('usesEmbeddedPerformanceStage');
+  expect(freePlaySource).toContain('!usesEmbeddedPerformanceStage ?');
+  expect(freePlaySource).toContain('height: \'100%\'');
+  expect(freePlaySource).toContain('width: \'100%\'');
 });
 
 test('connects S05 embedded Figma landscape stage hotspots to free-play actions', () => {
@@ -441,6 +446,20 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
   expect(source).toContain("type: 'openLiveJangdanGuide'");
   expect(source).not.toContain('landscapeStageLayerHit');
   expect(source).toContain("type: 'completePerformance'");
+});
+
+test('keeps S05 live audio UI quiet unless loading or recoverable failure', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const statusSource = source.slice(
+    source.indexOf('function FreePlayLiveAudioStatusBadge'),
+    source.indexOf('function FreePlayRecordingSetupSheet'),
+  );
+
+  expect(statusSource).toContain("status.status === 'idle' || status.status === 'ready'");
+  expect(statusSource).toContain("type: 'retryLivePerformanceAudioPreparation'");
+  expect(statusSource).not.toContain('sampleSourceLabel');
+  expect(statusSource).not.toContain('releaseReady');
+  expect(statusSource).not.toContain('개발용 샘플');
 });
 
 test('keeps S05 landscape control hits on visible controls instead of the instrument corners', () => {
@@ -471,14 +490,30 @@ test('keeps S05 landscape control hits on visible controls instead of the instru
 test('connects S05 and S09 performance surfaces to captured input events', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
 
-  expect(source).toContain('createTouchModel');
+  expect(source).toContain('createFreePlayInstrumentTouchModel');
   expect(source).toContain('PanResponder');
+  expect(source).toContain('instrument={instrument}');
   expect(source).toContain('appendFreePlayPerformanceEvents');
   expect(source).toContain('PerformanceCaptureSurface');
   expect(source).toContain('performanceCapture.panHandlers');
   expect(source).toContain('onPerformanceEvents={appendPerformanceEvents}');
   expect(source).toContain('onLivePerformanceEvents');
   expect(source).toContain('onLivePerformanceEventsRef.current?.(events)');
+});
+
+test('adds instrument-specific non-text touch affordances to the S05 performance stage', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const affordanceSource = source.slice(
+    source.indexOf('function InstrumentTouchAffordance'),
+    source.indexOf('function LandscapeStageNotice'),
+  );
+
+  expect(source).toContain('<InstrumentTouchAffordance instrument={instrument} />');
+  expect(affordanceSource).toContain("instrument === 'janggu'");
+  expect(affordanceSource).toContain("instrument === 'daegeum'");
+  expect(affordanceSource).toContain('Array.from({ length: 12 }');
+  expect(affordanceSource).toContain('pointerEvents="none"');
+  expect(affordanceSource).not.toContain('<Text');
 });
 
 test('keeps S05 performance capture enabled separately from recording state', () => {

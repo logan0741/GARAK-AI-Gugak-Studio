@@ -1,5 +1,11 @@
 import type { PerformanceEvent } from '../domain/performanceEvent';
-import type { ExportedAudio, PracticeResult, ShareTargetReference, Work } from '../studio/studioTypes';
+import type {
+  ExportedAudio,
+  InstrumentId,
+  PracticeResult,
+  ShareTargetReference,
+  Work,
+} from '../studio/studioTypes';
 import { createWorkMixPlan } from '../studio/studioLibrary';
 import type {
   GarakProductAction,
@@ -41,6 +47,10 @@ export async function runGarakProductEffect({
     if (accountAction !== undefined) {
       followUpActions.push(accountAction);
     }
+  }
+
+  if (shouldPrepareLivePerformanceAudio(state, action)) {
+    followUpActions.push(await prepareLivePerformanceAudio(state.livePerformanceAudioStatus.instrument, services));
   }
 
   if (action.type === 'chooseAccompanimentTrack') {
@@ -124,6 +134,57 @@ async function playCurrentWorkMix(
     await services.audio.playWorkMix(currentWork, createWorkMixPlan(currentWork));
   } catch {
     return;
+  }
+}
+
+function shouldPrepareLivePerformanceAudio(
+  state: GarakProductState,
+  action: GarakProductAction,
+): state is GarakProductState & {
+  livePerformanceAudioStatus: { status: 'preparing'; instrument: InstrumentId };
+} {
+  return state.screenFlow.currentScreen === 'S05' &&
+    state.livePerformanceAudioStatus.status === 'preparing' &&
+    (
+      action.type === 'next' ||
+      action.type === 'startWithDefaults' ||
+      action.type === 'startWithAdjustedSettings' ||
+      action.type === 'retryLivePerformanceAudioPreparation' ||
+      action.type === 'applyLiveJangdanGuide' ||
+      action.type === 'back'
+    );
+}
+
+async function prepareLivePerformanceAudio(
+  instrument: InstrumentId,
+  services: GarakProductServices,
+): Promise<GarakProductAction> {
+  try {
+    const result = await services.audio.prepareLivePerformanceAudio({ instrument });
+
+    if (result.status === 'ok') {
+      return {
+        type: 'completeLivePerformanceAudioPreparation',
+        instrument,
+        sampleSourceLabel: result.value.sampleSourceLabel,
+        releaseReady: result.value.releaseReady,
+      };
+    }
+
+    return {
+      type: 'failLivePerformanceAudioPreparation',
+      instrument,
+      message:
+        result.status === 'error'
+          ? result.message
+          : 'Live performance audio service is unavailable.',
+    };
+  } catch (error) {
+    return {
+      type: 'failLivePerformanceAudioPreparation',
+      instrument,
+      message: error instanceof Error ? error.message : 'Live performance audio failed.',
+    };
   }
 }
 
