@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import type { SampleAssetManifest } from '../../domain/sampleManifest';
 import type { GarakFetch } from '../garakHttpProductServices';
 import { createRuntimeGarakProductServices } from '../garakRuntimeProductServices';
 
@@ -89,5 +90,67 @@ describe('runtime Garak product services', () => {
         },
       },
     });
+  });
+
+  test('feeds backend sample manifests into local live audio preparation', async () => {
+    const requests: Array<{ url: string; init?: Parameters<GarakFetch>[1] }> = [];
+    const samplerInputs: Array<{ instrument: string; manifest?: SampleAssetManifest }> = [];
+    const manifest: SampleAssetManifest = {
+      version: '2026.07.janggu',
+      assets: [
+        {
+          id: 'janggu-left-hit',
+          instrument: 'janggu',
+          stringIndex: 3,
+          pitchHz: 110,
+          fileUri: 'assets/audio/janggu/left-hit.wav',
+          sourceLayer: 'public_asset',
+          sourceName: 'National Gugak Center monotone candidate',
+          licenseNote: 'KOGL type 1 attribution required',
+        },
+      ],
+    };
+    const services = createRuntimeGarakProductServices({
+      apiBaseUrl: 'https://api.garak.test/api',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        return {
+          ok: true,
+          status: 200,
+          json: async () => manifest,
+          text: async () => JSON.stringify(manifest),
+        };
+      },
+      createLiveSampler: async (input) => {
+        samplerInputs.push(input);
+        return {
+          engine: { handleEvent: () => undefined },
+          sampleSourceLabel: `${input.instrument} sampler`,
+          releaseReady: true,
+        };
+      },
+    });
+
+    await expect(
+      services.audio.prepareLivePerformanceAudio({ instrument: 'janggu' }),
+    ).resolves.toMatchObject({
+      status: 'ok',
+      value: { instrument: 'janggu' },
+    });
+
+    expect(requests).toEqual([
+      {
+        url: 'https://api.garak.test/api/instruments/janggu/samples',
+        init: expect.objectContaining({
+          method: 'GET',
+        }),
+      },
+    ]);
+    expect(samplerInputs).toEqual([
+      {
+        instrument: 'janggu',
+        manifest,
+      },
+    ]);
   });
 });

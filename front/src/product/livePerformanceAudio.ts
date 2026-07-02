@@ -1,9 +1,11 @@
 import type { AudioEngineCandidateId } from '../audio/audioEngineEvaluation';
 import type { SamplerEngine } from '../audio/samplerEngine';
+import type { SampleAssetManifest } from '../domain/sampleManifest';
 import type { InstrumentId } from '../studio/studioTypes';
 import type {
   GarakProductServices,
   PrepareLivePerformanceAudioResult,
+  ServiceResult,
 } from './garakProductServices';
 
 export type LivePerformanceAudioPort = Pick<
@@ -19,14 +21,21 @@ export type LivePerformanceSamplerBundle = {
 
 export type LivePerformanceSamplerFactory = (input: {
   instrument: InstrumentId;
+  manifest?: SampleAssetManifest;
 }) => Promise<LivePerformanceSamplerBundle>;
+
+export type LivePerformanceSampleManifestLoader = (input: {
+  instrument: InstrumentId;
+}) => Promise<ServiceResult<SampleAssetManifest>>;
 
 export function createLivePerformanceAudioPort(
   input: {
     createSampler?: LivePerformanceSamplerFactory;
+    loadSampleManifest?: LivePerformanceSampleManifestLoader;
   } = {},
 ): LivePerformanceAudioPort {
   const createSampler = input.createSampler ?? createDefaultLivePerformanceSampler;
+  const loadSampleManifest = input.loadSampleManifest;
   const preparedSamplers = new Map<InstrumentId, LivePerformanceSamplerBundle>();
   const preparingSamplers = new Map<InstrumentId, Promise<LivePerformanceSamplerBundle>>();
 
@@ -41,7 +50,11 @@ export function createLivePerformanceAudioPort(
       return preparingSampler;
     }
 
-    const nextPreparingSampler = createSampler({ instrument })
+    const nextPreparingSampler = prepareSamplerBundle({
+      instrument,
+      createSampler,
+      loadSampleManifest,
+    })
       .then((sampler) => {
         preparedSamplers.set(instrument, sampler);
         return sampler;
@@ -96,6 +109,43 @@ export function createLivePerformanceAudioPort(
   };
 }
 
+async function prepareSamplerBundle(input: {
+  instrument: InstrumentId;
+  createSampler: LivePerformanceSamplerFactory;
+  loadSampleManifest: LivePerformanceSampleManifestLoader | undefined;
+}): Promise<LivePerformanceSamplerBundle> {
+  const manifest = await loadLiveSampleManifest({
+    instrument: input.instrument,
+    loadSampleManifest: input.loadSampleManifest,
+  });
+
+  try {
+    return await input.createSampler({ instrument: input.instrument, manifest });
+  } catch (error) {
+    if (manifest === undefined) {
+      throw error;
+    }
+
+    return input.createSampler({ instrument: input.instrument });
+  }
+}
+
+async function loadLiveSampleManifest(input: {
+  instrument: InstrumentId;
+  loadSampleManifest: LivePerformanceSampleManifestLoader | undefined;
+}): Promise<SampleAssetManifest | undefined> {
+  if (input.loadSampleManifest === undefined) {
+    return undefined;
+  }
+
+  try {
+    const result = await input.loadSampleManifest({ instrument: input.instrument });
+    return result.status === 'ok' ? result.value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function createPrepareResult(
   instrument: InstrumentId,
   sampler: LivePerformanceSamplerBundle,
@@ -107,13 +157,16 @@ function createPrepareResult(
   };
 }
 
-async function createDefaultLivePerformanceSampler(): Promise<LivePerformanceSamplerBundle> {
+async function createDefaultLivePerformanceSampler(input: {
+  instrument: InstrumentId;
+  manifest?: SampleAssetManifest;
+}): Promise<LivePerformanceSamplerBundle> {
   const candidates: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
   let lastError: unknown;
 
   for (const candidate of candidates) {
     try {
-      return await createNativeSampler(candidate);
+      return await createNativeSampler(candidate, input.manifest);
     } catch (error) {
       lastError = error;
     }
@@ -124,6 +177,7 @@ async function createDefaultLivePerformanceSampler(): Promise<LivePerformanceSam
 
 async function createNativeSampler(
   candidate: AudioEngineCandidateId,
+  manifest: SampleAssetManifest | undefined,
 ): Promise<LivePerformanceSamplerBundle> {
   const [
     { createAndPreloadPrototypeNativeSamplerEngine },
@@ -132,10 +186,11 @@ async function createNativeSampler(
     import('../prototype/prototypeNativeSamplerEngineFactory'),
     import('../prototype/prototypeSampleManifest'),
   ]);
-  const provenance = summarizePrototypeSampleManifestProvenance(prototypeGayageumSampleManifest);
+  const samplerManifest = manifest ?? prototypeGayageumSampleManifest;
+  const provenance = summarizePrototypeSampleManifestProvenance(samplerManifest);
   const engine = await createAndPreloadPrototypeNativeSamplerEngine({
     candidate,
-    manifest: prototypeGayageumSampleManifest,
+    manifest: samplerManifest,
   });
 
   return {

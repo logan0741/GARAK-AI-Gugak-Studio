@@ -1,4 +1,5 @@
 import type { ProductLibraryState } from './garakProductState';
+import { validateSampleAssetManifest } from '../domain/sampleManifest';
 import type {
   ExportWorkAudioResult,
   GarakProductServices,
@@ -6,6 +7,7 @@ import type {
   ServiceResult,
   SharePublishResult,
 } from './garakProductServices';
+import { toSampleManifestInstrumentId } from './instrumentSampleManifest';
 
 export type GarakFetchInit = {
   method?: string;
@@ -62,6 +64,12 @@ export function createHttpGarakProductServices({
           mixPlan,
         }),
       prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
+      loadInstrumentSampleManifest: (input) =>
+        client.serviceValidatedJson(
+          `/instruments/${toSampleManifestInstrumentId(input.instrument)}/samples`,
+          'GET',
+          validateSampleAssetManifest,
+        ),
       playPerformanceEvents: (input) =>
         client.serviceJson<{ handledEvents: number }>('/audio/performance-events/play', 'POST', {
           instrument: input.instrument,
@@ -120,6 +128,37 @@ function createHttpClient({
         return {
           status: 'ok',
           value: (await response.json()) as T,
+        };
+      } catch (error) {
+        return {
+          status: 'error',
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+    serviceValidatedJson: async <T>(
+      path: string,
+      method: string,
+      validate: (value: unknown) => T,
+      body?: unknown,
+    ): Promise<ServiceResult<T>> => {
+      try {
+        const response = await request({ baseUrl, fetch, getAccessToken, path, method, body });
+
+        if (response.status === 404 || response.status === 501) {
+          return { status: 'unavailable' };
+        }
+
+        if (!response.ok) {
+          return {
+            status: 'error',
+            message: await response.text(),
+          };
+        }
+
+        return {
+          status: 'ok',
+          value: validate(await response.json()),
         };
       } catch (error) {
         return {

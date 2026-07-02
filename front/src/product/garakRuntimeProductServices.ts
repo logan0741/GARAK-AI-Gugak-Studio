@@ -5,6 +5,11 @@ import {
   type GarakFetch,
 } from './garakHttpProductServices';
 import type { GarakProductServices } from './garakProductServices';
+import {
+  createLivePerformanceAudioPort,
+  type LivePerformanceSampleManifestLoader,
+  type LivePerformanceSamplerFactory,
+} from './livePerformanceAudio';
 import { createLocalGarakProductServices } from './localGarakProductServices';
 import type { GarakSharePort, LocalGarakProductServicesInput } from './localGarakProductServices';
 
@@ -16,6 +21,7 @@ export type RuntimeGarakProductServicesInput = {
   libraryStorage?: AuthStoragePort;
   share?: GarakSharePort;
   liveAudio?: LocalGarakProductServicesInput['liveAudio'];
+  createLiveSampler?: LivePerformanceSamplerFactory;
 };
 
 export function createRuntimeGarakProductServices({
@@ -26,18 +32,32 @@ export function createRuntimeGarakProductServices({
   libraryStorage,
   share,
   liveAudio,
+  createLiveSampler,
 }: RuntimeGarakProductServicesInput = {}): GarakProductServices {
-  const fallbackServices = createLocalGarakProductServices({ storage: libraryStorage, share, liveAudio });
   const normalizedBaseUrl = apiBaseUrl?.trim();
 
   if (!normalizedBaseUrl) {
-    return fallbackServices;
+    return createLocalGarakProductServices({
+      storage: libraryStorage,
+      share,
+      liveAudio: liveAudio ?? createLiveAudioPort({ createLiveSampler }),
+    });
   }
 
   const httpServices = createHttpGarakProductServices({
     baseUrl: normalizedBaseUrl,
     fetch,
     getAccessToken: getAccessToken ?? createSessionAccessTokenReader(sessionStore),
+  });
+  const fallbackServices = createLocalGarakProductServices({
+    storage: libraryStorage,
+    share,
+    liveAudio:
+      liveAudio ??
+      createLiveAudioPort({
+        createLiveSampler,
+        loadSampleManifest: httpServices.audio.loadInstrumentSampleManifest,
+      }),
   });
 
   return {
@@ -48,6 +68,20 @@ export function createRuntimeGarakProductServices({
       playPerformanceEvents: fallbackServices.audio.playPerformanceEvents,
     },
   };
+}
+
+function createLiveAudioPort(input: {
+  createLiveSampler: LivePerformanceSamplerFactory | undefined;
+  loadSampleManifest?: LivePerformanceSampleManifestLoader;
+}): LocalGarakProductServicesInput['liveAudio'] {
+  if (input.createLiveSampler === undefined && input.loadSampleManifest === undefined) {
+    return undefined;
+  }
+
+  return createLivePerformanceAudioPort({
+    createSampler: input.createLiveSampler,
+    loadSampleManifest: input.loadSampleManifest,
+  });
 }
 
 function createSessionAccessTokenReader(
