@@ -461,6 +461,91 @@ describe('Garak product effect runner', () => {
     ]);
   });
 
+  test('warms live performance audio when a playable S04 instrument is selected', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu', 'daegeum'] }),
+      screenFlow: {
+        currentScreen: 'S04',
+        history: ['S01', 'S03'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'selectInstrument', instrument: 'daegeum' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const preparedInstruments: Array<'gayageum' | 'janggu' | 'daegeum'> = [];
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          preparedInstruments.push(input.instrument);
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: `${input.instrument} warm sampler`,
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([]);
+    expect(preparedInstruments).toEqual(['daegeum']);
+    expect(nextState.livePerformanceAudioStatus).toEqual({ status: 'idle' });
+  });
+
+  test('warms the visible default live instrument when entering S04A preview', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu'] }),
+      screenFlow: {
+        currentScreen: 'S04',
+        history: ['S01', 'S03'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'next' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const preparedInstruments: Array<'gayageum' | 'janggu' | 'daegeum'> = [];
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          preparedInstruments.push(input.instrument);
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: `${input.instrument} warm sampler`,
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    expect(nextState.screenFlow.currentScreen).toBe('S04A');
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([]);
+    expect(preparedInstruments).toEqual(['janggu']);
+    expect(nextState.livePerformanceAudioStatus).toEqual({ status: 'idle' });
+  });
+
   test('surfaces live performance audio preparation failures on S05', async () => {
     const initialState: GarakProductState = {
       ...createInitialGarakProductState({ sampleFallbackInstruments: ['daegeum'] }),

@@ -8,6 +8,8 @@ export type FreePlayTouchLayout = {
   height: number;
 };
 
+const DAEGEUM_BEND_DEAD_ZONE_CENTS = 4;
+
 export function createFreePlayInstrumentTouchModel(input: {
   instrument: InstrumentId;
   layout: FreePlayTouchLayout;
@@ -70,6 +72,7 @@ function createDaegeumTouchModel(layout: FreePlayTouchLayout): TouchModel {
   const activePointers = new Map<
     string,
     {
+      lastBendCents: number;
       startY: number;
       stringIndex: number;
     }
@@ -83,6 +86,7 @@ function createDaegeumTouchModel(layout: FreePlayTouchLayout): TouchModel {
         case 'start': {
           const stringIndex = melodicStringIndexForX(layout, frame.x);
           activePointers.set(frame.pointerId, {
+            lastBendCents: 0,
             startY: frame.y,
             stringIndex,
           });
@@ -97,6 +101,8 @@ function createDaegeumTouchModel(layout: FreePlayTouchLayout): TouchModel {
           const stringIndex = melodicStringIndexForX(layout, frame.x);
           if (stringIndex !== pointer.stringIndex) {
             pointer.stringIndex = stringIndex;
+            pointer.startY = frame.y;
+            pointer.lastBendCents = 0;
             return [
               {
                 type: 'glissando_step',
@@ -107,17 +113,22 @@ function createDaegeumTouchModel(layout: FreePlayTouchLayout): TouchModel {
             ];
           }
 
-          const cents = clampBendCents(Math.round(((pointer.startY - frame.y) / layout.height) * 120));
-          return cents === 0
-            ? []
-            : [
-                {
-                  type: 'string_bend',
-                  tsMs: frame.tsMs,
-                  stringIndex,
-                  cents,
-                },
-              ];
+          const cents = normalizeDaegeumBendCents(
+            Math.round(((pointer.startY - frame.y) / layout.height) * 120),
+          );
+          if (cents === pointer.lastBendCents) {
+            return [];
+          }
+
+          pointer.lastBendCents = cents;
+          return [
+            {
+              type: 'string_bend',
+              tsMs: frame.tsMs,
+              stringIndex,
+              cents,
+            },
+          ];
         }
         case 'end':
         case 'cancel': {
@@ -156,6 +167,11 @@ function jangguStringIndexForX(layout: FreePlayTouchLayout, x: number): number {
 
 function melodicStringIndexForX(layout: FreePlayTouchLayout, x: number): number {
   return Math.max(1, Math.min(12, Math.floor(clamp01(x / layout.width) * 12) + 1));
+}
+
+function normalizeDaegeumBendCents(cents: number): number {
+  const clamped = clampBendCents(cents);
+  return Math.abs(clamped) < DAEGEUM_BEND_DEAD_ZONE_CENTS ? 0 : clamped;
 }
 
 function createPluckEvent(frame: TouchFrame, stringIndex: number): PerformanceEvent {

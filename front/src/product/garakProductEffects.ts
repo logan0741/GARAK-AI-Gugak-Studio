@@ -13,6 +13,7 @@ import type {
 } from './garakProductState';
 import type { GarakProductServices, SharePublishInput } from './garakProductServices';
 import { createAutoAccompanimentRequest } from './aiAutoAccompaniment';
+import { DEFAULT_FREE_CREATION_INSTRUMENT } from './productFixtures';
 
 export type RunGarakProductEffectInput = {
   state: GarakProductState;
@@ -51,6 +52,11 @@ export async function runGarakProductEffect({
 
   if (shouldPrepareLivePerformanceAudio(state, action)) {
     followUpActions.push(await prepareLivePerformanceAudio(state.livePerformanceAudioStatus.instrument, services));
+  }
+
+  const warmupInstrument = getLivePerformanceWarmupInstrument(state, action);
+  if (warmupInstrument !== undefined) {
+    await warmUpLivePerformanceAudio(warmupInstrument, services);
   }
 
   if (action.type === 'chooseAccompanimentTrack') {
@@ -153,6 +159,44 @@ function shouldPrepareLivePerformanceAudio(
       action.type === 'applyLiveJangdanGuide' ||
       action.type === 'back'
     );
+}
+
+function getLivePerformanceWarmupInstrument(
+  state: GarakProductState,
+  action: GarakProductAction,
+): InstrumentId | undefined {
+  if (
+    action.type === 'selectInstrument' &&
+    state.screenFlow.currentScreen === 'S04' &&
+    canWarmUpLivePerformanceInstrument(state, action.instrument)
+  ) {
+    return action.instrument;
+  }
+
+  if (action.type === 'next' && state.screenFlow.currentScreen === 'S04A') {
+    const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+    return canWarmUpLivePerformanceInstrument(state, instrument) ? instrument : undefined;
+  }
+
+  return undefined;
+}
+
+function canWarmUpLivePerformanceInstrument(
+  state: GarakProductState,
+  instrument: InstrumentId,
+): boolean {
+  return state.instrumentSampleStatuses[instrument] !== 'downloadRequired';
+}
+
+async function warmUpLivePerformanceAudio(
+  instrument: InstrumentId,
+  services: GarakProductServices,
+): Promise<void> {
+  try {
+    await services.audio.prepareLivePerformanceAudio({ instrument });
+  } catch {
+    return;
+  }
 }
 
 async function prepareLivePerformanceAudio(

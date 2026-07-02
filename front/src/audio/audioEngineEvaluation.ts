@@ -6,6 +6,8 @@ export type AudioEngineEvidenceSource = 'physical-device' | 'emulator' | 'unit-t
 
 export type AudioEngineFailedCriterion =
   | 'latency'
+  | 'first_touch_latency'
+  | 'steady_touch_latency'
   | 'polyphony'
   | 'pitch_bend'
   | 'glissando'
@@ -20,6 +22,8 @@ export type AudioEngineProbe = {
   deviceLabel: string;
   measuredAt: string;
   touchToSoundLatencyMs: number;
+  firstTouchLatencyMs?: number;
+  steadyTouchLatencyMs?: number;
   maxStableVoices: number;
   pitchBendSmooth: boolean;
   glissandoTriggeredStrings: number;
@@ -44,6 +48,7 @@ export type AudioEngineSelection = {
 
 const MIN_PASSING_STABLE_VOICES = 8;
 const MAX_PASSING_TOUCH_LATENCY_MS = 50;
+const MAX_PASSING_FIRST_TOUCH_LATENCY_MS = 80;
 const REQUIRED_GLISSANDO_STRINGS = 12;
 const MIN_RECORDING_SECONDS = 10;
 const MIN_CORE_CRITERIA_FOR_CONTINUED_SPIKE = 2;
@@ -63,9 +68,22 @@ const CANDIDATE_PRIORITY: Record<AudioEngineCandidateId, number> = {
 export function evaluateAudioEngineProbe(probe: AudioEngineProbe): AudioEngineEvaluation {
   const failedCriteria: AudioEngineFailedCriterion[] = [];
 
-  const latencyPasses =
+  const aggregateLatencyPasses =
     isNonNegativeFiniteNumber(probe.touchToSoundLatencyMs) &&
     probe.touchToSoundLatencyMs <= MAX_PASSING_TOUCH_LATENCY_MS;
+  const firstTouchLatencyPasses =
+    probe.firstTouchLatencyMs === undefined ||
+    (
+      isNonNegativeFiniteNumber(probe.firstTouchLatencyMs) &&
+      probe.firstTouchLatencyMs <= MAX_PASSING_FIRST_TOUCH_LATENCY_MS
+    );
+  const steadyTouchLatencyPasses =
+    probe.steadyTouchLatencyMs === undefined ||
+    (
+      isNonNegativeFiniteNumber(probe.steadyTouchLatencyMs) &&
+      probe.steadyTouchLatencyMs <= MAX_PASSING_TOUCH_LATENCY_MS
+    );
+  const latencyPasses = aggregateLatencyPasses && firstTouchLatencyPasses && steadyTouchLatencyPasses;
   const polyphonyPasses =
     isNonNegativeInteger(probe.maxStableVoices) &&
     probe.maxStableVoices >= MIN_PASSING_STABLE_VOICES;
@@ -80,8 +98,14 @@ export function evaluateAudioEngineProbe(probe: AudioEngineProbe): AudioEngineEv
     isNonNegativeFiniteNumber(probe.recordingCaptureSeconds) &&
     probe.recordingCaptureSeconds >= MIN_RECORDING_SECONDS;
 
-  if (!latencyPasses) {
+  if (!aggregateLatencyPasses) {
     failedCriteria.push('latency');
+  }
+  if (!firstTouchLatencyPasses) {
+    failedCriteria.push('first_touch_latency');
+  }
+  if (!steadyTouchLatencyPasses) {
+    failedCriteria.push('steady_touch_latency');
   }
   if (!polyphonyPasses) {
     failedCriteria.push('polyphony');

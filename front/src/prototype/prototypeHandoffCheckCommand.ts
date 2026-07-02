@@ -51,9 +51,21 @@ const MEASUREMENT_FIELDS = [
   'sessionFallbackPreserved',
   'recordingCaptureSeconds',
 ] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const OPTIONAL_MEASUREMENT_FIELDS = [
+  'firstTouchLatencyMs',
+  'steadyTouchLatencyMs',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const ALL_MEASUREMENT_FIELDS = [
+  ...MEASUREMENT_FIELDS,
+  ...OPTIONAL_MEASUREMENT_FIELDS,
+] as const;
 const DURATION_MEASUREMENT_FIELDS = [
   'touchToSoundLatencyMs',
   'recordingCaptureSeconds',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const OPTIONAL_DURATION_MEASUREMENT_FIELDS = [
+  'firstTouchLatencyMs',
+  'steadyTouchLatencyMs',
 ] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
 const COUNT_MEASUREMENT_FIELDS = [
   'maxStableVoices',
@@ -458,6 +470,13 @@ function getInvalidMeasurementFields(entry: PhysicalDevicePrototypeProbeHandoffI
     }
   }
 
+  for (const field of OPTIONAL_DURATION_MEASUREMENT_FIELDS) {
+    const value = measurements[field];
+    if (value !== null && value !== undefined && !isNonNegativeFiniteNumber(value)) {
+      invalidFields.push(field);
+    }
+  }
+
   for (const field of COUNT_MEASUREMENT_FIELDS) {
     const value = measurements[field];
     if (value !== null && value !== undefined && !isNonNegativeInteger(value)) {
@@ -495,18 +514,13 @@ function getUnexpectedMeasurementFields(
   measurements: PhysicalDeviceAudioEngineProbeMeasurements,
 ): string[] {
   return Object.keys(measurements)
-    .filter(
-      (field) =>
-        !MEASUREMENT_FIELDS.includes(
-          field as keyof PhysicalDeviceAudioEngineProbeMeasurements,
-        ),
-    )
+    .filter((field) => !isKnownMeasurementField(field))
     .sort();
 }
 
 function orderMeasurementFields(fields: string[]): string[] {
   const order = new Map<string, number>(
-    MEASUREMENT_FIELDS.map((field, index) => [field, index]),
+    ALL_MEASUREMENT_FIELDS.map((field, index) => [field, index]),
   );
 
   return [...fields].sort((left, right) => {
@@ -515,6 +529,10 @@ function orderMeasurementFields(fields: string[]): string[] {
 
     return leftOrder === rightOrder ? left.localeCompare(right) : leftOrder - rightOrder;
   });
+}
+
+function isKnownMeasurementField(field: string): boolean {
+  return (ALL_MEASUREMENT_FIELDS as readonly string[]).includes(field);
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {

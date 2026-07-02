@@ -11,6 +11,8 @@ export type AudioEngineProbeDraftInput = {
   deviceLabel: string;
   measuredAt: string;
   touchToSoundLatencyMs?: number;
+  firstTouchLatencyMs?: number;
+  steadyTouchLatencyMs?: number;
   maxStableVoices?: number;
   pitchBendSmooth?: boolean;
   glissandoEvents?: PerformanceEvent[];
@@ -31,7 +33,7 @@ export type PhysicalDeviceAudioEngineProbeMeasurements = Pick<
   | 'preloadStable'
   | 'sessionFallbackPreserved'
   | 'recordingCaptureSeconds'
->;
+> & Partial<Pick<AudioEngineProbe, 'firstTouchLatencyMs' | 'steadyTouchLatencyMs'>>;
 
 const PHYSICAL_DEVICE_MEASUREMENT_FIELDS = [
   'touchToSoundLatencyMs',
@@ -44,9 +46,23 @@ const PHYSICAL_DEVICE_MEASUREMENT_FIELDS = [
   'recordingCaptureSeconds',
 ] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
 
+const OPTIONAL_PHYSICAL_DEVICE_MEASUREMENT_FIELDS = [
+  'firstTouchLatencyMs',
+  'steadyTouchLatencyMs',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+const ALL_PHYSICAL_DEVICE_MEASUREMENT_FIELDS = [
+  ...PHYSICAL_DEVICE_MEASUREMENT_FIELDS,
+  ...OPTIONAL_PHYSICAL_DEVICE_MEASUREMENT_FIELDS,
+] as const;
+
 const PHYSICAL_DEVICE_DURATION_FIELDS = [
   'touchToSoundLatencyMs',
   'recordingCaptureSeconds',
+] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
+
+const OPTIONAL_PHYSICAL_DEVICE_DURATION_FIELDS = [
+  'firstTouchLatencyMs',
+  'steadyTouchLatencyMs',
 ] as const satisfies ReadonlyArray<keyof PhysicalDeviceAudioEngineProbeMeasurements>;
 
 const PHYSICAL_DEVICE_COUNT_FIELDS = [
@@ -70,6 +86,8 @@ export function createAudioEngineProbeDraft(input: AudioEngineProbeDraftInput): 
     deviceLabel: input.deviceLabel,
     measuredAt: input.measuredAt,
     touchToSoundLatencyMs: input.touchToSoundLatencyMs ?? 0,
+    ...optionalDraftNumberField(input, 'firstTouchLatencyMs'),
+    ...optionalDraftNumberField(input, 'steadyTouchLatencyMs'),
     maxStableVoices: input.maxStableVoices ?? 0,
     pitchBendSmooth: input.pitchBendSmooth ?? false,
     glissandoTriggeredStrings:
@@ -147,6 +165,12 @@ function getInvalidPhysicalDeviceMeasurementFields(
     }
   }
 
+  for (const field of OPTIONAL_PHYSICAL_DEVICE_DURATION_FIELDS) {
+    if (measurements[field] !== undefined && !isNonNegativeFiniteNumber(measurements[field])) {
+      invalidFields.push(field);
+    }
+  }
+
   for (const field of PHYSICAL_DEVICE_COUNT_FIELDS) {
     if (!isNonNegativeInteger(measurements[field])) {
       invalidFields.push(field);
@@ -173,18 +197,13 @@ function getUnexpectedPhysicalDeviceMeasurementFields(
   measurements: PhysicalDeviceAudioEngineProbeMeasurements,
 ): string[] {
   return Object.keys(measurements)
-    .filter(
-      (field) =>
-        !PHYSICAL_DEVICE_MEASUREMENT_FIELDS.includes(
-          field as keyof PhysicalDeviceAudioEngineProbeMeasurements,
-        ),
-    )
+    .filter((field) => !isKnownPhysicalDeviceMeasurementField(field))
     .sort();
 }
 
 function orderMeasurementFields(fields: string[]): string[] {
   const order = new Map<string, number>(
-    PHYSICAL_DEVICE_MEASUREMENT_FIELDS.map((field, index) => [field, index]),
+    ALL_PHYSICAL_DEVICE_MEASUREMENT_FIELDS.map((field, index) => [field, index]),
   );
 
   return [...fields].sort((left, right) => {
@@ -197,6 +216,19 @@ function orderMeasurementFields(fields: string[]): string[] {
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {
   return typeof input === 'number' && Number.isFinite(input) && input >= 0;
+}
+
+function isKnownPhysicalDeviceMeasurementField(field: string): boolean {
+  return (ALL_PHYSICAL_DEVICE_MEASUREMENT_FIELDS as readonly string[]).includes(field);
+}
+
+function optionalDraftNumberField<Field extends 'firstTouchLatencyMs' | 'steadyTouchLatencyMs'>(
+  input: AudioEngineProbeDraftInput,
+  field: Field,
+): Pick<AudioEngineProbe, Field> | Record<string, never> {
+  return input[field] === undefined
+    ? {}
+    : { [field]: input[field] } as Pick<AudioEngineProbe, Field>;
 }
 
 function isNonNegativeInteger(input: unknown): input is number {

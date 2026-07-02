@@ -14,6 +14,8 @@ const physicalProbeRecord = {
       deviceLabel: 'Pixel physical device',
       measuredAt: '2026-06-08T00:00:00.000Z',
       touchToSoundLatencyMs: 45,
+      firstTouchLatencyMs: 74,
+      steadyTouchLatencyMs: 41,
       maxStableVoices: 8,
       pitchBendSmooth: true,
       glissandoTriggeredStrings: 12,
@@ -28,6 +30,8 @@ const physicalProbeRecord = {
       deviceLabel: 'Pixel physical device',
       measuredAt: '2026-06-08T00:05:00.000Z',
       touchToSoundLatencyMs: 39,
+      firstTouchLatencyMs: 58,
+      steadyTouchLatencyMs: 32,
       maxStableVoices: 10,
       pitchBendSmooth: true,
       glissandoTriggeredStrings: 12,
@@ -57,6 +61,27 @@ test('parses a manual probe record and builds the Day 5 decision record from it'
       selectedCandidate: 'react-native-audio-api',
       decision: 'PASS',
     },
+  });
+});
+
+test('reports field-level errors for invalid split latency probe values', () => {
+  expect(
+    parseAudioEngineProbeRecord({
+      ...physicalProbeRecord,
+      probes: [
+        {
+          ...physicalProbeRecord.probes[0],
+          firstTouchLatencyMs: -1,
+          steadyTouchLatencyMs: Number.POSITIVE_INFINITY,
+        },
+      ],
+    }),
+  ).toEqual({
+    ok: false,
+    errors: [
+      'probes[0].firstTouchLatencyMs must be a finite number >= 0',
+      'probes[0].steadyTouchLatencyMs must be a finite number >= 0',
+    ],
   });
 });
 
