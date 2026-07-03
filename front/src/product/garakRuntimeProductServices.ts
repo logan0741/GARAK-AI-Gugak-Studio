@@ -5,6 +5,7 @@ import {
   type GarakFetch,
 } from './garakHttpProductServices';
 import type { GarakProductServices } from './garakProductServices';
+import type { ProductLibraryState } from './garakProductState';
 import {
   createLivePerformanceAudioPort,
   type LivePerformanceSampleManifestLoader,
@@ -44,10 +45,11 @@ export function createRuntimeGarakProductServices({
     });
   }
 
+  const accessTokenReader = getAccessToken ?? createSessionAccessTokenReader(sessionStore);
   const httpServices = createHttpGarakProductServices({
     baseUrl: normalizedBaseUrl,
     fetch,
-    getAccessToken: getAccessToken ?? createSessionAccessTokenReader(sessionStore),
+    getAccessToken: accessTokenReader,
   });
   const fallbackServices = createLocalGarakProductServices({
     storage: libraryStorage,
@@ -59,9 +61,35 @@ export function createRuntimeGarakProductServices({
         loadSampleManifest: httpServices.audio.loadInstrumentSampleManifest,
       }),
   });
+  const libraryService = {
+    loadSnapshot: async () => {
+      if (!(await hasAccessToken(accessTokenReader))) {
+        return fallbackServices.library.loadSnapshot();
+      }
+
+      try {
+        return await httpServices.library.loadSnapshot();
+      } catch {
+        return fallbackServices.library.loadSnapshot();
+      }
+    },
+    saveSnapshot: async (snapshot: ProductLibraryState) => {
+      if (!(await hasAccessToken(accessTokenReader))) {
+        await fallbackServices.library.saveSnapshot(snapshot);
+        return;
+      }
+
+      try {
+        await httpServices.library.saveSnapshot(snapshot);
+      } catch {
+        await fallbackServices.library.saveSnapshot(snapshot);
+      }
+    },
+  };
 
   return {
     ...httpServices,
+    library: libraryService,
     audio: {
       ...httpServices.audio,
       prepareLivePerformanceAudio: fallbackServices.audio.prepareLivePerformanceAudio,
@@ -82,6 +110,13 @@ function createLiveAudioPort(input: {
     createSampler: input.createLiveSampler,
     loadSampleManifest: input.loadSampleManifest,
   });
+}
+
+async function hasAccessToken(
+  getAccessToken: (() => Promise<string | undefined>) | undefined,
+): Promise<boolean> {
+  const accessToken = await getAccessToken?.();
+  return accessToken !== undefined && accessToken.trim().length > 0;
 }
 
 function createSessionAccessTokenReader(

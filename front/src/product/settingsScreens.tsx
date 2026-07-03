@@ -84,6 +84,7 @@ export function IntroGuideContent({
           accessibilityRole="button"
           accessibilityState={{ selected: isPracticeMode, disabled: !PRACTICE_MODE_AVAILABLE }}
           disabled={!PRACTICE_MODE_AVAILABLE}
+          onPress={() => dispatch({ type: 'selectIntroGuideMode', mode: 'practice' })}
           style={[
             styles.modeToggleButton,
             isPracticeMode ? styles.modeToggleButtonActive : undefined,

@@ -157,11 +157,12 @@ test('uses the Figma free-creation mode guide for the intro screen', () => {
   expect(source).toContain('modeGuidePanelCompact');
   expect(source).toContain("type: 'selectIntroGuideMode'");
   expect(source).toContain("mode: 'freeCreation'");
+  expect(introGuideSource).toContain("mode: 'practice'");
+  expect(introGuideSource).toContain("onPress={() => dispatch({ type: 'selectIntroGuideMode', mode: 'practice' })}");
   expect(source).toContain('PRACTICE_MODE_AVAILABLE');
   expect(source).toContain('disabled={!PRACTICE_MODE_AVAILABLE}');
   expect(source).toContain('modeToggleButtonDisabled');
   expect(source).toContain('modeToggleTextDisabled');
-  expect(introGuideSource).not.toContain("mode: 'practice'");
   expect(source).not.toContain("target: isPracticeMode ? 'S13' : 'S04'");
   expect(introGuideSource).not.toContain('SecondaryPillButton');
   expect(introGuideSource).not.toContain('modeGuideSkipButton');
@@ -460,7 +461,9 @@ test('keeps S05 live audio UI quiet unless loading or recoverable failure', () =
   );
 
   expect(statusSource).toContain("status.status === 'idle' || status.status === 'ready'");
+  expect(statusSource).toContain("if (status.status === 'failed')");
   expect(statusSource).toContain("type: 'retryLivePerformanceAudioPreparation'");
+  expect(statusSource).not.toContain('const isFailed');
   expect(statusSource).not.toContain('sampleSourceLabel');
   expect(statusSource).not.toContain('releaseReady');
   expect(statusSource).not.toContain('개발용 샘플');

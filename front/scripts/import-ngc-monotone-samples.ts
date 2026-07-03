@@ -8,7 +8,6 @@ import {
 } from '../src/product/livePerformanceBundledSamples';
 
 const DOWNLOAD_URL = 'https://www.gugak.go.kr/digitaleum/cmmn/file/monotone/download.do';
-const OUTPUT_SAMPLE_RATE = 48_000;
 const OUTPUT_CHANNELS = 1;
 const OUTPUT_BITS_PER_SAMPLE = 16;
 const OUTPUT_MAX_AMPLITUDE = 0x7fff;
@@ -282,8 +281,8 @@ function createPcm16MonoWav(audio: WavAudio): Buffer {
   buffer.writeUInt32LE(16, 16);
   buffer.writeUInt16LE(1, 20);
   buffer.writeUInt16LE(OUTPUT_CHANNELS, 22);
-  buffer.writeUInt32LE(OUTPUT_SAMPLE_RATE, 24);
-  buffer.writeUInt32LE(OUTPUT_SAMPLE_RATE * OUTPUT_CHANNELS * (OUTPUT_BITS_PER_SAMPLE / 8), 28);
+  buffer.writeUInt32LE(audio.sampleRate, 24);
+  buffer.writeUInt32LE(audio.sampleRate * OUTPUT_CHANNELS * (OUTPUT_BITS_PER_SAMPLE / 8), 28);
   buffer.writeUInt16LE(OUTPUT_CHANNELS * (OUTPUT_BITS_PER_SAMPLE / 8), 32);
   buffer.writeUInt16LE(OUTPUT_BITS_PER_SAMPLE, 34);
   buffer.write('data', 36, 'ascii');
