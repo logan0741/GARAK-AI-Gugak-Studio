@@ -44,8 +44,15 @@ test('models S22 settings status rows and actions from local library state', () 
     { label: 'Local Library Storage', value: 'Works: 1 · Exported audio/results: 1' },
     { label: 'Sync Status', value: 'Local storage · Works: 1 · Exported audio/results: 1' },
     { label: 'Language', value: 'English' },
+    { label: 'Audio Sources', value: 'National Gugak Center · KOGL Type 1 · Janggu/Daegeum' },
     { label: 'App Info', value: 'GARAK · AI GUGAK STUDIO' },
   ]);
+  expect(model.audioSourceNotice).toEqual({
+    title: 'Audio Source Attribution',
+    body: 'Janggu and daegeum performance samples use National Gugak Center monotone assets under KOGL Type 1 attribution terms.',
+    sourceUrl: 'https://www.gugak.go.kr/digitaleum/front/monotone/list.do',
+    licenseUrl: 'http://www.kogl.or.kr/open/info/license_info/by.do',
+  });
   expect(model.actions).toEqual({
     changeLanguage: { type: 'navigate', target: 'S02' },
     manageLibrary: { type: 'navigate', target: 'S18' },

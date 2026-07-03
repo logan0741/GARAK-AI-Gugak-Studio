@@ -1,6 +1,6 @@
 import { useFonts } from 'expo-font';
 import { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, Share, StyleSheet, View } from 'react-native';
 import { createGarakAuthApi } from './authApi';
 import { GARAK_GOOGLE_WEB_CLIENT_ID } from './authConfig';
 import { restoreAuthSession, signInWithGoogle } from './authFlow';
@@ -9,12 +9,12 @@ import { createAuthSessionStore } from './authSessionStore';
 import { createDefaultAuthStorage } from './authStorage';
 import { GARAK_COLORS, GARAK_TYPOGRAPHY } from './designTokens';
 import { AccountState } from './garakProductState';
-import { createHttpGarakProductServices } from './garakHttpProductServices';
 import { GarakScreenFlowApp } from './GarakScreenFlowApp';
 import {
   PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
   PRODUCT_SAMPLE_MANIFESTS,
 } from './productSampleReadinessConfig';
+import { createRuntimeGarakProductServices } from './garakRuntimeProductServices';
 import { createRuntimeGoogleIdentityProvider } from './runtimeGoogleIdentity';
 
 const ONBOARDING_STEPS = ['canvasRed', 'navyAmber', 'redLight', 'intro'] as const;
@@ -41,16 +41,18 @@ export function GarakAuthEntryApp() {
   const [fontsLoaded] = useFonts({
     [GARAK_TYPOGRAPHY.fontFamily]: require('../../assets/fonts/PretendardVariable.ttf'),
   });
-  const sessionStore = useMemo(() => createAuthSessionStore(createDefaultAuthStorage()), []);
-  const [entryState, setEntryState] = useState<AuthEntryState>({ status: 'booting' });
+  const authStorage = useMemo(() => createDefaultAuthStorage(), []);
+  const sessionStore = useMemo(() => createAuthSessionStore(authStorage), [authStorage]);
   const productServices = useMemo(
     () =>
-      createHttpGarakProductServices({
-        baseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? '',
-        getAccessToken: async () => (await sessionStore.load())?.accessToken,
+      createRuntimeGarakProductServices({
+        sessionStore,
+        libraryStorage: authStorage,
+        share: (content) => Share.share(content),
       }),
-    [sessionStore],
+    [authStorage, sessionStore],
   );
+  const [entryState, setEntryState] = useState<AuthEntryState>({ status: 'booting' });
 
   useEffect(() => {
     let isMounted = true;

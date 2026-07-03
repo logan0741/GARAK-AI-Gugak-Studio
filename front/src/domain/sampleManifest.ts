@@ -1,12 +1,14 @@
 import { assertStringIndex } from './performanceEvent';
 
 export type SampleSourceLayer = 'public_asset' | 'own_asset';
+export type SampleInstrumentId = 'gayageum_12' | 'janggu' | 'daegeum';
 
 export type SampleAsset = {
   id: string;
-  instrument: 'gayageum_12';
+  instrument: SampleInstrumentId;
   stringIndex: number;
-  pitchHz: number;
+  pitchHz?: number;
+  basePitchCents?: number;
   fileUri: string;
   sourceLayer: SampleSourceLayer;
   sourceName: string;
@@ -40,6 +42,38 @@ function requireSourceLayer(value: unknown): SampleSourceLayer {
   return value;
 }
 
+function requireSampleInstrument(value: unknown): SampleInstrumentId {
+  if (value === 'gayageum_12' || value === 'janggu' || value === 'daegeum') {
+    return value;
+  }
+
+  throw new Error('instrument must be gayageum_12, janggu, or daegeum');
+}
+
+function optionalPositiveFiniteNumber(value: unknown, errorMessage: string): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new Error(errorMessage);
+  }
+
+  return value;
+}
+
+function optionalFiniteNumber(value: unknown, errorMessage: string): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(errorMessage);
+  }
+
+  return value;
+}
+
 function validateSampleAsset(assetCandidate: unknown): SampleAsset {
   if (!isRecord(assetCandidate)) {
     throw new Error('SampleAsset must be an object');
@@ -47,18 +81,20 @@ function validateSampleAsset(assetCandidate: unknown): SampleAsset {
 
   const id = requireNonEmptyString(assetCandidate.id, 'SampleAsset.id is required');
 
-  if (assetCandidate.instrument !== 'gayageum_12') {
-    throw new Error('instrument must be gayageum_12');
-  }
+  const instrument = requireSampleInstrument(assetCandidate.instrument);
   if (typeof assetCandidate.stringIndex !== 'number') {
     throw new Error('stringIndex must be a number');
   }
-  if (
-    typeof assetCandidate.pitchHz !== 'number' ||
-    !Number.isFinite(assetCandidate.pitchHz) ||
-    assetCandidate.pitchHz <= 0
-  ) {
-    throw new Error('pitchHz must be a positive finite number');
+  const pitchHz = optionalPositiveFiniteNumber(
+    assetCandidate.pitchHz,
+    'pitchHz must be a positive finite number',
+  );
+  const basePitchCents = optionalFiniteNumber(
+    assetCandidate.basePitchCents,
+    'basePitchCents must be a finite number',
+  );
+  if (pitchHz === undefined && basePitchCents === undefined) {
+    throw new Error('pitchHz or basePitchCents is required');
   }
 
   assertStringIndex(assetCandidate.stringIndex);
@@ -70,9 +106,10 @@ function validateSampleAsset(assetCandidate: unknown): SampleAsset {
 
   return {
     id,
-    instrument: 'gayageum_12',
+    instrument,
     stringIndex: assetCandidate.stringIndex,
-    pitchHz: assetCandidate.pitchHz,
+    ...(pitchHz === undefined ? {} : { pitchHz }),
+    ...(basePitchCents === undefined ? {} : { basePitchCents }),
     fileUri,
     sourceLayer,
     sourceName,

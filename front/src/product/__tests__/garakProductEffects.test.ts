@@ -58,6 +58,125 @@ describe('Garak product effect runner', () => {
     ).resolves.toEqual([{ type: 'replaceLibrarySnapshot', library: remoteLibrary }]);
   });
 
+  test('saves the current work before exporting audio for Save & Share', async () => {
+    const services = createInMemoryGarakProductServices();
+    const workState = {
+      ...createInitialGarakProductState({
+        now: () => '2026-06-26T00:00:00.000Z',
+      }),
+      screenFlow: createInitialScreenFlowState({ currentScreen: 'S07' }),
+      currentWorkId: 'work-1',
+      library: {
+        works: [createWork('work-1')],
+        exportedAudios: [],
+        practiceResults: [],
+      },
+    };
+    const action = { type: 'saveAndShareCurrentWork' } as const;
+    const nextState = applyProductAction(workState, action);
+    const servicesWithAudio = {
+      ...services,
+      audio: {
+        ...services.audio,
+        exportWorkAudio: async (work: Work) => {
+          expect(work.id).toBe('work-1');
+          return {
+            status: 'ok' as const,
+            value: {
+              audioUri: 'file://garak/export-1.wav',
+              durationSeconds: 31,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services: servicesWithAudio,
+      }),
+    ).resolves.toEqual([
+      { type: 'completeCurrentWorkSave' },
+      {
+        type: 'completeWorkAudioExport',
+        workId: 'work-1',
+        audioUri: 'file://garak/export-1.wav',
+        durationSeconds: 31,
+      },
+    ]);
+    await expect(services.library.loadSnapshot()).resolves.toEqual(nextState.library);
+  });
+
+  test('publishes the selected share target through the share service boundary', async () => {
+    const noopServices = createNoopGarakProductServices();
+    const state: GarakProductState = {
+      ...createInitialGarakProductState({
+        now: () => '2026-06-26T00:00:00.000Z',
+      }),
+      selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
+      sharePublishStatus: {
+        status: 'publishing',
+        target: { kind: 'exportedAudio', id: 'export-1' },
+      },
+      library: {
+        works: [],
+        exportedAudios: [
+          {
+            id: 'export-1',
+            kind: 'exported_audio',
+            title: 'My Export',
+            durationSeconds: 31,
+            instrumentNames: ['Janggu'],
+            createdAt: '2026-06-26T00:00:00.000Z',
+            audioUri: 'file://garak/export-1.wav',
+            shareState: 'ready',
+          },
+        ],
+        practiceResults: [],
+      },
+    };
+    const services = {
+      ...noopServices,
+      share: {
+        publishShareTarget: async (input: Parameters<typeof noopServices.share.publishShareTarget>[0]) => {
+          expect(input).toMatchObject({
+            target: { kind: 'exportedAudio', id: 'export-1' },
+            title: 'My Export',
+            fileUri: 'file://garak/export-1.wav',
+          });
+          return {
+            status: 'ok' as const,
+            value: {
+              remoteId: 'remote-export-1',
+              shareUrl: 'https://garak.test/share/remote-export-1',
+              expiresAtMs: 1783036800000,
+              shareMethod: 'link' as const,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state,
+        action: { type: 'publishShareTarget' },
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeSharePublish',
+        target: { kind: 'exportedAudio', id: 'export-1' },
+        remoteId: 'remote-export-1',
+        shareUrl: 'https://garak.test/share/remote-export-1',
+        expiresAtMs: 1783036800000,
+        shareMethod: 'link',
+      },
+    ]);
+  });
+
   test('maps AI accompaniment recommendations to the existing jangdan preview action', async () => {
     const events: PerformanceEvent[] = [
       { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.7 },
@@ -95,9 +214,11 @@ describe('Garak product effect runner', () => {
         practiceResults: [],
       },
     };
+    const noopServices = createNoopGarakProductServices();
     const services = {
-      ...createNoopGarakProductServices(),
+      ...noopServices,
       ai: {
+        ...noopServices.ai,
         recommendAccompaniment: async (input: { events: readonly PerformanceEvent[] }) => {
           expect(input.events).toEqual(events);
           return {
@@ -110,7 +231,6 @@ describe('Garak product effect runner', () => {
             },
           };
         },
-        requestPracticeFeedback: async () => ({ status: 'unavailable' as const }),
       },
     };
 
@@ -122,6 +242,11 @@ describe('Garak product effect runner', () => {
       }),
     ).resolves.toEqual([
       {
+        type: 'failAutoAccompanimentGeneration',
+        code: 'model_unavailable',
+        message: 'AI auto accompaniment service is unavailable.',
+      },
+      {
         type: 'previewJangdanPreset',
         mode: 'track',
         presetId: 'semachi',
@@ -131,47 +256,448 @@ describe('Garak product effect runner', () => {
     ]);
   });
 
-  test('requests AI practice feedback after a completed practice attempt', async () => {
+  test('requests an AI auto accompaniment candidate from the current work on S10B entry', async () => {
     const events: PerformanceEvent[] = [
       { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.7 },
     ];
     const state: GarakProductState = {
       ...createInitialGarakProductState(),
-      language: 'ko',
-      selectedPracticeSongId: 'arirang',
-      selectedInstrument: 'gayageum',
-      practiceAttempt: {
-        songId: 'arirang',
-        instrument: 'gayageum',
-        status: 'completed',
-        completedAt: '2026-06-25T00:00:01.000Z',
-        guideEvents: [],
-        inputEvents: events,
-        timingErrorsMs: [],
+      currentWorkId: 'work-1',
+      library: {
+        works: [
+          {
+            ...createWork('work-1'),
+            tracks: [
+              {
+                id: 'track-1',
+                kind: 'instrument' as const,
+                instrument: 'gayageum' as const,
+                takes: [
+                  {
+                    id: 'take-1',
+                    events,
+                    startedAtBeat: 1,
+                    durationBeats: 8,
+                    recordingSetup: {
+                      presetId: 'semachi' as const,
+                      bpm: 84,
+                      beatUnit: '4/4',
+                    },
+                  },
+                ],
+                startedAtBeat: 1,
+                volume: 1,
+                mute: false,
+                solo: false,
+                createdAt: '2026-06-25T00:00:00.000Z',
+              },
+            ],
+          },
+        ],
+        exportedAudios: [],
+        practiceResults: [],
+      },
+    };
+    const candidate = {
+      id: 'candidate-1',
+      status: 'ready' as const,
+      sourceWorkId: 'work-1',
+      sourceTrackId: 'track-1',
+      sourceTakeId: 'take-1',
+      sourceInstrument: 'gayageum' as const,
+      analysis: {
+        jo: 'pyeongjo' as const,
+        jangdan: 'jungmori' as const,
+        bpm: 84,
+        confidence: 0.86,
+      },
+      generatedTracks: [
+        {
+          instrument: 'daegeum' as const,
+          role: 'melody' as const,
+          audioUri: 'file://garak/daegeum.wav',
+          volume: 0.7,
+          startedAtBeat: 1,
+        },
+        {
+          instrument: 'janggu' as const,
+          role: 'rhythm' as const,
+          audioUri: 'file://garak/janggu.wav',
+          volume: 0.6,
+          startedAtBeat: 1,
+        },
+      ],
+      mixedAudioUri: 'file://garak/mix.wav',
+      durationSeconds: 24,
+      model: {
+        pitchModelId: 'pitch-v1',
+        rhythmModelId: 'rhythm-v1',
+        temperature: 0.7,
       },
     };
     const services = {
       ...createNoopGarakProductServices(),
       ai: {
         recommendAccompaniment: async () => ({ status: 'unavailable' as const }),
-        requestPracticeFeedback: async (input: {
-          sessionId: string;
-          accuracyScore: number;
-          songName: string;
-          locale: 'ko' | 'en';
-          events: readonly PerformanceEvent[];
-        }) => {
-          expect(input).toEqual({
-            sessionId: 'practice-arirang-1782345601000',
-            accuracyScore: 17,
-            songName: '아리랑',
-            locale: 'ko',
+        generateAutoAccompaniment: async (
+          input: Parameters<
+            ReturnType<typeof createNoopGarakProductServices>['ai']['generateAutoAccompaniment']
+          >[0],
+        ) => {
+          expect(input).toMatchObject({
+            source: 's10b_auto_accompaniment',
+            workId: 'work-1',
+            sourceTrackId: 'track-1',
+            sourceTakeId: 'take-1',
+            sourceInstrument: 'gayageum',
             events,
+            options: {
+              outputKind: 'ensemble_wav_candidate',
+              maxCandidates: 1,
+              temperature: 0.7,
+            },
           });
+
+          return {
+            status: 'ok' as const,
+            value: candidate,
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state,
+        action: { type: 'chooseAccompanimentTrack' },
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeAutoAccompanimentGeneration',
+        candidate,
+      },
+    ]);
+  });
+
+  test('keeps captured free-play event effects limited to state persistence follow-ups', async () => {
+    const events: PerformanceEvent[] = [
+      { type: 'string_pluck', tsMs: 120, stringIndex: 2, velocity: 0.7 },
+    ];
+    let playedEvents: readonly PerformanceEvent[] | undefined;
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        playPerformanceEvents: async (input: { events: readonly PerformanceEvent[] }) => {
+          playedEvents = input.events;
+          return {
+            status: 'ok' as const,
+            value: { handledEvents: input.events.length },
+          };
+        },
+      },
+    };
+
+    const followUpActions = await runGarakProductEffect({
+      state: createInitialGarakProductState(),
+      action: { type: 'appendFreePlayPerformanceEvents', events },
+      services,
+    });
+
+    expect(playedEvents).toBeUndefined();
+    expect(followUpActions).toEqual([]);
+  });
+
+  test('prepares live performance audio when S05 starts', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu'] }),
+      selectedInstrument: 'janggu',
+      screenFlow: {
+        currentScreen: 'S04A',
+        history: ['S01', 'S03', 'S04'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'next' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          expect(input).toEqual({ instrument: 'janggu' });
           return {
             status: 'ok' as const,
             value: {
-              feedbackText: 'AI가 장단 흐름을 분석했어요.',
+              instrument: input.instrument,
+              sampleSourceLabel: 'bundled dev sampler',
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    expect(nextState.livePerformanceAudioStatus).toEqual({
+      status: 'preparing',
+      instrument: 'janggu',
+    });
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeLivePerformanceAudioPreparation',
+        instrument: 'janggu',
+        sampleSourceLabel: 'bundled dev sampler',
+        releaseReady: false,
+      },
+    ]);
+  });
+
+  test('warms live performance audio when a playable S04 instrument is selected', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu', 'daegeum'] }),
+      screenFlow: {
+        currentScreen: 'S04',
+        history: ['S01', 'S03'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'selectInstrument', instrument: 'daegeum' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const preparedInstruments: Array<'gayageum' | 'janggu' | 'daegeum'> = [];
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          preparedInstruments.push(input.instrument);
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: `${input.instrument} warm sampler`,
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([]);
+    expect(preparedInstruments).toEqual(['daegeum']);
+    expect(nextState.livePerformanceAudioStatus).toEqual({ status: 'idle' });
+  });
+
+  test('warms the visible default live instrument when entering S04A preview', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['janggu'] }),
+      screenFlow: {
+        currentScreen: 'S04',
+        history: ['S01', 'S03'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'next' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const preparedInstruments: Array<'gayageum' | 'janggu' | 'daegeum'> = [];
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          preparedInstruments.push(input.instrument);
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: `${input.instrument} warm sampler`,
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    expect(nextState.screenFlow.currentScreen).toBe('S04A');
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([]);
+    expect(preparedInstruments).toEqual(['janggu']);
+    expect(nextState.livePerformanceAudioStatus).toEqual({ status: 'idle' });
+  });
+
+  test('surfaces live performance audio preparation failures on S05', async () => {
+    const initialState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['daegeum'] }),
+      selectedInstrument: 'daegeum',
+      screenFlow: {
+        currentScreen: 'S04A',
+        history: ['S01', 'S03', 'S04'],
+        mode: 'freeCreation',
+      },
+    };
+    const action = { type: 'next' } as const;
+    const nextState = applyProductAction(initialState, action);
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async () => ({
+          status: 'error' as const,
+          message: 'native sampler failed',
+        }),
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'failLivePerformanceAudioPreparation',
+        instrument: 'daegeum',
+        message: 'native sampler failed',
+      },
+    ]);
+  });
+
+  test('retries live performance audio preparation through the S05 service boundary', async () => {
+    const failedState: GarakProductState = {
+      ...createInitialGarakProductState({ sampleFallbackInstruments: ['daegeum'] }),
+      selectedInstrument: 'daegeum',
+      screenFlow: {
+        currentScreen: 'S05',
+        history: ['S01', 'S03', 'S04', 'S04A'],
+        mode: 'freeCreation',
+      },
+      livePerformanceAudioStatus: {
+        status: 'failed',
+        instrument: 'daegeum',
+        message: 'native sampler failed',
+      },
+    };
+    const action = { type: 'retryLivePerformanceAudioPreparation' } as const;
+    const nextState = applyProductAction(failedState, action);
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        prepareLivePerformanceAudio: async (input: { instrument: 'gayageum' | 'janggu' | 'daegeum' }) => {
+          expect(input).toEqual({ instrument: 'daegeum' });
+          return {
+            status: 'ok' as const,
+            value: {
+              instrument: input.instrument,
+              sampleSourceLabel: 'bundled dev sampler',
+              releaseReady: false,
+            },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: nextState,
+        action,
+        services,
+      }),
+    ).resolves.toEqual([
+      {
+        type: 'completeLivePerformanceAudioPreparation',
+        instrument: 'daegeum',
+        sampleSourceLabel: 'bundled dev sampler',
+        releaseReady: false,
+      },
+    ]);
+  });
+
+  test('plays the current work through the work mix service boundary', async () => {
+    const currentWork: Work = {
+      ...createWork('work-1'),
+      tracks: [
+        {
+          id: 'track-muted',
+          kind: 'instrument',
+          instrument: 'janggu',
+          takes: [],
+          startedAtBeat: 1,
+          volume: 1,
+          mute: true,
+          solo: false,
+          createdAt: '2026-06-25T00:00:00.000Z',
+        },
+        {
+          id: 'track-solo',
+          kind: 'accompaniment',
+          presetId: 'jungmori',
+          bpm: 84,
+          startedAtBeat: 4,
+          volume: 0.6,
+          mute: false,
+          solo: true,
+          createdAt: '2026-06-25T00:00:00.000Z',
+        },
+      ],
+    };
+    const state: GarakProductState = {
+      ...createInitialGarakProductState(),
+      currentWorkId: currentWork.id,
+      library: {
+        works: [currentWork],
+        exportedAudios: [],
+        practiceResults: [],
+      },
+    };
+    const playedMixes: Array<{
+      workId: string;
+      trackIds: string[];
+      hasSoloTracks: boolean;
+    }> = [];
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        playWorkMix: async (
+          work: Work,
+          mixPlan: { tracks: Array<{ trackId: string }>; hasSoloTracks: boolean },
+        ) => {
+          playedMixes.push({
+            workId: work.id,
+            trackIds: mixPlan.tracks.map((track) => track.trackId),
+            hasSoloTracks: mixPlan.hasSoloTracks,
+          });
+
+          return {
+            status: 'ok' as const,
+            value: {
+              handledTracks: mixPlan.tracks.length,
             },
           };
         },
@@ -181,91 +707,17 @@ describe('Garak product effect runner', () => {
     await expect(
       runGarakProductEffect({
         state,
-        action: { type: 'finishPractice' },
-        services,
-      }),
-    ).resolves.toEqual([
-      {
-        type: 'receiveAiPracticeFeedback',
-        feedbackText: 'AI가 장단 흐름을 분석했어요.',
-      },
-    ]);
-  });
-
-  test('requests audio export and returns a URI update action', async () => {
-    const work = createWork('work-1');
-    const state: GarakProductState = {
-      ...createInitialGarakProductState(),
-      currentWorkId: 'work-1',
-      selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
-      library: {
-        works: [work],
-        exportedAudios: [],
-        practiceResults: [],
-      },
-    };
-    const services = {
-      ...createNoopGarakProductServices(),
-      audio: {
-        exportWorkAudio: async (input: Work) => {
-          expect(input).toBe(work);
-          return {
-            status: 'ok' as const,
-            value: { audioUri: 'https://cdn.garak.test/export-1.wav' },
-          };
-        },
-      },
-    };
-
-    await expect(
-      runGarakProductEffect({
-        state,
-        action: { type: 'exportCurrentWork' },
-        services,
-      }),
-    ).resolves.toEqual([
-      {
-        type: 'receiveExportedAudioUri',
-        exportedAudioId: 'export-1',
-        audioUri: 'https://cdn.garak.test/export-1.wav',
-      },
-    ]);
-  });
-
-  test('publishes selected share targets through the share service port', async () => {
-    const published: Array<{
-      kind: 'exportedAudio' | 'practiceResult';
-      id: string;
-      sessionId?: string;
-    }> = [];
-    const state: GarakProductState = {
-      ...createInitialGarakProductState(),
-      selectedPlayerItem: { kind: 'practiceResult', practiceResultId: 'practice-1' },
-    };
-    const services = {
-      ...createNoopGarakProductServices(),
-      share: {
-        publishShareTarget: async (target: {
-          kind: 'exportedAudio' | 'practiceResult';
-          id: string;
-          sessionId?: string;
-        }) => {
-          published.push(target);
-          return { status: 'ok' as const, value: { remoteId: 'remote-practice-1' } };
-        },
-        loadFeed: async () => ({ status: 'unavailable' as const }),
-      },
-    };
-
-    await expect(
-      runGarakProductEffect({
-        state,
-        action: { type: 'publishShareTarget' },
+        action: { type: 'playCurrentWorkMix' },
         services,
       }),
     ).resolves.toEqual([]);
-    expect(published).toEqual([
-      { kind: 'practiceResult', id: 'practice-1', sessionId: 'practice-1' },
+
+    expect(playedMixes).toEqual([
+      {
+        workId: 'work-1',
+        trackIds: ['track-solo'],
+        hasSoloTracks: true,
+      },
     ]);
   });
 });

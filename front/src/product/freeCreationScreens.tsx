@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
+  type LayoutChangeEvent,
   PanResponder,
   Pressable,
   ScrollView,
@@ -12,8 +13,12 @@ import {
   View,
 } from 'react-native';
 import type { PerformanceEvent } from '../domain/performanceEvent';
-import { createTouchModel, type TouchFrame } from '../interaction/touchModel';
+import type { TouchFrame } from '../interaction/touchModel';
 import type { InstrumentId, Track } from '../studio/studioTypes';
+import {
+  createFreePlayInstrumentTouchModel,
+  type FreePlayTouchLayout,
+} from './freePlayInstrumentTouchModel';
 import {
   GARAK_COLORS,
   GARAK_MONTAGE_BUTTON,
@@ -22,11 +27,14 @@ import {
   GARAK_SPACING,
 } from './garakDesignSystem';
 import { GarakScreenFrameMode } from './garakScreenFrame';
-import { GarakProductAction, GarakProductState } from './garakProductState';
+import {
+  GarakProductAction,
+  GarakProductState,
+  type LivePerformanceAudioStatus,
+} from './garakProductState';
 import {
   DaegeumLandscapeStageArtwork,
   GayageumLandscapeStageArtwork,
-  InstrumentSelectionArtworkPanel,
   InstrumentPreviewStageArtwork,
   JangguLandscapeStageArtwork,
 } from './garakArtworkPanels';
@@ -58,6 +66,7 @@ import {
   getFreeCreationMixEditorModel,
   type FreeCreationTrackControlModel,
 } from './freeCreationMixEditorModel';
+import { getFreePlayPerformanceCaptureModel } from './freePlayPerformanceModel';
 import { getHomeScreenViewModel } from './homeScreenModel';
 import { getInstrumentSettingsModel } from './instrumentSettingsModel';
 
@@ -75,7 +84,21 @@ const FUTURE_INSTRUMENT_CHIPS = [
 ] as const;
 const JANGGU_FIGMA_BADGE = '장구 Janggu';
 const JANGGU_FIGMA_DESCRIPTION =
-  '장구는 한국 전통 음악에서 가장 대표적으로 사용되는 타악기 중 하나로, 가운데가 잘록한 모래시계 모양을 하고 있습니다.';
+  '장구는 한국 전통 음악에서 가장 대표적으로 사용되는 타악기 중 하나로, 가운데가 잘록한 모래시계 모양을 하고 있습니다. 민속기악에서는 열편에만 열채를 쓰고, 궁편은 그냥 손으로 때리며, 풍물놀이나 일부 무속음악 계통에서는 양손에 열채와 궁굴채를 들고 친다고 합니다.';
+const INSTRUMENT_SELECTION_COPY: Record<InstrumentId, { badge: string; description: string }> = {
+  gayageum: {
+    badge: '가야금 Gayageum',
+    description: '가야금은 열두 현을 손가락으로 튕기고 눌러 선율을 만들며, 줄의 울림과 농현 표현으로 음색을 조절합니다.',
+  },
+  janggu: {
+    badge: JANGGU_FIGMA_BADGE,
+    description: JANGGU_FIGMA_DESCRIPTION,
+  },
+  daegeum: {
+    badge: '대금 Daegeum',
+    description: '대금은 굵은 대나무 관악기로, 운지와 호흡을 함께 써서 긴 선율과 시김새를 표현합니다.',
+  },
+};
 const PERFORMANCE_PREVIEW_CALLOUTS: Record<InstrumentId, { top: string; bottom: string }> = {
   gayageum: {
     top: '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.',
@@ -83,7 +106,7 @@ const PERFORMANCE_PREVIEW_CALLOUTS: Record<InstrumentId, { top: string; bottom: 
   },
   janggu: {
     top: '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.',
-    bottom: '연주할 때는 양손으로 궁편과 열편을 손에 쥐고 연주.',
+    bottom: JANGGU_FIGMA_DESCRIPTION,
   },
   daegeum: {
     top: '연주를 시작하고 녹음하고, 이를 직접 들어보고, 저장 할 수 있습니다.',
@@ -91,10 +114,10 @@ const PERFORMANCE_PREVIEW_CALLOUTS: Record<InstrumentId, { top: string; bottom: 
   },
 };
 const PRODUCT_TOUCH_LAYOUT = {
-  topY: 0,
+  width: 844,
   height: 390,
-  stringCount: 12,
 } as const;
+type PerformanceEventsHandler = (events: PerformanceEvent[]) => void;
 
 function isInstrumentTrack(track: Track): track is Extract<Track, { kind: 'instrument' }> {
   return track.kind === 'instrument';
@@ -107,21 +130,44 @@ function isAccompanimentTrack(track: Track): track is Extract<Track, { kind: 'ac
 function PerformanceCaptureSurface({
   children,
   enabled,
+  instrument,
+  onLivePerformanceEvents,
   onPerformanceEvents,
   style,
 }: {
   children: ReactNode;
   enabled: boolean;
-  onPerformanceEvents: (events: PerformanceEvent[]) => void;
+  instrument: InstrumentId;
+  onLivePerformanceEvents?: PerformanceEventsHandler;
+  onPerformanceEvents: PerformanceEventsHandler;
   style?: StyleProp<ViewStyle>;
 }) {
+  const [surfaceLayout, setSurfaceLayout] = useState<FreePlayTouchLayout>(PRODUCT_TOUCH_LAYOUT);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+
+  const onLivePerformanceEventsRef = useRef(onLivePerformanceEvents);
+  onLivePerformanceEventsRef.current = onLivePerformanceEvents;
 
   const onPerformanceEventsRef = useRef(onPerformanceEvents);
   onPerformanceEventsRef.current = onPerformanceEvents;
 
-  const touchModel = useMemo(() => createTouchModel({ layout: PRODUCT_TOUCH_LAYOUT }), []);
+  const touchModel = useMemo(
+    () => createFreePlayInstrumentTouchModel({ instrument, layout: surfaceLayout }),
+    [instrument, surfaceLayout.height, surfaceLayout.width],
+  );
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      return;
+    }
+
+    setSurfaceLayout((current) =>
+      Math.abs(current.width - width) < 1 && Math.abs(current.height - height) < 1
+        ? current
+        : { width, height },
+    );
+  }, []);
   const handleTouchFrame = useCallback(
     (
       phase: TouchFrame['phase'],
@@ -145,6 +191,7 @@ function PerformanceCaptureSurface({
       });
 
       if (events.length > 0) {
+        onLivePerformanceEventsRef.current?.(events);
         onPerformanceEventsRef.current(events);
       }
     },
@@ -166,7 +213,7 @@ function PerformanceCaptureSurface({
   const captureHandlers = enabled ? performanceCapture.panHandlers : undefined;
 
   return (
-    <View {...captureHandlers} style={style}>
+    <View {...captureHandlers} onLayout={handleLayout} style={style}>
       {children}
     </View>
   );
@@ -238,33 +285,19 @@ export function InstrumentSelectContent({
       {state.instrumentSelectNotice === 'futureInstrument' ? (
         <Text style={styles.instrumentSelectNotice}>새로운 악기가 업데이트될 예정이에요.</Text>
       ) : null}
-      {selectedInstrument === DEFAULT_FREE_CREATION_INSTRUMENT ? (
-        <View
-          accessible
-          accessibilityLabel={`${JANGGU_FIGMA_BADGE}. ${JANGGU_FIGMA_DESCRIPTION}. ${instrumentSelectSampleModel.sampleStatusLabel}. ${instrumentSelectSampleModel.sampleStatusDescription}`}
-          style={[
-            styles.instrumentSelectArtworkWrap,
-            isCompactHeight ? styles.instrumentSelectArtworkWrapCompact : undefined,
-          ]}
-        >
-          <InstrumentSelectionArtworkPanel
-            style={isCompactHeight ? styles.instrumentSelectArtworkCompact : undefined}
-          />
-        </View>
-      ) : (
-        <View
-          accessible
-          accessibilityLabel={`${instrumentSelectSampleModel.instrumentName}. ${MVP_INSTRUMENTS.find((item) => item.id === selectedInstrument)?.description ?? ''} ${instrumentSelectSampleModel.sampleStatusLabel}. ${instrumentSelectSampleModel.sampleStatusDescription}`}
-          style={styles.instrumentPreviewCard}
-        >
-          <InstrumentVisual instrument={selectedInstrument} />
-          <InstrumentBadge instrument={selectedInstrument} />
-          <Text style={styles.instrumentDescription}>
-            {MVP_INSTRUMENTS.find((item) => item.id === selectedInstrument)?.description}
-            {'\n'}선택한 악기는 연주, 녹음, 트랙 추가 흐름에 연결됩니다.
-          </Text>
-        </View>
-      )}
+      <View
+        accessible
+        accessibilityLabel={`${INSTRUMENT_SELECTION_COPY[selectedInstrument].badge}. ${INSTRUMENT_SELECTION_COPY[selectedInstrument].description}. ${instrumentSelectSampleModel.sampleStatusLabel}. ${instrumentSelectSampleModel.sampleStatusDescription}`}
+        style={[
+          styles.instrumentSelectArtworkWrap,
+          isCompactHeight ? styles.instrumentSelectArtworkWrapCompact : undefined,
+        ]}
+      >
+        <InstrumentSelectionPreviewCard
+          compact={isCompactHeight}
+          instrument={selectedInstrument}
+        />
+      </View>
       <View style={[styles.instrumentSelectFooter, isCompactHeight ? styles.instrumentSelectFooterCompact : undefined]}>
         <GarakProgressIndicator progress={2 / 3} />
         <PrimaryPillButton
@@ -272,6 +305,43 @@ export function InstrumentSelectContent({
           onPress={confirmSelectionAndContinue}
         />
       </View>
+    </View>
+  );
+}
+
+function InstrumentSelectionPreviewCard({
+  compact,
+  instrument,
+}: {
+  compact: boolean;
+  instrument: InstrumentId;
+}) {
+  const copy = INSTRUMENT_SELECTION_COPY[instrument];
+
+  return (
+    <View
+      style={[
+        styles.instrumentSelectionPreviewCard,
+        compact ? styles.instrumentSelectionPreviewCardCompact : undefined,
+      ]}
+    >
+      <InstrumentPreviewStageArtwork
+        instrument={instrument}
+        style={[
+          styles.instrumentSelectionPreviewStage,
+          compact ? styles.instrumentSelectionPreviewStageCompact : undefined,
+        ]}
+      />
+      <InstrumentBadge instrument={instrument} />
+      <Text
+        accessibilityLabel={copy.description}
+        style={[
+          styles.instrumentSelectionDescription,
+          compact ? styles.instrumentSelectionDescriptionCompact : undefined,
+        ]}
+      >
+        {copy.description}
+      </Text>
     </View>
   );
 }
@@ -308,11 +378,9 @@ export function InstrumentSettingsContent({
           isCompactHeight ? styles.performancePreviewPanelCompact : undefined,
         ]}
       >
-        <View style={styles.performancePreviewTopCallout}>
+        <View style={styles.performancePreviewIntro}>
           <Text style={styles.performancePreviewCalloutText}>{performancePreviewCallouts.top}</Text>
         </View>
-        <View style={styles.performancePreviewTopLine} />
-        <View style={styles.performancePreviewTopDrop} />
         <InstrumentPreviewStageArtwork
           instrument={instrumentSettingsModel.instrument}
           style={[
@@ -320,11 +388,7 @@ export function InstrumentSettingsContent({
             isCompactHeight ? styles.performancePreviewStageCompact : undefined,
           ]}
         />
-        <View style={styles.performancePreviewBottomLead} />
-        <View style={styles.performancePreviewBottomDrop} />
-        <View style={styles.performancePreviewBottomCallout}>
-          <Text style={styles.performancePreviewCalloutText}>{performancePreviewCallouts.bottom}</Text>
-        </View>
+        <Text style={styles.performancePreviewDescription}>{performancePreviewCallouts.bottom}</Text>
       </View>
       <View
         style={[
@@ -351,57 +415,93 @@ export function FreePlayContent({
   state,
   dispatch,
   frameMode = 'portrait',
+  onLivePerformanceEvents,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
   frameMode?: GarakScreenFrameMode;
+  onLivePerformanceEvents?: PerformanceEventsHandler;
 }) {
+  const { width, height } = useWindowDimensions();
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isLandscapeFrame = frameMode === 'landscape';
-  const usesFigmaDaegeumLandscapeStage = isLandscapeFrame && instrument === 'daegeum';
-  const usesFigmaGayageumLandscapeStage = isLandscapeFrame && instrument === 'gayageum';
-  const usesFigmaJangguLandscapeStage = isLandscapeFrame && instrument === 'janggu';
+  const usesMobilePortraitPerformanceStage = isLandscapeFrame && height > width;
+  const usesFigmaDaegeumLandscapeStage = isLandscapeFrame && !usesMobilePortraitPerformanceStage && instrument === 'daegeum';
+  const usesFigmaGayageumLandscapeStage = isLandscapeFrame && !usesMobilePortraitPerformanceStage && instrument === 'gayageum';
+  const usesFigmaJangguLandscapeStage = isLandscapeFrame && !usesMobilePortraitPerformanceStage && instrument === 'janggu';
   const usesFigmaLandscapeStage =
     usesFigmaDaegeumLandscapeStage || usesFigmaGayageumLandscapeStage || usesFigmaJangguLandscapeStage;
-  const isRecordingPerformance = state.pendingFreePlayTake !== undefined;
+  const usesEmbeddedPerformanceStage = usesMobilePortraitPerformanceStage || usesFigmaLandscapeStage;
+  const performanceCaptureModel = getFreePlayPerformanceCaptureModel(state);
+  const isRecordingPerformance = performanceCaptureModel.isRecording;
   const appendPerformanceEvents = (events: PerformanceEvent[]) =>
     dispatch({ type: 'appendFreePlayPerformanceEvents', events });
 
   return (
     <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
-      {usesFigmaDaegeumLandscapeStage ? (
+      {usesMobilePortraitPerformanceStage ? (
+        <View style={styles.mobilePerformanceStageWrap}>
+          <PerformanceCaptureSurface
+            enabled={performanceCaptureModel.captureEnabled}
+            instrument={instrument}
+            onLivePerformanceEvents={onLivePerformanceEvents}
+            onPerformanceEvents={appendPerformanceEvents}
+            style={styles.mobilePerformanceCapture}
+          >
+            <View style={styles.mobilePerformanceInstrumentArt}>
+              <InstrumentVisual instrument={instrument} />
+            </View>
+            <InstrumentTouchAffordance instrument={instrument} />
+          </PerformanceCaptureSurface>
+          <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
+          <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
+          <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
+        </View>
+      ) : usesFigmaDaegeumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <PerformanceCaptureSurface
-            enabled={isRecordingPerformance}
+            enabled={performanceCaptureModel.captureEnabled}
+            instrument={instrument}
+            onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.landscapePerformanceCapture}
           >
             <DaegeumLandscapeStageArtwork />
+            <InstrumentTouchAffordance instrument={instrument} />
           </PerformanceCaptureSurface>
+          <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : usesFigmaGayageumLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <PerformanceCaptureSurface
-            enabled={isRecordingPerformance}
+            enabled={performanceCaptureModel.captureEnabled}
+            instrument={instrument}
+            onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.landscapePerformanceCapture}
           >
             <GayageumLandscapeStageArtwork />
+            <InstrumentTouchAffordance instrument={instrument} />
           </PerformanceCaptureSurface>
+          <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : usesFigmaJangguLandscapeStage ? (
         <View style={styles.jangguLandscapeStageWrap}>
           <PerformanceCaptureSurface
-            enabled={isRecordingPerformance}
+            enabled={performanceCaptureModel.captureEnabled}
+            instrument={instrument}
+            onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.landscapePerformanceCapture}
           >
             <JangguLandscapeStageArtwork />
+            <InstrumentTouchAffordance instrument={instrument} />
           </PerformanceCaptureSurface>
+          <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
           <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
@@ -414,16 +514,20 @@ export function FreePlayContent({
               <Text style={styles.inlineControlAmber}>●</Text>
             </View>
           </View>
+          <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} />
           <PerformanceCaptureSurface
-            enabled={isRecordingPerformance}
+            enabled={performanceCaptureModel.captureEnabled}
+            instrument={instrument}
+            onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.instrumentPerformanceCapture}
           >
             <InstrumentVisual instrument={instrument} compact={isLandscapeFrame} />
+            <InstrumentTouchAffordance instrument={instrument} />
           </PerformanceCaptureSurface>
         </View>
       )}
-      {!usesFigmaLandscapeStage ? (
+      {!usesEmbeddedPerformanceStage ? (
         <View style={styles.freePlayActionArea}>
           {state.freePlayNotice === 'missingTake' ? (
             <Text style={styles.freePlayNotice}>저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.</Text>
@@ -454,6 +558,43 @@ export function FreePlayContent({
   );
 }
 
+function InstrumentTouchAffordance({ instrument }: { instrument: InstrumentId }) {
+  if (instrument === 'janggu') {
+    return (
+      <View pointerEvents="none" style={styles.instrumentTouchAffordanceLayer}>
+        <View style={styles.jangguTouchZoneRow}>
+          <View style={styles.jangguTouchZone} />
+          <View style={[styles.jangguTouchZone, styles.jangguTouchZoneCenter]} />
+          <View style={styles.jangguTouchZone} />
+        </View>
+      </View>
+    );
+  }
+
+  if (instrument === 'daegeum') {
+    return (
+      <View pointerEvents="none" style={styles.instrumentTouchAffordanceLayer}>
+        <View style={styles.daegeumPitchRail}>
+          {Array.from({ length: 7 }, (_, index) => (
+            <View key={`daegeum-hole-${index}`} style={styles.daegeumPitchDot} />
+          ))}
+        </View>
+        <View style={styles.daegeumBendRail} />
+      </View>
+    );
+  }
+
+  return (
+    <View pointerEvents="none" style={styles.instrumentTouchAffordanceLayer}>
+      <View style={styles.gayageumTouchStringStack}>
+        {Array.from({ length: 12 }, (_, index) => (
+          <View key={`gayageum-touch-string-${index}`} style={styles.gayageumTouchString} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function LandscapeStageNotice({ visible }: { visible: boolean }) {
   if (!visible) {
     return null;
@@ -467,6 +608,72 @@ function LandscapeStageNotice({ visible }: { visible: boolean }) {
       style={styles.landscapeStageNotice}
     >
       <Text style={styles.landscapeStageNoticeText}>저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.</Text>
+    </View>
+  );
+}
+
+function FreePlayLiveAudioStatusBadge({
+  dispatch,
+  landscape = false,
+  status,
+}: {
+  dispatch: ProductDispatch;
+  landscape?: boolean;
+  status: LivePerformanceAudioStatus;
+}) {
+  if (status.status === 'idle' || status.status === 'ready') {
+    return null;
+  }
+
+  if (status.status === 'failed') {
+    const label = '소리를 재생할 수 없음';
+
+    return (
+      <View
+        accessible
+        accessibilityLabel={`${label}. ${status.message}`}
+        style={[
+          styles.liveAudioStatusBadge,
+          landscape ? styles.liveAudioStatusBadgeLandscape : undefined,
+          styles.liveAudioStatusBadgeFailed,
+        ]}
+      >
+        <Text
+          numberOfLines={1}
+          style={[styles.liveAudioStatusText, styles.liveAudioStatusTextFailed]}
+        >
+          {label}
+        </Text>
+        <Text numberOfLines={2} style={styles.liveAudioStatusDetailText}>
+          {status.message}
+        </Text>
+        <Pressable
+          accessibilityLabel="연주 소리 다시 시도"
+          accessibilityRole="button"
+          onPress={() => dispatch({ type: 'retryLivePerformanceAudioPreparation' })}
+          style={styles.liveAudioRetryButton}
+        >
+          <Text style={styles.liveAudioRetryText}>다시 시도</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const label = '소리 준비 중';
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={label}
+      pointerEvents="none"
+      style={[
+        styles.liveAudioStatusBadge,
+        landscape ? styles.liveAudioStatusBadgeLandscape : undefined,
+      ]}
+    >
+      <Text numberOfLines={1} style={styles.liveAudioStatusText}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -562,7 +769,11 @@ function LandscapeStageActionHits({
         accessibilityRole="button"
         onPress={() => dispatch({ type: 'back' })}
         style={styles.jangguLandscapeBackHit}
-      />
+      >
+        <View pointerEvents="none" style={styles.landscapeStageBackVisual}>
+          <Text style={styles.landscapeStageBackText}>‹</Text>
+        </View>
+      </Pressable>
       <Pressable
         accessibilityLabel={isRecordingPerformance ? '연주 완료' : '녹음 시작'}
         accessibilityRole="button"
@@ -572,13 +783,19 @@ function LandscapeStageActionHits({
           })
         }
         style={[styles.landscapeStageActionHit, styles.landscapeStagePrimaryHit]}
-      />
+      >
+        <Text pointerEvents="none" style={styles.landscapeStageActionText}>
+          {isRecordingPerformance ? '■' : '●'}
+        </Text>
+      </Pressable>
       <Pressable
         accessibilityLabel="장단 설정"
         accessibilityRole="button"
         onPress={() => dispatch({ type: 'openLiveJangdanGuide' })}
         style={[styles.landscapeStageActionHit, styles.landscapeStageJangdanHit]}
-      />
+      >
+        <Text pointerEvents="none" style={styles.landscapeStageActionText}>≋</Text>
+      </Pressable>
     </>
   );
 }
@@ -617,7 +834,7 @@ export function TrackLayerEditorContent({
           <View style={styles.freeCreationPlayerProgress}>
             <View style={styles.freeCreationPlayerProgressFill} />
           </View>
-          <MixPlayerControls />
+          <MixPlayerControls onPlay={() => dispatch({ type: 'playCurrentWorkMix' })} />
         </View>
       </View>
 
@@ -663,11 +880,14 @@ export function TrackLayerEditorContent({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="프로젝트 저장 및 공유"
-          onPress={() => dispatch({ type: 'exportCurrentWork' })}
+          disabled={state.workExportStatus.status === 'exporting'}
+          onPress={() => dispatch({ type: 'saveAndShareCurrentWork' })}
           style={styles.freeCreationShareButton}
         >
           <ShareOutlineGlyph />
-          <Text style={styles.freeCreationShareButtonText}>{'Save & Share project'}</Text>
+          <Text style={styles.freeCreationShareButtonText}>
+            {state.workExportStatus.status === 'exporting' ? 'Exporting...' : 'Save & Share project'}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -710,7 +930,7 @@ function FreeCreationCompletedPreviewContent({
           <View style={styles.freeCreationCompletedPlayerProgress}>
             <View style={styles.freeCreationPlayerProgressFill} />
           </View>
-          <MixPlayerControls />
+          <MixPlayerControls onPlay={() => dispatch({ type: 'playCurrentWorkMix' })} />
         </View>
       </View>
 
@@ -854,12 +1074,17 @@ function TrackControlStack({
   );
 }
 
-function MixPlayerControls() {
+function MixPlayerControls({ onPlay }: { onPlay: () => void }) {
   return (
     <View style={styles.freeCreationPlayerControls}>
-      <View style={styles.freeCreationPlayerControlCircle}>
+      <Pressable
+        accessibilityLabel="가락 믹스 재생"
+        accessibilityRole="button"
+        onPress={onPlay}
+        style={styles.freeCreationPlayerControlCircle}
+      >
         <Text style={styles.freeCreationPlayerControlIcon}>▶</Text>
-      </View>
+      </Pressable>
       <View style={styles.freeCreationPlayerPauseCircle}>
         <View style={styles.freeCreationPauseBar} />
         <View style={styles.freeCreationPauseBar} />
@@ -1091,10 +1316,12 @@ export function ExtraInstrumentRecordContent({
   state,
   dispatch,
   frameMode = 'portrait',
+  onLivePerformanceEvents,
 }: {
   state: GarakProductState;
   dispatch: ProductDispatch;
   frameMode?: GarakScreenFrameMode;
+  onLivePerformanceEvents?: PerformanceEventsHandler;
 }) {
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isLandscapeFrame = frameMode === 'landscape';
@@ -1113,6 +1340,8 @@ export function ExtraInstrumentRecordContent({
       <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
         <PerformanceCaptureSurface
           enabled={state.pendingFreePlayTake !== undefined}
+          instrument={instrument}
+          onLivePerformanceEvents={onLivePerformanceEvents}
           onPerformanceEvents={(events) => dispatch({ type: 'appendFreePlayPerformanceEvents', events })}
           style={styles.instrumentPerformanceCapture}
         >
@@ -1194,6 +1423,20 @@ function JangdanPresetPanel({
       ) : null}
       {model.recommendationMessage ? (
         <Text style={styles.recommendationMessage}>{model.recommendationMessage}</Text>
+      ) : null}
+      {mode === 'track' && model.autoAccompaniment ? (
+        <View style={styles.optionPanel}>
+          <Text style={styles.panelTitle}>AI 자동 반주</Text>
+          <Text style={styles.metaText}>{model.autoAccompaniment.message}</Text>
+          {model.autoAccompaniment.confidenceLabel ? (
+            <Text style={styles.metaText}>{model.autoAccompaniment.confidenceLabel}</Text>
+          ) : null}
+          {model.autoAccompaniment.generatedTrackLabels.map((label) => (
+            <Text key={label} style={styles.metaText}>
+              {label}
+            </Text>
+          ))}
+        </View>
       ) : null}
       <View style={styles.jangdanControlStack}>
         <JangdanStepperControl
@@ -1440,9 +1683,6 @@ const styles = StyleSheet.create({
   instrumentSelectArtworkWrapCompact: {
     marginTop: 9,
   },
-  instrumentSelectArtworkCompact: {
-    height: 389,
-  },
   instrumentSelectFooter: {
     gap: 13,
     marginTop: 15,
@@ -1471,31 +1711,39 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   performancePreviewPanel: {
+    alignItems: 'center',
     backgroundColor: GARAK_COLORS.surfaceCanvas,
     borderColor: 'rgba(0,0,0,0.04)',
     borderRadius: 40,
     borderWidth: 1,
-    height: 510,
+    gap: 24,
     marginTop: 54,
+    minHeight: 510,
     overflow: 'hidden',
+    paddingHorizontal: 22,
+    paddingTop: 50,
+    paddingBottom: 30,
     position: 'relative',
     ...garakCardShadow,
   },
   performancePreviewPanelCompact: {
-    height: 430,
+    gap: 18,
     marginTop: 32,
+    minHeight: 430,
+    paddingHorizontal: 18,
+    paddingTop: 34,
   },
-  performancePreviewTopCallout: {
+  performancePreviewIntro: {
     alignItems: 'center',
     alignSelf: 'center',
     backgroundColor: 'rgba(229,145,0,0.3)',
     borderColor: GARAK_COLORS.brandAmber,
     borderRadius: 19,
     borderWidth: 1,
-    height: 38,
     justifyContent: 'center',
-    marginTop: 56,
+    minHeight: 38,
     paddingHorizontal: 14,
+    paddingVertical: 8,
     width: 175,
     zIndex: 2,
   },
@@ -1507,56 +1755,20 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
   },
-  performancePreviewTopLine: {
-    backgroundColor: GARAK_COLORS.brandAmber,
-    height: 1,
-    position: 'absolute',
-    right: 33,
-    top: 75,
-    width: 62,
-  },
-  performancePreviewTopDrop: {
-    backgroundColor: GARAK_COLORS.brandAmber,
-    height: 43,
-    position: 'absolute',
-    right: 33,
-    top: 75,
-    width: 1,
-  },
   performancePreviewStage: {
-    marginTop: 22,
+    marginTop: 0,
   },
   performancePreviewStageCompact: {
     height: 145,
   },
-  performancePreviewBottomLead: {
-    backgroundColor: GARAK_COLORS.brandAmber,
-    height: 1,
-    left: 13,
-    position: 'absolute',
-    top: 325,
-    width: 64,
-  },
-  performancePreviewBottomDrop: {
-    backgroundColor: GARAK_COLORS.brandAmber,
-    height: 48,
-    left: 13,
-    position: 'absolute',
-    top: 325,
-    width: 1,
-  },
-  performancePreviewBottomCallout: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(229,145,0,0.3)',
-    borderColor: GARAK_COLORS.brandAmber,
-    borderRadius: 17,
-    borderWidth: 1,
-    height: 33,
-    justifyContent: 'center',
-    marginTop: 30,
-    paddingHorizontal: 14,
-    width: 255,
+  performancePreviewDescription: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 18,
+    textAlign: 'center',
+    width: '100%',
   },
   performancePreviewFooter: {
     gap: 13,
@@ -1567,7 +1779,29 @@ const styles = StyleSheet.create({
   },
   landscapePerformanceStack: {
     flex: 1,
-    gap: 12,
+    gap: 0,
+    minHeight: 0,
+  },
+  mobilePerformanceStageWrap: {
+    backgroundColor: GARAK_COLORS.surfaceCard,
+    flex: 1,
+    minHeight: 0,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mobilePerformanceCapture: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 0,
+    position: 'relative',
+    width: '100%',
+  },
+  mobilePerformanceInstrumentArt: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ scale: 1.85 }],
+    width: '100%',
   },
   homeTopRow: {
     alignItems: 'center',
@@ -1610,6 +1844,47 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     padding: 22,
     ...garakCardShadow,
+  },
+  instrumentSelectionPreviewCard: {
+    alignItems: 'center',
+    backgroundColor: GARAK_COLORS.surfaceCanvas,
+    borderColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 40,
+    borderWidth: 1,
+    gap: 17,
+    minHeight: 435,
+    overflow: 'hidden',
+    paddingHorizontal: 18,
+    paddingTop: 42,
+    paddingBottom: 30,
+    ...garakCardShadow,
+  },
+  instrumentSelectionPreviewCardCompact: {
+    gap: 14,
+    minHeight: 389,
+    paddingHorizontal: 16,
+    paddingTop: 28,
+    paddingBottom: 24,
+  },
+  instrumentSelectionPreviewStage: {
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  instrumentSelectionPreviewStageCompact: {
+    height: 145,
+  },
+  instrumentSelectionDescription: {
+    color: GARAK_COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0,
+    lineHeight: 18,
+    textAlign: 'center',
+    width: '100%',
+  },
+  instrumentSelectionDescriptionCompact: {
+    fontSize: 11.5,
+    lineHeight: 17,
   },
   playPreviewCard: {
     backgroundColor: GARAK_COLORS.surfaceCard,
@@ -2385,16 +2660,89 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     minHeight: 0,
+    position: 'relative',
   },
   landscapePerformanceCapture: {
     flex: 1,
+    height: '100%',
     minHeight: 0,
+    position: 'relative',
+    width: '100%',
+  },
+  instrumentTouchAffordanceLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 26,
+    paddingVertical: 42,
+    zIndex: 2,
+  },
+  jangguTouchZoneRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 18,
+    height: '58%',
+    justifyContent: 'center',
+    width: '92%',
+  },
+  jangguTouchZone: {
+    backgroundColor: 'rgba(229,145,0,0.14)',
+    borderColor: 'rgba(229,145,0,0.42)',
+    borderRadius: 999,
+    borderWidth: 1,
+    flex: 1,
+    height: '100%',
+  },
+  jangguTouchZoneCenter: {
+    backgroundColor: 'rgba(151,40,40,0.12)',
+    borderColor: 'rgba(151,40,40,0.38)',
+    flex: 0.72,
+    height: '72%',
+  },
+  daegeumPitchRail: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(31,32,46,0.08)',
+    borderColor: 'rgba(31,32,46,0.22)',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 10,
+    height: 34,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    width: '72%',
+  },
+  daegeumPitchDot: {
+    backgroundColor: 'rgba(31,32,46,0.36)',
+    borderRadius: 6,
+    height: 12,
+    width: 12,
+  },
+  daegeumBendRail: {
+    backgroundColor: 'rgba(229,145,0,0.22)',
+    borderRadius: 2,
+    height: '56%',
+    position: 'absolute',
+    right: 28,
+    width: 4,
+  },
+  gayageumTouchStringStack: {
+    gap: 9,
+    width: '82%',
+  },
+  gayageumTouchString: {
+    backgroundColor: 'rgba(31,32,46,0.18)',
+    borderRadius: 2,
+    height: 3,
+    width: '100%',
   },
   jangguLandscapeStageWrap: {
     flex: 1,
+    height: '100%',
     minHeight: 0,
     overflow: 'hidden',
     position: 'relative',
+    width: '100%',
   },
   jangguLandscapeBackHit: {
     height: 90,
@@ -2402,22 +2750,53 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     width: 140,
+    zIndex: 4,
+  },
+  landscapeStageBackVisual: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    left: 16,
+    position: 'absolute',
+    top: 16,
+    width: 36,
+  },
+  landscapeStageBackText: {
+    color: GARAK_COLORS.brandNavy,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 24,
   },
   landscapeStageActionHit: {
+    alignItems: 'center',
+    borderRadius: 22,
+    justifyContent: 'center',
     position: 'absolute',
     zIndex: 3,
   },
   landscapeStagePrimaryHit: {
+    backgroundColor: GARAK_COLORS.brandNavy,
     height: 44,
     right: 64,
     top: 16,
     width: 44,
   },
   landscapeStageJangdanHit: {
+    backgroundColor: GARAK_COLORS.brandAmber,
     height: 44,
     right: 20,
     top: 16,
     width: 44,
+  },
+  landscapeStageActionText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 20,
   },
   landscapeStageNotice: {
     alignSelf: 'center',
@@ -2438,6 +2817,60 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     lineHeight: 16,
     textAlign: 'center',
+  },
+  liveAudioStatusBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(31,32,46,0.82)',
+    borderRadius: 15,
+    gap: 6,
+    marginBottom: 8,
+    maxWidth: 230,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  liveAudioStatusBadgeLandscape: {
+    left: 18,
+    marginBottom: 0,
+    position: 'absolute',
+    top: 64,
+    zIndex: 4,
+  },
+  liveAudioStatusBadgeFailed: {
+    backgroundColor: 'rgba(153,45,45,0.92)',
+    maxWidth: 260,
+  },
+  liveAudioStatusText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0,
+    lineHeight: 14,
+  },
+  liveAudioStatusTextFailed: {
+    color: GARAK_COLORS.surfaceCard,
+  },
+  liveAudioStatusDetailText: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 13,
+  },
+  liveAudioRetryButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderRadius: 13,
+    minHeight: 26,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  liveAudioRetryText: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 14,
   },
   recordingSetupSheet: {
     backgroundColor: GARAK_COLORS.surfaceCanvas,

@@ -36,7 +36,11 @@ export function getFreeCreationMixEditorModel(
   const playerTitle = work?.title ?? (isEn ? 'Current Work' : '현재 작업');
   const playheadBeat = normalizePlayheadBeat(state.workPlayheadBeat);
   const saveStatusLabel =
-    state.workSaveStatus === 'saved'
+    state.workSaveStatus === 'saving'
+      ? (isEn ? 'Saving...' : 'Saving...')
+      : state.workSaveStatus === 'failed'
+        ? (isEn ? 'Save Failed' : 'Save Failed')
+        : state.workSaveStatus === 'saved'
       ? (isEn ? 'Saved' : '저장됨')
       : (isEn ? 'Save Work' : '작업 저장');
 

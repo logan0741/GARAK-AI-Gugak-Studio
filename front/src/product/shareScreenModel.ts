@@ -55,6 +55,9 @@ export type SharePrepareViewModel = {
   instrumentLabel: string;
   sourceLabel: string;
   isPreviewing: boolean;
+  isPublishing: boolean;
+  publishButtonLabel: string;
+  publishErrorMessage?: string;
 };
 
 export type SharedDetailViewModel = {
@@ -116,6 +119,7 @@ export function getShareFeedViewModel(state: GarakProductState): ShareFeedViewMo
 
 export function getSharePrepareViewModel(state: GarakProductState): SharePrepareViewModel {
   const shareTarget = getSharePrepareTarget(state);
+  const publishState = getSharePreparePublishState(state);
 
   if (shareTarget === undefined) {
     return {
@@ -126,6 +130,7 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
       instrumentLabel: '사용 악기 없음',
       sourceLabel: '공유 대상 없음',
       isPreviewing: false,
+      ...publishState,
     };
   }
 
@@ -141,6 +146,7 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
       instrumentLabel,
       sourceLabel: shareTarget.sourceLabel ?? (shareTarget.workId === undefined ? '내보낸 음원' : '출처 작업'),
       isPreviewing: state.sharePreviewStatus === 'playing',
+      ...publishState,
     };
   }
 
@@ -154,6 +160,31 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
     instrumentLabel,
     sourceLabel: '따라하기 결과',
     isPreviewing: state.sharePreviewStatus === 'playing',
+    ...publishState,
+  };
+}
+
+function getSharePreparePublishState(
+  state: GarakProductState,
+): Pick<SharePrepareViewModel, 'isPublishing' | 'publishButtonLabel' | 'publishErrorMessage'> {
+  if (state.sharePublishStatus.status === 'publishing') {
+    return {
+      isPublishing: true,
+      publishButtonLabel: 'Sharing...',
+    };
+  }
+
+  if (state.sharePublishStatus.status === 'failed') {
+    return {
+      isPublishing: false,
+      publishButtonLabel: '공유하기',
+      publishErrorMessage: state.sharePublishStatus.message,
+    };
+  }
+
+  return {
+    isPublishing: false,
+    publishButtonLabel: '공유하기',
   };
 }
 

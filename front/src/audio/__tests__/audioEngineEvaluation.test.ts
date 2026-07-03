@@ -47,6 +47,22 @@ test('fails a candidate when a core audio gesture criterion misses the gate', ()
   expect(result.failedCriteria).toEqual(['latency', 'pitch_bend']);
 });
 
+test('separates first-touch warmup latency from steady touch latency', () => {
+  const firstTouchResult = evaluateAudioEngineProbe({
+    ...passingProbe,
+    firstTouchLatencyMs: 96,
+    steadyTouchLatencyMs: 34,
+  });
+  const steadyTouchResult = evaluateAudioEngineProbe({
+    ...passingProbe,
+    firstTouchLatencyMs: 44,
+    steadyTouchLatencyMs: 68,
+  });
+
+  expect(firstTouchResult.failedCriteria).toEqual(['first_touch_latency']);
+  expect(steadyTouchResult.failedCriteria).toEqual(['steady_touch_latency']);
+});
+
 test('fails a candidate when samples are not preloaded for normal play', () => {
   const result = evaluateAudioEngineProbe({
     ...passingProbe,

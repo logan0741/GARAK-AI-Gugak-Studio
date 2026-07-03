@@ -1,5 +1,6 @@
 import { recommendJangdan } from '../domain/jangdan';
 import type { InstrumentTrack, JangdanPresetId, Track } from '../studio/studioTypes';
+import type { AiAutoAccompanimentStatus } from './aiAutoAccompaniment';
 import type { GarakProductAction, GarakProductState, JangdanPresetPreviewMode } from './garakProductState';
 import { JANGDAN_PRESETS } from './productFixtures';
 import type { JangdanPreset } from './productFixtures';
@@ -10,6 +11,7 @@ export type JangdanPresetPanelModel = {
   recommendationStatus: 'ready' | 'insufficient-data';
   recommendedPreset?: JangdanPreset;
   recommendationMessage?: string;
+  autoAccompaniment?: JangdanAutoAccompanimentModel;
   miniPlayerTitle: string;
   workContextLabel?: string;
   acceptedPreset: JangdanPreset;
@@ -24,6 +26,14 @@ export type JangdanPresetPanelModel = {
   acceptAction?: GarakProductAction;
   manualPresets: JangdanPreset[];
   previewingPresetId?: JangdanPresetId;
+};
+
+export type JangdanAutoAccompanimentModel = {
+  status: AiAutoAccompanimentStatus['status'];
+  message: string;
+  generatedTrackLabels: string[];
+  mixedAudioUri?: string;
+  confidenceLabel?: string;
 };
 
 export const INSUFFICIENT_JANGDAN_RECOMMENDATION_COPY =
@@ -49,6 +59,7 @@ export function getJangdanPresetPanelModel(
       recommendationStatus: 'ready',
       recommendedPreset: defaultPreset,
       miniPlayerTitle: 'Live Jangdan Guide',
+      autoAccompaniment: undefined,
       acceptedPreset: previewingPreset ?? defaultPreset,
       previewing: state.previewingJangdanPreset?.mode === mode ? state.previewingJangdanPreset : undefined,
       previewingPresetId,
@@ -67,6 +78,7 @@ export function getJangdanPresetPanelModel(
       recommendationStatus: 'insufficient-data',
       recommendationMessage: INSUFFICIENT_JANGDAN_RECOMMENDATION_COPY,
       miniPlayerTitle: 'AI 추천 준비 중',
+      autoAccompaniment: createAutoAccompanimentModel(state.autoAccompanimentStatus),
       workContextLabel: createWorkContextLabel(currentWork?.title),
       acceptedPreset: previewingPreset ?? defaultPreset,
       previewing: state.previewingJangdanPreset?.mode === mode ? state.previewingJangdanPreset : undefined,
@@ -83,6 +95,7 @@ export function getJangdanPresetPanelModel(
     recommendationStatus: 'ready',
     recommendedPreset,
     miniPlayerTitle: `AI 추천: ${recommendedPreset.name}`,
+    autoAccompaniment: createAutoAccompanimentModel(state.autoAccompanimentStatus),
     workContextLabel: createWorkContextLabel(currentWork?.title),
     acceptedPreset: previewingPreset ?? recommendedPreset,
     previewing: state.previewingJangdanPreset?.mode === mode ? state.previewingJangdanPreset : undefined,
@@ -103,6 +116,7 @@ function createJangdanPresetPanelModel(input: {
   recommendationStatus: JangdanPresetPanelModel['recommendationStatus'];
   recommendedPreset?: JangdanPreset;
   recommendationMessage?: string;
+  autoAccompaniment?: JangdanAutoAccompanimentModel;
   miniPlayerTitle: string;
   workContextLabel?: string;
   acceptedPreset: JangdanPreset;
@@ -121,6 +135,7 @@ function createJangdanPresetPanelModel(input: {
     recommendationStatus: input.recommendationStatus,
     recommendedPreset: input.recommendedPreset,
     recommendationMessage: input.recommendationMessage,
+    autoAccompaniment: input.autoAccompaniment,
     miniPlayerTitle: input.miniPlayerTitle,
     workContextLabel: input.workContextLabel,
     acceptedPreset: input.acceptedPreset,
@@ -159,6 +174,41 @@ function createJangdanPresetPanelModel(input: {
     manualPresets: JANGDAN_PRESETS,
     previewingPresetId: input.previewingPresetId,
   };
+}
+
+function createAutoAccompanimentModel(
+  status: AiAutoAccompanimentStatus,
+): JangdanAutoAccompanimentModel | undefined {
+  switch (status.status) {
+    case 'idle':
+      return {
+        status: 'idle',
+        message: 'AI auto accompaniment is ready to connect. Local jangdan presets stay available.',
+        generatedTrackLabels: [],
+      };
+    case 'generating':
+      return {
+        status: 'generating',
+        message: `AI auto accompaniment is ${status.stage}. Local jangdan presets stay available.`,
+        generatedTrackLabels: [],
+      };
+    case 'candidateReady':
+      return {
+        status: 'candidateReady',
+        message: 'AI ensemble WAV candidate is ready for preview.',
+        generatedTrackLabels: status.candidate.generatedTracks.map(
+          (track) => `${track.instrument} ${track.role} ${Math.round(track.volume * 100)}%`,
+        ),
+        mixedAudioUri: status.candidate.mixedAudioUri,
+        confidenceLabel: `${Math.round(status.candidate.analysis.confidence * 100)}% confidence`,
+      };
+    case 'failed':
+      return {
+        status: 'failed',
+        message: `${status.message} Local jangdan presets stay available.`,
+        generatedTrackLabels: [],
+      };
+  }
 }
 
 function createPreviewAction(

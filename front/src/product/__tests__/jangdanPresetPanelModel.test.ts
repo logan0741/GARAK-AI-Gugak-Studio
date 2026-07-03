@@ -24,7 +24,8 @@ function createWorkState(events: PerformanceEvent[]) {
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = applyProductAction(state, { type: 'startPerformanceRecording' });
-  state = applyProductAction(state, { type: 'completePerformance', events });
+  state = applyProductAction(state, { type: 'appendFreePlayPerformanceEvents', events });
+  state = applyProductAction(state, { type: 'completePerformance' });
   state = applyProductAction(state, { type: 'addTrack' });
   state = applyProductAction(state, { type: 'chooseAccompanimentTrack' });
 

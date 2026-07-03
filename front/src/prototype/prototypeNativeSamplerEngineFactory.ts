@@ -27,11 +27,12 @@ export type PrototypeSampleAssetResolver = {
 export async function createAndPreloadPrototypeNativeSamplerEngine(input: {
   candidate: AudioEngineCandidateId;
   manifest: SampleAssetManifest;
+  requiredStringIndexes?: readonly number[];
   assetResolver?: PrototypeSampleAssetResolver;
   runtimePorts?: PrototypeNativeSamplerEngineRuntimePorts;
 }): Promise<SamplerEngine> {
   assertSupportedPrototypeNativeAudioCandidate(input.candidate);
-  assertCompletePrototypeSampleManifest(input.manifest);
+  assertCompletePrototypeSampleManifest(input.manifest, input.requiredStringIndexes);
   assertLocalPrototypeSampleSourceUris(input.manifest);
 
   const manifest = await resolveSampleAssetManifestUris({
@@ -67,8 +68,14 @@ function assertLocalPrototypeSampleSourceUris(manifest: SampleAssetManifest): vo
   }
 }
 
-function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): void {
-  const missingStringIndexes = getMissingSampleStringIndexes(manifest);
+function assertCompletePrototypeSampleManifest(
+  manifest: SampleAssetManifest,
+  requiredStringIndexes: readonly number[] = createDefaultRequiredStringIndexes(),
+): void {
+  const missingStringIndexes = getMissingRequiredSampleStringIndexes(
+    manifest,
+    requiredStringIndexes,
+  );
   if (missingStringIndexes.length > 0) {
     throw new Error(
       `Prototype native sampler requires all 12 sample strings before preload; missing strings: ${missingStringIndexes.join(', ')}`,
@@ -82,12 +89,57 @@ function assertCompletePrototypeSampleManifest(manifest: SampleAssetManifest): v
     );
   }
 
-  const unexpectedStringIndexes = getUnexpectedSampleStringIndexes(manifest);
+  const unexpectedStringIndexes = getUnexpectedSampleStringIndexesForRequired(
+    manifest,
+    requiredStringIndexes,
+  );
   if (unexpectedStringIndexes.length > 0) {
     throw new Error(
       `Prototype native sampler requires only 12-string sample indexes; unexpected strings: ${unexpectedStringIndexes.join(', ')}`,
     );
   }
+}
+
+function createDefaultRequiredStringIndexes(): number[] {
+  return Array.from({ length: 12 }, (_, index) => index + 1);
+}
+
+function getMissingRequiredSampleStringIndexes(
+  manifest: SampleAssetManifest,
+  requiredStringIndexes: readonly number[],
+): number[] {
+  const availableStringIndexes = new Set(manifest.assets.map((asset) => asset.stringIndex));
+
+  return normalizeRequiredStringIndexes(requiredStringIndexes).filter(
+    (stringIndex) => !availableStringIndexes.has(stringIndex),
+  );
+}
+
+function getUnexpectedSampleStringIndexesForRequired(
+  manifest: SampleAssetManifest,
+  requiredStringIndexes: readonly number[],
+): number[] {
+  const requiredStringIndexSet = new Set(normalizeRequiredStringIndexes(requiredStringIndexes));
+  const unexpectedStringIndexes = new Set<number>();
+
+  for (const asset of manifest.assets) {
+    if (!requiredStringIndexSet.has(asset.stringIndex)) {
+      unexpectedStringIndexes.add(asset.stringIndex);
+    }
+  }
+
+  return Array.from(unexpectedStringIndexes).sort((left, right) => left - right);
+}
+
+function normalizeRequiredStringIndexes(requiredStringIndexes: readonly number[]): number[] {
+  const uniqueIndexes = [...new Set(requiredStringIndexes)];
+  for (const stringIndex of uniqueIndexes) {
+    if (!Number.isInteger(stringIndex) || stringIndex < 1 || stringIndex > 12) {
+      throw new Error(`requiredStringIndexes must contain integers from 1 to 12. Received: ${stringIndex}`);
+    }
+  }
+
+  return uniqueIndexes.sort((left, right) => left - right);
 }
 
 export async function resolveSampleAssetManifestUris(input: {

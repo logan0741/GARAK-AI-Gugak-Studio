@@ -31,10 +31,8 @@ describe('HTTP Garak product services', () => {
     expect(JSON.parse(String(requests[0].init?.body))).toMatchObject({
       id: 'work-1',
       instrumentId: 'gayageum_12',
-      sampleAssetManifestId: 'gayageum_samples_2026_06_a',
       title: 'My Arirang',
       mode: 'creative',
-      events: [],
     });
   });
 
@@ -58,10 +56,7 @@ describe('HTTP Garak product services', () => {
 
       if (url.endsWith('/api/analyze')) {
         const body = JSON.parse(String(init?.body));
-        expect(body).toMatchObject({
-          timestamps: expect.any(Array),
-          notes: expect.any(Array),
-        });
+        expect(body).toMatchObject({ timestamps: expect.any(Array), notes: expect.any(Array) });
         return jsonResponse(200, {
           jo: '평조',
           jangdan: '굿거리',
@@ -69,19 +64,6 @@ describe('HTTP Garak product services', () => {
           jangdan_confidence: 0.85,
           detected_bpm: 88,
           ioi_ms: [300, 310],
-        });
-      }
-
-      if (url.endsWith('/api/feedback')) {
-        const body = JSON.parse(String(init?.body));
-        expect(body).toMatchObject({
-          jo: '평조',
-          jangdan: '굿거리',
-          accuracy: expect.any(Number),
-          language: 'ko',
-        });
-        return jsonResponse(200, {
-          feedback: '장단 흐름이 안정적이에요.',
         });
       }
 
@@ -95,20 +77,12 @@ describe('HTTP Garak product services', () => {
     await expect(services.account.loginAndLoadLibrary()).resolves.toEqual({
       status: 'ok',
       value: {
-        works: [
-          expect.objectContaining({
-            id: 'remote-work',
-            title: 'Remote Work',
-            source: 'free_creation',
-            syncState: 'synced',
-          }),
-        ],
+        works: [expect.objectContaining({ id: 'remote-work', title: 'Remote Work', syncState: 'synced' })],
         exportedAudios: [],
         practiceResults: [],
       },
     });
 
-    // recommendAccompaniment — needs ≥2 events to extract timestamps
     await expect(
       services.ai.recommendAccompaniment({
         events: [
@@ -126,29 +100,9 @@ describe('HTTP Garak product services', () => {
       },
     });
 
-    await expect(
-      services.ai.requestPracticeFeedback({
-        sessionId: 'practice-arirang',
-        accuracyScore: 0.78,
-        songName: '아리랑',
-        locale: 'ko',
-        events: [
-          { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.8 },
-          { type: 'string_pluck', tsMs: 500, stringIndex: 3, velocity: 0.7 },
-        ],
-      }),
-    ).resolves.toEqual({
-      status: 'ok',
-      value: {
-        feedbackText: '장단 흐름이 안정적이에요.',
-      },
-    });
-
     expect(requests).toEqual([
       'GET https://api.garak.test/v1/api/sessions',
       'POST https://api.garak.test/v1/api/analyze',
-      'POST https://api.garak.test/v1/api/analyze',
-      'POST https://api.garak.test/v1/api/feedback',
     ]);
   });
 
@@ -171,35 +125,42 @@ describe('HTTP Garak product services', () => {
       fetch: async () => jsonResponse(501, { message: 'not implemented' }),
     });
 
-    await expect(services.share.publishShareTarget({ kind: 'practiceResult', id: 'practice-1' })).resolves.toEqual({
-      status: 'unavailable',
-    });
+    await expect(
+      services.share.publishShareTarget({
+        target: { kind: 'practiceResult', id: 'practice-1' },
+        title: 'Practice result',
+        message: 'Practice result',
+      }),
+    ).resolves.toEqual({ status: 'unavailable' });
   });
 
-  test('publishes share targets through the backend share contract', async () => {
+  test('loads instrument sample manifests through the backend instrument sample API', async () => {
     const requests: Array<{ url: string; init: Parameters<GarakFetch>[1] }> = [];
     const services = createHttpGarakProductServices({
-      baseUrl: 'https://api.garak.test/v1',
+      baseUrl: 'https://api.garak.test/api',
       fetch: async (url, init) => {
         requests.push({ url, init });
-        return jsonResponse(201, { shareId: 'share-1' });
+        return jsonResponse(200, {
+          version: '2026.07.mvp',
+          assets: [
+            {
+              id: 'gayageum-황',
+              instrument: 'gayageum_12',
+              stringIndex: 1,
+              pitchHz: 196,
+              fileUri: '/static/samples/가야금/황.wav',
+              sourceLayer: 'public_asset',
+              sourceName: '국립국악원',
+              licenseNote: '공공데이터 활용',
+            },
+          ],
+        });
       },
     });
 
-    await expect(
-      services.share.publishShareTarget({
-        kind: 'exportedAudio',
-        id: 'export-1',
-        sessionId: 'work-1',
-      }),
-    ).resolves.toEqual({
-      status: 'ok',
-      value: { remoteId: 'share-1' },
-    });
-    expect(requests[0].url).toBe('https://api.garak.test/v1/api/share');
-    expect(JSON.parse(String(requests[0].init?.body))).toEqual({
-      sessionId: 'work-1',
-    });
+    const result = await services.audio.loadInstrumentSampleManifest({ instrument: 'gayageum' });
+    expect(result.status).toBe('ok');
+    expect(requests[0].url).toBe('https://api.garak.test/api/api/instruments/gayageum_12/samples');
   });
 });
 

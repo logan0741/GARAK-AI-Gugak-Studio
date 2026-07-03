@@ -3,6 +3,7 @@ import { ExpoAudioSamplerEngine } from '../audio/expoAudioSamplerEngine';
 import { createExpoAudioRuntimePort } from '../audio/expoAudioRuntime';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import type { PerformanceEvent } from '../domain/performanceEvent';
 import {
   AccompanimentTrackContent,
   AddTrackContent,
@@ -22,10 +23,8 @@ import {
   GarakProductState,
 } from './garakProductState';
 import { runGarakProductEffect } from './garakProductEffects';
-import {
-  createNoopGarakProductServices,
-  type GarakProductServices,
-} from './garakProductServices';
+import type { GarakProductServices } from './garakProductServices';
+import { createLocalGarakProductServices } from './localGarakProductServices';
 import type { InstrumentSampleReadinessInput } from './instrumentSampleReadiness';
 import { LibraryContent, PlayerDetailContent } from './libraryScreens';
 import {
@@ -43,6 +42,7 @@ import {
 } from './settingsScreens';
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
+import { DEFAULT_FREE_CREATION_INSTRUMENT } from './productFixtures';
 import {
   GarakScreenFrameMode,
   getGarakScreenFrameConfig,
@@ -92,7 +92,7 @@ export function GarakScreenFlowApp({
     nextEffectId: 1,
   }));
   const productServices = useMemo(
-    () => services ?? createNoopGarakProductServices(),
+    () => services ?? createLocalGarakProductServices(),
     [services],
   );
 
@@ -123,6 +123,7 @@ export function GarakScreenFlowApp({
 
   const state = runtimeState.productState;
   const currentScreen = state.screenFlow.currentScreen;
+  const livePerformanceInstrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isHome = currentScreen === 'S01';
   const isLibrary = currentScreen === 'S18';
   const isShare = currentScreen === 'S20';
@@ -169,6 +170,52 @@ export function GarakScreenFlowApp({
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
+    void productServices.library
+      .loadSnapshot()
+      .then((library) => {
+        if (isMounted) {
+          dispatch({ type: 'replaceLibrarySnapshot', library });
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch, productServices]);
+  const playLivePerformanceEvents = useCallback(
+    (events: PerformanceEvent[]) => {
+      void productServices.audio
+        .playPerformanceEvents({
+          instrument: livePerformanceInstrument,
+          events,
+        })
+        .then((result) => {
+          if (result.status !== 'ok') {
+            dispatch({
+              type: 'failLivePerformanceAudioPreparation',
+              instrument: livePerformanceInstrument,
+              message:
+                result.status === 'error'
+                  ? result.message
+                  : 'Live performance audio service is unavailable.',
+            });
+          }
+        })
+        .catch((error: unknown) => {
+          dispatch({
+            type: 'failLivePerformanceAudioPreparation',
+            instrument: livePerformanceInstrument,
+            message: error instanceof Error ? error.message : 'Live performance audio failed.',
+          });
+        });
+    },
+    [dispatch, livePerformanceInstrument, productServices],
+  );
+
+  useEffect(() => {
     const effectsToRun = runtimeState.pendingEffects.filter(
       ({ id }) => !handledEffectIdsRef.current.has(id),
     );
@@ -199,7 +246,13 @@ export function GarakScreenFlowApp({
   return (
     <SafeAreaProvider style={styles.provider}>
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-      <View style={[styles.appFrame, isLandscapeFrame ? styles.landscapeFrame : styles.phoneFrame]}>
+      <View
+        style={[
+          styles.appFrame,
+          isLandscapeFrame ? styles.landscapeFrame : styles.phoneFrame,
+          usesEmbeddedHeader ? styles.embeddedLandscapeFrame : undefined,
+        ]}
+      >
         {!usesEmbeddedHeader && !usesImmersiveFrame ? (
           <View style={[styles.header, isLandscapeFrame ? styles.landscapeHeader : undefined]}>
             <View style={[styles.headerLeftSlot, isLibrary ? styles.headerWideSlot : undefined]}>
@@ -279,11 +332,17 @@ export function GarakScreenFlowApp({
             ]}
             showsVerticalScrollIndicator={false}
           >
-            {renderScreenContent(state, dispatch, frameConfig.mode, onLogout)}
+            {renderScreenContent(state, dispatch, frameConfig.mode, {
+              onLivePerformanceEvents: playLivePerformanceEvents,
+              onLogout,
+            })}
           </ScrollView>
         ) : (
           <View key={currentScreen} style={[styles.content, contentStyle]}>
-            {renderScreenContent(state, dispatch, frameConfig.mode, onLogout)}
+            {renderScreenContent(state, dispatch, frameConfig.mode, {
+              onLivePerformanceEvents: playLivePerformanceEvents,
+              onLogout,
+            })}
           </View>
         )}
         {isHomeBrowsingSurface ? (
@@ -306,7 +365,10 @@ function renderScreenContent(
   state: GarakProductState,
   dispatch: (action: GarakProductAction) => void,
   frameMode: GarakScreenFrameMode,
-  onLogout?: () => void,
+  runtime: {
+    onLivePerformanceEvents: (events: PerformanceEvent[]) => void;
+    onLogout?: () => void;
+  },
 ) {
   switch (state.screenFlow.currentScreen) {
     case 'S01':
@@ -320,13 +382,27 @@ function renderScreenContent(
     case 'S04A':
       return <InstrumentSettingsContent state={state} dispatch={dispatch} />;
     case 'S05':
-      return <FreePlayContent state={state} dispatch={dispatch} frameMode={frameMode} />;
+      return (
+        <FreePlayContent
+          state={state}
+          dispatch={dispatch}
+          frameMode={frameMode}
+          onLivePerformanceEvents={runtime.onLivePerformanceEvents}
+        />
+      );
     case 'S07':
       return <TrackLayerEditorContent state={state} dispatch={dispatch} />;
     case 'S08':
       return <AddTrackContent state={state} dispatch={dispatch} />;
     case 'S09':
-      return <ExtraInstrumentRecordContent state={state} dispatch={dispatch} frameMode={frameMode} />;
+      return (
+        <ExtraInstrumentRecordContent
+          state={state}
+          dispatch={dispatch}
+          frameMode={frameMode}
+          onLivePerformanceEvents={runtime.onLivePerformanceEvents}
+        />
+      );
     case 'S10A':
       return <LiveJangdanContent state={state} dispatch={dispatch} />;
     case 'S10B':
@@ -350,7 +426,7 @@ function renderScreenContent(
     case 'S21':
       return <SharedDetailContent state={state} dispatch={dispatch} />;
     case 'S22':
-      return <SettingsContent state={state} dispatch={dispatch} onLogout={onLogout} />;
+      return <SettingsContent state={state} dispatch={dispatch} onLogout={runtime.onLogout} />;
     case 'S23':
       return <LoginSyncContent state={state} dispatch={dispatch} />;
   }
@@ -382,6 +458,10 @@ const styles = StyleSheet.create({
   landscapeFrame: {
     maxHeight: GARAK_LAYOUT.figmaPhoneWidth,
     maxWidth: GARAK_LAYOUT.figmaPhoneHeight,
+  },
+  embeddedLandscapeFrame: {
+    maxHeight: '100%',
+    maxWidth: '100%',
   },
   header: {
     alignItems: 'center',
