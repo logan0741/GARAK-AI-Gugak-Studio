@@ -43,11 +43,11 @@ function requireSourceLayer(value: unknown): SampleSourceLayer {
 }
 
 function requireSampleInstrument(value: unknown): SampleInstrumentId {
-  if (value !== 'gayageum_12' && value !== 'janggu' && value !== 'daegeum') {
-    throw new Error('instrument must be gayageum_12, janggu, or daegeum');
+  if (value === 'gayageum_12' || value === 'janggu' || value === 'daegeum') {
+    return value;
   }
 
-  return value;
+  throw new Error('instrument must be gayageum_12, janggu, or daegeum');
 }
 
 function optionalPositiveFiniteNumber(value: unknown, errorMessage: string): number | undefined {

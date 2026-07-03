@@ -625,45 +625,55 @@ function FreePlayLiveAudioStatusBadge({
     return null;
   }
 
-  const isFailed = status.status === 'failed';
-  const label = isFailed ? '소리를 재생할 수 없음' : '소리 준비 중';
-  const detail = isFailed ? status.message : undefined;
+  if (status.status === 'failed') {
+    const label = '소리를 재생할 수 없음';
+
+    return (
+      <View
+        accessible
+        accessibilityLabel={`${label}. ${status.message}`}
+        style={[
+          styles.liveAudioStatusBadge,
+          landscape ? styles.liveAudioStatusBadgeLandscape : undefined,
+          styles.liveAudioStatusBadgeFailed,
+        ]}
+      >
+        <Text
+          numberOfLines={1}
+          style={[styles.liveAudioStatusText, styles.liveAudioStatusTextFailed]}
+        >
+          {label}
+        </Text>
+        <Text numberOfLines={2} style={styles.liveAudioStatusDetailText}>
+          {status.message}
+        </Text>
+        <Pressable
+          accessibilityLabel="연주 소리 다시 시도"
+          accessibilityRole="button"
+          onPress={() => dispatch({ type: 'retryLivePerformanceAudioPreparation' })}
+          style={styles.liveAudioRetryButton}
+        >
+          <Text style={styles.liveAudioRetryText}>다시 시도</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const label = '소리 준비 중';
 
   return (
     <View
       accessible
-      accessibilityLabel={detail === undefined ? label : `${label}. ${detail}`}
-      pointerEvents={isFailed ? 'auto' : 'none'}
+      accessibilityLabel={label}
+      pointerEvents="none"
       style={[
         styles.liveAudioStatusBadge,
         landscape ? styles.liveAudioStatusBadgeLandscape : undefined,
-        isFailed ? styles.liveAudioStatusBadgeFailed : undefined,
       ]}
     >
-      <Text
-        numberOfLines={1}
-        style={[
-          styles.liveAudioStatusText,
-          isFailed ? styles.liveAudioStatusTextFailed : undefined,
-        ]}
-      >
+      <Text numberOfLines={1} style={styles.liveAudioStatusText}>
         {label}
       </Text>
-      {isFailed ? (
-        <>
-          <Text numberOfLines={2} style={styles.liveAudioStatusDetailText}>
-            {status.message}
-          </Text>
-          <Pressable
-            accessibilityLabel="연주 소리 다시 시도"
-            accessibilityRole="button"
-            onPress={() => dispatch({ type: 'retryLivePerformanceAudioPreparation' })}
-            style={styles.liveAudioRetryButton}
-          >
-            <Text style={styles.liveAudioRetryText}>다시 시도</Text>
-          </Pressable>
-        </>
-      ) : null}
     </View>
   );
 }

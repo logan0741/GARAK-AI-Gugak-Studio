@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import type { SampleAssetManifest } from '../../domain/sampleManifest';
+import type { AuthStoragePort } from '../authSessionStore';
 import type { GarakFetch } from '../garakHttpProductServices';
+import type { ProductLibraryState } from '../garakProductState';
 import { createRuntimeGarakProductServices } from '../garakRuntimeProductServices';
 
 describe('runtime Garak product services', () => {
@@ -153,4 +155,87 @@ describe('runtime Garak product services', () => {
       },
     ]);
   });
+
+  test('uses the local library when the runtime has an API base URL but no access token', async () => {
+    const requests: Array<{ url: string; init?: Parameters<GarakFetch>[1] }> = [];
+    const storage = createMemoryStorage();
+    const services = createRuntimeGarakProductServices({
+      apiBaseUrl: 'https://api.garak.test',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            works: [{ id: 'remote-work' }],
+            exportedAudios: [],
+            practiceResults: [],
+          }),
+          text: async () => '',
+        };
+      },
+      getAccessToken: async () => undefined,
+      libraryStorage: storage,
+    });
+    const localSnapshot: ProductLibraryState = {
+      works: [],
+      exportedAudios: [],
+      practiceResults: [],
+    };
+
+    await services.library.saveSnapshot(localSnapshot);
+
+    await expect(services.library.loadSnapshot()).resolves.toEqual(localSnapshot);
+    expect(requests).toEqual([]);
+  });
+
+  test('falls back to the local library when remote library requests fail', async () => {
+    const requests: Array<{ url: string; init?: Parameters<GarakFetch>[1] }> = [];
+    const storage = createMemoryStorage();
+    const services = createRuntimeGarakProductServices({
+      apiBaseUrl: 'https://api.garak.test',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        throw new Error('network offline');
+      },
+      getAccessToken: async () => 'token-1',
+      libraryStorage: storage,
+    });
+    const localSnapshot: ProductLibraryState = {
+      works: [],
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio',
+          workId: 'work-1',
+          title: 'Local export',
+          durationSeconds: 12,
+          instrumentNames: ['가야금'],
+          createdAt: '2026-07-03T00:00:00.000Z',
+          audioUri: 'file://garak/export-1.wav',
+          shareState: 'ready',
+        },
+      ],
+      practiceResults: [],
+    };
+
+    await services.library.saveSnapshot(localSnapshot);
+
+    await expect(services.library.loadSnapshot()).resolves.toEqual(localSnapshot);
+    expect(requests.map((request) => request.init?.method)).toEqual(['PUT', 'GET']);
+  });
 });
+
+function createMemoryStorage(): AuthStoragePort {
+  const values = new Map<string, string>();
+
+  return {
+    getItem: async (key) => values.get(key) ?? null,
+    setItem: async (key, value) => {
+      values.set(key, value);
+    },
+    deleteItem: async (key) => {
+      values.delete(key);
+    },
+  };
+}
