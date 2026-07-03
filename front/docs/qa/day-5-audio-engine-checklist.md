@@ -81,7 +81,9 @@ After the physical-device test, transfer the measured values into the same shape
 
 During rehearsal, `src/audio/audioEngineProbeDraft.ts` can create an `estimate` draft from observed values. That draft is useful for checking JSON shape and glissando counts, but it does not satisfy the Day 5 final gate. Only a tester-reviewed probe with `evidenceSource: 'physical-device'` counts.
 
-The prototype inspector also reports `observedFakeCounters.eventDispatchLatency`. This is a debug-only measurement from the first `PerformanceEvent.tsMs` in a handled batch to the moment the current `SamplerEngine` dispatch call returns. It is useful for spotting JS event pipeline regressions, but it is not touch-to-sound latency evidence and must not be copied into `touchToSoundLatencyMs`.
+The prototype inspector also reports `observedFakeCounters.eventDispatchLatency`. This is a debug-only measurement from the first `PerformanceEvent.tsMs` in a handled batch to the moment the current `SamplerEngine` dispatch call returns. It is useful for spotting JS event pipeline regressions, but it is not touch-to-sound latency evidence and must not be copied into `touchToSoundLatencyMs`, `firstTouchLatencyMs`, or `steadyTouchLatencyMs`.
+
+When checking S05 warmup, record the first audible touch separately from repeated touches. Use `firstTouchLatencyMs` for the first S05 touch after entering the stage and `steadyTouchLatencyMs` for warmed, repeated touches on the same instrument. These fields are optional for older probe records, but when present they are validated and evaluated separately so first-touch warmup regressions are not hidden by good steady-state latency.
 
 The copyable prototype probe draft includes `observedRuntime` for handoff traceability. Use it to confirm whether the selected candidate actually became the active runtime on the device build, but keep all final gate fields under a separate `physical-device` probe.
 
@@ -108,6 +110,8 @@ When `Prototype handoff JSON` is filled with any positive `recordingCaptureSecon
   deviceLabel: '',
   measuredAt: '',
   touchToSoundLatencyMs: 0,
+  firstTouchLatencyMs: 0,
+  steadyTouchLatencyMs: 0,
   maxStableVoices: 0,
   pitchBendSmooth: false,
   glissandoTriggeredStrings: 0,

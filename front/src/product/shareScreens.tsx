@@ -55,22 +55,25 @@ export function SharePrepareContent({
           <PrepareMeta label="출처" value={model.sourceLabel} />
         </View>
         <Text style={styles.bodyText}>{model.description}</Text>
+        {model.publishErrorMessage ? (
+          <Text style={styles.shareErrorText}>{model.publishErrorMessage}</Text>
+        ) : null}
       </View>
       <View style={[styles.buttonRow, styles.prepareButtonGrid]}>
         <SecondaryPillButton
-          disabled={!model.canShare}
+          disabled={!model.canShare || model.isPublishing}
           label={previewButtonLabel}
           onPress={() => dispatch({ type: 'previewShareTarget' })}
           style={styles.prepareActionButton}
         />
         <SecondaryPillButton
-          disabled={!model.canShare}
-          label="공유하기"
+          disabled={!model.canShare || model.isPublishing}
+          label={model.publishButtonLabel}
           onPress={() => dispatch({ type: 'publishShareTarget' })}
           style={styles.prepareActionButton}
         />
         <SecondaryPillButton
-          disabled={!model.canShare}
+          disabled={!model.canShare || model.isPublishing}
           label="저장만 하기"
           onPress={() => dispatch({ type: 'saveShareTargetOnly' })}
           style={styles.prepareActionButton}
@@ -765,6 +768,12 @@ const styles = StyleSheet.create({
     color: GARAK_COLORS.textSecondary,
     fontSize: 13,
     lineHeight: 19,
+  },
+  shareErrorText: {
+    color: GARAK_COLORS.brandRed,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   buttonRow: {
     flexDirection: 'row',

@@ -1,13 +1,25 @@
-import { GARAK_BRAND } from './productFixtures';
 import type { GarakProductAction, GarakProductState } from './garakProductState';
+import {
+  KOGL_TYPE_1_LICENSE_URL,
+  NGC_MONOTONE_SOURCE_URL,
+} from './livePerformanceBundledSamples';
+import { GARAK_BRAND } from './productFixtures';
 
 export type SettingsStatusRow = {
   label: string;
   value: string;
 };
 
+export type SettingsAudioSourceNotice = {
+  title: string;
+  body: string;
+  sourceUrl: string;
+  licenseUrl: string;
+};
+
 export type SettingsViewModel = {
   rows: SettingsStatusRow[];
+  audioSourceNotice: SettingsAudioSourceNotice;
   actions: {
     changeLanguage: GarakProductAction;
     manageLibrary: GarakProductAction;
@@ -39,8 +51,22 @@ export function getSettingsViewModel(state: GarakProductState): SettingsViewMode
       { label: isEn ? 'Local Library Storage' : '로컬 보관함 저장 상태', value: localLibrarySummary },
       { label: isEn ? 'Sync Status' : '동기화 상태', value: `${syncPrefix} · ${localLibrarySummary}` },
       { label: isEn ? 'Language' : '언어', value: languageLabel(state.language) },
+      {
+        label: isEn ? 'Audio Sources' : '오디오 출처',
+        value: isEn
+          ? 'National Gugak Center · KOGL Type 1 · Janggu/Daegeum'
+          : '국립국악원 · 공공누리 제1유형 · 장구/대금',
+      },
       { label: isEn ? 'App Info' : '앱 정보', value: `${GARAK_BRAND.serviceName} · ${GARAK_BRAND.subtitle}` },
     ],
+    audioSourceNotice: {
+      title: isEn ? 'Audio Source Attribution' : '오디오 출처 표기',
+      body: isEn
+        ? 'Janggu and daegeum performance samples use National Gugak Center monotone assets under KOGL Type 1 attribution terms.'
+        : '장구와 대금 연주 샘플은 국립국악원 국악기 디지털 음원 단음 자료를 공공누리 제1유형 출처표시 조건에 따라 사용합니다.',
+      sourceUrl: NGC_MONOTONE_SOURCE_URL,
+      licenseUrl: KOGL_TYPE_1_LICENSE_URL,
+    },
     actions: {
       changeLanguage: { type: 'navigate', target: 'S02' },
       manageLibrary: { type: 'navigate', target: 'S18' },

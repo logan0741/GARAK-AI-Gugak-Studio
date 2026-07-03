@@ -11,7 +11,15 @@ const MAX_AMPLITUDE = 0x7fff;
 for (const asset of prototypeGayageumSampleManifest.assets) {
   const outputPath = join(process.cwd(), asset.fileUri);
   mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, createSinePluckWav(asset.pitchHz));
+  writeFileSync(outputPath, createSinePluckWav(requirePitchHz(asset)));
+}
+
+function requirePitchHz(asset: { id: string; pitchHz?: number }): number {
+  if (asset.pitchHz === undefined) {
+    throw new Error(`Dev gayageum sample ${asset.id} must include pitchHz`);
+  }
+
+  return asset.pitchHz;
 }
 
 function createSinePluckWav(frequencyHz: number): Buffer {
