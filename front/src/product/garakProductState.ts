@@ -18,6 +18,8 @@ import {
   JangdanPresetId,
   PracticeResult,
   RecordingSetup,
+  ShareMethod,
+  ShareTargetReference,
   Track,
   Work,
 } from '../studio/studioTypes';
@@ -42,6 +44,12 @@ import {
   type InstrumentSampleReadinessInput,
   type InstrumentSampleStatus,
 } from './instrumentSampleReadiness';
+import type {
+  AiAutoAccompanimentCandidate,
+  AiAutoAccompanimentFailureCode,
+  AiAutoAccompanimentGenerationStage,
+  AiAutoAccompanimentStatus,
+} from './aiAutoAccompaniment';
 import { buildPracticeResultFeedback, evaluatePracticeResult } from './practiceResultEvaluation';
 
 export type { InstrumentSampleStatus } from './instrumentSampleReadiness';
@@ -75,6 +83,8 @@ export type ProductLanguage = 'ko' | 'en';
 export type PendingFreePlayTake = {
   events: PerformanceEvent[];
   recordingSetup: RecordingSetup;
+  recordingUri?: string;
+  startedAtMs: number;
 };
 
 export type FreePlayNotice = 'missingTake';
@@ -107,6 +117,31 @@ export type PracticeAttempt = {
   timingErrorsMs: number[];
 };
 
+export type WorkSaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
+
+export type WorkExportStatus =
+  | { status: 'idle' }
+  | { status: 'exporting'; workId: Work['id'] }
+  | { status: 'ready'; exportedAudioId: ExportedAudio['id'] }
+  | { status: 'failed'; workId: Work['id']; message: string };
+
+export type SharePublishStatus =
+  | { status: 'idle' }
+  | { status: 'publishing'; target: ShareTargetReference }
+  | { status: 'shared'; target: ShareTargetReference; remoteId: string }
+  | { status: 'failed'; target: ShareTargetReference; message: string };
+
+export type LivePerformanceAudioStatus =
+  | { status: 'idle' }
+  | { status: 'preparing'; instrument: InstrumentId }
+  | {
+      status: 'ready';
+      instrument: InstrumentId;
+      sampleSourceLabel: string;
+      releaseReady: boolean;
+    }
+  | { status: 'failed'; instrument: InstrumentId; message: string };
+
 export type JangdanPresetPreviewMode = 'live' | 'track';
 
 export type GarakProductState = {
@@ -136,7 +171,12 @@ export type GarakProductState = {
   activeInstrumentSettings?: ActiveInstrumentSettings;
   trackAddNotice?: TrackAddNotice;
   trackAddSelection?: TrackAddSelection;
-  workSaveStatus?: 'saved';
+  workSaveStatus: WorkSaveStatus;
+  workSaveErrorMessage?: string;
+  workExportStatus: WorkExportStatus;
+  sharePublishStatus: SharePublishStatus;
+  livePerformanceAudioStatus: LivePerformanceAudioStatus;
+  autoAccompanimentStatus: AiAutoAccompanimentStatus;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
     presetId: JangdanPresetId;
@@ -177,14 +217,23 @@ export type GarakProductAction =
   | { type: 'selectFreePlayRecordingPreset'; presetId: JangdanPresetId }
   | { type: 'adjustFreePlayRecordingBpm'; delta: number }
   | { type: 'cancelFreePlayRecordingSetup' }
-  | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup }
+  | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup; recordingUri?: string }
   | { type: 'appendFreePlayPerformanceEvents'; events: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
+  | {
+      type: 'completeLivePerformanceAudioPreparation';
+      instrument: InstrumentId;
+      sampleSourceLabel: string;
+      releaseReady: boolean;
+    }
+  | { type: 'failLivePerformanceAudioPreparation'; instrument: InstrumentId; message: string }
+  | { type: 'retryLivePerformanceAudioPreparation' }
   | { type: 'setWorkPlayheadBeat'; beat: number }
   | { type: 'adjustWorkTrackVolume'; trackId: string; delta: number }
   | { type: 'toggleWorkTrackMute'; trackId: string }
   | { type: 'toggleWorkTrackSolo'; trackId: string }
   | { type: 'deleteWorkTrack'; trackId: string }
+  | { type: 'playCurrentWorkMix' }
   | { type: 'openLayerEditor' }
   | { type: 'openLiveJangdanGuide' }
   | { type: 'applyLiveJangdanGuide'; presetId: JangdanPresetId; bpm: number; volume: number }
@@ -201,14 +250,26 @@ export type GarakProductAction =
   | { type: 'showLockedImportTrackNotice' }
   | { type: 'cancelTrackAdd' }
   | { type: 'chooseInstrumentTrack'; instrument: InstrumentId }
-  | { type: 'restartInstrumentTrackRecording'; events?: PerformanceEvent[] }
+  | { type: 'restartInstrumentTrackRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup; recordingUri?: string }
   | { type: 'applyInstrumentTrack'; events?: PerformanceEvent[]; playheadBeat?: number }
   | { type: 'cancelInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
+  | { type: 'startAutoAccompanimentGeneration'; stage: AiAutoAccompanimentGenerationStage }
+  | { type: 'completeAutoAccompanimentGeneration'; candidate: AiAutoAccompanimentCandidate }
+  | {
+      type: 'failAutoAccompanimentGeneration';
+      code: AiAutoAccompanimentFailureCode;
+      message: string;
+    }
   | { type: 'addAccompanimentTrack'; presetId: JangdanPresetId; bpm: number; volume: number; playheadBeat?: number }
   | { type: 'cancelAccompanimentTrack' }
   | { type: 'saveCurrentWork' }
+  | { type: 'completeCurrentWorkSave' }
+  | { type: 'failCurrentWorkSave'; message: string }
+  | { type: 'saveAndShareCurrentWork' }
   | { type: 'exportCurrentWork' }
+  | { type: 'completeWorkAudioExport'; workId: Work['id']; audioUri: string; durationSeconds?: number }
+  | { type: 'failWorkAudioExport'; workId: Work['id']; message: string }
   | { type: 'previewPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeInstrument'; instrument: InstrumentId }
@@ -226,6 +287,15 @@ export type GarakProductAction =
   | { type: 'saveShareTargetOnly' }
   | { type: 'cancelShareTarget' }
   | { type: 'publishShareTarget' }
+  | {
+      type: 'completeSharePublish';
+      target: ShareTargetReference;
+      remoteId: string;
+      shareUrl?: string;
+      expiresAtMs?: number;
+      shareMethod: ShareMethod;
+    }
+  | { type: 'failSharePublish'; target: ShareTargetReference; message: string }
   | { type: 'openSharedRecordingDetail'; recordingId: SharedRecording['id'] }
   | { type: 'playSelectedSharedRecording' }
   | { type: 'pauseSelectedSharedRecording' }
@@ -276,6 +346,11 @@ export function createInitialGarakProductState(
     libraryTab: 'works',
     librarySearchQuery: '',
     workPlayheadBeat: 1,
+    workSaveStatus: 'idle',
+    workExportStatus: { status: 'idle' },
+    sharePublishStatus: { status: 'idle' },
+    livePerformanceAudioStatus: { status: 'idle' },
+    autoAccompanimentStatus: { status: 'idle' },
     instrumentSampleStatuses: resolveInstrumentSampleStatuses({
       sampleManifests: input.sampleManifests,
       fallbackInstruments: input.sampleFallbackInstruments,
@@ -325,7 +400,8 @@ export function applyProductAction(
       return {
         ...state,
         currentWorkId: action.workId,
-        workSaveStatus: undefined,
+        workSaveStatus: 'idle',
+        workSaveErrorMessage: undefined,
         workPlayheadBeat: 1,
         screenFlow:
           state.screenFlow.currentScreen === 'S18'
@@ -358,6 +434,10 @@ export function applyProductAction(
         }),
       };
     case 'selectIntroGuideMode':
+      if (action.mode !== 'freeCreation') {
+        return state;
+      }
+
       return {
         ...state,
         selectedMode: action.mode,
@@ -439,6 +519,10 @@ export function applyProductAction(
         freePlayRecordingSetup: undefined,
       };
     case 'startPerformanceRecording':
+      if (state.pendingFreePlayTake !== undefined) {
+        return state;
+      }
+
       return {
         ...state,
         pendingFreePlayTake: {
@@ -446,6 +530,8 @@ export function applyProductAction(
           recordingSetup: normalizeRecordingSetup(
             action.recordingSetup ?? state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
           ),
+          recordingUri: normalizeOptionalText(action.recordingUri),
+          startedAtMs: toEpochMs(state.now()),
         },
         freePlayRecordingSetup: undefined,
         freePlayNotice: undefined,
@@ -464,7 +550,28 @@ export function applyProductAction(
         freePlayNotice: undefined,
       };
     case 'completePerformance':
-      return completePerformance(state, action.events);
+      return completePerformance(state);
+    case 'completeLivePerformanceAudioPreparation':
+      return {
+        ...state,
+        livePerformanceAudioStatus: {
+          status: 'ready',
+          instrument: action.instrument,
+          sampleSourceLabel: action.sampleSourceLabel,
+          releaseReady: action.releaseReady,
+        },
+      };
+    case 'failLivePerformanceAudioPreparation':
+      return {
+        ...state,
+        livePerformanceAudioStatus: {
+          status: 'failed',
+          instrument: action.instrument,
+          message: normalizeOptionalText(action.message) ?? 'Live performance audio is unavailable.',
+        },
+      };
+    case 'retryLivePerformanceAudioPreparation':
+      return retryLivePerformanceAudioPreparation(state);
     case 'setWorkPlayheadBeat':
       return {
         ...state,
@@ -487,6 +594,8 @@ export function applyProductAction(
       }));
     case 'deleteWorkTrack':
       return deleteCurrentWorkTrack(state, action.trackId);
+    case 'playCurrentWorkMix':
+      return state;
     case 'openLayerEditor':
       return openLayerEditor(state);
     case 'openLiveJangdanGuide':
@@ -574,7 +683,9 @@ export function applyProductAction(
         ...state,
         pendingFreePlayTake: {
           events: action.events ?? [],
-          recordingSetup: createDefaultRecordingSetup(),
+          recordingSetup: normalizeRecordingSetup(action.recordingSetup ?? createDefaultRecordingSetup()),
+          recordingUri: normalizeOptionalText(action.recordingUri),
+          startedAtMs: toEpochMs(state.now()),
         },
         freePlayRecordingSetup: undefined,
         screenFlow:
@@ -599,16 +710,60 @@ export function applyProductAction(
         ...state,
         trackAddNotice: undefined,
         trackAddSelection: undefined,
+        autoAccompanimentStatus: {
+          status: 'generating',
+          stage: 'analyzing',
+        },
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'chooseAccompanimentTrack' }),
+      };
+    case 'startAutoAccompanimentGeneration':
+      return {
+        ...state,
+        autoAccompanimentStatus: {
+          status: 'generating',
+          stage: action.stage,
+        },
+      };
+    case 'completeAutoAccompanimentGeneration':
+      return {
+        ...state,
+        autoAccompanimentStatus: {
+          status: 'candidateReady',
+          candidate: action.candidate,
+        },
+      };
+    case 'failAutoAccompanimentGeneration':
+      return {
+        ...state,
+        autoAccompanimentStatus: {
+          status: 'failed',
+          code: action.code,
+          message: action.message,
+        },
       };
     case 'addAccompanimentTrack':
       return applyAccompanimentTrack(state, action);
     case 'saveCurrentWork':
       return saveCurrentWork(state);
+    case 'completeCurrentWorkSave':
+      return {
+        ...state,
+        workSaveStatus: 'saved',
+        workSaveErrorMessage: undefined,
+      };
+    case 'failCurrentWorkSave':
+      return {
+        ...state,
+        workSaveStatus: 'failed',
+        workSaveErrorMessage: action.message,
+      };
+    case 'saveAndShareCurrentWork':
+      return saveAndShareCurrentWork(state);
     case 'cancelAccompanimentTrack':
       return {
         ...state,
         previewingJangdanPreset: undefined,
+        autoAccompanimentStatus: { status: 'idle' },
         screenFlow:
           state.screenFlow.currentScreen === 'S10B'
             ? transitionScreenFlow(state.screenFlow, { type: 'cancelAccompanimentTrack' })
@@ -616,6 +771,17 @@ export function applyProductAction(
       };
     case 'exportCurrentWork':
       return exportCurrentWork(state);
+    case 'completeWorkAudioExport':
+      return completeWorkAudioExport(state, action);
+    case 'failWorkAudioExport':
+      return {
+        ...state,
+        workExportStatus: {
+          status: 'failed',
+          workId: action.workId,
+          message: action.message,
+        },
+      };
     case 'previewPracticeSong':
       return {
         ...state,
@@ -674,6 +840,7 @@ export function applyProductAction(
       return {
         ...state,
         sharePreviewStatus: undefined,
+        sharePublishStatus: { status: 'idle' },
         screenFlow:
           state.screenFlow.currentScreen === 'S17'
             ? transitionScreenFlow(state.screenFlow, { type: 'saveShareTargetOnly' })
@@ -691,6 +858,17 @@ export function applyProductAction(
       };
     case 'publishShareTarget':
       return publishShareTarget(state);
+    case 'completeSharePublish':
+      return completeSharePublish(state, action);
+    case 'failSharePublish':
+      return {
+        ...state,
+        sharePublishStatus: {
+          status: 'failed',
+          target: action.target,
+          message: action.message,
+        },
+      };
     case 'openSharedRecordingDetail':
       return {
         ...state,
@@ -733,7 +911,6 @@ export function applyProductAction(
     case 'replaceLibrarySnapshot':
       return {
         ...state,
-        account: resolveSyncedAccount(state.account),
         library: action.library,
       };
     case 'skipLoginSync':
@@ -824,7 +1001,32 @@ function startFreePlayWithInstrumentSettings(
     pendingFreePlayTake: undefined,
     freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
+    livePerformanceAudioStatus: {
+      status: 'preparing',
+      instrument,
+    },
     screenFlow: pushTarget(state.screenFlow, 'S05'),
+  };
+}
+
+function retryLivePerformanceAudioPreparation(state: GarakProductState): GarakProductState {
+  if (state.screenFlow.currentScreen !== 'S05') {
+    return state;
+  }
+
+  const instrument =
+    state.livePerformanceAudioStatus.status === 'failed' ||
+    state.livePerformanceAudioStatus.status === 'preparing' ||
+    state.livePerformanceAudioStatus.status === 'ready'
+      ? state.livePerformanceAudioStatus.instrument
+      : state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
+
+  return {
+    ...state,
+    livePerformanceAudioStatus: {
+      status: 'preparing',
+      instrument,
+    },
   };
 }
 
@@ -1033,7 +1235,7 @@ export function getCurrentScreenSummary(state: GarakProductState): ScreenSummary
   }
 }
 
-function completePerformance(state: GarakProductState, events?: PerformanceEvent[]): GarakProductState {
+function completePerformance(state: GarakProductState): GarakProductState {
   if (state.pendingFreePlayTake === undefined) {
     return {
       ...state,
@@ -1045,7 +1247,7 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
   const nextCounters = incrementCounters(state.counters, ['work', 'track', 'take']);
   const now = state.now();
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
-  const takeEvents = events ?? state.pendingFreePlayTake.events;
+  const takeEvents = state.pendingFreePlayTake.events;
   const instrumentSettings = getRecordingInstrumentSettings(state, instrument);
   const work = autoSaveTakeAsWork({
     workId: `work-${nextCounters.work}`,
@@ -1056,7 +1258,11 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     events: takeEvents,
     createdAt: now,
     startedAtBeat: 1,
-    durationBeats: 4,
+    durationBeats: getPerformanceTakeDurationBeats(
+      takeEvents,
+      state.pendingFreePlayTake.recordingSetup,
+    ),
+    recordingUri: state.pendingFreePlayTake.recordingUri,
     instrumentSettings,
     recordingSetup: state.pendingFreePlayTake.recordingSetup,
     liveJangdanGuide: state.pendingLiveJangdanGuide
@@ -1077,7 +1283,8 @@ function completePerformance(state: GarakProductState, events?: PerformanceEvent
     pendingFreePlayTake: undefined,
     freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     pendingLiveJangdanGuide: undefined,
     library: {
       ...state.library,
@@ -1099,6 +1306,14 @@ function freePlayDescription(state: GarakProductState): string {
 
   if (state.freePlayNotice === 'missingTake') {
     return '저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.';
+  }
+
+  if (state.livePerformanceAudioStatus.status === 'preparing') {
+    return '연주 소리를 준비하는 중입니다. 준비가 끝나면 터치한 소리가 바로 납니다.';
+  }
+
+  if (state.livePerformanceAudioStatus.status === 'failed') {
+    return `연주 소리를 준비하지 못했습니다. ${state.livePerformanceAudioStatus.message}`;
   }
 
   return '악기를 직접 연주하고 완료하면 작업으로 자동 저장돼요.';
@@ -1132,7 +1347,45 @@ function adjustRecordingSetupBpm(setup: RecordingSetup, delta: number): Recordin
 }
 
 function normalizeRecordingSetup(setup: RecordingSetup): RecordingSetup {
-  return createRecordingSetup(setup.presetId, setup.bpm);
+  const normalized = createRecordingSetup(setup.presetId, setup.bpm);
+
+  return {
+    ...normalized,
+    beatUnit: setup.beatUnit.trim().length > 0 ? setup.beatUnit : normalized.beatUnit,
+  };
+}
+
+function toEpochMs(isoDate: string): number {
+  const epochMs = Date.parse(isoDate);
+
+  return Number.isFinite(epochMs) ? epochMs : 0;
+}
+
+function getPerformanceTakeDurationBeats(
+  events: PerformanceEvent[],
+  recordingSetup: RecordingSetup,
+): number {
+  if (events.length === 0) {
+    return 4;
+  }
+
+  const lastEventTsMs = Math.max(...events.map((event) => event.tsMs));
+  const msPerBeat = 60_000 / recordingSetup.bpm;
+
+  if (!Number.isFinite(lastEventTsMs) || !Number.isFinite(msPerBeat) || msPerBeat <= 0) {
+    return 4;
+  }
+
+  return Math.max(1, Math.ceil(lastEventTsMs / msPerBeat));
+}
+
+function normalizeOptionalText(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 function clampBpm(preset: { minBpm: number; maxBpm: number }, bpm: number): number {
@@ -1302,11 +1555,13 @@ function applyInstrumentTrack(
     return state;
   }
 
-  const hasRecordedTake = state.pendingFreePlayTake !== undefined || events.length > 0;
+  const pendingTake = state.pendingFreePlayTake;
+  const hasRecordedTake = pendingTake !== undefined || events.length > 0;
   if (!hasRecordedTake) {
     return state;
   }
-  const takeEvents = events.length > 0 ? events : state.pendingFreePlayTake?.events ?? [];
+  const takeEvents = events.length > 0 ? events : pendingTake?.events ?? [];
+  const recordingSetup = pendingTake?.recordingSetup ?? createDefaultRecordingSetup();
 
   const nextCounters = incrementCounters(state.counters, ['track', 'take']);
   const now = state.now();
@@ -1317,8 +1572,10 @@ function applyInstrumentTrack(
     instrument,
     events: takeEvents,
     createdAt: now,
-    durationBeats: 4,
+    durationBeats: getPerformanceTakeDurationBeats(takeEvents, recordingSetup),
     playheadBeat: playheadBeat ?? state.workPlayheadBeat,
+    recordingUri: pendingTake?.recordingUri,
+    recordingSetup,
     instrumentSettings: getRecordingInstrumentSettings(state, instrument),
   });
   const nextScreenFlow =
@@ -1366,6 +1623,7 @@ function applyAccompanimentTrack(
   return {
     ...nextState,
     previewingJangdanPreset: undefined,
+    autoAccompanimentStatus: { status: 'idle' },
   };
 }
 
@@ -1463,6 +1721,10 @@ function exportCurrentWork(state: GarakProductState): GarakProductState {
       kind: 'exportedAudio',
       exportedAudioId: exported.id,
     },
+    workExportStatus: {
+      status: 'ready',
+      exportedAudioId: exported.id,
+    },
     screenFlow: transitionScreenFlow(
       state.screenFlow.currentScreen === 'S07'
         ? state.screenFlow
@@ -1490,7 +1752,83 @@ function saveCurrentWork(state: GarakProductState): GarakProductState {
       ...state.library,
       works: state.library.works.map((work) => (work.id === savedWork.id ? savedWork : work)),
     },
-    workSaveStatus: 'saved',
+    workSaveStatus: 'saving',
+    workSaveErrorMessage: undefined,
+  };
+}
+
+function saveAndShareCurrentWork(state: GarakProductState): GarakProductState {
+  const currentWork = findCurrentWork(state);
+  if (currentWork === undefined) {
+    return state;
+  }
+
+  const savedWork: Work = {
+    ...currentWork,
+    updatedAt: state.now(),
+    syncState: 'local_only',
+  };
+
+  return {
+    ...state,
+    library: {
+      ...state.library,
+      works: state.library.works.map((work) => (work.id === savedWork.id ? savedWork : work)),
+    },
+    workSaveStatus: 'saving',
+    workSaveErrorMessage: undefined,
+    workExportStatus: {
+      status: 'exporting',
+      workId: savedWork.id,
+    },
+    sharePublishStatus: { status: 'idle' },
+  };
+}
+
+function completeWorkAudioExport(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'completeWorkAudioExport' }>,
+): GarakProductState {
+  const work = state.library.works.find((item) => item.id === action.workId);
+  if (work === undefined) {
+    return state;
+  }
+
+  const nextCounters = incrementCounters(state.counters, ['export']);
+  const exported = exportWorkAudioPlaceholder({
+    id: `export-${nextCounters.export}`,
+    work,
+    title: `${work.title} 내보내기`,
+    audioUri: action.audioUri,
+    durationSeconds: action.durationSeconds ?? 24,
+    createdAt: state.now(),
+  });
+
+  return {
+    ...state,
+    counters: nextCounters,
+    library: {
+      ...state.library,
+      exportedAudios: [...state.library.exportedAudios, exported],
+    },
+    selectedPlayerItem: {
+      kind: 'exportedAudio',
+      exportedAudioId: exported.id,
+    },
+    sharePreviewStatus: undefined,
+    workExportStatus: {
+      status: 'ready',
+      exportedAudioId: exported.id,
+    },
+    screenFlow:
+      state.screenFlow.currentScreen === 'S17'
+        ? state.screenFlow
+        : transitionScreenFlow(
+            state.screenFlow.currentScreen === 'S07'
+              ? state.screenFlow
+              : pushTarget(state.screenFlow, 'S07'),
+            { type: 'saveAndShareCurrentWork' },
+          ),
   };
 }
 
@@ -1578,7 +1916,8 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
     ...state,
     counters: nextCounters,
     currentWorkId: work.id,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     workPlayheadBeat: 1,
     library: {
       ...state.library,
@@ -1631,43 +1970,82 @@ function getSelectedSharedRecording(state: GarakProductState): SharedRecording {
 }
 
 function publishShareTarget(state: GarakProductState): GarakProductState {
-  const target = resolveShareTargetSelection(state);
+  const selection = resolveShareTargetSelection(state);
+  const target = selectionToShareTargetReference(selection);
 
   if (target === undefined) {
     return state;
   }
 
-  const screenFlow =
-    state.screenFlow.currentScreen === 'S17'
-      ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
-      : pushTarget(state.screenFlow, 'S20');
+  return {
+    ...state,
+    sharePreviewStatus: undefined,
+    sharePublishStatus: {
+      status: 'publishing',
+      target,
+    },
+    selectedPlayerItem: selection,
+    screenFlow: state.screenFlow.currentScreen === 'S17' ? state.screenFlow : pushTarget(state.screenFlow, 'S17'),
+  };
+}
 
-  if (target.kind === 'exportedAudio') {
+function completeSharePublish(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'completeSharePublish' }>,
+): GarakProductState {
+  const selection = shareTargetReferenceToSelection(action.target);
+  const sharedAt = state.now();
+  const sharedFields = {
+    shareState: 'shared' as const,
+    remoteShareId: action.remoteId,
+    shareUrl: action.shareUrl,
+    shareExpiresAtMs: action.expiresAtMs,
+    shareMethod: action.shareMethod,
+    sharedAt,
+  };
+
+  if (action.target.kind === 'exportedAudio') {
     return {
       ...state,
       sharePreviewStatus: undefined,
+      sharePublishStatus: {
+        status: 'shared',
+        target: action.target,
+        remoteId: action.remoteId,
+      },
       library: {
         ...state.library,
         exportedAudios: state.library.exportedAudios.map((audio) =>
-          audio.id === target.exportedAudioId ? { ...audio, shareState: 'shared' } : audio,
+          audio.id === action.target.id ? { ...audio, ...sharedFields } : audio,
         ),
       },
-      selectedPlayerItem: target,
-      screenFlow,
+      selectedPlayerItem: selection,
+      screenFlow:
+        state.screenFlow.currentScreen === 'S17'
+          ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
+          : pushTarget(state.screenFlow, 'S20'),
     };
   }
 
   return {
     ...state,
     sharePreviewStatus: undefined,
+    sharePublishStatus: {
+      status: 'shared',
+      target: action.target,
+      remoteId: action.remoteId,
+    },
     library: {
       ...state.library,
       practiceResults: state.library.practiceResults.map((result) =>
-        result.id === target.practiceResultId ? { ...result, shareState: 'shared' } : result,
+        result.id === action.target.id ? { ...result, ...sharedFields } : result,
       ),
     },
-    selectedPlayerItem: target,
-    screenFlow,
+    selectedPlayerItem: selection,
+    screenFlow:
+      state.screenFlow.currentScreen === 'S17'
+        ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
+        : pushTarget(state.screenFlow, 'S20'),
   };
 }
 
@@ -1696,7 +2074,8 @@ function openSelectedPlayerEditor(state: GarakProductState): GarakProductState {
   return {
     ...state,
     currentWorkId: workId,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     workPlayheadBeat: 1,
     screenFlow: pushTarget(state.screenFlow, 'S07'),
   };
@@ -1797,6 +2176,40 @@ function resolveShareTargetSelection(
   )[0]?.selection;
 }
 
+function selectionToShareTargetReference(
+  selection: Extract<ProductPlayerSelection, { kind: 'exportedAudio' | 'practiceResult' }> | undefined,
+): ShareTargetReference | undefined {
+  if (selection?.kind === 'exportedAudio') {
+    return {
+      kind: 'exportedAudio',
+      id: selection.exportedAudioId,
+    };
+  }
+
+  if (selection?.kind === 'practiceResult') {
+    return {
+      kind: 'practiceResult',
+      id: selection.practiceResultId,
+    };
+  }
+
+  return undefined;
+}
+
+function shareTargetReferenceToSelection(
+  target: ShareTargetReference,
+): Extract<ProductPlayerSelection, { kind: 'exportedAudio' | 'practiceResult' }> {
+  return target.kind === 'exportedAudio'
+    ? {
+        kind: 'exportedAudio',
+        exportedAudioId: target.id,
+      }
+    : {
+        kind: 'practiceResult',
+        practiceResultId: target.id,
+      };
+}
+
 function replaceCurrentWork(
   state: GarakProductState,
   work: Work,
@@ -1806,7 +2219,8 @@ function replaceCurrentWork(
   return {
     ...state,
     counters,
-    workSaveStatus: undefined,
+    workSaveStatus: 'idle',
+    workSaveErrorMessage: undefined,
     library: {
       ...state.library,
       works: state.library.works.map((item) => (item.id === work.id ? work : item)),

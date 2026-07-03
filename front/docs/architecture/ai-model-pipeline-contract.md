@@ -4,7 +4,7 @@
 작성일: 2026-06-19
 문서 책임: 프론트가 모델 서버에 보낼 입력과 모델 서버에서 받을 출력의 데이터 경계를 정리한다.
 
-관련 문서: `runtime-architecture.md`, `gukak-studio-erd.md`, `../product/screen-flow/current-screen-flow.md`
+관련 문서: `runtime-architecture.md`, `gukak-studio-erd.md`, `ai-auto-accompaniment-generation.md`, `../product/screen-flow/current-screen-flow.md`
 
 ## 원칙
 

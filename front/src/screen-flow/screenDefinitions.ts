@@ -119,10 +119,11 @@ export const implementedScreenDefinitions: Record<ImplementedScreenId, ScreenDef
     id: 'S07',
     name: 'Track And Layer Edit',
     mvpStatus: 'required',
-    primaryCtas: ['saveCurrentWork', 'exportCurrentWork', 'addTrack'],
+    primaryCtas: ['saveCurrentWork', 'saveAndShareCurrentWork', 'exportCurrentWork', 'addTrack'],
     transitions: [
       { action: 'addTrack', target: 'S08' },
       { action: 'exportCurrentWork', target: 'S19' },
+      { action: 'saveAndShareCurrentWork', target: 'S17' },
       { action: 'library', target: 'S18' },
     ],
   },

@@ -34,7 +34,11 @@ export function getFreeCreationCompletedPreviewModel(
   const isEn = state.language === 'en';
   const playerTitle = work?.title ?? (isEn ? 'My Garak' : '나만의 가락');
   const saveStatusLabel =
-    state.workSaveStatus === 'saved'
+    state.workSaveStatus === 'saving'
+      ? (isEn ? 'Saving...' : 'Saving...')
+      : state.workSaveStatus === 'failed'
+        ? (isEn ? 'Save Failed' : 'Save Failed')
+        : state.workSaveStatus === 'saved'
       ? (isEn ? 'Saved' : '저장됨')
       : (isEn ? 'Save Work' : '작업 저장');
 

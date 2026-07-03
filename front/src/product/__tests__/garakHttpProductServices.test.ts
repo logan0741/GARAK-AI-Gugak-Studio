@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { createWorkMixPlan } from '../../studio/studioLibrary';
+import type { Work } from '../../studio/studioTypes';
 import type { ProductLibraryState } from '../garakProductState';
 import { createHttpGarakProductServices, type GarakFetch } from '../garakHttpProductServices';
 
@@ -85,9 +87,137 @@ describe('HTTP Garak product services', () => {
       fetch: async () => jsonResponse(501, { message: 'not implemented' }),
     });
 
-    await expect(services.share.publishShareTarget({ kind: 'practiceResult', id: 'practice-1' })).resolves.toEqual({
+    await expect(
+      services.share.publishShareTarget({
+        target: { kind: 'practiceResult', id: 'practice-1' },
+        title: 'Practice result',
+        message: 'Practice result',
+      }),
+    ).resolves.toEqual({
       status: 'unavailable',
     });
+  });
+
+  test('posts live performance events to the audio playback service boundary', async () => {
+    const requests: Array<{ url: string; init: Parameters<GarakFetch>[1] }> = [];
+    const services = createHttpGarakProductServices({
+      baseUrl: 'https://api.garak.test/v1',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        return jsonResponse(200, { handledEvents: 1 });
+      },
+    });
+    const events = [
+      { type: 'string_pluck' as const, tsMs: 120, stringIndex: 2, velocity: 0.7 },
+    ];
+
+    await expect(
+      services.audio.playPerformanceEvents({ instrument: 'daegeum', events }),
+    ).resolves.toEqual({
+      status: 'ok',
+      value: { handledEvents: 1 },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].url).toBe('https://api.garak.test/v1/audio/performance-events/play');
+    expect(requests[0].init?.method).toBe('POST');
+    expect(JSON.parse(String(requests[0].init?.body))).toEqual({
+      instrument: 'daegeum',
+      events,
+    });
+  });
+
+  test('loads instrument sample manifests through the backend instrument sample API', async () => {
+    const requests: Array<{ url: string; init: Parameters<GarakFetch>[1] }> = [];
+    const services = createHttpGarakProductServices({
+      baseUrl: 'https://api.garak.test/api',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        return jsonResponse(200, {
+          version: '2026.07.gayageum',
+          assets: [
+            {
+              id: 'gayageum-01',
+              instrument: 'gayageum_12',
+              stringIndex: 1,
+              fileUri: '/static/samples/gayageum/string-01.wav',
+              sourceLayer: 'public_asset',
+              sourceName: 'National Gugak Center monotone candidate',
+              licenseNote: 'KOGL type 1 attribution required',
+              basePitchCents: 5000,
+            },
+          ],
+        });
+      },
+    });
+
+    await expect(
+      services.audio.loadInstrumentSampleManifest({ instrument: 'gayageum' }),
+    ).resolves.toEqual({
+      status: 'ok',
+      value: {
+        version: '2026.07.gayageum',
+        assets: [
+          {
+            id: 'gayageum-01',
+            instrument: 'gayageum_12',
+            stringIndex: 1,
+            fileUri: '/static/samples/gayageum/string-01.wav',
+            sourceLayer: 'public_asset',
+            sourceName: 'National Gugak Center monotone candidate',
+            licenseNote: 'KOGL type 1 attribution required',
+            basePitchCents: 5000,
+          },
+        ],
+      },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      url: 'https://api.garak.test/api/instruments/gayageum_12/samples',
+      init: {
+        method: 'GET',
+      },
+    });
+  });
+
+  test('maps instrument sample manifest request failures to service errors', async () => {
+    const services = createHttpGarakProductServices({
+      baseUrl: 'https://api.garak.test/api',
+      fetch: async () => {
+        throw new Error('offline');
+      },
+    });
+
+    await expect(
+      services.audio.loadInstrumentSampleManifest({ instrument: 'janggu' }),
+    ).resolves.toEqual({
+      status: 'error',
+      message: 'offline',
+    });
+  });
+
+  test('posts work mix playback requests with the resolved mix plan', async () => {
+    const requests: Array<{ url: string; init: Parameters<GarakFetch>[1] }> = [];
+    const services = createHttpGarakProductServices({
+      baseUrl: 'https://api.garak.test/v1',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        return jsonResponse(200, { handledTracks: 1 });
+      },
+    });
+    const work = createWork('work-1');
+    const mixPlan = createWorkMixPlan(work);
+
+    await expect(services.audio.playWorkMix(work, mixPlan)).resolves.toEqual({
+      status: 'ok',
+      value: { handledTracks: 1 },
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].url).toBe('https://api.garak.test/v1/audio/work-mixes/play');
+    expect(requests[0].init?.method).toBe('POST');
+    expect(JSON.parse(String(requests[0].init?.body))).toEqual({ work, mixPlan });
   });
 });
 
@@ -106,6 +236,30 @@ function createLibrarySnapshot(workId = 'work-1'): ProductLibraryState {
     ],
     exportedAudios: [],
     practiceResults: [],
+  };
+}
+
+function createWork(id: string): Work {
+  return {
+    id,
+    title: 'My Arirang',
+    createdAt: '2026-06-25T00:00:00.000Z',
+    updatedAt: '2026-06-25T00:00:00.000Z',
+    source: 'free_creation',
+    syncState: 'local_only',
+    tracks: [
+      {
+        id: 'track-1',
+        kind: 'instrument',
+        instrument: 'janggu',
+        takes: [],
+        startedAtBeat: 1,
+        volume: 1,
+        mute: false,
+        solo: false,
+        createdAt: '2026-06-25T00:00:00.000Z',
+      },
+    ],
   };
 }
 

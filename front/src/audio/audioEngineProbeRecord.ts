@@ -32,6 +32,10 @@ const DURATION_PROBE_FIELDS = ['touchToSoundLatencyMs', 'recordingCaptureSeconds
   keyof AudioEngineProbe
 >;
 
+const OPTIONAL_DURATION_PROBE_FIELDS = ['firstTouchLatencyMs', 'steadyTouchLatencyMs'] as const satisfies ReadonlyArray<
+  keyof AudioEngineProbe
+>;
+
 const COUNT_PROBE_FIELDS = ['maxStableVoices', 'glissandoTriggeredStrings'] as const satisfies ReadonlyArray<
   keyof AudioEngineProbe
 >;
@@ -146,6 +150,12 @@ function parseProbe(
     }
   }
 
+  for (const field of OPTIONAL_DURATION_PROBE_FIELDS) {
+    if (probe[field] !== undefined && !isNonNegativeFiniteNumber(probe[field])) {
+      errors.push(`${path}.${field} must be a finite number >= 0`);
+    }
+  }
+
   for (const field of COUNT_PROBE_FIELDS) {
     if (!isNonNegativeInteger(probe[field])) {
       errors.push(`${path}.${field} must be an integer >= 0`);
@@ -177,6 +187,8 @@ function parseProbe(
       deviceLabel: probe.deviceLabel as string,
       measuredAt: probe.measuredAt as string,
       touchToSoundLatencyMs: probe.touchToSoundLatencyMs as number,
+      ...optionalNumberField(probe, 'firstTouchLatencyMs'),
+      ...optionalNumberField(probe, 'steadyTouchLatencyMs'),
       maxStableVoices: probe.maxStableVoices as number,
       pitchBendSmooth: probe.pitchBendSmooth as boolean,
       glissandoTriggeredStrings: probe.glissandoTriggeredStrings as number,
@@ -186,6 +198,15 @@ function parseProbe(
       recordingCaptureSeconds: probe.recordingCaptureSeconds as number,
     },
   };
+}
+
+function optionalNumberField<Field extends 'firstTouchLatencyMs' | 'steadyTouchLatencyMs'>(
+  probe: Record<string, unknown>,
+  field: Field,
+): Pick<AudioEngineProbe, Field> | Record<string, never> {
+  return probe[field] === undefined
+    ? {}
+    : { [field]: probe[field] as number } as Pick<AudioEngineProbe, Field>;
 }
 
 function isObject(input: unknown): input is Record<string, unknown> {

@@ -22,6 +22,50 @@ test('sample manifest only allows playable asset layers', () => {
   expect(manifest.assets[0].sourceLayer).toBe('public_asset');
 });
 
+test('sample manifest accepts MVP instrument manifests beyond gayageum', () => {
+  const manifest = validateSampleAssetManifest({
+    version: '2026-07-janggu-candidate',
+    assets: [
+      {
+        id: 'janggu-left-hit',
+        instrument: 'janggu',
+        stringIndex: 3,
+        pitchHz: 110,
+        fileUri: 'assets/audio/janggu/left-hit.wav',
+        sourceLayer: 'public_asset',
+        sourceName: 'National Gugak Center monotone candidate',
+        licenseNote: 'Public asset candidate; verify attribution before release',
+      },
+      {
+        id: 'janggu-center-hit',
+        instrument: 'janggu',
+        stringIndex: 6,
+        pitchHz: 130,
+        fileUri: 'assets/audio/janggu/center-hit.wav',
+        sourceLayer: 'public_asset',
+        sourceName: 'National Gugak Center monotone candidate',
+        licenseNote: 'Public asset candidate; verify attribution before release',
+      },
+      {
+        id: 'janggu-right-hit',
+        instrument: 'janggu',
+        stringIndex: 10,
+        pitchHz: 160,
+        fileUri: 'assets/audio/janggu/right-hit.wav',
+        sourceLayer: 'public_asset',
+        sourceName: 'National Gugak Center monotone candidate',
+        licenseNote: 'Public asset candidate; verify attribution before release',
+      },
+    ],
+  });
+
+  expect(manifest.assets.map((asset) => asset.instrument)).toEqual([
+    'janggu',
+    'janggu',
+    'janggu',
+  ]);
+});
+
 test('sample manifest rejects analysis references as playable assets', () => {
   expect(() =>
     validateSampleAssetManifest({
@@ -42,7 +86,7 @@ test('sample manifest rejects analysis references as playable assets', () => {
   ).toThrow('sourceLayer must be public_asset or own_asset');
 });
 
-test('sample manifest rejects non-gayageum instruments', () => {
+test('sample manifest rejects unsupported instruments', () => {
   expect(() =>
     validateSampleAssetManifest({
       version: 'bad',
@@ -59,7 +103,7 @@ test('sample manifest rejects non-gayageum instruments', () => {
         },
       ],
     } as any),
-  ).toThrow('instrument must be gayageum_12');
+  ).toThrow('instrument must be gayageum_12, janggu, or daegeum');
 });
 
 test('sample manifest rejects non-positive pitch values', () => {

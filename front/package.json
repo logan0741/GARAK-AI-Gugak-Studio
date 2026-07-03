@@ -17,6 +17,7 @@
     "qa:week1-smoke-report": "vite-node scripts/week1-smoke-report.ts",
     "qa:week1-smoke-template": "vite-node scripts/week1-smoke-template.ts",
     "samples:generate-dev": "vite-node scripts/generate-dev-gayageum-samples.ts",
+    "samples:import-ngc": "vite-node scripts/import-ngc-monotone-samples.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:watch": "vitest"

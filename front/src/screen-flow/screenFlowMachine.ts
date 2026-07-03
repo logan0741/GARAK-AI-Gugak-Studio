@@ -20,6 +20,7 @@ export type ScreenFlowEvent =
   | { type: 'openLayerEditor' }
   | { type: 'addTrack' }
   | { type: 'exportCurrentWork' }
+  | { type: 'saveAndShareCurrentWork' }
   | { type: 'chooseInstrumentTrack' }
   | { type: 'chooseAccompanimentTrack' }
   | { type: 'cancelTrackAdd' }
@@ -83,6 +84,8 @@ export function transitionScreenFlow(state: ScreenFlowState, event: ScreenFlowEv
       return routeFromScreen(state, 'S07', 'S08', event.type);
     case 'exportCurrentWork':
       return routeFromScreen(state, 'S07', 'S19', event.type);
+    case 'saveAndShareCurrentWork':
+      return routeFromScreen(state, 'S07', 'S17', event.type);
     case 'chooseInstrumentTrack':
       return routeFromScreen(state, 'S08', 'S09', event.type);
     case 'chooseAccompanimentTrack':

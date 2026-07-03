@@ -3,6 +3,17 @@ CLAUDE.md
 
 # Personal documents
 front/docs/
+!front/docs/
+!front/docs/architecture/
+!front/docs/architecture/free-play-performance-flow.md
+!front/docs/architecture/free-play-recording-flow.md
+!front/docs/plans/
+!front/docs/plans/implementation/
+!front/docs/plans/implementation/2026-06-26-save-share-implementation-plan.md
+!front/docs/plans/backlog/
+!front/docs/plans/backlog/2026-06-26-practice-mode-backlog.md
+!front/docs/plans/backlog/2026-06-26-s05-performance-backlog.md
+!front/docs/plans/backlog/2026-06-26-s05-recording-backlog.md
 
 # Environment variables
 .env

@@ -1,6 +1,6 @@
 import { useFonts } from 'expo-font';
 import { useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, Share, StyleSheet, View } from 'react-native';
 import { createGarakAuthApi } from './authApi';
 import { GARAK_GOOGLE_WEB_CLIENT_ID } from './authConfig';
 import { restoreAuthSession, signInWithGoogle } from './authFlow';
@@ -14,6 +14,7 @@ import {
   PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS,
   PRODUCT_SAMPLE_MANIFESTS,
 } from './productSampleReadinessConfig';
+import { createRuntimeGarakProductServices } from './garakRuntimeProductServices';
 import { createRuntimeGoogleIdentityProvider } from './runtimeGoogleIdentity';
 
 const ONBOARDING_STEPS = ['canvasRed', 'navyAmber', 'redLight', 'intro'] as const;
@@ -40,7 +41,17 @@ export function GarakAuthEntryApp() {
   const [fontsLoaded] = useFonts({
     [GARAK_TYPOGRAPHY.fontFamily]: require('../../assets/fonts/PretendardVariable.ttf'),
   });
-  const sessionStore = useMemo(() => createAuthSessionStore(createDefaultAuthStorage()), []);
+  const authStorage = useMemo(() => createDefaultAuthStorage(), []);
+  const sessionStore = useMemo(() => createAuthSessionStore(authStorage), [authStorage]);
+  const productServices = useMemo(
+    () =>
+      createRuntimeGarakProductServices({
+        sessionStore,
+        libraryStorage: authStorage,
+        share: (content) => Share.share(content),
+      }),
+    [authStorage, sessionStore],
+  );
   const [entryState, setEntryState] = useState<AuthEntryState>({ status: 'booting' });
 
   useEffect(() => {
@@ -167,6 +178,7 @@ export function GarakAuthEntryApp() {
         onLogout={handleLogout}
         sampleManifests={PRODUCT_SAMPLE_MANIFESTS}
         sampleFallbackInstruments={PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS}
+        services={productServices}
       />
     );
   }

@@ -1,6 +1,20 @@
 import type { PerformanceEvent } from '../domain/performanceEvent';
-import type { ExportedAudio, JangdanPresetId, PracticeResult, Work } from '../studio/studioTypes';
+import type { SampleAssetManifest } from '../domain/sampleManifest';
+import type {
+  JangdanPresetId,
+  InstrumentId,
+  ShareMethod,
+  ShareTargetReference,
+  Work,
+} from '../studio/studioTypes';
+import type { WorkMixPlan } from '../studio/studioLibrary';
 import type { ProductLibraryState } from './garakProductState';
+import type {
+  AiAutoAccompanimentCandidate,
+  AiAutoAccompanimentRequest,
+} from './aiAutoAccompaniment';
+
+export type { ShareMethod, ShareTargetReference } from '../studio/studioTypes';
 
 export type ServiceUnavailableResult = {
   status: 'unavailable';
@@ -21,9 +35,48 @@ export type ServiceResult<T> =
   | ServiceUnavailableResult
   | ServiceFailureResult;
 
-export type ShareTargetReference =
-  | { kind: 'exportedAudio'; id: ExportedAudio['id'] }
-  | { kind: 'practiceResult'; id: PracticeResult['id'] };
+export type ExportWorkAudioResult = {
+  audioUri: string;
+  durationSeconds?: number;
+};
+
+export type PlayWorkMixResult = {
+  handledTracks: number;
+};
+
+export type PrepareLivePerformanceAudioInput = {
+  instrument: InstrumentId;
+};
+
+export type PrepareLivePerformanceAudioResult = {
+  instrument: InstrumentId;
+  sampleSourceLabel: string;
+  releaseReady: boolean;
+};
+
+export type PlayPerformanceEventsInput = {
+  instrument: InstrumentId;
+  events: readonly PerformanceEvent[];
+};
+
+export type LoadInstrumentSampleManifestInput = {
+  instrument: InstrumentId;
+};
+
+export type SharePublishInput = {
+  target: ShareTargetReference;
+  title: string;
+  message: string;
+  fileUri?: string;
+  shareUrl?: string;
+};
+
+export type SharePublishResult = {
+  remoteId: string;
+  shareUrl?: string;
+  expiresAtMs?: number;
+  shareMethod: ShareMethod;
+};
 
 export type AccompanimentRecommendationInput = {
   events: readonly PerformanceEvent[];
@@ -46,12 +99,28 @@ export type GarakProductServices = {
     loginAndLoadLibrary: () => Promise<ServiceResult<ProductLibraryState>>;
   };
   share: {
-    publishShareTarget: (target: ShareTargetReference) => Promise<ServiceResult<{ remoteId: string }>>;
+    publishShareTarget: (input: SharePublishInput) => Promise<ServiceResult<SharePublishResult>>;
   };
   audio: {
-    exportWorkAudio: (work: Work) => Promise<ServiceResult<{ audioUri: string }>>;
+    exportWorkAudio: (work: Work) => Promise<ServiceResult<ExportWorkAudioResult>>;
+    playWorkMix: (
+      work: Work,
+      mixPlan: WorkMixPlan,
+    ) => Promise<ServiceResult<PlayWorkMixResult>>;
+    prepareLivePerformanceAudio: (
+      input: PrepareLivePerformanceAudioInput,
+    ) => Promise<ServiceResult<PrepareLivePerformanceAudioResult>>;
+    loadInstrumentSampleManifest: (
+      input: LoadInstrumentSampleManifestInput,
+    ) => Promise<ServiceResult<SampleAssetManifest>>;
+    playPerformanceEvents: (
+      input: PlayPerformanceEventsInput,
+    ) => Promise<ServiceResult<{ handledEvents: number }>>;
   };
   ai: {
+    generateAutoAccompaniment: (
+      input: AiAutoAccompanimentRequest,
+    ) => Promise<ServiceResult<AiAutoAccompanimentCandidate>>;
     recommendAccompaniment: (
       input: AccompanimentRecommendationInput,
     ) => Promise<ServiceResult<AccompanimentRecommendation>>;
@@ -72,8 +141,13 @@ export function createNoopGarakProductServices(): GarakProductServices {
     },
     audio: {
       exportWorkAudio: async () => ({ status: 'unavailable' }),
+      playWorkMix: async () => ({ status: 'unavailable' }),
+      prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
+      loadInstrumentSampleManifest: async () => ({ status: 'unavailable' }),
+      playPerformanceEvents: async () => ({ status: 'unavailable' }),
     },
     ai: {
+      generateAutoAccompaniment: async () => ({ status: 'unavailable' }),
       recommendAccompaniment: async () => ({ status: 'unavailable' }),
     },
   };
