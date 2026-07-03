@@ -59,47 +59,29 @@ describe('HTTP Garak product services', () => {
       if (url.endsWith('/api/analyze')) {
         const body = JSON.parse(String(init?.body));
         expect(body).toMatchObject({
-          events: [
-            expect.objectContaining({
-              type: 'string_pluck',
-              tsMs: 0,
-              stringIndex: 1,
-              velocity: 0.8,
-            }),
-          ],
-        });
-        expect(['local-preview', 'practice-arirang']).toContain(body.sessionId);
-        return jsonResponse(200, {
-          key: 'pyeongjo',
-          jangdan: 'gutgeori',
-          estimatedBpm: 88,
-          density: 'medium',
-        });
-      }
-
-      if (url.endsWith('/api/accompaniment')) {
-        expect(JSON.parse(String(init?.body))).toMatchObject({
-          key: 'pyeongjo',
-          jangdan: 'jungmori',
-          bpm: 88,
+          timestamps: expect.any(Array),
+          notes: expect.any(Array),
         });
         return jsonResponse(200, {
-          patternSequence: [{ step: 0 }],
-          playbackRate: 1,
-          crossfadeMs: 120,
+          jo: '평조',
+          jangdan: '굿거리',
+          jo_confidence: 0.9,
+          jangdan_confidence: 0.85,
+          detected_bpm: 88,
+          ioi_ms: [300, 310],
         });
       }
 
       if (url.endsWith('/api/feedback')) {
-        expect(JSON.parse(String(init?.body))).toEqual({
-          sessionId: 'practice-arirang',
-          accuracyScore: 78,
-          detectedKey: 'pyeongjo',
-          songName: '아리랑',
-          locale: 'ko',
+        const body = JSON.parse(String(init?.body));
+        expect(body).toMatchObject({
+          jo: '평조',
+          jangdan: '굿거리',
+          accuracy: expect.any(Number),
+          language: 'ko',
         });
         return jsonResponse(200, {
-          feedbackText: '장단 흐름이 안정적이에요.',
+          feedback: '장단 흐름이 안정적이에요.',
         });
       }
 
@@ -125,9 +107,14 @@ describe('HTTP Garak product services', () => {
         practiceResults: [],
       },
     });
+
+    // recommendAccompaniment — needs ≥2 events to extract timestamps
     await expect(
       services.ai.recommendAccompaniment({
-        events: [{ type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.8 }],
+        events: [
+          { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.8 },
+          { type: 'string_pluck', tsMs: 500, stringIndex: 3, velocity: 0.7 },
+        ],
       }),
     ).resolves.toEqual({
       status: 'ok',
@@ -135,16 +122,20 @@ describe('HTTP Garak product services', () => {
         presetId: 'jungmori',
         bpm: 88,
         volume: 0.72,
-        reason: 'AI matched gutgeori and generated 1 steps.',
+        reason: 'AI가 굿거리(평조)을(를) 감지했습니다.',
       },
     });
+
     await expect(
       services.ai.requestPracticeFeedback({
         sessionId: 'practice-arirang',
-        accuracyScore: 78,
+        accuracyScore: 0.78,
         songName: '아리랑',
         locale: 'ko',
-        events: [{ type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.8 }],
+        events: [
+          { type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.8 },
+          { type: 'string_pluck', tsMs: 500, stringIndex: 3, velocity: 0.7 },
+        ],
       }),
     ).resolves.toEqual({
       status: 'ok',
@@ -152,13 +143,26 @@ describe('HTTP Garak product services', () => {
         feedbackText: '장단 흐름이 안정적이에요.',
       },
     });
+
     expect(requests).toEqual([
       'GET https://api.garak.test/v1/api/sessions',
       'POST https://api.garak.test/v1/api/analyze',
-      'POST https://api.garak.test/v1/api/accompaniment',
       'POST https://api.garak.test/v1/api/analyze',
       'POST https://api.garak.test/v1/api/feedback',
     ]);
+  });
+
+  test('returns unavailable when events have fewer than 2 pluck events', async () => {
+    const services = createHttpGarakProductServices({
+      baseUrl: 'https://api.garak.test/v1',
+      fetch: async () => { throw new Error('should not call'); },
+    });
+
+    await expect(
+      services.ai.recommendAccompaniment({
+        events: [{ type: 'string_pluck', tsMs: 0, stringIndex: 1, velocity: 0.8 }],
+      }),
+    ).resolves.toEqual({ status: 'unavailable' });
   });
 
   test('keeps unavailable backend endpoints explicit', async () => {

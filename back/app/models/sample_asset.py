@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional, List
 from sqlalchemy import VARCHAR, INT, TEXT, ForeignKey, Enum, Boolean
 from sqlalchemy.dialects.mysql import TINYINT, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,8 +15,8 @@ class SampleAssetManifest(Base):
     instrument_id: Mapped[str] = mapped_column(VARCHAR(64), ForeignKey("instrument.id"), nullable=False)
 
     instrument: Mapped["Instrument"] = relationship(back_populates="sample_manifests")
-    assets: Mapped[list["SampleAsset"]] = relationship(back_populates="manifest")
-    sessions: Mapped[list["Session"]] = relationship(back_populates="sample_manifest")
+    assets: Mapped[List["SampleAsset"]] = relationship(back_populates="manifest")
+    sessions: Mapped[List["Session"]] = relationship(back_populates="sample_manifest")
 
 
 class SampleAsset(Base):
@@ -25,15 +27,15 @@ class SampleAsset(Base):
     source_layer: Mapped[str] = mapped_column(Enum("public_asset", "own_asset"), nullable=False)
     file_uri: Mapped[str] = mapped_column(VARCHAR(512), nullable=False)
     license: Mapped[str] = mapped_column(VARCHAR(128), nullable=False)
-    attribution: Mapped[str | None] = mapped_column(TEXT, nullable=True)
+    attribution: Mapped[Optional[str]] = mapped_column(TEXT, nullable=True)
     base_note_name: Mapped[str] = mapped_column(VARCHAR(16), nullable=False)
     base_pitch_cents: Mapped[int] = mapped_column(INT, nullable=False)
     envelope: Mapped[dict] = mapped_column(JSON, nullable=False)
     quality_flags: Mapped[dict] = mapped_column(JSON, nullable=False)
 
     manifest: Mapped["SampleAssetManifest"] = relationship(back_populates="assets")
-    unit_maps: Mapped[list["InstrumentUnitSampleMap"]] = relationship(back_populates="sample_asset")
-    jangdan_assets: Mapped[list["JangdanPresetAsset"]] = relationship(back_populates="sample_asset")
+    unit_maps: Mapped[List["InstrumentUnitSampleMap"]] = relationship(back_populates="sample_asset")
+    jangdan_assets: Mapped[List["JangdanPresetAsset"]] = relationship(back_populates="sample_asset")
 
 
 class InstrumentUnitSampleMap(Base):

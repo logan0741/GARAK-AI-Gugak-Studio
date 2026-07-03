@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional
 from sqlalchemy import VARCHAR, ForeignKey, Enum, Index, Float
 from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, BIGINT, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,11 +19,11 @@ class PerformanceEvent(Base):
         Enum("string_pluck", "string_bend", "string_mute", "glissando_step", "string_release"),
         nullable=False,
     )
-    unit_index: Mapped[int | None] = mapped_column(TINYINT(unsigned=True), nullable=True)
-    pitch_bend_cents: Mapped[int | None] = mapped_column(SMALLINT, nullable=True)
-    velocity: Mapped[float | None] = mapped_column(Float, nullable=True)
-    strength: Mapped[float | None] = mapped_column(Float, nullable=True)
-    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    unit_index: Mapped[Optional[int]] = mapped_column(TINYINT(unsigned=True), nullable=True)
+    pitch_bend_cents: Mapped[Optional[int]] = mapped_column(SMALLINT, nullable=True)
+    velocity: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    strength: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     session: Mapped["Session"] = relationship(back_populates="events")
 

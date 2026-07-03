@@ -1,8 +1,8 @@
-import { prototypeGayageumSampleManifest } from '../prototype/prototypeSampleManifest';
 import type { InstrumentSampleReadinessInput } from './instrumentSampleReadiness';
+import { productionGayageumSampleManifest } from './productionSampleManifest';
 
 export const PRODUCT_SAMPLE_MANIFESTS = {
-  gayageum: prototypeGayageumSampleManifest,
+  gayageum: productionGayageumSampleManifest,
 } satisfies NonNullable<InstrumentSampleReadinessInput['sampleManifests']>;
 
 export const PRODUCT_SAMPLE_FALLBACK_INSTRUMENTS = [

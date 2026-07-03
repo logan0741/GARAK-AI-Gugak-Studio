@@ -6,6 +6,7 @@ from app.models.performance_event import PerformanceEvent
 from app.models.recording import Recording
 from app.models.jangdan import JangdanPreset, JangdanPatternEvent, JangdanPresetAsset, JangdanRecommendation
 from app.models.share_link import ShareLink
+from app.models.data_reference import DataReferenceManifest, DataReference
 
 __all__ = [
     "Instrument",
@@ -22,4 +23,6 @@ __all__ = [
     "JangdanPresetAsset",
     "JangdanRecommendation",
     "ShareLink",
+    "DataReferenceManifest",
+    "DataReference",
 ]

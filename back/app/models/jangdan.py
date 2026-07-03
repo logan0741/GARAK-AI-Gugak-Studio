@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional, List
 from sqlalchemy import VARCHAR, TEXT, ForeignKey, Enum, Index, Float
 from sqlalchemy.dialects.mysql import SMALLINT, TINYINT, INTEGER, BIGINT, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,11 +16,11 @@ class JangdanPreset(Base):
     max_bpm: Mapped[int] = mapped_column(SMALLINT(unsigned=True), nullable=False)
     density_range: Mapped[str] = mapped_column(Enum("low", "medium", "high", "any"), nullable=False)
     meter: Mapped[str] = mapped_column(VARCHAR(32), nullable=False)
-    description: Mapped[str | None] = mapped_column(TEXT, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(TEXT, nullable=True)
 
-    pattern_events: Mapped[list["JangdanPatternEvent"]] = relationship(back_populates="preset")
-    preset_assets: Mapped[list["JangdanPresetAsset"]] = relationship(back_populates="preset")
-    recommendations: Mapped[list["JangdanRecommendation"]] = relationship(back_populates="preset")
+    pattern_events: Mapped[List["JangdanPatternEvent"]] = relationship(back_populates="preset")
+    preset_assets: Mapped[List["JangdanPresetAsset"]] = relationship(back_populates="preset")
+    recommendations: Mapped[List["JangdanRecommendation"]] = relationship(back_populates="preset")
 
 
 class JangdanPatternEvent(Base):
@@ -67,7 +69,7 @@ class JangdanRecommendation(Base):
     )
     reason: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at_ms: Mapped[int] = mapped_column(BIGINT(unsigned=True), nullable=False)
-    accepted_at_ms: Mapped[int | None] = mapped_column(BIGINT(unsigned=True), nullable=True)
+    accepted_at_ms: Mapped[Optional[int]] = mapped_column(BIGINT(unsigned=True), nullable=True)
 
     session: Mapped["Session"] = relationship(back_populates="jangdan_recommendations")
     preset: Mapped["JangdanPreset"] = relationship(back_populates="recommendations")

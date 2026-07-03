@@ -1,0 +1,36 @@
+{
+  "가야금": {
+    "고": "/static/samples/가야금/고.wav",
+    "남": "/static/samples/가야금/남.wav",
+    "대": "/static/samples/가야금/대.wav",
+    "무": "/static/samples/가야금/무.wav",
+    "유": "/static/samples/가야금/유.wav",
+    "응": "/static/samples/가야금/응.wav",
+    "이": "/static/samples/가야금/이.wav",
+    "임": "/static/samples/가야금/임.wav",
+    "중": "/static/samples/가야금/중.wav",
+    "태": "/static/samples/가야금/태.wav",
+    "협": "/static/samples/가야금/협.wav",
+    "황": "/static/samples/가야금/황.wav"
+  },
+  "대금": {
+    "고": "/static/samples/대금/고.wav",
+    "남": "/static/samples/대금/남.wav",
+    "대": "/static/samples/대금/대.wav",
+    "무": "/static/samples/대금/무.wav",
+    "유": "/static/samples/대금/유.wav",
+    "응": "/static/samples/대금/응.wav",
+    "이": "/static/samples/대금/이.wav",
+    "임": "/static/samples/대금/임.wav",
+    "중": "/static/samples/대금/중.wav",
+    "태": "/static/samples/대금/태.wav",
+    "협": "/static/samples/대금/협.wav",
+    "황": "/static/samples/대금/황.wav"
+  },
+  "장구": {
+    "궁": "/static/samples/장구/궁.wav",
+    "덕": "/static/samples/장구/덕.wav",
+    "따": "/static/samples/장구/따.wav",
+    "합": "/static/samples/장구/합.wav"
+  }
+}

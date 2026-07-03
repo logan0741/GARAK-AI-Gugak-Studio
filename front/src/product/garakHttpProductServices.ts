@@ -115,17 +115,30 @@ type ShareFeedItemResponse = {
 };
 
 type AnalyzeResponse = {
-  key: string;
+  jo: string;
   jangdan: string;
-  estimatedBpm: number;
+  jo_confidence: number;
+  jangdan_confidence: number;
+  detected_bpm: number;
+  ioi_ms: number[];
 };
 
-type AccompanimentResponse = {
-  patternSequence: unknown[];
+type JobCreatedResponse = {
+  job_id: string;
+  status: string;
 };
 
-type FeedbackResponse = {
-  feedbackText: string;
+type JobStatusResponse = {
+  job_id: string;
+  status: string;
+  audio_url?: string;
+  pattern_sequence?: number[];
+  jangdan?: string;
+  jo?: string;
+  bpm?: number;
+  error?: string;
+  created_at: number;
+  elapsed_ms: number;
 };
 
 type HttpClient = ReturnType<typeof createHttpClient>;
@@ -219,6 +232,62 @@ async function saveWorkSession(client: HttpClient, work: Work): Promise<void> {
   }
 }
 
+// Gayageum string index (1-12) → MIDI note (12율 오름차순: 황=G3→응=B4)
+const GAYAGEUM_STRING_TO_MIDI: Record<number, number> = {
+  1: 55,  // 황 G3
+  2: 56,  // 대 Ab3
+  3: 57,  // 태 A3
+  4: 58,  // 협 Bb3
+  5: 59,  // 고 B3
+  6: 60,  // 중 C4
+  7: 62,  // 유 D4
+  8: 64,  // 임 E4
+  9: 65,  // 이 F4
+  10: 67, // 남 G4
+  11: 69, // 무 A4
+  12: 71, // 응 B4
+};
+
+function extractAnalyzePayload(events: readonly PerformanceEvent[]): {
+  timestamps: number[];
+  notes: number[];
+} {
+  const pluckEvents = events.filter(
+    (e): e is Extract<PerformanceEvent, { type: 'string_pluck' | 'glissando_step' }> =>
+      e.type === 'string_pluck' || e.type === 'glissando_step',
+  );
+  return {
+    timestamps: pluckEvents.map((e) => e.tsMs / 1000),
+    notes: pluckEvents.map((e) => GAYAGEUM_STRING_TO_MIDI[e.stringIndex] ?? 69),
+  };
+}
+
+async function pollAccompanimentJob(
+  client: HttpClient,
+  jobId: string,
+): Promise<ServiceResult<JobStatusResponse>> {
+  const maxWaitMs = 30_000;
+  const intervalMs = 1_000;
+  const deadline = Date.now() + maxWaitMs;
+
+  while (Date.now() < deadline) {
+    await new Promise<void>((resolve) => setTimeout(resolve, intervalMs));
+    const result = await client.serviceJson<JobStatusResponse>(
+      `/api/accompaniment/status/${jobId}`,
+      'GET',
+    );
+    if (result.status !== 'ok') return result;
+    if (result.value.status === 'done') return result;
+    if (result.value.status === 'failed') {
+      return {
+        status: 'error',
+        message: result.value.error ?? '반주 생성 실패',
+      };
+    }
+  }
+  return { status: 'error', message: '반주 생성 시간 초과 (30초)' };
+}
+
 async function recommendAccompaniment(
   client: HttpClient,
   events: readonly PerformanceEvent[],
@@ -227,48 +296,27 @@ async function recommendAccompaniment(
     return { status: 'unavailable' };
   }
 
-  const eventPayload = events.map((event, index) => ({
-    id: `ai-event-${index + 1}`,
-    ...event,
-  }));
-  const analyzed = await client.serviceJson<AnalyzeResponse>('/api/analyze', 'POST', {
-    sessionId: 'local-preview',
-    events: eventPayload,
-  });
+  const payload = extractAnalyzePayload(events);
+  if (payload.timestamps.length < 2) {
+    return { status: 'unavailable' };
+  }
+
+  const analyzed = await client.serviceJson<AnalyzeResponse>('/api/analyze', 'POST', payload);
 
   if (analyzed.status !== 'ok') {
-    return analyzed.status === 'unavailable'
-      ? analyzed
-      : {
-          status: 'error',
-          message: analyzed.message,
-        };
+    return analyzed.status === 'unavailable' ? analyzed : { status: 'error', message: analyzed.message };
   }
 
   const presetId = toSupportedJangdanPresetId(analyzed.value.jangdan);
-  const accompaniment = await client.serviceJson<AccompanimentResponse>('/api/accompaniment', 'POST', {
-    key: analyzed.value.key,
-    jangdan: presetId,
-    bpm: Math.max(1, analyzed.value.estimatedBpm),
-    temperature: 0.7,
-  });
-
-  if (accompaniment.status !== 'ok') {
-    return accompaniment.status === 'unavailable'
-      ? accompaniment
-      : {
-          status: 'error',
-          message: accompaniment.message,
-        };
-  }
+  const bpm = Math.max(1, Math.round(analyzed.value.detected_bpm));
 
   return {
     status: 'ok',
     value: {
       presetId,
-      bpm: Math.max(1, analyzed.value.estimatedBpm),
+      bpm,
       volume: 0.72,
-      reason: `AI matched ${analyzed.value.jangdan} and generated ${accompaniment.value.patternSequence.length} steps.`,
+      reason: `AI가 ${analyzed.value.jangdan}(${analyzed.value.jo})을(를) 감지했습니다.`,
     },
   };
 }
@@ -287,31 +335,36 @@ async function requestPracticeFeedback(
     return { status: 'unavailable' };
   }
 
-  const eventPayload = input.events.map((event, index) => ({
-    id: `${input.sessionId}-feedback-event-${index + 1}`,
-    ...event,
-  }));
-  const analyzed = await client.serviceJson<AnalyzeResponse>('/api/analyze', 'POST', {
-    sessionId: input.sessionId,
-    events: eventPayload,
-  });
-
-  if (analyzed.status !== 'ok') {
-    return analyzed.status === 'unavailable'
-      ? analyzed
-      : {
-          status: 'error',
-          message: analyzed.message,
-        };
+  const payload = extractAnalyzePayload(input.events);
+  if (payload.timestamps.length < 2) {
+    return { status: 'unavailable' };
   }
 
-  return client.serviceJson<FeedbackResponse>('/api/feedback', 'POST', {
-    sessionId: input.sessionId,
-    accuracyScore: input.accuracyScore,
-    detectedKey: analyzed.value.key,
-    songName: input.songName,
-    locale: input.locale,
-  });
+  const analyzed = await client.serviceJson<AnalyzeResponse>('/api/analyze', 'POST', payload);
+
+  if (analyzed.status !== 'ok') {
+    return analyzed.status === 'unavailable' ? analyzed : { status: 'error', message: analyzed.message };
+  }
+
+  const durationSec = payload.timestamps.length > 0
+    ? Math.max(0, payload.timestamps[payload.timestamps.length - 1]! - payload.timestamps[0]!)
+    : undefined;
+
+  type BackendFeedbackResponse = { feedback: string; jo: string; jangdan: string; accuracy_pct: number; source: string };
+
+  return client.serviceJson<BackendFeedbackResponse, { feedbackText: string }>(
+    '/api/feedback',
+    'POST',
+    {
+      jo: analyzed.value.jo,
+      jangdan: analyzed.value.jangdan,
+      accuracy: Math.max(0, Math.min(1, input.accuracyScore)),
+      note_count: payload.timestamps.length,
+      duration_sec: durationSec,
+      language: input.locale,
+    },
+    (value) => ({ feedbackText: value.feedback }),
+  );
 }
 
 function sessionSummaryToWork(session: SessionSummaryResponse): Work {
@@ -376,14 +429,20 @@ function estimateWorkDurationMs(work: Work): number {
 }
 
 function toSupportedJangdanPresetId(jangdan: string): JangdanPresetId {
+  // English names (kept for compatibility)
   if (jangdan === 'semachi' || jangdan === 'jungmori' || jangdan === 'jajinmori') {
     return jangdan;
   }
-
   if (jangdan === 'jungjungmori' || jangdan === 'gutgeori') {
     return 'jungmori';
   }
-
+  // Korean names returned by backend
+  if (jangdan === '세마치') return 'semachi';
+  if (jangdan === '중모리') return 'jungmori';
+  if (jangdan === '자진모리') return 'jajinmori';
+  if (jangdan === '굿거리' || jangdan === '중중모리') return 'jungmori';
+  if (jangdan === '휘모리') return 'jajinmori';
+  if (jangdan === '엇모리' || jangdan === '엇중모리' || jangdan === '진양조') return 'semachi';
   return 'jajinmori';
 }
 

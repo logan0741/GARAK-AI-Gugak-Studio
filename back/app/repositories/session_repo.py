@@ -1,15 +1,21 @@
+from __future__ import annotations
+
+from typing import List, Optional
+
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.jangdan import JangdanRecommendation
 from app.models.performance_event import PerformanceEvent
+from app.models.recording import Recording
 from app.models.session_model import Session
 
 
 async def create_session(
     db: AsyncSession,
     session: Session,
-    event_dicts: list[dict],
+    event_dicts: List[dict],
 ) -> Session:
     try:
         db.add(session)
@@ -24,7 +30,7 @@ async def create_session(
     return session
 
 
-async def list_sessions(db: AsyncSession, user_id: str) -> list[Session]:
+async def list_sessions(db: AsyncSession, user_id: str) -> List[Session]:
     # TODO: 세션이 많아지면 cursor 기반 페이지네이션으로 교체 필요
     result = await db.execute(
         select(Session)
@@ -34,7 +40,7 @@ async def list_sessions(db: AsyncSession, user_id: str) -> list[Session]:
     return list(result.scalars().all())
 
 
-async def get_session_by_id(db: AsyncSession, session_id: str) -> Session | None:
+async def get_session_by_id(db: AsyncSession, session_id: str) -> Optional[Session]:
     """소유권 무관하게 session_id로만 조회 (존재 여부 확인용)."""
     result = await db.execute(select(Session).where(Session.id == session_id))
     return result.scalar_one_or_none()
@@ -44,10 +50,14 @@ async def get_session_detail(
     db: AsyncSession,
     session_id: str,
     user_id: str,
-) -> Session | None:
+) -> Optional[Session]:
     result = await db.execute(
         select(Session)
         .where(Session.id == session_id, Session.user_id == user_id)
-        .options(selectinload(Session.events))
+        .options(
+            selectinload(Session.events),
+            selectinload(Session.recordings),
+            selectinload(Session.jangdan_recommendations),
+        )
     )
     return result.scalar_one_or_none()

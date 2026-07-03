@@ -1,0 +1,54 @@
+{
+  "input_path": "AI/data/가야금/계면조/엇모리/api_엇모리_000.wav",
+  "normalized_path": "C:\\Project\\GDG 대회\\GARAK-AI-Gugak-Studio\\back\\static\\preprocessed\\split_smoke\\split_smoke_normalized.wav",
+  "bar_aligned_path": "C:\\Project\\GDG 대회\\GARAK-AI-Gugak-Studio\\back\\static\\preprocessed\\split_smoke\\split_smoke_bars.wav",
+  "bars": [
+    {
+      "index": 0,
+      "path": "C:\\Project\\GDG 대회\\GARAK-AI-Gugak-Studio\\back\\static\\preprocessed\\split_smoke\\bars\\split_smoke_bar_001.wav",
+      "duration_s": 4.5
+    },
+    {
+      "index": 1,
+      "path": "C:\\Project\\GDG 대회\\GARAK-AI-Gugak-Studio\\back\\static\\preprocessed\\split_smoke\\bars\\split_smoke_bar_002.wav",
+      "duration_s": 4.5
+    }
+  ],
+  "meta": {
+    "session_id": "split_smoke",
+    "instrument": "gayageum",
+    "bpm": 80,
+    "beats_per_bar": 6,
+    "jangdan": "eotmori",
+    "jo": null,
+    "first_bar_offset_s": 0.0,
+    "expected_bars": 2
+  },
+  "config": {
+    "target_sr": 44100,
+    "target_rms_db": -20.0,
+    "peak_ceiling": 0.95,
+    "trim_top_db": 45.0,
+    "fade_ms": 5.0,
+    "min_bar_coverage": 0.65
+  },
+  "stats": {
+    "original_samples": 352800,
+    "trimmed_samples": 352800,
+    "normalized_samples": 352800,
+    "trim_start_sample": 0,
+    "trim_end_sample": 352800,
+    "input_rms_db": -25.29364105815616,
+    "output_rms_db": -22.291470032058548,
+    "input_peak": 0.6723803281784058,
+    "output_peak": 0.949999988079071,
+    "gain_db": 3.002172129659182,
+    "bar_samples": 198450,
+    "bar_duration_s": 4.5,
+    "offset_samples": 0,
+    "requested_bars": 2,
+    "available_bars": 2,
+    "kept_bars": 2,
+    "padded_bars": 1
+  }
+}

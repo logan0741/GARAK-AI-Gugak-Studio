@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import List
 from sqlalchemy import VARCHAR, ForeignKey, Enum
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,4 +22,4 @@ class FolkSong(Base):
     )
 
     instrument: Mapped["Instrument"] = relationship()
-    sessions: Mapped[list["Session"]] = relationship(back_populates="folk_song")
+    sessions: Mapped[List["Session"]] = relationship(back_populates="folk_song")
