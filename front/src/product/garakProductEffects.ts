@@ -14,6 +14,7 @@ import type {
 import type { GarakProductServices, SharePublishInput } from './garakProductServices';
 import { createAutoAccompanimentRequest } from './aiAutoAccompaniment';
 import { DEFAULT_FREE_CREATION_INSTRUMENT } from './productFixtures';
+import { createDemoLibraryAudioUri } from './libraryPlaybackAudio';
 
 export type RunGarakProductEffectInput = {
   state: GarakProductState;
@@ -111,6 +112,16 @@ export async function runGarakProductEffect({
     return followUpActions;
   }
 
+  if (action.type === 'playSelectedPlayerItem') {
+    await playSelectedPlayerAudio(state, services);
+    return followUpActions;
+  }
+
+  if (action.type === 'pauseSelectedPlayerItem') {
+    await pauseSelectedPlayerAudio(services);
+    return followUpActions;
+  }
+
   if (action.type === 'publishShareTarget') {
     const publishAction = await publishSelectedShareTarget(state, services);
     if (publishAction !== undefined) {
@@ -124,6 +135,59 @@ export async function runGarakProductEffect({
   }
 
   return followUpActions;
+}
+
+async function playSelectedPlayerAudio(
+  state: GarakProductState,
+  services: GarakProductServices,
+): Promise<void> {
+  const selection = state.playingPlayerItem ?? state.selectedPlayerItem;
+
+  if (selection === undefined) {
+    return;
+  }
+
+  try {
+    if (selection.kind === 'work') {
+      const work = state.library.works.find((item) => item.id === selection.workId);
+      if (work !== undefined) {
+        await services.audio.playWorkMix(work, createWorkMixPlan(work));
+      }
+      return;
+    }
+
+    if (selection.kind === 'exportedAudio') {
+      const audio = state.library.exportedAudios.find(
+        (item) => item.id === selection.exportedAudioId,
+      );
+      if (audio !== undefined) {
+        await services.audio.playLibraryAudio({
+          audioUri: audio.audioUri,
+          title: audio.title,
+          sourceKind: 'exportedAudio',
+        });
+      }
+      return;
+    }
+
+    if (selection.kind === 'demo') {
+      await services.audio.playLibraryAudio({
+        audioUri: createDemoLibraryAudioUri(selection.title),
+        title: selection.title,
+        sourceKind: 'demo',
+      });
+    }
+  } catch {
+    return;
+  }
+}
+
+async function pauseSelectedPlayerAudio(services: GarakProductServices): Promise<void> {
+  try {
+    await services.audio.pauseLibraryAudio();
+  } catch {
+    return;
+  }
 }
 
 async function playCurrentWorkMix(

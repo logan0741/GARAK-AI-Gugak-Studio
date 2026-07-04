@@ -3,6 +3,8 @@ import { validateSampleAssetManifest } from '../domain/sampleManifest';
 import type {
   ExportWorkAudioResult,
   GarakProductServices,
+  PauseLibraryAudioResult,
+  PlayLibraryAudioResult,
   PlayWorkMixResult,
   ServiceResult,
   SharePublishResult,
@@ -63,6 +65,10 @@ export function createHttpGarakProductServices({
           work,
           mixPlan,
         }),
+      playLibraryAudio: (input) =>
+        client.serviceJson<PlayLibraryAudioResult>('/audio/library-audio/play', 'POST', input),
+      pauseLibraryAudio: () =>
+        client.serviceJson<PauseLibraryAudioResult>('/audio/library-audio/pause', 'POST'),
       prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
       loadInstrumentSampleManifest: (input) =>
         client.serviceValidatedJson(

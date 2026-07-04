@@ -15,18 +15,6 @@
           "enableBackgroundRecording": false
         }
       ],
-      [
-        "react-native-audio-api",
-        {
-          "iosMicrophonePermission": "Allow GUKAK STUDIO to record short prototype performances.",
-          "iosBackgroundMode": false,
-          "androidForegroundService": false,
-          "androidPermissions": [
-            "android.permission.RECORD_AUDIO",
-            "android.permission.MODIFY_AUDIO_SETTINGS"
-          ]
-        }
-      ],
       "expo-secure-store"
     ],
     "android": {

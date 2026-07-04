@@ -44,6 +44,20 @@ export type PlayWorkMixResult = {
   handledTracks: number;
 };
 
+export type PlayLibraryAudioInput = {
+  audioUri: string;
+  title?: string;
+  sourceKind: 'exportedAudio' | 'practiceResult' | 'demo';
+};
+
+export type PlayLibraryAudioResult = {
+  audioUri: string;
+};
+
+export type PauseLibraryAudioResult = {
+  paused: boolean;
+};
+
 export type PrepareLivePerformanceAudioInput = {
   instrument: InstrumentId;
 };
@@ -107,6 +121,10 @@ export type GarakProductServices = {
       work: Work,
       mixPlan: WorkMixPlan,
     ) => Promise<ServiceResult<PlayWorkMixResult>>;
+    playLibraryAudio: (
+      input: PlayLibraryAudioInput,
+    ) => Promise<ServiceResult<PlayLibraryAudioResult>>;
+    pauseLibraryAudio: () => Promise<ServiceResult<PauseLibraryAudioResult>>;
     prepareLivePerformanceAudio: (
       input: PrepareLivePerformanceAudioInput,
     ) => Promise<ServiceResult<PrepareLivePerformanceAudioResult>>;
@@ -142,6 +160,8 @@ export function createNoopGarakProductServices(): GarakProductServices {
     audio: {
       exportWorkAudio: async () => ({ status: 'unavailable' }),
       playWorkMix: async () => ({ status: 'unavailable' }),
+      playLibraryAudio: async () => ({ status: 'unavailable' }),
+      pauseLibraryAudio: async () => ({ status: 'unavailable' }),
       prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
       loadInstrumentSampleManifest: async () => ({ status: 'unavailable' }),
       playPerformanceEvents: async () => ({ status: 'unavailable' }),

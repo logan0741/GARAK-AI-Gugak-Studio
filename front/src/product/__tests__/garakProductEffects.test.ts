@@ -637,6 +637,83 @@ describe('Garak product effect runner', () => {
     ]);
   });
 
+  test('plays the selected exported audio through the library audio service boundary', async () => {
+    const selectedAudio = {
+      id: 'export-1',
+      kind: 'exported_audio' as const,
+      workId: 'work-1',
+      title: 'My Arirang Export',
+      durationSeconds: 31,
+      instrumentNames: ['Gayageum'],
+      createdAt: '2026-06-25T00:00:00.000Z',
+      audioUri: 'file://garak/export-1.wav',
+      shareState: 'ready' as const,
+    };
+    const state: GarakProductState = {
+      ...createInitialGarakProductState(),
+      selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: selectedAudio.id },
+      playingPlayerItem: { kind: 'exportedAudio', exportedAudioId: selectedAudio.id },
+      library: {
+        works: [createWork('work-1')],
+        exportedAudios: [selectedAudio],
+        practiceResults: [],
+      },
+    };
+    const playedUris: string[] = [];
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        playLibraryAudio: async (input: { audioUri: string }) => {
+          playedUris.push(input.audioUri);
+          return {
+            status: 'ok' as const,
+            value: { audioUri: input.audioUri },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state,
+        action: { type: 'playSelectedPlayerItem' },
+        services,
+      }),
+    ).resolves.toEqual([]);
+
+    expect(playedUris).toEqual(['file://garak/export-1.wav']);
+  });
+
+  test('pauses the active library audio through the library audio service boundary', async () => {
+    let pauseCalls = 0;
+    const noopServices = createNoopGarakProductServices();
+    const services = {
+      ...noopServices,
+      audio: {
+        ...noopServices.audio,
+        pauseLibraryAudio: async () => {
+          pauseCalls += 1;
+          return {
+            status: 'ok' as const,
+            value: { paused: true },
+          };
+        },
+      },
+    };
+
+    await expect(
+      runGarakProductEffect({
+        state: createInitialGarakProductState(),
+        action: { type: 'pauseSelectedPlayerItem' },
+        services,
+      }),
+    ).resolves.toEqual([]);
+
+    expect(pauseCalls).toBe(1);
+  });
+
   test('plays the current work through the work mix service boundary', async () => {
     const currentWork: Work = {
       ...createWork('work-1'),

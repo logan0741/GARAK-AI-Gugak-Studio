@@ -94,6 +94,8 @@ export function createRuntimeGarakProductServices({
       ...httpServices.audio,
       prepareLivePerformanceAudio: fallbackServices.audio.prepareLivePerformanceAudio,
       playPerformanceEvents: fallbackServices.audio.playPerformanceEvents,
+      playLibraryAudio: fallbackServices.audio.playLibraryAudio,
+      pauseLibraryAudio: fallbackServices.audio.pauseLibraryAudio,
     },
   };
 }

@@ -47,7 +47,21 @@ test('configures an Expo development client for native audio candidate QA', () =
     expect.arrayContaining([
       'expo-router',
       expect.arrayContaining(['expo-audio']),
+    ]),
+  );
+  expect(appJson.expo?.plugins).not.toEqual(
+    expect.arrayContaining([
       expect.arrayContaining(['react-native-audio-api']),
     ]),
   );
+});
+
+test('keeps the unstable React Native Audio API candidate out of Android autolinking', () => {
+  const reactNativeConfig = readFileSync(
+    join(process.cwd(), 'react-native.config.js'),
+    'utf8',
+  );
+
+  expect(reactNativeConfig).toContain("'react-native-audio-api'");
+  expect(reactNativeConfig).toContain('android: null');
 });

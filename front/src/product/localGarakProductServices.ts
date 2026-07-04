@@ -2,13 +2,21 @@ import type { AuthStoragePort } from './authSessionStore';
 import type { ProductLibraryState } from './garakProductState';
 import {
   createNoopGarakProductServices,
+  type PauseLibraryAudioResult,
   type GarakProductServices,
+  type PlayLibraryAudioInput,
+  type PlayLibraryAudioResult,
+  type ServiceResult,
 } from './garakProductServices';
 import {
   createLivePerformanceAudioPort,
   type LivePerformanceAudioPort,
 } from './livePerformanceAudio';
 import type { Work } from '../studio/studioTypes';
+import {
+  createLocalExportAudioUri,
+  resolveLibraryPlaybackAudioSource,
+} from './libraryPlaybackAudio';
 
 const LIBRARY_SNAPSHOT_STORAGE_KEY = 'garak.library.snapshot.v1';
 const DEFAULT_SHARE_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -23,14 +31,23 @@ export type LocalGarakProductServicesInput = {
   storage?: AuthStoragePort;
   share?: GarakSharePort;
   liveAudio?: LivePerformanceAudioPort;
+  libraryAudio?: LibraryAudioPort;
   nowMs?: () => number;
   createRemoteId?: () => string;
+};
+
+export type LibraryAudioPort = {
+  playLibraryAudio: (
+    input: PlayLibraryAudioInput,
+  ) => Promise<ServiceResult<PlayLibraryAudioResult>>;
+  pauseLibraryAudio: () => Promise<ServiceResult<PauseLibraryAudioResult>>;
 };
 
 export function createLocalGarakProductServices({
   storage = createDefaultLocalStorage(),
   share = async () => undefined,
   liveAudio = createLivePerformanceAudioPort(),
+  libraryAudio = createExpoLibraryAudioPort(),
   nowMs = () => Date.now(),
   createRemoteId = createShareId,
 }: LocalGarakProductServicesInput = {}): GarakProductServices {
@@ -48,6 +65,8 @@ export function createLocalGarakProductServices({
       ...noopServices.audio,
       prepareLivePerformanceAudio: liveAudio.prepareLivePerformanceAudio,
       playPerformanceEvents: liveAudio.playPerformanceEvents,
+      playLibraryAudio: libraryAudio.playLibraryAudio,
+      pauseLibraryAudio: libraryAudio.pauseLibraryAudio,
       exportWorkAudio: async (work) => ({
         status: 'ok',
         value: {
@@ -120,7 +139,61 @@ function createEmptyLibrarySnapshot(): ProductLibraryState {
 }
 
 function createLocalExportUri(work: Work): string {
-  return `file://garak/exports/${encodeURIComponent(work.id)}.wav`;
+  void work;
+  return createLocalExportAudioUri();
+}
+
+function createExpoLibraryAudioPort(): LibraryAudioPort {
+  type ExpoAudioPlayer = {
+    pause: () => void;
+    play: () => void;
+    remove: () => void;
+  };
+
+  let activePlayer: ExpoAudioPlayer | undefined;
+
+  return {
+    async playLibraryAudio(input) {
+      try {
+        activePlayer?.pause();
+        activePlayer?.remove();
+
+        const { createAudioPlayer } = await import('expo-audio');
+        const source = resolveLibraryPlaybackAudioSource(input.audioUri);
+        const player = createAudioPlayer(source, {
+          keepAudioSessionActive: true,
+        });
+
+        activePlayer = player;
+        player.play();
+
+        return {
+          status: 'ok',
+          value: { audioUri: input.audioUri },
+        };
+      } catch (error) {
+        return {
+          status: 'error',
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+    async pauseLibraryAudio() {
+      try {
+        activePlayer?.pause();
+
+        return {
+          status: 'ok',
+          value: { paused: activePlayer !== undefined },
+        };
+      } catch (error) {
+        return {
+          status: 'error',
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  };
 }
 
 function estimateWorkDurationSeconds(work: Work): number {
