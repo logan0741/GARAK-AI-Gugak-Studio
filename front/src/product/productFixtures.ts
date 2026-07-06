@@ -289,7 +289,11 @@ export function getPracticeSongGuide(songId: string): PracticeSongGuide | undefi
 }
 
 export function getSharedRecordingById(recordingId?: string): SharedRecording {
-  return SHARE_FEED_RECORDINGS.find((recording) => recording.id === recordingId) ?? FEATURED_SHARED_RECORDING;
+  return findSharedRecordingById(recordingId) ?? FEATURED_SHARED_RECORDING;
+}
+
+export function findSharedRecordingById(recordingId?: string): SharedRecording | undefined {
+  return SHARE_FEED_RECORDINGS.find((recording) => recording.id === recordingId);
 }
 
 export function getInstrumentName(instrument: InstrumentId): string {
