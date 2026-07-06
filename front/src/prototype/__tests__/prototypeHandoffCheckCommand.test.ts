@@ -27,7 +27,9 @@ test('returns usage when no prototype handoff path is provided', () => {
   ).toBe(1);
 
   expect(stdout).toEqual([]);
-  expect(stderr).toEqual(['Usage: npm run qa:prototype-handoff-check -- <prototype-handoff.json>']);
+  expect(stderr).toEqual([
+    'Usage: npm run qa:prototype-handoff-check -- [--d2-expo-only] <prototype-handoff.json>',
+  ]);
 });
 
 test('reports ready handoffs without producing a Day 5 decision', () => {
@@ -71,6 +73,38 @@ test('reports ready handoffs without producing a Day 5 decision', () => {
   expect(stdout.join('\n')).toContain('- Runtime issues: none');
   expect(stdout.join('\n')).toContain('- Probe record issues: none');
   expect(stdout.join('\n')).not.toContain('FINAL_ENGINE_SELECTED');
+});
+
+test('reports D-2 expo-only handoffs ready without requiring the Day 5 second candidate', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runPrototypeHandoffCheckCommand({
+      argv: ['--d2-expo-only', 'd2-expo-handoff.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T06:10:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measuredAt: '2026-06-08T06:00:00.000Z',
+              measurements,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: READY_FOR_PROBE_RECORD');
+  expect(output).toContain('- Missing candidates: none');
+  expect(output).toContain('- Duplicate candidates: none');
+  expect(output).toContain('- Probe record issues: none');
+  expect(output).not.toContain('react-native-audio-api');
 });
 
 test('reports incomplete handoffs with missing values and runtime issues', () => {

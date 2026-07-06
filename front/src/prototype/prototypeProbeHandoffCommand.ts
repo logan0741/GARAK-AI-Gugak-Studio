@@ -1,7 +1,9 @@
 import { parseAudioEngineProbeRecord } from '../audio/audioEngineProbeRecord';
 import {
   buildPrototypeHandoffReadinessReport,
+  getD2ExpoOnlyPrototypeHandoffReadinessOptions,
   type PrototypeHandoffReadinessReport,
+  type PrototypeHandoffReadinessOptions,
 } from './prototypeHandoffCheckCommand';
 import { parsePrototypeHandoffFile } from './prototypeHandoffFile';
 import { buildPhysicalDeviceProbeRecordFromPrototypeInspectorDrafts } from './prototypeProbeHandoff';
@@ -14,24 +16,25 @@ export type PrototypeProbeHandoffCommandInput = {
   writeStderr: (value: string) => void;
 };
 
+const PROTOTYPE_PROBE_RECORD_USAGE =
+  'Usage: npm run qa:prototype-probe-record -- [--d2-expo-only] <prototype-handoff.json> <probe-record.json>';
+
 export function runPrototypeProbeHandoffCommand(
   input: PrototypeProbeHandoffCommandInput,
 ): number {
-  const [prototypeHandoffPath, probeRecordOutputPath] = input.argv;
+  const args = parsePrototypeProbeHandoffArgs(input.argv);
 
-  if (!prototypeHandoffPath || !probeRecordOutputPath) {
-    input.writeStderr(
-      'Usage: npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>',
-    );
+  if (!args.prototypeHandoffPath || !args.probeRecordOutputPath) {
+    input.writeStderr(PROTOTYPE_PROBE_RECORD_USAGE);
     return 1;
   }
 
   let handoffText: string;
 
   try {
-    handoffText = input.readTextFile(prototypeHandoffPath);
+    handoffText = input.readTextFile(args.prototypeHandoffPath);
   } catch {
-    input.writeStderr(`Could not read prototype handoff: ${prototypeHandoffPath}`);
+    input.writeStderr(`Could not read prototype handoff: ${args.prototypeHandoffPath}`);
     return 1;
   }
 
@@ -40,7 +43,7 @@ export function runPrototypeProbeHandoffCommand(
   try {
     handoffInput = JSON.parse(handoffText);
   } catch {
-    input.writeStderr(`Invalid JSON in prototype handoff: ${prototypeHandoffPath}`);
+    input.writeStderr(`Invalid JSON in prototype handoff: ${args.prototypeHandoffPath}`);
     return 1;
   }
 
@@ -50,7 +53,10 @@ export function runPrototypeProbeHandoffCommand(
     return 1;
   }
 
-  const readinessReport = buildPrototypeHandoffReadinessReport(parseHandoffResult.handoff);
+  const readinessReport = buildPrototypeHandoffReadinessReport(
+    parseHandoffResult.handoff,
+    args.readinessOptions,
+  );
   if (readinessReport.status !== 'READY_FOR_PROBE_RECORD') {
     input.writeStderr(
       `Could not build prototype probe record: prototype handoff is not ready for probe record: ${formatReadinessIssues(readinessReport)}`,
@@ -84,14 +90,39 @@ export function runPrototypeProbeHandoffCommand(
   }
 
   try {
-    input.writeTextFile(probeRecordOutputPath, recordText);
+    input.writeTextFile(args.probeRecordOutputPath, recordText);
   } catch {
-    input.writeStderr(`Could not write probe record: ${probeRecordOutputPath}`);
+    input.writeStderr(`Could not write probe record: ${args.probeRecordOutputPath}`);
     return 1;
   }
 
-  input.writeStdout(`Wrote Day 5 probe record: ${probeRecordOutputPath}`);
+  input.writeStdout(
+    `${args.d2ExpoOnly ? 'Wrote D-2 expo-only' : 'Wrote Day 5'} probe record: ${args.probeRecordOutputPath}`,
+  );
   return 0;
+}
+
+function parsePrototypeProbeHandoffArgs(argv: string[]): {
+  prototypeHandoffPath?: string;
+  probeRecordOutputPath?: string;
+  readinessOptions: PrototypeHandoffReadinessOptions;
+  d2ExpoOnly: boolean;
+} {
+  if (argv[0] === '--d2-expo-only') {
+    return {
+      prototypeHandoffPath: argv[1],
+      probeRecordOutputPath: argv[2],
+      readinessOptions: getD2ExpoOnlyPrototypeHandoffReadinessOptions(),
+      d2ExpoOnly: true,
+    };
+  }
+
+  return {
+    prototypeHandoffPath: argv[0],
+    probeRecordOutputPath: argv[1],
+    readinessOptions: {},
+    d2ExpoOnly: false,
+  };
 }
 
 function getErrorMessage(error: unknown): string {
