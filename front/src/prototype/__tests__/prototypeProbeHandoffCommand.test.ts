@@ -28,7 +28,7 @@ test('returns usage when no prototype handoff path is provided', () => {
   ).toBe(1);
   expect(stdout).toEqual([]);
   expect(stderr).toEqual([
-    'Usage: npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>',
+    'Usage: npm run qa:prototype-probe-record -- [--d2-expo-only] <prototype-handoff.json> <probe-record.json>',
   ]);
 });
 
@@ -47,7 +47,7 @@ test('returns usage when no probe record output path is provided', () => {
 
   expect(stdout).toEqual([]);
   expect(stderr).toEqual([
-    'Usage: npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json>',
+    'Usage: npm run qa:prototype-probe-record -- [--d2-expo-only] <prototype-handoff.json> <probe-record.json>',
   ]);
 });
 
@@ -151,6 +151,45 @@ test('writes a Day 5 probe record to an explicit output file path', () => {
     ok: true,
     record: writtenRecord,
   });
+});
+
+test('writes a D-2 expo-only probe record without requiring the Day 5 second candidate', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const writtenFiles = new Map<string, string>();
+
+  expect(
+    runPrototypeProbeHandoffCommand({
+      argv: ['--d2-expo-only', 'prototype-handoff.json', 'probe-record.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T03:10:00.000Z',
+          entries: [
+            {
+              inspectorDraft: createInspectorDraftForCandidate('expo-audio'),
+              measuredAt: '2026-06-08T03:00:00.000Z',
+              measurements,
+            },
+          ],
+        }),
+      writeTextFile: (path, value) => writtenFiles.set(path, value),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+
+  expect(stderr).toEqual([]);
+  expect(stdout).toEqual(['Wrote D-2 expo-only probe record: probe-record.json']);
+  const record = JSON.parse(writtenFiles.get('probe-record.json') ?? '');
+  expect(parseAudioEngineProbeRecord(record)).toEqual({ ok: true, record });
+  expect(record.probes).toEqual([
+    expect.objectContaining({
+      candidate: 'expo-audio',
+      evidenceSource: 'physical-device',
+      recordingCaptureSeconds: 0,
+      touchToSoundLatencyMs: 38,
+    }),
+  ]);
 });
 
 test('rejects prototype handoffs that are not ready for probe record generation', () => {

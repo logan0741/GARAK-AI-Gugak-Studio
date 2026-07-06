@@ -199,11 +199,17 @@ npm test src/audio/__tests__/audioEngineProbeHandoff.test.ts
 npm test src/audio/__tests__/audioEngineProbeHandoffCommand.test.ts
 npm test src/prototype/__tests__/prototypeProbeHandoffCommand.test.ts
 npm run qa:day5-readiness -- <week1-smoke-report.json> <probe-record.json>
-npm run qa:day5-audio -- docs/qa/day-5-audio-engine-probes.example.json
+npm run qa:day5-audio -- <probe-record.json>
 npm run typecheck
 ```
 
 Expected result: all commands exit 0.
+
+The checked-in example probe is a negative fixture. It must print `INCOMPLETE_DEVICE_EVIDENCE` / `NO_GO` and exit non-zero:
+
+```bash
+npm run qa:day5-audio -- docs/qa/day-5-audio-engine-probes.example.json
+```
 
 ## Current Record
 
