@@ -155,6 +155,11 @@ export function PlayerDetailContent({
           </Text>
           <Text style={styles.playingMore}>·····</Text>
         </View>
+        {player.playbackNotice !== undefined ? (
+          <Text accessibilityLiveRegion="polite" numberOfLines={2} style={styles.playingNotice}>
+            {player.playbackNotice}
+          </Text>
+        ) : null}
         <View style={styles.playingProgress}>
           <View style={[styles.playingProgressFill, { width: `${Math.round(player.progressFraction * 100)}%` }]} />
         </View>
@@ -173,7 +178,10 @@ export function PlayerDetailContent({
                 dispatch(playerActions.favoriteAction);
               }
             }}
-            style={styles.playingIconButton}
+            style={[
+              styles.playingIconButton,
+              playerActions.favoriteAction === undefined ? styles.playingIconButtonDisabled : undefined,
+            ]}
           >
             <Text style={styles.playingStar}>{player.isFavorite ? '★' : '☆'}</Text>
           </Pressable>
@@ -187,7 +195,10 @@ export function PlayerDetailContent({
                 dispatch(playerActions.previousAction);
               }
             }}
-            style={styles.playingIconButton}
+            style={[
+              styles.playingIconButton,
+              playerActions.previousAction === undefined ? styles.playingIconButtonDisabled : undefined,
+            ]}
           >
             <Text style={styles.playingSkip}>◀◀</Text>
           </Pressable>
@@ -201,7 +212,10 @@ export function PlayerDetailContent({
                 dispatch(playbackAction);
               }
             }}
-            style={styles.playingPlayButton}
+            style={[
+              styles.playingPlayButton,
+              playbackAction === undefined ? styles.playingPlayButtonDisabled : undefined,
+            ]}
           >
             <Text style={styles.playingPlay}>{playbackIcon}</Text>
           </Pressable>
@@ -215,7 +229,10 @@ export function PlayerDetailContent({
                 dispatch(playerActions.nextAction);
               }
             }}
-            style={styles.playingIconButton}
+            style={[
+              styles.playingIconButton,
+              playerActions.nextAction === undefined ? styles.playingIconButtonDisabled : undefined,
+            ]}
           >
             <Text style={styles.playingSkip}>▶▶</Text>
           </Pressable>
@@ -288,7 +305,10 @@ export function PlayerDetailContent({
                 dispatch(playerActions.airPlayAction);
               }
             }}
-            style={styles.playingAirPlay}
+            style={[
+              styles.playingAirPlay,
+              playerActions.airPlayAction === undefined ? styles.playingAirPlayDisabled : undefined,
+            ]}
           >
             <Text style={styles.playingAirPlayText}>{player.airPlayLabel}</Text>
           </Pressable>
@@ -604,6 +624,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: 18,
   },
+  playingNotice: {
+    alignSelf: 'stretch',
+    color: '#F7D7D2',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 16,
+    marginTop: 8,
+  },
   playingProgress: {
     alignSelf: 'stretch',
     backgroundColor: '#D6D6D6',
@@ -641,11 +670,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 46,
   },
+  playingIconButtonDisabled: {
+    opacity: 0.34,
+  },
   playingPlayButton: {
     alignItems: 'center',
     height: 54,
     justifyContent: 'center',
     width: 54,
+  },
+  playingPlayButtonDisabled: {
+    opacity: 0.34,
   },
   playingStar: {
     color: '#DADADA',
@@ -693,6 +728,9 @@ const styles = StyleSheet.create({
     marginTop: 22,
     minHeight: 34,
     paddingHorizontal: 18,
+  },
+  playingAirPlayDisabled: {
+    opacity: 0.38,
   },
   playingAirPlayText: {
     color: GARAK_COLORS.surfaceCard,

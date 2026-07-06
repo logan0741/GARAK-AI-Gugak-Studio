@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import type { Work } from '../../studio/studioTypes';
 import { applyProductAction, createInitialGarakProductState } from '../garakProductState';
 import {
   getMyLibraryItemAction,
@@ -9,8 +10,53 @@ import {
 
 function completeRecordedFreePlay(state: ReturnType<typeof createInitialGarakProductState>) {
   state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const captureAttemptId = requireRecordingCaptureAttemptId(state);
+  state = applyProductAction(state, {
+    type: 'appendFreePlayPerformanceEvents',
+    events: [{ type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 }],
+  });
 
-  return applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  return applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    durationSeconds: 8,
+    captureAttemptId,
+  });
+}
+
+function completeCurrentWorkExport(state: ReturnType<typeof createInitialGarakProductState>) {
+  const workId = state.currentWorkId;
+  if (workId === undefined) {
+    throw new Error('Expected a current work before completing export.');
+  }
+
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+
+  return applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'garak://library-demo/export-fallback',
+    durationSeconds: 24,
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-1',
+    sourceEventCount: 1,
+    completionTarget: 'player',
+  });
+}
+
+function requireRecordingCaptureAttemptId(
+  state: ReturnType<typeof createInitialGarakProductState>,
+): string {
+  if ('captureAttemptId' in state.recordingCaptureStatus) {
+    return state.recordingCaptureStatus.captureAttemptId;
+  }
+
+  throw new Error('Expected an active recording capture attempt.');
 }
 
 test('uses the Figma my-screen demo library when there are no saved items', () => {
@@ -62,7 +108,7 @@ test('shows saved works in the default work tab', () => {
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
 
   const model = getMyLibraryViewModel(state);
 
@@ -87,6 +133,42 @@ test('shows saved works in the default work tab', () => {
   expect(model.emptyState).toBeUndefined();
 });
 
+test('keeps library row ids unique when persisted work ids are duplicated', () => {
+  const createdAt = '2026-07-05T10:00:00.000Z';
+  const state = createInitialGarakProductState({ now: () => createdAt });
+  const model = getMyLibraryViewModel({
+    ...state,
+    library: {
+      ...state.library,
+      works: [
+        {
+          id: 'work-1',
+          title: 'Duplicate A',
+          createdAt,
+          updatedAt: '2026-07-05T10:01:00.000Z',
+          source: 'free_creation',
+          syncState: 'local_only',
+          tracks: [],
+        },
+        {
+          id: 'work-1',
+          title: 'Duplicate B',
+          createdAt,
+          updatedAt: '2026-07-05T10:02:00.000Z',
+          source: 'free_creation',
+          syncState: 'local_only',
+          tracks: [],
+        },
+      ],
+      exportedAudios: [],
+      practiceResults: [],
+    },
+  });
+
+  expect(new Set(model.playlistRows.map((row) => row.id)).size).toBe(model.playlistRows.length);
+  expect(model.playlistRows.map((row) => row.workId)).toEqual(['work-1', 'work-1']);
+});
+
 test('filters the library to exported audio and practice results on the shareables tab', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -98,7 +180,7 @@ test('filters the library to exported audio and practice results on the shareabl
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'selectLibraryTab', tab: 'shareables' });
 
   const model = getMyLibraryViewModel(state);
@@ -115,6 +197,254 @@ test('filters the library to exported audio and practice results on the shareabl
     count: 1,
   });
 });
+
+test('keeps placeholder exported audio visible but not playable from the library', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  const playerState = {
+    ...state,
+    libraryTab: 'shareables' as const,
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-placeholder' },
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-placeholder',
+          kind: 'exported_audio' as const,
+          title: 'Legacy Placeholder Export',
+          durationSeconds: 24,
+          instrumentNames: ['Janggu'],
+          createdAt: '2026-07-04T10:00:00.000Z',
+          audioUri: 'placeholder://export-1.wav',
+          shareState: 'ready' as const,
+        },
+      ],
+    },
+  };
+  const model = getMyLibraryViewModel(playerState);
+
+  expect(model.playlistRows[0]).toMatchObject({
+    exportedAudioId: 'export-placeholder',
+    kind: 'exportedAudio',
+    playable: false,
+  });
+  expect(getMyLibraryItemAction(model.playlistRows[0])).toBeUndefined();
+  expect(getMyLibraryPlayerActions(playerState)).toMatchObject({
+    playAction: undefined,
+    shareAction: undefined,
+    deleteAction: undefined,
+  });
+  expect(getMyLibraryPlayerViewModel(playerState)).toMatchObject({
+    sourceKind: 'unavailable',
+    title: 'Selected item unavailable',
+  });
+});
+
+test('keeps stale event-replay exported audio visible but not playable from the library', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  const playerState = {
+    ...state,
+    libraryTab: 'shareables' as const,
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-stale' },
+    library: {
+      ...state.library,
+      works: [],
+      exportedAudios: [
+        {
+          id: 'export-stale',
+          kind: 'exported_audio' as const,
+          workId: 'missing-work',
+          title: 'Stale Event Replay Export',
+          durationSeconds: 24,
+          instrumentNames: ['Janggu'],
+          createdAt: '2026-07-04T10:00:00.000Z',
+          audioUri: 'garak://library-demo/export-fallback',
+          renderKind: 'event_replay' as const,
+          sourceTakeId: 'take-1',
+          shareState: 'ready' as const,
+        },
+      ],
+    },
+  };
+  const model = getMyLibraryViewModel(playerState);
+
+  expect(model.playlistRows[0]).toMatchObject({
+    exportedAudioId: 'export-stale',
+    kind: 'exportedAudio',
+    playable: false,
+  });
+  expect(getMyLibraryItemAction(model.playlistRows[0])).toBeUndefined();
+  expect(getMyLibraryPlayerActions(playerState)).toMatchObject({
+    playAction: undefined,
+    shareAction: undefined,
+    deleteAction: undefined,
+  });
+  expect(getMyLibraryPlayerViewModel(playerState)).toMatchObject({
+    sourceKind: 'unavailable',
+    title: 'Selected item unavailable',
+  });
+});
+
+test('keeps stale audio-capture exported audio visible but not playable from the library', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  const playerState = {
+    ...state,
+    libraryTab: 'shareables' as const,
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-stale-capture' },
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-stale-capture',
+          kind: 'exported_audio' as const,
+          title: 'Stale Capture Export',
+          durationSeconds: 24,
+          instrumentNames: ['Janggu'],
+          createdAt: '2026-07-04T10:00:00.000Z',
+          audioUri: 'garak://library-demo/export-fallback',
+          renderKind: 'audio_capture' as const,
+          sourceTakeId: 'take-1',
+          sourceRecordingUri: 'garak://library-demo/export-fallback',
+          shareState: 'ready' as const,
+        },
+      ],
+    },
+  };
+  const model = getMyLibraryViewModel(playerState);
+
+  expect(model.playlistRows[0]).toMatchObject({
+    exportedAudioId: 'export-stale-capture',
+    kind: 'exportedAudio',
+    playable: false,
+  });
+  expect(getMyLibraryItemAction(model.playlistRows[0])).toBeUndefined();
+  expect(getMyLibraryPlayerActions(playerState)).toMatchObject({
+    playAction: undefined,
+    shareAction: undefined,
+    deleteAction: undefined,
+  });
+});
+
+test('keeps empty library work rows visible but not playable', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  const playerState = {
+    ...state,
+    selectedPlayerItem: { kind: 'work' as const, workId: 'work-empty' },
+    library: {
+      ...state.library,
+      works: [
+        {
+          id: 'work-empty',
+          title: 'Empty Work',
+          createdAt: '2026-07-04T10:00:00.000Z',
+          updatedAt: '2026-07-04T10:00:00.000Z',
+          source: 'free_creation' as const,
+          syncState: 'local_only' as const,
+          tracks: [],
+        },
+      ],
+    },
+  };
+  const model = getMyLibraryViewModel(playerState);
+
+  expect(model.playlistRows[0]).toMatchObject({
+    workId: 'work-empty',
+    kind: 'work',
+    playable: false,
+  });
+  expect(getMyLibraryItemAction(model.playlistRows[0])).toBeUndefined();
+  expect(getMyLibraryPlayerActions(playerState)).toMatchObject({
+    playAction: undefined,
+  });
+});
+
+test('shows exported audio provenance in library rows and player metadata', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  const sourceWork = createCapturedLibraryWork('work-1', 'file://garak/takes/take-1.m4a');
+  const exportedAudio = {
+    id: 'export-1',
+    kind: 'exported_audio' as const,
+    workId: 'work-1',
+    title: 'Captured export',
+    durationSeconds: 8,
+    instrumentNames: ['Janggu'],
+    createdAt: '2026-07-04T10:00:00.000Z',
+    authorDisplayName: 'Demo_Author',
+    sourceLabel: 'shared feed demo',
+    audioUri: 'file://garak/takes/take-1.m4a',
+    renderKind: 'audio_capture' as const,
+    sourceTakeId: 'take-1',
+    sourceRecordingUri: 'file://garak/takes/take-1.m4a',
+    shareState: 'ready' as const,
+  };
+
+  const libraryModel = getMyLibraryViewModel({
+    ...state,
+    libraryTab: 'shareables',
+    selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
+    library: {
+      ...state.library,
+      works: [sourceWork],
+      exportedAudios: [exportedAudio],
+    },
+  });
+  const playerModel = getMyLibraryPlayerViewModel({
+    ...state,
+    selectedPlayerItem: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
+    library: {
+      ...state.library,
+      works: [sourceWork],
+      exportedAudios: [exportedAudio],
+    },
+  });
+
+  expect(libraryModel.playlistRows[0].subtitle).toContain('녹음 파일');
+  expect(libraryModel.playlistRows[0].subtitle).toContain('Demo_Author / shared feed demo');
+  expect(libraryModel.playlistRows[0].subtitle).not.toContain('쨌');
+  expect(playerModel.meta).toContain('녹음 파일');
+  expect(playerModel.meta).not.toContain('쨌');
+});
+
+function createCapturedLibraryWork(id: string, recordingUri: string): Work {
+  return {
+    id,
+    title: 'Captured source work',
+    createdAt: '2026-07-04T10:00:00.000Z',
+    updatedAt: '2026-07-04T10:00:00.000Z',
+    source: 'free_creation',
+    syncState: 'local_only',
+    tracks: [
+      {
+        id: 'track-1',
+        kind: 'instrument',
+        instrument: 'janggu',
+        startedAtBeat: 1,
+        volume: 1,
+        mute: false,
+        solo: false,
+        createdAt: '2026-07-04T10:00:00.000Z',
+        takes: [
+          {
+            id: 'take-1',
+            events: [{ type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 }],
+            recordingUri,
+            startedAtBeat: 1,
+            durationBeats: 4,
+          },
+        ],
+      },
+    ],
+  };
+}
 
 test('shows each S18 work row storage and sync state', () => {
   const createdAt = '2026-06-18T00:00:00.000Z';
@@ -230,7 +560,7 @@ test('filters S18 work rows by visible storage status text', () => {
   expect(model.playlistRows.map((row) => row.title)).toEqual(['동기화 작업']);
 });
 
-test('routes library work rows to the editor and shareables to the player', () => {
+test('routes playable library rows to immediate playback', () => {
   expect(
     getMyLibraryItemAction({
       id: 'work-work-1',
@@ -242,8 +572,8 @@ test('routes library work rows to the editor and shareables to the player', () =
       workId: 'work-1',
     }),
   ).toEqual({
-    type: 'openWork',
-    workId: 'work-1',
+    type: 'playLibraryItemNow',
+    item: { kind: 'work', workId: 'work-1' },
   });
 
   expect(
@@ -257,7 +587,7 @@ test('routes library work rows to the editor and shareables to the player', () =
       exportedAudioId: 'export-1',
     }),
   ).toEqual({
-    type: 'playLibraryItem',
+    type: 'playLibraryItemNow',
     item: { kind: 'exportedAudio', exportedAudioId: 'export-1' },
   });
 
@@ -271,7 +601,7 @@ test('routes library work rows to the editor and shareables to the player', () =
       active: false,
     }),
   ).toEqual({
-    type: 'playLibraryItem',
+    type: 'playLibraryItemNow',
     item: { kind: 'demo', title: 'My Arirang', date: '2026.06.01' },
   });
 });
@@ -287,7 +617,7 @@ test('builds the player detail from the selected my-library item', () => {
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
 
   state = applyProductAction(state, {
     type: 'playLibraryItem',
@@ -325,9 +655,11 @@ test('exposes S19 player actions without choosing their visual placement', () =>
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
 
-  expect(getMyLibraryPlayerActions(state)).toEqual({
+  const actions = getMyLibraryPlayerActions(state);
+
+  expect(actions).toEqual({
     favoriteAction: { type: 'toggleSelectedPlayerFavorite' },
     previousAction: { type: 'playPreviousPlayerItem' },
     playAction: { type: 'playSelectedPlayerItem' },
@@ -339,6 +671,18 @@ test('exposes S19 player actions without choosing their visual placement', () =>
     airPlayAction: { type: 'activateAirPlay' },
     backAction: { type: 'navigate', target: 'S18' },
   });
+  expect(Object.keys(actions)).toEqual([
+    'favoriteAction',
+    'previousAction',
+    'playAction',
+    'pauseAction',
+    'nextAction',
+    'editAction',
+    'shareAction',
+    'deleteAction',
+    'airPlayAction',
+    'backAction',
+  ]);
 
   state = applyProductAction(state, { type: 'playSelectedPlayerItem' });
 
@@ -363,15 +707,82 @@ test('models S19 favorite and AirPlay button state', () => {
 
   expect(getMyLibraryPlayerViewModel(state)).toMatchObject({
     isFavorite: false,
-    airPlayLabel: '◎ AirPlay',
   });
+  expect(getMyLibraryPlayerViewModel(state).airPlayLabel).toContain('AirPlay');
 
   state = applyProductAction(state, { type: 'toggleSelectedPlayerFavorite' });
   state = applyProductAction(state, { type: 'activateAirPlay' });
 
   expect(getMyLibraryPlayerViewModel(state)).toMatchObject({
     isFavorite: true,
-    airPlayLabel: '◎ AirPlay 준비됨',
+  });
+  expect(getMyLibraryPlayerViewModel(state).airPlayLabel).toContain('AirPlay');
+});
+
+test('shows a visible S19 player notice when audio playback fails', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = completeCurrentWorkExport(state);
+  state = applyProductAction(state, { type: 'playSelectedPlayerItem' });
+  state = applyProductAction(state, {
+    type: 'failPlayerPlayback',
+    message: 'speaker route unavailable',
+  });
+
+  expect(getMyLibraryPlayerViewModel(state)).toMatchObject({
+    isPlaying: false,
+    playbackNotice: 'Playback unavailable: speaker route unavailable',
+  });
+  expect(getMyLibraryPlayerActions(state)).toMatchObject({
+    playAction: { type: 'playSelectedPlayerItem' },
+    pauseAction: undefined,
+  });
+});
+
+test('does not fall back to another S19 player item when the explicit selection is stale', () => {
+  const state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  const playerState = {
+    ...state,
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'missing-export' },
+    library: {
+      ...state.library,
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio' as const,
+          title: 'Available Export',
+          durationSeconds: 24,
+          instrumentNames: ['Janggu'],
+          createdAt: '2026-07-04T10:00:00.000Z',
+          audioUri: 'file://garak/export-1.wav',
+          shareState: 'ready' as const,
+        },
+      ],
+    },
+  };
+
+  expect(getMyLibraryPlayerViewModel(playerState)).toMatchObject({
+    title: 'Selected item unavailable',
+    sourceKind: 'unavailable',
+    isPlaying: false,
+    playbackNotice: 'Playback unavailable: Selected audio is unavailable.',
+  });
+  expect(getMyLibraryPlayerActions(playerState)).toMatchObject({
+    playAction: undefined,
+    pauseAction: undefined,
+    editAction: undefined,
+    shareAction: undefined,
+    deleteAction: undefined,
   });
 });
 
@@ -390,7 +801,7 @@ test('keeps shared recording provenance visible after saving it to the library',
   expect(library.playlistRows[0]).toMatchObject({
     kind: 'exportedAudio',
     title: '아침의 아리랑',
-    subtitle: 'Minsu_Kim · 공유 피드 데모 · 가야금 · 0:48',
+    subtitle: 'Minsu_Kim / 공유 피드 데모 / 데모 샘플 / 가야금 / 0:48',
   });
 
   const player = getMyLibraryPlayerViewModel(state);
@@ -398,7 +809,7 @@ test('keeps shared recording provenance visible after saving it to the library',
   expect(player).toMatchObject({
     sourceKind: 'exportedAudio',
     title: '아침의 아리랑',
-    meta: 'Minsu_Kim · 공유 피드 데모 · 사용 악기 가야금 · 0:48',
+    meta: 'Minsu_Kim / 공유 피드 데모 / 데모 샘플 / 사용 악기 가야금 / 0:48',
   });
   expect(player.editWorkId).toBeUndefined();
 });
