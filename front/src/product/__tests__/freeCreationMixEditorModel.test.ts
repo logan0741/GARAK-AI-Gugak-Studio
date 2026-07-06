@@ -180,6 +180,36 @@ test('localizes S07 mix player status labels for English users', () => {
   });
 });
 
+test('shows an S07 mix preview notice when playback fails', () => {
+  const state = {
+    ...createInitialGarakProductState(),
+    playerPlaybackStatus: {
+      status: 'failed' as const,
+      message: 'No audible work events are available.',
+    },
+  };
+
+  expect(getFreeCreationMixEditorModel(state).playbackNotice).toBe(
+    'Playback unavailable: No audible work events are available.',
+  );
+});
+
+test('shows an S07 export notice when Save & Share fails for the current work', () => {
+  const state = {
+    ...createInitialGarakProductState(),
+    currentWorkId: 'work-1',
+    workExportStatus: {
+      status: 'failed' as const,
+      workId: 'work-1',
+      message: 'Audio export returned no render provenance.',
+    },
+  };
+
+  expect(getFreeCreationMixEditorModel(state).playbackNotice).toBe(
+    'Export unavailable: Audio export returned no render provenance.',
+  );
+});
+
 test('marks a single S07 track as not deletable', () => {
   const createdAt = '2026-06-24T12:00:00.000Z';
   const work = autoSaveTakeAsWork({

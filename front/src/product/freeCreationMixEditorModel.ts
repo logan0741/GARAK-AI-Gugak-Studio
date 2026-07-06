@@ -19,6 +19,7 @@ export type FreeCreationTrackControlModel = {
 export type FreeCreationMixEditorModel = {
   playerTitle: string;
   playerAccessibilityLabel: string;
+  playbackNotice?: string;
   trackControls: FreeCreationTrackControlModel[];
   playheadBeat: number;
   playheadBeatLabel: string;
@@ -47,6 +48,7 @@ export function getFreeCreationMixEditorModel(
   return {
     playerTitle,
     playerAccessibilityLabel: isEn ? `${playerTitle} Playback Preview` : `${playerTitle} 재생 미리보기`,
+    playbackNotice: getMixEditorNotice(state),
     trackControls:
       work?.tracks.map((track, index) =>
         createTrackControlModel(track, index, work.tracks.length, state.language),
@@ -65,6 +67,21 @@ export function getFreeCreationMixEditorModel(
     saveAction: work === undefined ? undefined : { type: 'saveCurrentWork' },
     saveStatusLabel,
   };
+}
+
+function getMixEditorNotice(state: GarakProductState): string | undefined {
+  if (state.playerPlaybackStatus.status === 'failed') {
+    return `Playback unavailable: ${state.playerPlaybackStatus.message}`;
+  }
+
+  if (
+    state.workExportStatus.status === 'failed' &&
+    state.workExportStatus.workId === state.currentWorkId
+  ) {
+    return `Export unavailable: ${state.workExportStatus.message}`;
+  }
+
+  return undefined;
 }
 
 function normalizePlayheadBeat(beat: number): number {
