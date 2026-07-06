@@ -6,6 +6,9 @@ import type {
   AccompanimentRecommendation,
   ExportWorkAudioResult,
   GarakProductServices,
+  PauseLibraryAudioResult,
+  PlayLibraryAudioResult,
+  PlayWorkMixResult,
   ServiceResult,
   SharePublishResult,
 } from './garakProductServices';
@@ -80,9 +83,20 @@ export function createHttpGarakProductServices({
         ),
     },
     audio: {
+      startRecordingCapture: async () => ({ status: 'unavailable' }),
+      stopRecordingCapture: async () => ({ status: 'unavailable' }),
+      discardRecordingCapture: async () => ({ status: 'unavailable' }),
       exportWorkAudio: (work) =>
         client.serviceJson<ExportWorkAudioResult>('/api/audio/exports', 'POST', { work }),
-      playWorkMix: async () => ({ status: 'unavailable' }),
+      playWorkMix: (work, mixPlan) =>
+        client.serviceJson<PlayWorkMixResult>('/api/audio/work-mixes/play', 'POST', {
+          work,
+          mixPlan,
+        }),
+      playLibraryAudio: (input) =>
+        client.serviceJson<PlayLibraryAudioResult>('/api/audio/library-audio/play', 'POST', input),
+      pauseLibraryAudio: () =>
+        client.serviceJson<PauseLibraryAudioResult>('/api/audio/library-audio/pause', 'POST'),
       prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
       loadInstrumentSampleManifest: (input) =>
         client.serviceValidatedJson(

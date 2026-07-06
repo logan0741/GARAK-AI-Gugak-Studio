@@ -3,9 +3,11 @@ import type { SampleAssetManifest } from '../domain/sampleManifest';
 import type {
   JangdanPresetId,
   InstrumentId,
+  RecordingSetup,
   ShareMethod,
   ShareTargetReference,
   Work,
+  ExportRenderKind,
 } from '../studio/studioTypes';
 import type { WorkMixPlan } from '../studio/studioLibrary';
 import type { ProductLibraryState } from './garakProductState';
@@ -38,10 +40,47 @@ export type ServiceResult<T> =
 export type ExportWorkAudioResult = {
   audioUri: string;
   durationSeconds?: number;
+  renderKind: ExportRenderKind;
+  sourceTakeId?: string;
+  sourceEventCount?: number;
+  sourceRecordingUri?: string;
+};
+
+export type StartRecordingCaptureInput = {
+  instrument: InstrumentId;
+  recordingSetup: RecordingSetup;
+};
+
+export type StartRecordingCaptureResult = {
+  started: true;
+};
+
+export type StopRecordingCaptureResult = {
+  recordingUri?: string;
+  durationSeconds?: number;
+};
+
+export type DiscardRecordingCaptureResult = {
+  discarded: boolean;
 };
 
 export type PlayWorkMixResult = {
   handledTracks: number;
+};
+
+export type PlayLibraryAudioInput = {
+  audioUri: string;
+  title?: string;
+  volume?: number;
+  sourceKind: 'exportedAudio' | 'practiceResult' | 'demo' | 'sharedRecording' | 'audioCapture';
+};
+
+export type PlayLibraryAudioResult = {
+  audioUri: string;
+};
+
+export type PauseLibraryAudioResult = {
+  paused: boolean;
 };
 
 export type PrepareLivePerformanceAudioInput = {
@@ -102,11 +141,20 @@ export type GarakProductServices = {
     publishShareTarget: (input: SharePublishInput) => Promise<ServiceResult<SharePublishResult>>;
   };
   audio: {
+    startRecordingCapture: (
+      input: StartRecordingCaptureInput,
+    ) => Promise<ServiceResult<StartRecordingCaptureResult>>;
+    stopRecordingCapture: () => Promise<ServiceResult<StopRecordingCaptureResult>>;
+    discardRecordingCapture: () => Promise<ServiceResult<DiscardRecordingCaptureResult>>;
     exportWorkAudio: (work: Work) => Promise<ServiceResult<ExportWorkAudioResult>>;
     playWorkMix: (
       work: Work,
       mixPlan: WorkMixPlan,
     ) => Promise<ServiceResult<PlayWorkMixResult>>;
+    playLibraryAudio: (
+      input: PlayLibraryAudioInput,
+    ) => Promise<ServiceResult<PlayLibraryAudioResult>>;
+    pauseLibraryAudio: () => Promise<ServiceResult<PauseLibraryAudioResult>>;
     prepareLivePerformanceAudio: (
       input: PrepareLivePerformanceAudioInput,
     ) => Promise<ServiceResult<PrepareLivePerformanceAudioResult>>;
@@ -140,8 +188,13 @@ export function createNoopGarakProductServices(): GarakProductServices {
       publishShareTarget: async () => ({ status: 'unavailable' }),
     },
     audio: {
+      startRecordingCapture: async () => ({ status: 'unavailable' }),
+      stopRecordingCapture: async () => ({ status: 'unavailable' }),
+      discardRecordingCapture: async () => ({ status: 'unavailable' }),
       exportWorkAudio: async () => ({ status: 'unavailable' }),
       playWorkMix: async () => ({ status: 'unavailable' }),
+      playLibraryAudio: async () => ({ status: 'unavailable' }),
+      pauseLibraryAudio: async () => ({ status: 'unavailable' }),
       prepareLivePerformanceAudio: async () => ({ status: 'unavailable' }),
       loadInstrumentSampleManifest: async () => ({ status: 'unavailable' }),
       playPerformanceEvents: async () => ({ status: 'unavailable' }),
