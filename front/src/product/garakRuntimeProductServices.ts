@@ -24,6 +24,9 @@ export type RuntimeGarakProductServicesInput = {
   libraryStorage?: AuthStoragePort;
   share?: GarakSharePort;
   liveAudio?: LocalGarakProductServicesInput['liveAudio'];
+  recordingCapture?: LocalGarakProductServicesInput['recordingCapture'];
+  recordingCaptureStorage?: LocalGarakProductServicesInput['recordingCaptureStorage'];
+  libraryAudio?: LocalGarakProductServicesInput['libraryAudio'];
   createLiveSampler?: LivePerformanceSamplerFactory;
 };
 
@@ -35,6 +38,9 @@ export function createRuntimeGarakProductServices({
   libraryStorage,
   share,
   liveAudio,
+  recordingCapture,
+  recordingCaptureStorage,
+  libraryAudio,
   createLiveSampler,
 }: RuntimeGarakProductServicesInput = {}): GarakProductServices {
   const normalizedBaseUrl = apiBaseUrl?.trim().replace(/\/+$/, '');
@@ -44,6 +50,9 @@ export function createRuntimeGarakProductServices({
       storage: libraryStorage,
       share,
       liveAudio: liveAudio ?? createLiveAudioPort({ createLiveSampler }),
+      recordingCapture,
+      recordingCaptureStorage,
+      libraryAudio,
     });
   }
 
@@ -54,6 +63,9 @@ export function createRuntimeGarakProductServices({
     storage: libraryStorage,
     share,
     liveAudio: liveAudio ?? createLiveAudioPort({ createLiveSampler }),
+    recordingCapture,
+    recordingCaptureStorage,
+    libraryAudio,
   });
 
   const loadSampleManifest: LivePerformanceSampleManifestLoader = async (input) => {
@@ -89,6 +101,9 @@ export function createRuntimeGarakProductServices({
         createLiveSampler,
         loadSampleManifest,
       }),
+    recordingCapture,
+    recordingCaptureStorage,
+    libraryAudio,
   });
 
   const libraryService = {
@@ -145,6 +160,13 @@ export function createRuntimeGarakProductServices({
       ...httpServices.audio,
       prepareLivePerformanceAudio: runtimeFallbackServices.audio.prepareLivePerformanceAudio,
       playPerformanceEvents: runtimeFallbackServices.audio.playPerformanceEvents,
+      startRecordingCapture: runtimeFallbackServices.audio.startRecordingCapture,
+      stopRecordingCapture: runtimeFallbackServices.audio.stopRecordingCapture,
+      discardRecordingCapture: runtimeFallbackServices.audio.discardRecordingCapture,
+      playWorkMix: runtimeFallbackServices.audio.playWorkMix,
+      playLibraryAudio: runtimeFallbackServices.audio.playLibraryAudio,
+      pauseLibraryAudio: runtimeFallbackServices.audio.pauseLibraryAudio,
+      exportWorkAudio: runtimeFallbackServices.audio.exportWorkAudio,
       loadInstrumentSampleManifest: loadSampleManifest,
     },
   };

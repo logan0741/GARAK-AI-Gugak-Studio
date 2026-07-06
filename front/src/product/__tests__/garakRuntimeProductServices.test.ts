@@ -4,6 +4,7 @@ import type { AuthStoragePort } from '../authSessionStore';
 import type { GarakFetch } from '../garakHttpProductServices';
 import type { ProductLibraryState } from '../garakProductState';
 import { createRuntimeGarakProductServices } from '../garakRuntimeProductServices';
+import { autoSaveTakeAsWork, createWorkMixPlan } from '../../studio/studioLibrary';
 
 describe('runtime Garak product services', () => {
   test('falls back to noop services when the API base URL is absent', async () => {
@@ -12,6 +13,33 @@ describe('runtime Garak product services', () => {
     await expect(services.account.loginAndLoadLibrary()).resolves.toEqual({
       status: 'unavailable',
     });
+  });
+
+  test('keeps default runtime recording event-only when only capture storage is provided', async () => {
+    const storageInputs: unknown[] = [];
+    const services = createRuntimeGarakProductServices({
+      apiBaseUrl: '',
+      recordingCaptureStorage: {
+        persistRecordingCapture: async (input) => {
+          storageInputs.push(input);
+          return {
+            status: 'ok' as const,
+            value: { recordingUri: 'file://document/garak-recordings/take-1.m4a' },
+          };
+        },
+      },
+    });
+
+    await expect(
+      services.audio.startRecordingCapture({
+        instrument: 'janggu',
+        recordingSetup: { presetId: 'semachi', bpm: 84, beatUnit: '4/4' },
+      }),
+    ).resolves.toEqual({ status: 'unavailable' });
+    await expect(services.audio.stopRecordingCapture()).resolves.toEqual({
+      status: 'unavailable',
+    });
+    expect(storageInputs).toEqual([]);
   });
 
   test('keeps live performance playback local instead of using the HTTP product API', async () => {
@@ -92,6 +120,134 @@ describe('runtime Garak product services', () => {
         },
       },
     });
+  });
+
+  test('keeps recording capture, work preview, and export local when the API base URL is set', async () => {
+    const requests: Array<{ url: string; init?: Parameters<GarakFetch>[1] }> = [];
+    const playedAudio: unknown[] = [];
+    const playedEvents: unknown[] = [];
+    const captureStarts: unknown[] = [];
+    const storageInputs: unknown[] = [];
+    const work = autoSaveTakeAsWork({
+      workId: 'work-1',
+      trackId: 'track-1',
+      takeId: 'take-1',
+      title: 'Captured Work',
+      instrument: 'janggu',
+      events: [{ type: 'string_pluck', tsMs: 100, stringIndex: 3, velocity: 0.8 }],
+      createdAt: '2026-07-04T10:00:00.000Z',
+      startedAtBeat: 1,
+      durationBeats: 4,
+      recordingUri: 'file://garak/takes/take-1.m4a',
+    });
+    const services = createRuntimeGarakProductServices({
+      apiBaseUrl: 'https://api.garak.test',
+      fetch: async (url, init) => {
+        requests.push({ url, init });
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({}),
+          text: async () => '',
+        };
+      },
+      recordingCapture: {
+        startRecordingCapture: async (input) => {
+          captureStarts.push(input);
+          return { status: 'ok' as const, value: { started: true } };
+        },
+        stopRecordingCapture: async () => ({
+          status: 'ok' as const,
+          value: {
+            recordingUri: 'file://garak/takes/take-1.m4a',
+            durationSeconds: 6,
+          },
+        }),
+        discardRecordingCapture: async () => ({
+          status: 'ok' as const,
+          value: { discarded: true },
+        }),
+      },
+      recordingCaptureStorage: {
+        persistRecordingCapture: async (input) => {
+          storageInputs.push(input);
+          return {
+            status: 'ok' as const,
+            value: {
+              recordingUri: 'file://document/garak/takes/take-1.m4a',
+            },
+          };
+        },
+      },
+      liveAudio: {
+        prepareLivePerformanceAudio: async (input) => ({
+          status: 'ok' as const,
+          value: {
+            instrument: input.instrument,
+            sampleSourceLabel: 'local sampler',
+            releaseReady: true,
+          },
+        }),
+        playPerformanceEvents: async (input) => {
+          playedEvents.push(input);
+          return { status: 'ok' as const, value: { handledEvents: input.events.length } };
+        },
+      },
+      libraryAudio: {
+        playLibraryAudio: async (input) => {
+          playedAudio.push(input);
+          return { status: 'ok' as const, value: { audioUri: input.audioUri } };
+        },
+        pauseLibraryAudio: async () => ({ status: 'ok' as const, value: { paused: true } }),
+      },
+    });
+
+    await expect(
+      services.audio.startRecordingCapture({
+        instrument: 'janggu',
+        recordingSetup: { presetId: 'semachi', bpm: 84, beatUnit: '4/4' },
+      }),
+    ).resolves.toEqual({ status: 'ok', value: { started: true } });
+    await expect(services.audio.stopRecordingCapture()).resolves.toEqual({
+      status: 'ok',
+      value: {
+        recordingUri: 'file://document/garak/takes/take-1.m4a',
+        durationSeconds: 6,
+      },
+    });
+    await expect(services.audio.playWorkMix(work, createWorkMixPlan(work))).resolves.toEqual({
+      status: 'ok',
+      value: { handledTracks: 1 },
+    });
+    await expect(services.audio.exportWorkAudio(work)).resolves.toMatchObject({
+      status: 'ok',
+      value: {
+        renderKind: 'event_replay',
+        sourceTakeId: 'take-1',
+      },
+    });
+
+    expect(requests).toEqual([]);
+    expect(storageInputs).toEqual([
+      {
+        recordingUri: 'file://garak/takes/take-1.m4a',
+        durationSeconds: 6,
+        capturedAtMs: expect.any(Number),
+      },
+    ]);
+    expect(captureStarts).toEqual([
+      {
+        instrument: 'janggu',
+        recordingSetup: { presetId: 'semachi', bpm: 84, beatUnit: '4/4' },
+      },
+    ]);
+    expect(playedEvents).toEqual([
+      {
+        instrument: 'janggu',
+        events: [{ type: 'string_pluck', tsMs: 100, stringIndex: 3, velocity: 0.8 }],
+      },
+    ]);
+    expect(playedAudio).toEqual([]);
   });
 
   test('feeds backend sample manifests into local live audio preparation', async () => {
