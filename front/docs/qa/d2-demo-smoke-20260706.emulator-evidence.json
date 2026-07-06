@@ -1,0 +1,67 @@
+{
+  "testedAt": "2026-07-06T02:11:07.955Z",
+  "apkPath": "C:\\gsb\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk",
+  "targetKind": "emulator",
+  "adbSerial": "emulator-5554",
+  "adbDetails": "product:sdk_gphone64_x86_64 model:sdk_gphone64_x86_64 device:emu64xa transport_id:2",
+  "packageName": "com.gukakstudio.prototype",
+  "activity": ".MainActivity",
+  "launchTarget": "gukakstudio://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081",
+  "processPid": "7720",
+  "packagePath": "package:/data/app/~~SkjOlV0hB3iACOLyEOLY0w==/com.gukakstudio.prototype-gWLEHDEWPykx-KbwSdJclQ==/base.apk",
+  "foregroundWindow": "topResumedActivity=ActivityRecord{26043677 u0 com.gukakstudio.prototype/.MainActivity t102}",
+  "logcatRuntimeErrorScan": {
+    "clearedBeforeLaunch": true,
+    "exitCode": 0,
+    "matchingLineCount": 0,
+    "matchingLines": []
+  },
+  "supplementalEvidence": {
+    "recordAudioAppOps": {
+      "exitCode": 0,
+      "outputLines": [
+        "Uid mode: RECORD_AUDIO: ignore"
+      ]
+    },
+    "audioServiceScan": {
+      "exitCode": 0,
+      "matchingLineCount": 0,
+      "matchingLines": []
+    },
+    "uiHierarchySnapshot": {
+      "exitCode": 0,
+      "rotation": "0",
+      "visibleTexts": [
+        "AI와 함께 만드는 나만의 국악, 가락",
+        "G",
+        "Google로 계속하기",
+        "Guest Mode"
+      ],
+      "contentDescriptions": [
+        "GARAK",
+        "Google로 계속하기",
+        "Guest Mode"
+      ],
+      "developmentLauncherVisible": false,
+      "garakAppUiVisible": true
+    }
+  },
+  "automatedEvidence": {
+    "adbDeviceDetected": true,
+    "apkInstallCommandSucceeded": true,
+    "launchCommandSucceeded": true,
+    "appProcessRunning": true,
+    "packagePathResolved": true,
+    "foregroundWindowMentionsPackage": true,
+    "logcatRuntimeErrorWindowClean": true,
+    "appUiLoaded": true
+  },
+  "nonAutomatedChecksNotCoveredByDeviceSmoke": [
+    "short-ascii-android-build",
+    "home-browse-demo-playback",
+    "s05-instrument-touch-sound",
+    "recording-event-take-saved",
+    "library-export-playback",
+    "day5-expo-audio-probe-updated"
+  ]
+}

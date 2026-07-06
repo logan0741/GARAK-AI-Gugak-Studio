@@ -1,0 +1,16 @@
+{
+  "collectedAt": "2026-07-05T16:29:21.000Z",
+  "packageName": "com.gukakstudio.prototype",
+  "recordingMode": "event-only",
+  "recordingUri": null,
+  "exists": false,
+  "sizeBytes": 0,
+  "audioEvidence": {
+    "appProcessPid": "32296",
+    "appAudioTrackStartedCount": 12,
+    "appRecordingActiveFalseCount": 2,
+    "appAudioInputStartedCount": 0,
+    "recordAudioAppOpsRefreshedDuringRun": false
+  },
+  "notes": "S05 janggu work 11 used the visible event-only fallback label. Preview playback produced app AudioTrack output and app playback routing reported mRecordingActive=false. App-scoped AudioRecord/startInput/createRecord/MediaRecorder matches were zero. The only input-keyword log matches belonged to com.google.android.googlequicksearchbox hotword, not com.gukakstudio.prototype. RECORD_AUDIO appops did not refresh during the run, and no captured microphone file was produced or claimed for this smoke report."
+}

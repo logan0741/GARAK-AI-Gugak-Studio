@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-07-04T14:38:16.487Z",
+  "testedAt": "2026-07-06T01:31:52.857Z",
+  "tester": "Codex",
+  "deviceLabel": "SM-S928N / Android 15",
+  "apkPath": "C:\\gsb\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk",
+  "checks": [
+    {
+      "id": "short-ascii-android-build",
+      "result": "pass",
+      "notes": "BUILD SUCCESSFUL via qa:d2-demo-android-build -- C:\\gsb after the fast-tap Expo Audio fix and dev-client keep-awake LogBox guard. APK path C:\\gsb\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk. APK size 221,141,609 bytes."
+    },
+    {
+      "id": "adb-device-detected",
+      "result": "pass",
+      "notes": "ADB device R3CX203CV8X product:e3qksx model:SM_S928N device:e3q transport_id:1"
+    },
+    {
+      "id": "apk-installed-and-launched",
+      "result": "pass",
+      "notes": "Installed C:\\gsb\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk and launched com.gukakstudio.prototype/.MainActivity; confirmed process pid 32296"
+    },
+    {
+      "id": "home-browse-demo-playback",
+      "result": "blocked",
+      "notes": "Home and share/library browsing surfaces on SM-S928N / Android 15 stayed portrait (rotation=0). Share -> My Arirang opened the S19-style player; the main control changed to pause, elapsed time was visible, and Android audio service recorded com.gukakstudio.prototype uid/pid 10062/6434 creating and starting AudioTrack piid 48335 on STREAM_MUSIC / speaker at 2026-07-05 23:06:16 device time. RECORD_AUDIO appops did not refresh during playback. This remains blocked because Codex cannot independently confirm audible speaker output; a human must confirm bundled/demo audio is audible on the device speaker."
+    },
+    {
+      "id": "s05-instrument-touch-sound",
+      "result": "pass",
+      "notes": "S05 was driven on SM-S928N / Android 15 from Home portrait (rotation=0) to the landscape janggu performance screen (rotation=1, 3120x1440). Three janggu zones were tapped; each tap was audible on the device speaker and no taps were silent, per operator confirmation on 2026-07-06. The on-device badge reached 'Live audio sent: 6 events'. Android logcat recorded com.gukakstudio.prototype uid/pid 10062/30476 AudioTrack piids 48503, 48487, and 48495 state:started on STREAM_MUSIC / speaker at 2026-07-06 00:13 device time; each line reported mRecordingActive=false. RECORD_AUDIO appops did not refresh."
+    },
+    {
+      "id": "recording-event-take-saved",
+      "result": "pass",
+      "notes": "S05 recording on SM-S928N / Android 15 showed the visible event-only fallback UI label ending in 'Recording capture service is unavailable.' with recording progress. Six janggu zone events were recorded and the visible badge reached 'Live audio sent: 6 events'. Completing the performance created the saved work/take preview 'Janggu work 11 playback preview'. Pressing the mix preview play button produced 12 app AudioTrack state:started matches for app pid 32296 at 2026-07-06 01:28-01:29 device time, with 2 app playback routing matches reporting mRecordingActive=false. App-scoped AudioRecord/startInput/createRecord/MediaRecorder matches were zero; the only input-keyword matches belonged to Google hotword, not the app. RECORD_AUDIO appops stayed on the old timestamp, so the saved take is event-only rather than microphone capture."
+    },
+    {
+      "id": "library-export-playback",
+      "result": "blocked",
+      "notes": "S18/S19 library export playback was re-run on SM-S928N / Android 15 after the event-replay export provenance fix. The exported item now displays 'event replay / janggu / 0:09', opens 'Janggu work 2 export playback screen', and the player toggles from play to pause. RECORD_AUDIO appops did not refresh during playback. This remains blocked because Codex cannot independently confirm audible speaker output; a human must confirm the event replay export is audible on the device speaker."
+    },
+    {
+      "id": "day5-expo-audio-probe-updated",
+      "result": "blocked",
+      "notes": "Blocked until docs/qa/day-5-audio-engine-probes.real-device.json contains physical-device expo-audio probe evidence from SM-S928N / Android 15. The example probe now exits 1 with INCOMPLETE_DEVICE_EVIDENCE / NO_GO and cannot clear this check."
+    }
+  ]
+}

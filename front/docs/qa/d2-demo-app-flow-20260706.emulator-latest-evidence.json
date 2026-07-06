@@ -1,0 +1,123 @@
+{
+  "generatedAt": "2026-07-06T06:14:11.915Z",
+  "status": "pass",
+  "targetKind": "emulator",
+  "adbSerial": "emulator-5554",
+  "steps": [
+    {
+      "id": "home-loaded",
+      "result": "pass",
+      "notes": "Home or guest home is visible"
+    },
+    {
+      "id": "share-feed-loaded",
+      "result": "pass",
+      "notes": "Home quick access opens the share feed demo player"
+    },
+    {
+      "id": "share-demo-player-loaded",
+      "result": "pass",
+      "notes": "S20 demo player opens S19 with playing UI controls"
+    },
+    {
+      "id": "library-after-share-demo-player",
+      "result": "pass",
+      "notes": "Share demo player back action returns to S18 library"
+    },
+    {
+      "id": "home-returned-after-share-demo-player",
+      "result": "pass",
+      "notes": "Home is visible after demo player smoke"
+    },
+    {
+      "id": "mode-select-loaded",
+      "result": "pass",
+      "notes": "Free creation mode screen is visible"
+    },
+    {
+      "id": "instrument-select-loaded",
+      "result": "pass",
+      "notes": "Instrument select screen is visible"
+    },
+    {
+      "id": "instrument-preview-loaded",
+      "result": "pass",
+      "notes": "Instrument preview screen is visible"
+    },
+    {
+      "id": "performance-loaded",
+      "result": "pass",
+      "notes": "S05 stage visible at rotation 1"
+    },
+    {
+      "id": "live-audio-events-visible",
+      "result": "pass",
+      "notes": "Live audio sent: 8 events"
+    },
+    {
+      "id": "recording-events-visible",
+      "result": "pass",
+      "notes": "Recording event counter: 6"
+    },
+    {
+      "id": "editor-loaded",
+      "result": "pass",
+      "notes": "Editor visible at rotation 0"
+    },
+    {
+      "id": "work-saved",
+      "result": "pass",
+      "notes": "Work save status changed to saved"
+    },
+    {
+      "id": "export-provenance-visible",
+      "result": "pass",
+      "notes": "Export provenance visible: Janggu / event replay; source events 6"
+    },
+    {
+      "id": "library-loaded",
+      "result": "pass",
+      "notes": "Saved janggu work and export are visible in S18; work count 21, export count 17"
+    },
+    {
+      "id": "export-library-loaded",
+      "result": "pass",
+      "notes": "Library export provenance visible: event replay / Janggu / 0:04; source events 6"
+    },
+    {
+      "id": "player-loaded",
+      "result": "pass",
+      "notes": "S19 exported player shows playing UI controls"
+    }
+  ],
+  "observations": {
+    "homeRotation": "0",
+    "shareDemoPlayerVisible": true,
+    "shareDemoPlayerPlayingUiVisible": true,
+    "performanceRotation": "1",
+    "liveAudioReadyBeforeTap": true,
+    "liveAudioReadinessLabel": "ready",
+    "liveAudioSentEvents": 14,
+    "recordingMode": "event-only",
+    "recordingFallbackReason": "Recording capture service is unavailable.",
+    "recordingCaptureNotice": "Event-only recording: Recording capture service is unavailable.",
+    "microphoneCaptureSuppressed": true,
+    "microphoneIsolationEvidence": "Product recording stayed event-only; no microphone capture artifact is used for playback or export.",
+    "recordingEvents": 6,
+    "editorRotation": "0",
+    "savedWorkVisible": true,
+    "exportRenderKind": "event_replay",
+    "exportProvenanceLabel": "Janggu / event replay",
+    "exportSourceEventCount": 6,
+    "libraryWorkVisible": true,
+    "exportedAudioVisible": true,
+    "libraryExportProvenanceLabel": "event replay / Janggu / 0:04",
+    "libraryExportSourceEventCount": 6,
+    "playerPlayingUiVisible": true,
+    "exportedPlayerPlayingUiVisible": true
+  },
+  "residualPhysicalDeviceChecks": [
+    "audible physical speaker playback",
+    "physical-device expo-audio probe"
+  ]
+}
