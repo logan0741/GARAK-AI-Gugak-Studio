@@ -135,7 +135,7 @@ test('surfaces queued playback failures during idle checks', async () => {
   await expect(engine.waitForIdle()).rejects.toThrow('seek failed');
 });
 
-test('maps bend, mute, and release events onto Expo Audio player controls', async () => {
+test('maps bend and mute events while letting one-shot Expo Audio samples decay after release', async () => {
   const runtime = createRuntimePort();
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
   await engine.preload();
@@ -146,10 +146,10 @@ test('maps bend, mute, and release events onto Expo Audio player controls', asyn
 
   expect(runtime.players[1].playbackRates[0]).toBeCloseTo(1.072, 3);
   expect(runtime.players[1].volume).toBe(0.2);
-  expect(runtime.players[1].pauseCalls).toBe(1);
+  expect(runtime.players[1].pauseCalls).toBe(0);
 });
 
-test('cancels pending Expo Audio play when release arrives before seek finishes', async () => {
+test('does not cancel pending one-shot Expo Audio play when release arrives before seek finishes', async () => {
   const runtime = createRuntimePort({ deferSeek: true });
   const engine = new ExpoAudioSamplerEngine({ manifest, runtime });
   await engine.preload();
@@ -163,8 +163,8 @@ test('cancels pending Expo Audio play when release arrives before seek finishes'
   await engine.waitForIdle();
 
   expect(runtime.players[0].seekCalls).toEqual([0]);
-  expect(runtime.players[0].playCalls).toBe(0);
-  expect(runtime.players[0].pauseCalls).toBe(1);
+  expect(runtime.players[0].playCalls).toBe(1);
+  expect(runtime.players[0].pauseCalls).toBe(0);
 });
 
 test('prepares a 10 second recording probe when permission is granted', async () => {

@@ -266,16 +266,10 @@ export class ExpoAudioSamplerEngine implements SamplerEngine {
   }
 
   private releaseString(stringIndex: number): void {
-    const player = this.requirePlayer(stringIndex);
-    this.advancePlaybackGeneration(stringIndex);
-    if (this.playbackQueuesByString.has(stringIndex)) {
-      this.queuePlayback(stringIndex, async () => {
-        player.pause();
-      });
-      return;
-    }
-
-    player.pause();
+    // Expo Audio is used here as a one-shot sample player. A very short touch
+    // can deliver release before the queued seek/play finishes, so release must
+    // not cancel the attack that makes percussion taps audible.
+    this.requirePlayer(stringIndex);
   }
 
   private advancePlaybackGeneration(stringIndex: number): number {
