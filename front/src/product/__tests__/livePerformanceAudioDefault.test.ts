@@ -56,7 +56,7 @@ test('default live audio preparation uses bundled janggu samples for janggu perf
 
   expect(defaultSamplerMocks.createAndPreloadPrototypeNativeSamplerEngine).toHaveBeenCalledWith(
     expect.objectContaining({
-      candidate: 'react-native-audio-api',
+      candidate: 'expo-audio',
       manifest: expect.objectContaining({
         version: 'ngc-monotone-janggu-2026-07-03',
       }),
@@ -79,7 +79,7 @@ test('default live audio preparation uses bundled daegeum samples for daegeum pe
 
   expect(defaultSamplerMocks.createAndPreloadPrototypeNativeSamplerEngine).toHaveBeenCalledWith(
     expect.objectContaining({
-      candidate: 'react-native-audio-api',
+      candidate: 'expo-audio',
       manifest: expect.objectContaining({
         version: 'ngc-monotone-sanjodaegeum-2026-07-03',
       }),
