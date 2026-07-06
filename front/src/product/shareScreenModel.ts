@@ -2,13 +2,14 @@ import { ExportedAudio, PracticeResult } from '../studio/studioTypes';
 import type { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   FEATURED_SHARED_RECORDING,
-  getSharedRecordingById,
+  findSharedRecordingById,
   getInstrumentName,
   getPracticeSongTitle,
   PRACTICE_SONGS,
   SHARE_FEED_RECORDINGS,
   type SharedRecording,
 } from './productFixtures';
+import { isPlayableExportedAudioForPlayback } from './libraryPlaybackAudio';
 
 export type ShareFeedCategory = {
   label: string;
@@ -24,10 +25,11 @@ export type ShareFeedHero = {
 
 export type ShareFeedPlayer = {
   title: string;
-  sourceKind: 'demo' | 'work' | 'exportedAudio' | 'practiceResult';
+  sourceKind: 'demo' | 'work' | 'exportedAudio' | 'practiceResult' | 'unavailable';
   workId?: string;
   exportedAudioId?: string;
   practiceResultId?: string;
+  playAction?: GarakProductAction;
 };
 
 export type ShareFeedRecentCard = {
@@ -57,6 +59,7 @@ export type SharePrepareViewModel = {
   isPreviewing: boolean;
   isPublishing: boolean;
   publishButtonLabel: string;
+  playbackNotice?: string;
   publishErrorMessage?: string;
 };
 
@@ -68,11 +71,12 @@ export type SharedDetailViewModel = {
   remixStatusLabel: string;
   canRemix: boolean;
   isPlaying: boolean;
+  playbackNotice?: string;
   actions: {
     play?: GarakProductAction;
     pause?: GarakProductAction;
     remix?: GarakProductAction;
-    save: GarakProductAction;
+    save?: GarakProductAction;
   };
 };
 
@@ -120,6 +124,7 @@ export function getShareFeedViewModel(state: GarakProductState): ShareFeedViewMo
 export function getSharePrepareViewModel(state: GarakProductState): SharePrepareViewModel {
   const shareTarget = getSharePrepareTarget(state);
   const publishState = getSharePreparePublishState(state);
+  const playbackNotice = getSharePreparePlaybackNotice(state);
 
   if (shareTarget === undefined) {
     return {
@@ -130,6 +135,7 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
       instrumentLabel: '사용 악기 없음',
       sourceLabel: '공유 대상 없음',
       isPreviewing: false,
+      playbackNotice,
       ...publishState,
     };
   }
@@ -141,11 +147,12 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
     return {
       canShare: true,
       title: shareTarget.title,
-      description: `${durationLabel} · ${instrumentLabel} · 내보낸 음원`,
+      description: `${durationLabel} / ${instrumentLabel} / 내보낸 음원`,
       durationLabel,
-      instrumentLabel,
+      instrumentLabel: joinShareMetadata([instrumentLabel, formatExportRenderKind(shareTarget)]),
       sourceLabel: shareTarget.sourceLabel ?? (shareTarget.workId === undefined ? '내보낸 음원' : '출처 작업'),
       isPreviewing: state.sharePreviewStatus === 'playing',
+      playbackNotice,
       ...publishState,
     };
   }
@@ -155,13 +162,20 @@ export function getSharePrepareViewModel(state: GarakProductState): SharePrepare
   return {
     canShare: true,
     title: `${getPracticeSongTitle(shareTarget.songId)} 연습 결과`,
-    description: `${instrumentLabel} · 정확도 ${shareTarget.accuracyScore}% · 따라하기 결과`,
+    description: `${instrumentLabel} / 정확도 ${shareTarget.accuracyScore}% / 따라하기 결과`,
     durationLabel: getPracticeSongDurationLabel(shareTarget.songId),
     instrumentLabel,
     sourceLabel: '따라하기 결과',
     isPreviewing: state.sharePreviewStatus === 'playing',
+    playbackNotice,
     ...publishState,
   };
+}
+
+function getSharePreparePlaybackNotice(state: GarakProductState): string | undefined {
+  return state.playerPlaybackStatus.status === 'failed'
+    ? `Playback unavailable: ${state.playerPlaybackStatus.message}`
+    : undefined;
 }
 
 function getSharePreparePublishState(
@@ -188,6 +202,23 @@ function getSharePreparePublishState(
   };
 }
 
+function formatExportRenderKind(audio: ExportedAudio): string | undefined {
+  switch (audio.renderKind) {
+    case 'audio_capture':
+      return '녹음 파일';
+    case 'event_replay':
+      return '이벤트 녹음';
+    case 'demo_sample':
+      return '데모 샘플';
+    case undefined:
+      return undefined;
+  }
+}
+
+function joinShareMetadata(parts: Array<string | undefined>): string {
+  return parts.filter((part): part is string => part !== undefined && part.length > 0).join(' / ');
+}
+
 export function getSharePrepareAction(state: GarakProductState): GarakProductAction | undefined {
   return getSharePrepareViewModel(state).canShare
     ? { type: 'navigate', target: 'S17' }
@@ -195,7 +226,31 @@ export function getSharePrepareAction(state: GarakProductState): GarakProductAct
 }
 
 export function getSharedDetailViewModel(state: GarakProductState): SharedDetailViewModel {
-  const recording = getSharedRecordingById(state.selectedSharedRecordingId);
+  const recording =
+    state.selectedSharedRecordingId === undefined
+      ? FEATURED_SHARED_RECORDING
+      : findSharedRecordingById(state.selectedSharedRecordingId);
+
+  if (recording === undefined) {
+    return {
+      title: 'Shared recording unavailable',
+      instrument: FEATURED_SHARED_RECORDING.instrument,
+      provenanceLabel: 'Selected recording is unavailable',
+      durationLabel: '--',
+      remixStatusLabel: 'Unavailable',
+      canRemix: false,
+      isPlaying: false,
+      playbackNotice:
+        getSharePreparePlaybackNotice(state) ?? 'Playback unavailable: Selected shared recording is unavailable.',
+      actions: {
+        play: undefined,
+        pause: undefined,
+        remix: undefined,
+        save: undefined,
+      },
+    };
+  }
+
   const instrumentName = getInstrumentName(recording.instrument);
   const isPlaying = state.playingSharedRecordingId === recording.id;
 
@@ -207,6 +262,7 @@ export function getSharedDetailViewModel(state: GarakProductState): SharedDetail
     remixStatusLabel: recording.remixable ? '리믹스 가능' : '저장만 가능',
     canRemix: recording.remixable,
     isPlaying,
+    playbackNotice: getSharePreparePlaybackNotice(state),
     actions: {
       play: isPlaying ? undefined : { type: 'playSelectedSharedRecording' },
       pause: isPlaying ? { type: 'pauseSelectedSharedRecording' } : undefined,
@@ -245,7 +301,9 @@ function getSharePrepareTarget(state: GarakProductState): ExportedAudio | Practi
 
   if (selectedPlayerItem?.kind === 'exportedAudio') {
     return state.library.exportedAudios.find(
-      (audio) => audio.id === selectedPlayerItem.exportedAudioId,
+      (audio) =>
+        audio.id === selectedPlayerItem.exportedAudioId &&
+        isShareableExportedAudio(state, audio),
     );
   }
 
@@ -259,9 +317,14 @@ function getSharePrepareTarget(state: GarakProductState): ExportedAudio | Practi
     return undefined;
   }
 
-  return [...state.library.exportedAudios, ...state.library.practiceResults].sort(
-    (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
-  )[0];
+  return [
+    ...state.library.exportedAudios.filter((audio) => isShareableExportedAudio(state, audio)),
+    ...state.library.practiceResults,
+  ].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0];
+}
+
+function isShareableExportedAudio(state: GarakProductState, audio: ExportedAudio): boolean {
+  return isPlayableExportedAudioForPlayback(state.library.works, audio);
 }
 
 function formatSeconds(seconds: number): string {
@@ -287,9 +350,16 @@ function getShareablePlayer(state: GarakProductState): ShareFeedPlayer {
     return selectedPlayer;
   }
 
+  if (hasMissingExplicitShareFeedSelection(state)) {
+    return {
+      title: 'Selected item unavailable',
+      sourceKind: 'unavailable',
+    };
+  }
+
   const newestSharedItem = [
     ...state.library.exportedAudios
-      .filter((audio) => audio.shareState === 'shared')
+      .filter((audio) => audio.shareState === 'shared' && isShareableExportedAudio(state, audio))
       .map((audio) => ({ createdAt: audio.createdAt, player: toExportedAudioPlayer(audio) })),
     ...state.library.practiceResults
       .filter((result) => result.shareState === 'shared')
@@ -303,6 +373,10 @@ function getShareablePlayer(state: GarakProductState): ShareFeedPlayer {
   return {
     title: 'My Arirang',
     sourceKind: 'demo',
+    playAction: {
+      type: 'playLibraryItemNow',
+      item: { kind: 'demo', title: 'My Arirang' },
+    },
   };
 }
 
@@ -311,7 +385,10 @@ function getSelectedSharedPlayer(state: GarakProductState): ShareFeedPlayer | un
 
   if (selected?.kind === 'exportedAudio') {
     const audio = state.library.exportedAudios.find(
-      (item) => item.id === selected.exportedAudioId && item.shareState === 'shared',
+      (item) =>
+        item.id === selected.exportedAudioId &&
+        item.shareState === 'shared' &&
+        isShareableExportedAudio(state, item),
     );
 
     return audio === undefined ? undefined : toExportedAudioPlayer(audio);
@@ -328,11 +405,31 @@ function getSelectedSharedPlayer(state: GarakProductState): ShareFeedPlayer | un
   return undefined;
 }
 
+function hasMissingExplicitShareFeedSelection(state: GarakProductState): boolean {
+  const selected = state.selectedPlayerItem;
+
+  if (selected?.kind === 'exportedAudio') {
+    return !state.library.exportedAudios.some(
+      (item) => item.id === selected.exportedAudioId && isShareableExportedAudio(state, item),
+    );
+  }
+
+  if (selected?.kind === 'practiceResult') {
+    return !state.library.practiceResults.some((item) => item.id === selected.practiceResultId);
+  }
+
+  return false;
+}
+
 function toExportedAudioPlayer(audio: ExportedAudio): ShareFeedPlayer {
   return {
     title: audio.title,
     sourceKind: 'exportedAudio',
     exportedAudioId: audio.id,
+    playAction: {
+      type: 'playLibraryItemNow',
+      item: { kind: 'exportedAudio', exportedAudioId: audio.id },
+    },
   };
 }
 
@@ -341,5 +438,9 @@ function toPracticeResultPlayer(result: PracticeResult): ShareFeedPlayer {
     title: `${getPracticeSongTitle(result.songId)} 연습 결과`,
     sourceKind: 'practiceResult',
     practiceResultId: result.id,
+    playAction: {
+      type: 'playLibraryItemNow',
+      item: { kind: 'practiceResult', practiceResultId: result.id },
+    },
   };
 }
