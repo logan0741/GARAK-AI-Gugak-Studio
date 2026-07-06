@@ -1,0 +1,54 @@
+{
+  "testedAt": "2026-07-05T18:28:31.083Z",
+  "apkPath": "C:\\gsb\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk",
+  "targetKind": "emulator",
+  "adbSerial": "emulator-5556",
+  "adbDetails": "product:sdk_gphone64_x86_64 model:sdk_gphone64_x86_64 device:emu64xa transport_id:3",
+  "packageName": "com.gukakstudio.prototype",
+  "activity": ".MainActivity",
+  "launchTarget": "com.gukakstudio.prototype/.MainActivity",
+  "processPid": "4686",
+  "packagePath": "package:/data/app/~~2OsRiI-7KDUak3daUpHEug==/com.gukakstudio.prototype-X0E1izHErJbTFvBnNLOQoA==/base.apk",
+  "foregroundWindow": "ResumedActivity: ActivityRecord{13294525 u0 com.gukakstudio.prototype/.MainActivity t72}",
+  "logcatRuntimeErrorScan": {
+    "clearedBeforeLaunch": true,
+    "exitCode": 0,
+    "matchingLineCount": 0,
+    "matchingLines": []
+  },
+  "supplementalEvidence": {
+    "recordAudioAppOps": {
+      "exitCode": 0,
+      "outputLines": [
+        "Uid mode: RECORD_AUDIO: ignore"
+      ]
+    },
+    "audioServiceScan": {
+      "exitCode": 0,
+      "matchingLineCount": 0,
+      "matchingLines": []
+    },
+    "uiHierarchySnapshot": {
+      "exitCode": 0,
+      "rotation": null,
+      "contentDescriptions": []
+    }
+  },
+  "automatedEvidence": {
+    "adbDeviceDetected": true,
+    "apkInstallCommandSucceeded": true,
+    "launchCommandSucceeded": true,
+    "appProcessRunning": true,
+    "packagePathResolved": true,
+    "foregroundWindowMentionsPackage": true,
+    "logcatRuntimeErrorWindowClean": true
+  },
+  "nonAutomatedChecksNotCoveredByDeviceSmoke": [
+    "short-ascii-android-build",
+    "home-browse-demo-playback",
+    "s05-instrument-touch-sound",
+    "recording-event-take-saved",
+    "library-export-playback",
+    "day5-expo-audio-probe-updated"
+  ]
+}
