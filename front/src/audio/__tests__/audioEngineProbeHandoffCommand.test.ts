@@ -72,7 +72,7 @@ test('returns a failing exit code for invalid probe schema handoffs', () => {
   expect(stdout.join('\n')).toContain('- Decision summary: not generated');
 });
 
-test('writes a handoff summary for a readable probe record path', () => {
+test('returns a failing exit code when the readable probe record is not ready for a Day 5 decision', () => {
   const stdout: string[] = [];
   const stderr: string[] = [];
 
@@ -102,8 +102,97 @@ test('writes a handoff summary for a readable probe record path', () => {
       writeStdout: (value) => stdout.push(value),
       writeStderr: (value) => stderr.push(value),
     }),
-  ).toBe(0);
+  ).toBe(1);
   expect(stderr).toEqual([]);
   expect(stdout.join('\n')).toContain('# Day 5 Audio Engine Decision Summary');
   expect(stdout.join('\n')).toContain('- Status: INCOMPLETE_DEVICE_EVIDENCE');
+});
+
+test('keeps expo-audio-only physical-device evidence from selecting a final engine', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5AudioEngineProbeHandoffCommand({
+      argv: ['day-5.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T01:00:00.000Z',
+          probes: [
+            {
+              candidate: 'expo-audio',
+              evidenceSource: 'physical-device',
+              deviceLabel: 'Galaxy S24 / Android 15',
+              measuredAt: '2026-06-08T00:00:00.000Z',
+              touchToSoundLatencyMs: 45,
+              maxStableVoices: 8,
+              pitchBendSmooth: true,
+              glissandoTriggeredStrings: 12,
+              muteReleaseClean: true,
+              preloadStable: true,
+              sessionFallbackPreserved: true,
+              recordingCaptureSeconds: 10,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(1);
+  expect(stderr).toEqual([]);
+  const output = stdout.join('\n');
+  expect(output).toContain('- Status: INCOMPLETE_DEVICE_EVIDENCE');
+  expect(output).toContain('- Selected engine: none');
+  expect(output).toContain('- Missing candidates: react-native-audio-api');
+  expect(output).toContain('missing required physical-device probes: react-native-audio-api');
+});
+
+test('returns success only when the probe record selects a final engine', () => {
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+
+  expect(
+    runDay5AudioEngineProbeHandoffCommand({
+      argv: ['day-5.json'],
+      readTextFile: () =>
+        JSON.stringify({
+          generatedAt: '2026-06-08T01:00:00.000Z',
+          probes: [
+            {
+              candidate: 'expo-audio',
+              evidenceSource: 'physical-device',
+              deviceLabel: 'Pixel 8 / Android 15',
+              measuredAt: '2026-06-08T00:00:00.000Z',
+              touchToSoundLatencyMs: 45,
+              maxStableVoices: 8,
+              pitchBendSmooth: true,
+              glissandoTriggeredStrings: 12,
+              muteReleaseClean: true,
+              preloadStable: true,
+              sessionFallbackPreserved: true,
+              recordingCaptureSeconds: 4,
+            },
+            {
+              candidate: 'react-native-audio-api',
+              evidenceSource: 'physical-device',
+              deviceLabel: 'Pixel 8 / Android 15',
+              measuredAt: '2026-06-08T00:05:00.000Z',
+              touchToSoundLatencyMs: 39,
+              maxStableVoices: 10,
+              pitchBendSmooth: true,
+              glissandoTriggeredStrings: 12,
+              muteReleaseClean: true,
+              preloadStable: true,
+              sessionFallbackPreserved: true,
+              recordingCaptureSeconds: 10,
+            },
+          ],
+        }),
+      writeStdout: (value) => stdout.push(value),
+      writeStderr: (value) => stderr.push(value),
+    }),
+  ).toBe(0);
+  expect(stderr).toEqual([]);
+  expect(stdout.join('\n')).toContain('- Status: FINAL_ENGINE_SELECTED');
+  expect(stdout.join('\n')).toContain('- Selected engine: react-native-audio-api');
 });

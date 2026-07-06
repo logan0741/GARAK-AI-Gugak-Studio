@@ -18,11 +18,11 @@ export function buildDay5AudioEngineProbeHandoff(input: unknown): Day5AudioEngin
     };
   }
 
+  const decisionRecord = buildDay5AudioEngineDecisionRecordFromProbeRecord(parseResult.record);
+
   return {
-    ok: true,
-    output: formatDay5AudioEngineDecisionSummary(
-      buildDay5AudioEngineDecisionRecordFromProbeRecord(parseResult.record),
-    ),
+    ok: decisionRecord.status === 'FINAL_ENGINE_SELECTED',
+    output: formatDay5AudioEngineDecisionSummary(decisionRecord),
   };
 }
 
