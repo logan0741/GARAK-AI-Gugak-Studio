@@ -15,6 +15,12 @@ test('rejects blank and placeholder-like physical device labels', () => {
     'Device/ OS',
     'Device/OS',
     'physical device',
+    'Android device not connected 2026-07-04',
+    'no connected adb device',
+    'sdk gphone64 x86 64 / Android 16',
+    'Android Emulator / Android 16',
+    'Pixel 7 API 34 AVD / Android 14',
+    'generic x86_64 / Android 15',
   ]) {
     expect(isPhysicalDeviceLabel(deviceLabel)).toBe(false);
   }
