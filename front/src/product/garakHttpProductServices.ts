@@ -56,6 +56,9 @@ export function createHttpGarakProductServices({
         client.serviceJson<SharePublishResult>('/share/targets/publish', 'POST', input),
     },
     audio: {
+      startRecordingCapture: async () => ({ status: 'unavailable' }),
+      stopRecordingCapture: async () => ({ status: 'unavailable' }),
+      discardRecordingCapture: async () => ({ status: 'unavailable' }),
       exportWorkAudio: (work) =>
         client.serviceJson<ExportWorkAudioResult>('/audio/exports', 'POST', {
           work,

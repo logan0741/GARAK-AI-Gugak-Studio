@@ -3,6 +3,7 @@ import {
   addAccompanimentTrack,
   addInstrumentTrack,
   autoSaveTakeAsWork,
+  countWorkMixPlanInstrumentEvents,
   createWorkMixPlan,
   createPracticeResult,
   exportWorkAudioPlaceholder,
@@ -376,6 +377,60 @@ test('creates a work mix plan sorted by start beat with track volume', () => {
       { trackId: 'track-2', kind: 'accompaniment', startedAtBeat: 5, volume: 0.6 },
     ],
   });
+});
+
+test('treats zero-volume selected tracks as inaudible in the work mix plan', () => {
+  const work = autoSaveTakeAsWork({
+    workId: 'work-zero-volume',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    title: 'zero volume mix',
+    instrument: 'gayageum',
+    events: [pluck],
+    createdAt: '2026-06-18T00:00:00.000Z',
+    startedAtBeat: 1,
+    durationBeats: 4,
+  });
+  const layered = addInstrumentTrack(work, {
+    trackId: 'track-2',
+    takeId: 'take-2',
+    instrument: 'janggu',
+    events: [pluck],
+    createdAt: '2026-06-18T00:01:00.000Z',
+    durationBeats: 4,
+    playheadBeat: 2,
+  });
+  const zeroVolumeFirstTrack: Work = {
+    ...layered,
+    tracks: layered.tracks.map((track) =>
+      track.id === 'track-1' ? { ...track, volume: 0 } : track,
+    ),
+  };
+
+  expect(createWorkMixPlan(zeroVolumeFirstTrack)).toMatchObject({
+    workId: 'work-zero-volume',
+    hasSoloTracks: false,
+    tracks: [
+      { trackId: 'track-2', kind: 'instrument', startedAtBeat: 2, volume: 1 },
+    ],
+  });
+  expect(countWorkMixPlanInstrumentEvents(zeroVolumeFirstTrack)).toBe(1);
+
+  const silentSoloWork: Work = {
+    ...layered,
+    tracks: layered.tracks.map((track) =>
+      track.id === 'track-1'
+        ? { ...track, solo: true, volume: 0 }
+        : { ...track, solo: false, volume: 1 },
+    ),
+  };
+
+  expect(createWorkMixPlan(silentSoloWork)).toMatchObject({
+    workId: 'work-zero-volume',
+    hasSoloTracks: true,
+    tracks: [],
+  });
+  expect(countWorkMixPlanInstrumentEvents(silentSoloWork)).toBe(0);
 });
 
 test('creates a work mix plan from unmuted solo tracks when solo is active', () => {

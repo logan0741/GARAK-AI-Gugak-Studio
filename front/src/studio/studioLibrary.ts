@@ -202,7 +202,8 @@ export function toggleWorkTrackSolo(
 export function createWorkMixPlan(work: Work): WorkMixPlan {
   const unmutedTracks = work.tracks.filter((track) => !track.mute);
   const soloTracks = unmutedTracks.filter((track) => track.solo);
-  const audibleTracks = soloTracks.length > 0 ? soloTracks : unmutedTracks;
+  const selectedTracks = soloTracks.length > 0 ? soloTracks : unmutedTracks;
+  const audibleTracks = selectedTracks.filter((track) => clamp01(track.volume) > 0);
   const orderedTracks = audibleTracks
     .map((track, index) => ({
       index,
@@ -226,6 +227,24 @@ export function createWorkMixPlan(work: Work): WorkMixPlan {
   };
 }
 
+export function countWorkMixPlanInstrumentEvents(
+  work: Work,
+  mixPlan: WorkMixPlan = createWorkMixPlan(work),
+): number {
+  const tracksById = new Map(work.tracks.map((track) => [track.id, track]));
+
+  return mixPlan.tracks.reduce((eventCount, planTrack) => {
+    if (planTrack.kind !== 'instrument') {
+      return eventCount;
+    }
+
+    const track = tracksById.get(planTrack.trackId);
+    return track?.kind === 'instrument'
+      ? eventCount + track.takes.reduce((count, take) => count + take.events.length, 0)
+      : eventCount;
+  }, 0);
+}
+
 export function exportWorkAudioPlaceholder(input: {
   id: string;
   work: Work;
@@ -233,6 +252,10 @@ export function exportWorkAudioPlaceholder(input: {
   audioUri: string;
   durationSeconds: number;
   createdAt: string;
+  renderKind?: ExportedAudio['renderKind'];
+  sourceTakeId?: string;
+  sourceEventCount?: number;
+  sourceRecordingUri?: string;
 }): ExportedAudio {
   const referenceSource = collectReferenceSource(input.work);
 
@@ -245,6 +268,10 @@ export function exportWorkAudioPlaceholder(input: {
     instrumentNames: collectInstrumentNames(input.work),
     createdAt: input.createdAt,
     audioUri: input.audioUri,
+    renderKind: input.renderKind,
+    sourceTakeId: input.sourceTakeId,
+    sourceEventCount: input.sourceEventCount,
+    sourceRecordingUri: input.sourceRecordingUri,
     shareState: 'ready',
     ...referenceSource,
   };

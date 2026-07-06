@@ -3,7 +3,7 @@
     "name": "GUKAK STUDIO",
     "slug": "gukak-studio",
     "scheme": "gukakstudio",
-    "orientation": "landscape",
+    "orientation": "default",
     "plugins": [
       "expo-router",
       "expo-asset",
@@ -15,7 +15,13 @@
           "enableBackgroundRecording": false
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "PORTRAIT"
+        }
+      ]
     ],
     "android": {
       "package": "com.gukakstudio.prototype"

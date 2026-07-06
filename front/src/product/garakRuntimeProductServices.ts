@@ -22,6 +22,9 @@ export type RuntimeGarakProductServicesInput = {
   libraryStorage?: AuthStoragePort;
   share?: GarakSharePort;
   liveAudio?: LocalGarakProductServicesInput['liveAudio'];
+  recordingCapture?: LocalGarakProductServicesInput['recordingCapture'];
+  recordingCaptureStorage?: LocalGarakProductServicesInput['recordingCaptureStorage'];
+  libraryAudio?: LocalGarakProductServicesInput['libraryAudio'];
   createLiveSampler?: LivePerformanceSamplerFactory;
 };
 
@@ -33,6 +36,9 @@ export function createRuntimeGarakProductServices({
   libraryStorage,
   share,
   liveAudio,
+  recordingCapture,
+  recordingCaptureStorage,
+  libraryAudio,
   createLiveSampler,
 }: RuntimeGarakProductServicesInput = {}): GarakProductServices {
   const normalizedBaseUrl = apiBaseUrl?.trim();
@@ -42,6 +48,9 @@ export function createRuntimeGarakProductServices({
       storage: libraryStorage,
       share,
       liveAudio: liveAudio ?? createLiveAudioPort({ createLiveSampler }),
+      recordingCapture,
+      recordingCaptureStorage,
+      libraryAudio,
     });
   }
 
@@ -59,7 +68,10 @@ export function createRuntimeGarakProductServices({
       createLiveAudioPort({
         createLiveSampler,
         loadSampleManifest: httpServices.audio.loadInstrumentSampleManifest,
-      }),
+    }),
+    recordingCapture,
+    recordingCaptureStorage,
+    libraryAudio,
   });
   const libraryService = {
     loadSnapshot: async () => {
@@ -94,8 +106,13 @@ export function createRuntimeGarakProductServices({
       ...httpServices.audio,
       prepareLivePerformanceAudio: fallbackServices.audio.prepareLivePerformanceAudio,
       playPerformanceEvents: fallbackServices.audio.playPerformanceEvents,
+      startRecordingCapture: fallbackServices.audio.startRecordingCapture,
+      stopRecordingCapture: fallbackServices.audio.stopRecordingCapture,
+      discardRecordingCapture: fallbackServices.audio.discardRecordingCapture,
+      playWorkMix: fallbackServices.audio.playWorkMix,
       playLibraryAudio: fallbackServices.audio.playLibraryAudio,
       pauseLibraryAudio: fallbackServices.audio.pauseLibraryAudio,
+      exportWorkAudio: fallbackServices.audio.exportWorkAudio,
     },
   };
 }

@@ -1,6 +1,8 @@
 import type { ExportedAudio, PracticeResult, SyncState, Work } from '../studio/studioTypes';
 import type { GarakProductAction, GarakProductState, ProductLibraryTab } from './garakProductState';
 import { getInstrumentName, getPracticeSongTitle } from './productFixtures';
+import { isPlayableExportedAudioForPlayback } from './libraryPlaybackAudio';
+import { createWorkMixPlan } from '../studio/studioLibrary';
 
 export type MyLibraryHeroCard = {
   id: string;
@@ -53,20 +55,25 @@ export type MyLibraryViewModel = {
 export type MyLibraryPlayerViewModel = {
   title: string;
   meta: string;
-  sourceKind: MyLibraryPlaylistRow['kind'];
+  sourceKind: MyLibraryPlaylistRow['kind'] | 'unavailable';
   elapsedLabel: string;
   remainingLabel: string;
   showsAirPlay: boolean;
   isPlaying: boolean;
+  playbackNotice?: string;
   editWorkId?: string;
 };
 
 export type MyLibraryPlayerActions = {
   playAction?: GarakProductAction;
   pauseAction?: GarakProductAction;
+  favoriteAction?: GarakProductAction;
+  previousAction?: GarakProductAction;
+  nextAction?: GarakProductAction;
   editAction?: GarakProductAction;
   shareAction?: GarakProductAction;
   deleteAction?: GarakProductAction;
+  airPlayAction?: GarakProductAction;
   backAction: GarakProductAction;
 };
 
@@ -161,7 +168,7 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
   if (selection?.kind === 'work') {
     const work = state.library.works.find((item) => item.id === selection.workId);
 
-    if (work !== undefined) {
+    if (work !== undefined && isPlayableWorkForPlayback(work)) {
       return withPlayerPlaybackState(state, createWorkPlayerViewModel(work));
     }
   }
@@ -169,7 +176,7 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
   if (selection?.kind === 'exportedAudio') {
     const audio = state.library.exportedAudios.find((item) => item.id === selection.exportedAudioId);
 
-    if (audio !== undefined) {
+    if (audio !== undefined && isPlayableExportedAudioForPlayback(state.library.works, audio)) {
       return withPlayerPlaybackState(state, createExportedAudioPlayerViewModel(audio));
     }
   }
@@ -186,13 +193,31 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
     return withPlayerPlaybackState(state, createDemoPlayerViewModel(selection.title));
   }
 
-  const exportedAudio = state.library.exportedAudios[0];
+  if (selection !== undefined) {
+    return withPlayerPlaybackState(
+      {
+        ...state,
+        playerPlaybackStatus:
+          state.playerPlaybackStatus.status === 'failed'
+            ? state.playerPlaybackStatus
+            : {
+                status: 'failed',
+                message: formatMissingPlayerSelectionMessage(selection),
+              },
+      },
+      createUnavailablePlayerViewModel(),
+    );
+  }
+
+  const exportedAudio = state.library.exportedAudios.find((audio) =>
+    isPlayableExportedAudioForPlayback(state.library.works, audio),
+  );
 
   if (exportedAudio !== undefined) {
     return withPlayerPlaybackState(state, createExportedAudioPlayerViewModel(exportedAudio));
   }
 
-  const work = state.library.works[0];
+  const work = state.library.works.find(isPlayableWorkForPlayback);
 
   if (work !== undefined) {
     return withPlayerPlaybackState(state, createWorkPlayerViewModel(work));
@@ -204,11 +229,15 @@ export function getMyLibraryPlayerViewModel(state: GarakProductState): MyLibrary
 export function getMyLibraryPlayerActions(state: GarakProductState): MyLibraryPlayerActions {
   const player = getMyLibraryPlayerViewModel(state);
   const selection = state.selectedPlayerItem;
-  const canPlay = selection !== undefined;
+  const canPlay = selection !== undefined && isPlayerSelectionAvailable(state, selection);
   const isPlaying = canPlay && player.isPlaying;
   const canShare =
     selection?.kind === 'exportedAudio'
-      ? state.library.exportedAudios.some((audio) => audio.id === selection.exportedAudioId)
+      ? state.library.exportedAudios.some(
+          (audio) =>
+            audio.id === selection.exportedAudioId &&
+            isPlayableExportedAudioForPlayback(state.library.works, audio),
+        )
       : selection?.kind === 'practiceResult'
         ? state.library.practiceResults.some((result) => result.id === selection.practiceResultId)
         : false;
@@ -216,11 +245,41 @@ export function getMyLibraryPlayerActions(state: GarakProductState): MyLibraryPl
   return {
     playAction: canPlay && !isPlaying ? { type: 'playSelectedPlayerItem' } : undefined,
     pauseAction: isPlaying ? { type: 'pauseSelectedPlayerItem' } : undefined,
+    favoriteAction: undefined,
+    previousAction: undefined,
+    nextAction: undefined,
     editAction: player.editWorkId !== undefined ? { type: 'openSelectedPlayerEditor' } : undefined,
     shareAction: canShare ? { type: 'shareSelectedPlayerItem' } : undefined,
     deleteAction: canShare ? { type: 'deleteSelectedPlayerItem' } : undefined,
+    airPlayAction: undefined,
     backAction: { type: 'navigate', target: 'S18' },
   };
+}
+
+function isPlayerSelectionAvailable(
+  state: GarakProductState,
+  selection: NonNullable<GarakProductState['selectedPlayerItem']>,
+): boolean {
+  switch (selection.kind) {
+    case 'work':
+      return state.library.works.some(
+        (work) => work.id === selection.workId && isPlayableWorkForPlayback(work),
+      );
+    case 'exportedAudio':
+      return state.library.exportedAudios.some(
+        (audio) =>
+          audio.id === selection.exportedAudioId &&
+          isPlayableExportedAudioForPlayback(state.library.works, audio),
+      );
+    case 'practiceResult':
+      return state.library.practiceResults.some((result) => result.id === selection.practiceResultId);
+    case 'demo':
+      return true;
+  }
+}
+
+function isPlayableWorkForPlayback(work: Work): boolean {
+  return createWorkMixPlan(work).tracks.length > 0;
 }
 
 export function getMyLibraryItemAction(
@@ -232,27 +291,27 @@ export function getMyLibraryItemAction(
 
   if (item.workId !== undefined) {
     return {
-      type: 'openWork',
-      workId: item.workId,
+      type: 'playLibraryItemNow',
+      item: { kind: 'work', workId: item.workId },
     };
   }
 
   if (item.exportedAudioId !== undefined) {
     return {
-      type: 'playLibraryItem',
+      type: 'playLibraryItemNow',
       item: { kind: 'exportedAudio', exportedAudioId: item.exportedAudioId },
     };
   }
 
   if (item.practiceResultId !== undefined) {
     return {
-      type: 'playLibraryItem',
+      type: 'playLibraryItemNow',
       item: { kind: 'practiceResult', practiceResultId: item.practiceResultId },
     };
   }
 
   return {
-    type: 'playLibraryItem',
+    type: 'playLibraryItemNow',
     item: { kind: 'demo', title: item.title, date: item.date },
   };
 }
@@ -261,11 +320,11 @@ function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {
   let order = 0;
 
   const workRows: ActualLibraryRow[] = state.library.works.map((work) => ({
-    id: `work-${work.id}`,
+    id: `work-${work.id}-${order}`,
     title: work.title,
     date: formatLibraryDate(work.updatedAt || work.createdAt),
     kind: 'work',
-    playable: true,
+    playable: isPlayableWorkForPlayback(work),
     active: false,
     subtitle: `${work.tracks.length} track${work.tracks.length === 1 ? '' : 's'}`,
     storageLabel: formatWorkStorageLabel(work.syncState),
@@ -275,11 +334,11 @@ function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {
   }));
 
   const exportRows: ActualLibraryRow[] = state.library.exportedAudios.map((audio) => ({
-    id: `export-${audio.id}`,
+    id: `export-${audio.id}-${order}`,
     title: audio.title,
     date: formatLibraryDate(audio.createdAt),
     kind: 'exportedAudio',
-    playable: true,
+    playable: isPlayableExportedAudioForPlayback(state.library.works, audio),
     active: false,
     subtitle: formatExportedAudioSubtitle(audio),
     exportedAudioId: audio.id,
@@ -288,7 +347,7 @@ function getActualLibraryRows(state: GarakProductState): ActualLibraryRow[] {
   }));
 
   const practiceRows: ActualLibraryRow[] = state.library.practiceResults.map((result) => ({
-    id: `practice-${result.id}`,
+    id: `practice-${result.id}-${order}`,
     title: `${formatPracticeSongTitle(result.songId)} 연습`,
     date: formatLibraryDate(result.createdAt),
     kind: 'practiceResult',
@@ -472,7 +531,40 @@ function withPlayerPlaybackState(
   return {
     ...player,
     isPlaying: isSelectedPlayerPlaying(state),
+    playbackNotice: getPlayerPlaybackNotice(state),
   };
+}
+
+function createUnavailablePlayerViewModel(): MyLibraryPlayerBaseViewModel {
+  return {
+    title: 'Selected item unavailable',
+    meta: 'Playback unavailable',
+    sourceKind: 'unavailable',
+    elapsedLabel: '0:00',
+    remainingLabel: '-0:00',
+    showsAirPlay: false,
+  };
+}
+
+function formatMissingPlayerSelectionMessage(
+  selection: NonNullable<GarakProductState['selectedPlayerItem']>,
+): string {
+  switch (selection.kind) {
+    case 'work':
+      return 'Selected work is unavailable.';
+    case 'exportedAudio':
+      return 'Selected audio is unavailable.';
+    case 'practiceResult':
+      return 'Selected practice result is unavailable.';
+    case 'demo':
+      return 'Selected demo is unavailable.';
+  }
+}
+
+function getPlayerPlaybackNotice(state: GarakProductState): string | undefined {
+  return state.playerPlaybackStatus.status === 'failed'
+    ? `Playback unavailable: ${state.playerPlaybackStatus.message}`
+    : undefined;
 }
 
 function isSelectedPlayerPlaying(state: GarakProductState): boolean {
@@ -539,15 +631,30 @@ function formatDuration(durationSeconds: number): string {
 function formatExportedAudioSubtitle(audio: ExportedAudio): string {
   return joinMetadata([
     formatSharedSource(audio),
-    `${audio.instrumentNames.join(', ')} · ${formatDuration(audio.durationSeconds)}`,
+    formatExportRenderKind(audio),
+    `${audio.instrumentNames.join(', ')} / ${formatDuration(audio.durationSeconds)}`,
   ]);
 }
 
 function formatExportedAudioPlayerMeta(audio: ExportedAudio): string {
   return joinMetadata([
     formatSharedSource(audio),
-    `사용 악기 ${audio.instrumentNames.join(', ') || '가야금'} · ${formatDuration(audio.durationSeconds)}`,
+    formatExportRenderKind(audio),
+    `사용 악기 ${audio.instrumentNames.join(', ') || '가야금'} / ${formatDuration(audio.durationSeconds)}`,
   ]);
+}
+
+function formatExportRenderKind(audio: ExportedAudio): string | undefined {
+  switch (audio.renderKind) {
+    case 'audio_capture':
+      return '녹음 파일';
+    case 'event_replay':
+      return '이벤트 녹음';
+    case 'demo_sample':
+      return '데모 샘플';
+    case undefined:
+      return undefined;
+  }
 }
 
 function formatSharedSource(audio: ExportedAudio): string | undefined {
@@ -555,7 +662,7 @@ function formatSharedSource(audio: ExportedAudio): string | undefined {
     return undefined;
   }
 
-  return `${audio.authorDisplayName} · ${audio.sourceLabel}`;
+  return `${audio.authorDisplayName} / ${audio.sourceLabel}`;
 }
 
 function formatWorkStorageLabel(syncState: SyncState): string {
@@ -572,7 +679,7 @@ function formatWorkStorageLabel(syncState: SyncState): string {
 }
 
 function joinMetadata(parts: Array<string | undefined>): string {
-  return parts.filter((part): part is string => part !== undefined && part.length > 0).join(' · ');
+  return parts.filter((part): part is string => part !== undefined && part.length > 0).join(' / ');
 }
 
 function formatPracticeSongTitle(songId: string): string {

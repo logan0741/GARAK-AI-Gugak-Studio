@@ -152,6 +152,11 @@ export function PlayerDetailContent({
           </Text>
           <Text style={styles.playingMore}>·····</Text>
         </View>
+        {player.playbackNotice !== undefined ? (
+          <Text accessibilityLiveRegion="polite" numberOfLines={2} style={styles.playingNotice}>
+            {player.playbackNotice}
+          </Text>
+        ) : null}
         <View style={styles.playingProgress}>
           <View style={styles.playingProgressFill} />
         </View>
@@ -160,10 +165,38 @@ export function PlayerDetailContent({
           <Text style={styles.playingTime}>{player.remainingLabel}</Text>
         </View>
         <View style={styles.playingControls}>
-          <Pressable accessibilityLabel="즐겨찾기" accessibilityRole="button" style={styles.playingIconButton}>
+          <Pressable
+            accessibilityLabel="즐겨찾기"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playerActions.favoriteAction === undefined }}
+            disabled={playerActions.favoriteAction === undefined}
+            onPress={() => {
+              if (playerActions.favoriteAction !== undefined) {
+                dispatch(playerActions.favoriteAction);
+              }
+            }}
+            style={[
+              styles.playingIconButton,
+              playerActions.favoriteAction === undefined ? styles.playingIconButtonDisabled : undefined,
+            ]}
+          >
             <Text style={styles.playingStar}>☆</Text>
           </Pressable>
-          <Pressable accessibilityLabel="이전" accessibilityRole="button" style={styles.playingIconButton}>
+          <Pressable
+            accessibilityLabel="이전"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playerActions.previousAction === undefined }}
+            disabled={playerActions.previousAction === undefined}
+            onPress={() => {
+              if (playerActions.previousAction !== undefined) {
+                dispatch(playerActions.previousAction);
+              }
+            }}
+            style={[
+              styles.playingIconButton,
+              playerActions.previousAction === undefined ? styles.playingIconButtonDisabled : undefined,
+            ]}
+          >
             <Text style={styles.playingSkip}>◀◀</Text>
           </Pressable>
           <Pressable
@@ -176,11 +209,28 @@ export function PlayerDetailContent({
                 dispatch(playbackAction);
               }
             }}
-            style={styles.playingPlayButton}
+            style={[
+              styles.playingPlayButton,
+              playbackAction === undefined ? styles.playingPlayButtonDisabled : undefined,
+            ]}
           >
             <Text style={styles.playingPlay}>{playbackIcon}</Text>
           </Pressable>
-          <Pressable accessibilityLabel="다음" accessibilityRole="button" style={styles.playingIconButton}>
+          <Pressable
+            accessibilityLabel="다음"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playerActions.nextAction === undefined }}
+            disabled={playerActions.nextAction === undefined}
+            onPress={() => {
+              if (playerActions.nextAction !== undefined) {
+                dispatch(playerActions.nextAction);
+              }
+            }}
+            style={[
+              styles.playingIconButton,
+              playerActions.nextAction === undefined ? styles.playingIconButtonDisabled : undefined,
+            ]}
+          >
             <Text style={styles.playingSkip}>▶▶</Text>
           </Pressable>
         </View>
@@ -242,7 +292,21 @@ export function PlayerDetailContent({
           </Pressable>
         </View>
         {player.showsAirPlay ? (
-          <Pressable accessibilityLabel="AirPlay" accessibilityRole="button" style={styles.playingAirPlay}>
+          <Pressable
+            accessibilityLabel="AirPlay"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: playerActions.airPlayAction === undefined }}
+            disabled={playerActions.airPlayAction === undefined}
+            onPress={() => {
+              if (playerActions.airPlayAction !== undefined) {
+                dispatch(playerActions.airPlayAction);
+              }
+            }}
+            style={[
+              styles.playingAirPlay,
+              playerActions.airPlayAction === undefined ? styles.playingAirPlayDisabled : undefined,
+            ]}
+          >
             <Text style={styles.playingAirPlayText}>◎ AirPlay</Text>
           </Pressable>
         ) : null}
@@ -553,6 +617,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     lineHeight: 18,
   },
+  playingNotice: {
+    alignSelf: 'stretch',
+    color: '#F7D7D2',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 16,
+    marginTop: 8,
+  },
   playingProgress: {
     alignSelf: 'stretch',
     backgroundColor: '#D6D6D6',
@@ -591,11 +664,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 46,
   },
+  playingIconButtonDisabled: {
+    opacity: 0.34,
+  },
   playingPlayButton: {
     alignItems: 'center',
     height: 54,
     justifyContent: 'center',
     width: 54,
+  },
+  playingPlayButtonDisabled: {
+    opacity: 0.34,
   },
   playingStar: {
     color: '#DADADA',
@@ -643,6 +722,9 @@ const styles = StyleSheet.create({
     marginTop: 22,
     minHeight: 34,
     paddingHorizontal: 18,
+  },
+  playingAirPlayDisabled: {
+    opacity: 0.38,
   },
   playingAirPlayText: {
     color: GARAK_COLORS.surfaceCard,

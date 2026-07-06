@@ -41,12 +41,14 @@ import {
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
 import { DEFAULT_FREE_CREATION_INSTRUMENT } from './productFixtures';
+import { playLivePerformanceEventsWithFailureDispatch } from './livePerformanceEventPlayback';
 import {
   GarakScreenFrameMode,
   getGarakScreenFrameConfig,
   usesImmersivePortraitScreen,
   usesEmbeddedLandscapeArtworkHeader,
 } from './garakScreenFrame';
+import { lockGarakScreenOrientation } from './garakScreenOrientation';
 import { GarakWordmark, QuickAccessNav } from './garakUi';
 import { getHomeScreenViewModel } from './homeScreenModel';
 import { GarakText as Text } from './garakTypography';
@@ -79,6 +81,7 @@ export function GarakScreenFlowApp({
   services,
 }: GarakScreenFlowAppProps = {}) {
   const handledEffectIdsRef = useRef<Set<number>>(new Set());
+  const orientationLockRequestRef = useRef(0);
   const [runtimeState, setRuntimeState] = useState<GarakProductRuntimeState>(() => ({
     productState: createInitialGarakProductState({
       account,
@@ -113,9 +116,21 @@ export function GarakScreenFlowApp({
       ? styles.immersiveContent
       : undefined;
 
+  useEffect(() => {
+    const requestId = ++orientationLockRequestRef.current;
+
+    void lockGarakScreenOrientation(frameConfig.mode, {
+      isCurrent: () => orientationLockRequestRef.current === requestId,
+    }).catch(() => undefined);
+  }, [frameConfig.mode]);
+
   const dispatch = useCallback((action: GarakProductAction) => {
     setRuntimeState((current) => {
       const next = applyProductAction(current.productState, action);
+      if (next === current.productState) {
+        return current;
+      }
+
       const pendingEffect: PendingProductEffect = {
         id: current.nextEffectId,
         state: next,
@@ -148,30 +163,12 @@ export function GarakScreenFlowApp({
   }, [dispatch, productServices]);
   const playLivePerformanceEvents = useCallback(
     (events: PerformanceEvent[]) => {
-      void productServices.audio
-        .playPerformanceEvents({
-          instrument: livePerformanceInstrument,
-          events,
-        })
-        .then((result) => {
-          if (result.status !== 'ok') {
-            dispatch({
-              type: 'failLivePerformanceAudioPreparation',
-              instrument: livePerformanceInstrument,
-              message:
-                result.status === 'error'
-                  ? result.message
-                  : 'Live performance audio service is unavailable.',
-            });
-          }
-        })
-        .catch((error: unknown) => {
-          dispatch({
-            type: 'failLivePerformanceAudioPreparation',
-            instrument: livePerformanceInstrument,
-            message: error instanceof Error ? error.message : 'Live performance audio failed.',
-          });
-        });
+      void playLivePerformanceEventsWithFailureDispatch({
+        services: productServices,
+        instrument: livePerformanceInstrument,
+        events,
+        dispatch,
+      });
     },
     [dispatch, livePerformanceInstrument, productServices],
   );

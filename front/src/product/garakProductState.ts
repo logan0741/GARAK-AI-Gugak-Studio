@@ -9,27 +9,32 @@ import {
   addAccompanimentTrack,
   addInstrumentTrack,
   autoSaveTakeAsWork,
+  countWorkMixPlanInstrumentEvents,
   createPracticeResult,
+  createWorkMixPlan,
   exportWorkAudioPlaceholder,
 } from '../studio/studioLibrary';
 import {
   ExportedAudio,
+  ExportRenderKind,
   InstrumentId,
   JangdanPresetId,
   PracticeResult,
   RecordingSetup,
   ShareMethod,
   ShareTargetReference,
+  Take,
   Track,
   Work,
 } from '../studio/studioTypes';
 import {
   DEFAULT_FREE_CREATION_INSTRUMENT,
+  FEATURED_SHARED_RECORDING,
   GARAK_BRAND,
   JANGDAN_PRESETS,
   PRACTICE_SONGS,
   SharedRecording,
-  getSharedRecordingById,
+  findSharedRecordingById,
   getInstrumentName,
   getPracticeSongTitle,
   PracticeSong,
@@ -44,6 +49,10 @@ import {
   type InstrumentSampleReadinessInput,
   type InstrumentSampleStatus,
 } from './instrumentSampleReadiness';
+import {
+  createSharedRecordingLibraryAudioUri,
+  isPlayableExportedAudioForPlayback,
+} from './libraryPlaybackAudio';
 import type {
   AiAutoAccompanimentCandidate,
   AiAutoAccompanimentFailureCode,
@@ -53,6 +62,9 @@ import type {
 import { buildPracticeResultFeedback, evaluatePracticeResult } from './practiceResultEvaluation';
 
 export type { InstrumentSampleStatus } from './instrumentSampleReadiness';
+
+const EXPORT_FALLBACK_AUDIO_URI = 'garak://library-demo/export-fallback';
+const ABSOLUTE_PERFORMANCE_EVENT_TIMESTAMP_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
 export type AccountState =
   | {
@@ -88,6 +100,14 @@ export type PendingFreePlayTake = {
 };
 
 export type FreePlayNotice = 'missingTake';
+
+export type RecordingCaptureStatus =
+  | { status: 'idle' }
+  | { status: 'starting'; instrument: InstrumentId; captureAttemptId: string }
+  | { status: 'capturing'; instrument: InstrumentId; captureAttemptId: string }
+  | { status: 'stopping'; instrument: InstrumentId; captureAttemptId: string }
+  | { status: 'discarding'; instrument?: InstrumentId; captureAttemptId: string }
+  | { status: 'failed'; instrument?: InstrumentId; message: string };
 
 export type TrackAddNotice = 'importLocked';
 
@@ -131,14 +151,22 @@ export type SharePublishStatus =
   | { status: 'shared'; target: ShareTargetReference; remoteId: string }
   | { status: 'failed'; target: ShareTargetReference; message: string };
 
+export type PlayerPlaybackStatus =
+  | { status: 'idle' }
+  | { status: 'playing' }
+  | { status: 'failed'; message: string };
+
 export type LivePerformanceAudioStatus =
   | { status: 'idle' }
-  | { status: 'preparing'; instrument: InstrumentId }
+  | { status: 'preparing'; instrument: InstrumentId; preparationAttemptId: string }
   | {
       status: 'ready';
       instrument: InstrumentId;
       sampleSourceLabel: string;
       releaseReady: boolean;
+      lastPlaybackEventCount?: number;
+      totalPlaybackEventCount?: number;
+      lastPlaybackAt?: string;
     }
   | { status: 'failed'; instrument: InstrumentId; message: string };
 
@@ -175,7 +203,9 @@ export type GarakProductState = {
   workSaveErrorMessage?: string;
   workExportStatus: WorkExportStatus;
   sharePublishStatus: SharePublishStatus;
+  playerPlaybackStatus: PlayerPlaybackStatus;
   livePerformanceAudioStatus: LivePerformanceAudioStatus;
+  recordingCaptureStatus: RecordingCaptureStatus;
   autoAccompanimentStatus: AiAutoAccompanimentStatus;
   practiceAttempt?: PracticeAttempt;
   pendingLiveJangdanGuide?: {
@@ -197,6 +227,8 @@ export type GarakProductState = {
     take: number;
     export: number;
     practiceResult: number;
+    recordingCapture: number;
+    liveAudioPreparation: number;
   };
   now: () => string;
 };
@@ -218,15 +250,49 @@ export type GarakProductAction =
   | { type: 'adjustFreePlayRecordingBpm'; delta: number }
   | { type: 'cancelFreePlayRecordingSetup' }
   | { type: 'startPerformanceRecording'; events?: PerformanceEvent[]; recordingSetup?: RecordingSetup; recordingUri?: string }
+  | { type: 'completeRecordingCaptureStart'; instrument: InstrumentId; captureAttemptId: string }
+  | {
+      type: 'failRecordingCaptureStart';
+      instrument: InstrumentId;
+      captureAttemptId: string;
+      message: string;
+    }
+  | {
+      type: 'attachRecordingCaptureToTake';
+      workId: Work['id'];
+      trackId: Track['id'];
+      takeId: string;
+      recordingUri: string;
+      durationSeconds?: number;
+      captureAttemptId: string;
+    }
+  | { type: 'completeRecordingCaptureDiscard'; captureAttemptId: string }
+  | { type: 'failRecordingCaptureStop'; instrument?: InstrumentId; captureAttemptId: string; message: string }
   | { type: 'appendFreePlayPerformanceEvents'; events: PerformanceEvent[] }
   | { type: 'completePerformance'; events?: PerformanceEvent[] }
   | {
       type: 'completeLivePerformanceAudioPreparation';
       instrument: InstrumentId;
+      preparationAttemptId: string;
       sampleSourceLabel: string;
       releaseReady: boolean;
     }
-  | { type: 'failLivePerformanceAudioPreparation'; instrument: InstrumentId; message: string }
+  | {
+      type: 'failLivePerformanceAudioPreparation';
+      instrument: InstrumentId;
+      preparationAttemptId: string;
+      message: string;
+    }
+  | {
+      type: 'failLivePerformanceEventPlayback';
+      instrument: InstrumentId;
+      message: string;
+    }
+  | {
+      type: 'completeLivePerformanceEventPlayback';
+      instrument: InstrumentId;
+      eventCount: number;
+    }
   | { type: 'retryLivePerformanceAudioPreparation' }
   | { type: 'setWorkPlayheadBeat'; beat: number }
   | { type: 'adjustWorkTrackVolume'; trackId: string; delta: number }
@@ -268,7 +334,17 @@ export type GarakProductAction =
   | { type: 'failCurrentWorkSave'; message: string }
   | { type: 'saveAndShareCurrentWork' }
   | { type: 'exportCurrentWork' }
-  | { type: 'completeWorkAudioExport'; workId: Work['id']; audioUri: string; durationSeconds?: number }
+  | {
+      type: 'completeWorkAudioExport';
+      workId: Work['id'];
+      audioUri: string;
+      durationSeconds: number;
+      renderKind: ExportRenderKind;
+      sourceTakeId?: string;
+      sourceEventCount?: number;
+      sourceRecordingUri?: string;
+      completionTarget?: 'player' | 'share';
+    }
   | { type: 'failWorkAudioExport'; workId: Work['id']; message: string }
   | { type: 'previewPracticeSong'; songId: PracticeSong['id'] }
   | { type: 'selectPracticeSong'; songId: PracticeSong['id'] }
@@ -308,8 +384,10 @@ export type GarakProductAction =
   | { type: 'selectLibraryTab'; tab: ProductLibraryTab }
   | { type: 'updateLibrarySearchQuery'; query: string }
   | { type: 'playLibraryItem'; item: ProductPlayerSelection }
+  | { type: 'playLibraryItemNow'; item: ProductPlayerSelection }
   | { type: 'playSelectedPlayerItem' }
   | { type: 'pauseSelectedPlayerItem' }
+  | { type: 'failPlayerPlayback'; message: string }
   | { type: 'openSelectedPlayerEditor' }
   | { type: 'navigate'; target: ImplementedScreenId }
   | { type: 'back' }
@@ -349,7 +427,9 @@ export function createInitialGarakProductState(
     workSaveStatus: 'idle',
     workExportStatus: { status: 'idle' },
     sharePublishStatus: { status: 'idle' },
+    playerPlaybackStatus: { status: 'idle' },
     livePerformanceAudioStatus: { status: 'idle' },
+    recordingCaptureStatus: { status: 'idle' },
     autoAccompanimentStatus: { status: 'idle' },
     instrumentSampleStatuses: resolveInstrumentSampleStatuses({
       sampleManifests: input.sampleManifests,
@@ -362,6 +442,8 @@ export function createInitialGarakProductState(
       take: 0,
       export: 0,
       practiceResult: 0,
+      recordingCapture: 0,
+      liveAudioPreparation: 0,
     },
     now: input.now ?? (() => new Date().toISOString()),
   };
@@ -377,6 +459,18 @@ export function applyProductAction(
         ...state,
         selectedPlayerItem: action.item,
         playingPlayerItem: undefined,
+        playerPlaybackStatus: { status: 'idle' },
+        screenFlow:
+          state.screenFlow.currentScreen === 'S18' || state.screenFlow.currentScreen === 'S20'
+            ? transitionScreenFlow(state.screenFlow, { type: 'playLibraryItem' })
+            : pushTarget(state.screenFlow, 'S19'),
+      };
+    case 'playLibraryItemNow':
+      return {
+        ...state,
+        selectedPlayerItem: action.item,
+        playingPlayerItem: action.item,
+        playerPlaybackStatus: { status: 'playing' },
         screenFlow:
           state.screenFlow.currentScreen === 'S18' || state.screenFlow.currentScreen === 'S20'
             ? transitionScreenFlow(state.screenFlow, { type: 'playLibraryItem' })
@@ -388,11 +482,24 @@ export function applyProductAction(
         : {
             ...state,
             playingPlayerItem: state.selectedPlayerItem,
+            playerPlaybackStatus: { status: 'playing' },
           };
     case 'pauseSelectedPlayerItem':
       return {
         ...state,
         playingPlayerItem: undefined,
+        playerPlaybackStatus: { status: 'idle' },
+      };
+    case 'failPlayerPlayback':
+      return {
+        ...state,
+        playingPlayerItem: undefined,
+        playingSharedRecordingId: undefined,
+        sharePreviewStatus: undefined,
+        playerPlaybackStatus: {
+          status: 'failed',
+          message: action.message,
+        },
       };
     case 'openSelectedPlayerEditor':
       return openSelectedPlayerEditor(state);
@@ -465,14 +572,7 @@ export function applyProductAction(
         screenFlow: routeProductNext(state),
       };
     case 'selectInstrument':
-      return {
-        ...state,
-        selectedInstrument: action.instrument,
-        instrumentSelectNotice: undefined,
-        instrumentSettingsNotice: undefined,
-        instrumentSettingsAdjustmentOpen: undefined,
-        practiceAttempt: undefined,
-      };
+      return selectInstrument(state, action.instrument);
     case 'showFutureInstrumentNotice':
       return {
         ...state,
@@ -523,18 +623,97 @@ export function applyProductAction(
         return state;
       }
 
+      const performanceStartedAtMs = toEpochMs(state.now());
+      const performanceCaptureCounters = incrementCounters(state.counters, ['recordingCapture']);
+      const performanceCaptureAttemptId = createRecordingCaptureAttemptId(
+        performanceCaptureCounters.recordingCapture,
+      );
+
       return {
         ...state,
+        counters: performanceCaptureCounters,
         pendingFreePlayTake: {
-          events: action.events ?? [],
+          events: normalizeRecordedPerformanceEvents(action.events ?? [], performanceStartedAtMs),
           recordingSetup: normalizeRecordingSetup(
             action.recordingSetup ?? state.freePlayRecordingSetup ?? createDefaultRecordingSetup(),
           ),
           recordingUri: normalizeOptionalText(action.recordingUri),
-          startedAtMs: toEpochMs(state.now()),
+          startedAtMs: performanceStartedAtMs,
+        },
+        recordingCaptureStatus: {
+          status: 'starting',
+          instrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
+          captureAttemptId: performanceCaptureAttemptId,
         },
         freePlayRecordingSetup: undefined,
         freePlayNotice: undefined,
+      };
+    case 'completeRecordingCaptureStart':
+      if (
+        state.pendingFreePlayTake === undefined ||
+        state.recordingCaptureStatus.status !== 'starting' ||
+        state.recordingCaptureStatus.instrument !== action.instrument ||
+        !recordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId)
+      ) {
+        return state;
+      }
+
+      return {
+        ...state,
+        recordingCaptureStatus: {
+          status: 'capturing',
+          instrument: action.instrument,
+          captureAttemptId: action.captureAttemptId ?? state.recordingCaptureStatus.captureAttemptId,
+        },
+      };
+    case 'failRecordingCaptureStart':
+      if (
+        state.pendingFreePlayTake === undefined ||
+        state.recordingCaptureStatus.status !== 'starting' ||
+        state.recordingCaptureStatus.instrument !== action.instrument ||
+        !recordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId)
+      ) {
+        return state;
+      }
+
+      return {
+        ...state,
+        recordingCaptureStatus: {
+          status: 'failed',
+          instrument: action.instrument,
+          message: normalizeOptionalText(action.message) ?? 'Recording capture is unavailable.',
+        },
+      };
+    case 'attachRecordingCaptureToTake':
+      return attachRecordingCaptureToTake(state, action);
+    case 'completeRecordingCaptureDiscard':
+      if (
+        state.recordingCaptureStatus.status !== 'discarding' ||
+        !recordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId)
+      ) {
+        return state;
+      }
+
+      return {
+        ...state,
+        recordingCaptureStatus: { status: 'idle' },
+      };
+    case 'failRecordingCaptureStop':
+      if (
+        (state.recordingCaptureStatus.status !== 'stopping' &&
+          state.recordingCaptureStatus.status !== 'discarding') ||
+        !recordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId)
+      ) {
+        return state;
+      }
+
+      return {
+        ...state,
+        recordingCaptureStatus: {
+          status: 'failed',
+          instrument: action.instrument,
+          message: normalizeOptionalText(action.message) ?? 'Recording capture stopped without audio.',
+        },
       };
     case 'appendFreePlayPerformanceEvents':
       if (state.pendingFreePlayTake === undefined || action.events.length === 0) {
@@ -545,13 +724,29 @@ export function applyProductAction(
         ...state,
         pendingFreePlayTake: {
           ...state.pendingFreePlayTake,
-          events: [...state.pendingFreePlayTake.events, ...action.events],
+          events: [
+            ...state.pendingFreePlayTake.events,
+            ...normalizeRecordedPerformanceEvents(
+              action.events,
+              state.pendingFreePlayTake.startedAtMs,
+            ),
+          ],
         },
         freePlayNotice: undefined,
       };
     case 'completePerformance':
       return completePerformance(state);
     case 'completeLivePerformanceAudioPreparation':
+      if (
+        !isPendingLivePerformanceAudioPreparation(
+          state,
+          action.instrument,
+          action.preparationAttemptId,
+        )
+      ) {
+        return state;
+      }
+
       return {
         ...state,
         livePerformanceAudioStatus: {
@@ -562,12 +757,57 @@ export function applyProductAction(
         },
       };
     case 'failLivePerformanceAudioPreparation':
+      if (
+        !isPendingLivePerformanceAudioPreparation(
+          state,
+          action.instrument,
+          action.preparationAttemptId,
+        )
+      ) {
+        return state;
+      }
+
       return {
         ...state,
         livePerformanceAudioStatus: {
           status: 'failed',
           instrument: action.instrument,
           message: normalizeOptionalText(action.message) ?? 'Live performance audio is unavailable.',
+        },
+      };
+    case 'failLivePerformanceEventPlayback':
+      if (!isCurrentLivePerformancePlaybackInstrument(state, action.instrument)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        livePerformanceAudioStatus: {
+          status: 'failed',
+          instrument: action.instrument,
+          message: normalizeOptionalText(action.message) ?? 'Live performance audio is unavailable.',
+        },
+      };
+    case 'completeLivePerformanceEventPlayback':
+      if (
+        !isCurrentLivePerformancePlaybackInstrument(state, action.instrument) ||
+        state.livePerformanceAudioStatus.status !== 'ready' ||
+        state.livePerformanceAudioStatus.instrument !== action.instrument
+      ) {
+        return state;
+      }
+
+      const handledEventCount = Math.max(0, Math.floor(action.eventCount));
+      const previousTotalPlaybackEventCount =
+        state.livePerformanceAudioStatus.totalPlaybackEventCount ?? 0;
+
+      return {
+        ...state,
+        livePerformanceAudioStatus: {
+          ...state.livePerformanceAudioStatus,
+          lastPlaybackEventCount: handledEventCount,
+          totalPlaybackEventCount: previousTotalPlaybackEventCount + handledEventCount,
+          lastPlaybackAt: state.now(),
         },
       };
     case 'retryLivePerformanceAudioPreparation':
@@ -595,7 +835,10 @@ export function applyProductAction(
     case 'deleteWorkTrack':
       return deleteCurrentWorkTrack(state, action.trackId);
     case 'playCurrentWorkMix':
-      return state;
+      return {
+        ...state,
+        playerPlaybackStatus: { status: 'playing' },
+      };
     case 'openLayerEditor':
       return openLayerEditor(state);
     case 'openLiveJangdanGuide':
@@ -676,16 +919,29 @@ export function applyProductAction(
         trackAddSelection: undefined,
         pendingFreePlayTake: undefined,
         freePlayRecordingSetup: undefined,
+        ...createLivePerformanceAudioPreparation(state, action.instrument),
         screenFlow: transitionScreenFlow(state.screenFlow, { type: 'chooseInstrumentTrack' }),
       };
     case 'restartInstrumentTrackRecording':
+      const restartStartedAtMs = toEpochMs(state.now());
+      const restartCaptureCounters = incrementCounters(state.counters, ['recordingCapture']);
+      const restartCaptureAttemptId = createRecordingCaptureAttemptId(
+        restartCaptureCounters.recordingCapture,
+      );
+
       return {
         ...state,
+        counters: restartCaptureCounters,
         pendingFreePlayTake: {
-          events: action.events ?? [],
+          events: normalizeRecordedPerformanceEvents(action.events ?? [], restartStartedAtMs),
           recordingSetup: normalizeRecordingSetup(action.recordingSetup ?? createDefaultRecordingSetup()),
           recordingUri: normalizeOptionalText(action.recordingUri),
-          startedAtMs: toEpochMs(state.now()),
+          startedAtMs: restartStartedAtMs,
+        },
+        recordingCaptureStatus: {
+          status: 'starting',
+          instrument: state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT,
+          captureAttemptId: restartCaptureAttemptId,
         },
         freePlayRecordingSetup: undefined,
         screenFlow:
@@ -699,6 +955,13 @@ export function applyProductAction(
       return {
         ...state,
         pendingFreePlayTake: undefined,
+        recordingCaptureStatus: shouldDiscardRecordingCaptureAfterCancel(state.recordingCaptureStatus)
+          ? {
+              status: 'discarding',
+              instrument: state.recordingCaptureStatus.instrument,
+              captureAttemptId: state.recordingCaptureStatus.captureAttemptId,
+            }
+          : { status: 'idle' },
         freePlayRecordingSetup: undefined,
         screenFlow:
           state.screenFlow.currentScreen === 'S09'
@@ -835,6 +1098,7 @@ export function applyProductAction(
       return {
         ...state,
         sharePreviewStatus: 'playing',
+        playerPlaybackStatus: { status: 'playing' },
       };
     case 'saveShareTargetOnly':
       return {
@@ -881,14 +1145,30 @@ export function applyProductAction(
             : pushTarget(state.screenFlow, 'S21'),
       };
     case 'playSelectedSharedRecording':
-      return {
-        ...state,
-        playingSharedRecordingId: getSelectedSharedRecording(state).id,
-      };
+      {
+        const recording = findSelectedSharedRecording(state);
+        if (recording === undefined) {
+          return {
+            ...state,
+            playingSharedRecordingId: undefined,
+            playerPlaybackStatus: {
+              status: 'failed',
+              message: 'Selected shared recording is unavailable.',
+            },
+          };
+        }
+
+        return {
+          ...state,
+          playingSharedRecordingId: recording.id,
+          playerPlaybackStatus: { status: 'playing' },
+        };
+      }
     case 'pauseSelectedSharedRecording':
       return {
         ...state,
         playingSharedRecordingId: undefined,
+        playerPlaybackStatus: { status: 'idle' },
       };
     case 'remixSharedRecording':
       return remixSharedRecording(state);
@@ -908,11 +1188,14 @@ export function applyProductAction(
             ? transitionScreenFlow(state.screenFlow, { type: 'completeLoginSync' })
             : pushTarget(state.screenFlow, 'S18'),
       };
-    case 'replaceLibrarySnapshot':
+    case 'replaceLibrarySnapshot': {
+      const library = mergeLibrarySnapshotWithLocalRecordingCaptures(state.library, action.library);
       return {
         ...state,
-        library: action.library,
+        library,
+        counters: reconcileCountersWithLibrarySnapshot(state.counters, library),
       };
+    }
     case 'skipLoginSync':
       if (state.screenFlow.currentScreen !== 'S23') {
         return state;
@@ -947,6 +1230,10 @@ export function applyProductAction(
 
       return {
         ...state,
+        selectedSharedRecordingId:
+          action.target === 'S21' && state.selectedSharedRecordingId === undefined
+            ? FEATURED_SHARED_RECORDING.id
+            : state.selectedSharedRecordingId,
         sharePreviewStatus: undefined,
         screenFlow: transitionScreenFlow(state.screenFlow, {
           type: 'navigate',
@@ -999,18 +1286,92 @@ function startFreePlayWithInstrumentSettings(
     instrumentSettingsNotice: undefined,
     instrumentSettingsAdjustmentOpen: undefined,
     pendingFreePlayTake: undefined,
+    recordingCaptureStatus: { status: 'idle' },
     freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
-    livePerformanceAudioStatus: {
-      status: 'preparing',
-      instrument,
-    },
+    ...createLivePerformanceAudioPreparation(state, instrument),
     screenFlow: pushTarget(state.screenFlow, 'S05'),
   };
 }
 
-function retryLivePerformanceAudioPreparation(state: GarakProductState): GarakProductState {
+function selectInstrument(
+  state: GarakProductState,
+  instrument: InstrumentId,
+): GarakProductState {
+  const nextState = {
+    ...state,
+    selectedInstrument: instrument,
+    instrumentSelectNotice: undefined,
+    instrumentSettingsNotice: undefined,
+    instrumentSettingsAdjustmentOpen: undefined,
+    practiceAttempt: undefined,
+  };
+
   if (state.screenFlow.currentScreen !== 'S05') {
+    return nextState;
+  }
+
+  return {
+    ...nextState,
+    activeInstrumentSettings: {
+      instrument,
+      values: getDefaultInstrumentSettingValues(instrument),
+      source: 'default',
+    },
+    ...createLivePerformanceAudioPreparation(state, instrument),
+  };
+}
+
+function isPendingLivePerformanceAudioPreparation(
+  state: GarakProductState,
+  instrument: InstrumentId,
+  preparationAttemptId: string,
+): boolean {
+  return (
+    state.livePerformanceAudioStatus.status === 'preparing' &&
+    state.livePerformanceAudioStatus.instrument === instrument &&
+    state.livePerformanceAudioStatus.preparationAttemptId === preparationAttemptId
+  );
+}
+
+function isCurrentLivePerformancePlaybackInstrument(
+  state: GarakProductState,
+  instrument: InstrumentId,
+): boolean {
+  if (state.screenFlow.currentScreen !== 'S05' && state.screenFlow.currentScreen !== 'S09') {
+    return false;
+  }
+
+  return (state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT) === instrument;
+}
+
+function createLivePerformanceAudioPreparation(
+  state: GarakProductState,
+  instrument: InstrumentId,
+): Pick<GarakProductState, 'counters' | 'livePerformanceAudioStatus'> {
+  const liveAudioPreparationCounter = state.counters.liveAudioPreparation + 1;
+
+  return {
+    counters: {
+      ...state.counters,
+      liveAudioPreparation: liveAudioPreparationCounter,
+    },
+    livePerformanceAudioStatus: {
+      status: 'preparing',
+      instrument,
+      preparationAttemptId: createLivePerformanceAudioPreparationAttemptId(
+        liveAudioPreparationCounter,
+      ),
+    },
+  };
+}
+
+function createLivePerformanceAudioPreparationAttemptId(counter: number): string {
+  return `live-audio-${counter}`;
+}
+
+function retryLivePerformanceAudioPreparation(state: GarakProductState): GarakProductState {
+  if (state.screenFlow.currentScreen !== 'S05' && state.screenFlow.currentScreen !== 'S09') {
     return state;
   }
 
@@ -1023,10 +1384,7 @@ function retryLivePerformanceAudioPreparation(state: GarakProductState): GarakPr
 
   return {
     ...state,
-    livePerformanceAudioStatus: {
-      status: 'preparing',
-      instrument,
-    },
+    ...createLivePerformanceAudioPreparation(state, instrument),
   };
 }
 
@@ -1244,6 +1602,15 @@ function completePerformance(state: GarakProductState): GarakProductState {
     };
   }
 
+  if (hasEmptyFailedPendingTake(state)) {
+    return {
+      ...state,
+      pendingFreePlayTake: undefined,
+      freePlayRecordingSetup: undefined,
+      freePlayNotice: 'missingTake',
+    };
+  }
+
   const nextCounters = incrementCounters(state.counters, ['work', 'track', 'take']);
   const now = state.now();
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
@@ -1281,6 +1648,15 @@ function completePerformance(state: GarakProductState): GarakProductState {
     currentWorkId: work.id,
     workPlayheadBeat: 1,
     pendingFreePlayTake: undefined,
+    recordingCaptureStatus: shouldStopRecordingCaptureAfterCompletion(state.recordingCaptureStatus)
+      ? {
+          status: 'stopping',
+          instrument: state.recordingCaptureStatus.instrument,
+          captureAttemptId: state.recordingCaptureStatus.captureAttemptId,
+        }
+      : state.recordingCaptureStatus.status === 'failed'
+        ? state.recordingCaptureStatus
+        : { status: 'idle' },
     freePlayRecordingSetup: undefined,
     freePlayNotice: undefined,
     workSaveStatus: 'idle',
@@ -1297,6 +1673,195 @@ function completePerformance(state: GarakProductState): GarakProductState {
       { type: 'completePerformance' },
     ),
   };
+}
+
+function shouldStopRecordingCaptureAfterCompletion(
+  status: RecordingCaptureStatus,
+): status is Extract<RecordingCaptureStatus, { status: 'starting' | 'capturing' }> {
+  return status.status === 'starting' || status.status === 'capturing';
+}
+
+function shouldDiscardRecordingCaptureAfterCancel(
+  status: RecordingCaptureStatus,
+): status is Extract<RecordingCaptureStatus, { status: 'starting' | 'capturing' | 'stopping' }> {
+  return status.status === 'starting' || status.status === 'capturing' || status.status === 'stopping';
+}
+
+function createRecordingCaptureAttemptId(counter: number): string {
+  return `capture-${counter}`;
+}
+
+function recordingCaptureAttemptMatches(
+  status: Extract<RecordingCaptureStatus, { captureAttemptId?: string }>,
+  captureAttemptId: string,
+): boolean {
+  return status.captureAttemptId === captureAttemptId;
+}
+
+function attachRecordingCaptureToTake(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'attachRecordingCaptureToTake' }>,
+): GarakProductState {
+  const recordingUri = normalizeOptionalText(action.recordingUri);
+  if (recordingUri === undefined) {
+    if (!activeRecordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId)) {
+      return state;
+    }
+
+    if (shouldPreserveActiveRecordingCapture(state.recordingCaptureStatus)) {
+      return state;
+    }
+
+    return {
+      ...state,
+      recordingCaptureStatus: {
+        status: 'failed',
+        message: 'Recording capture stopped without a playable URI.',
+      },
+    };
+  }
+
+  if (!isCaptureFileUri(recordingUri)) {
+    if (!activeRecordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId)) {
+      return state;
+    }
+
+    if (shouldPreserveActiveRecordingCapture(state.recordingCaptureStatus)) {
+      return state;
+    }
+
+    return {
+      ...state,
+      recordingCaptureStatus: {
+        status: 'failed',
+        message: 'Recording capture returned a non-file URI.',
+      },
+    };
+  }
+
+  let didAttach = false;
+  const works = state.library.works.map((work) => {
+    if (work.id !== action.workId) {
+      return work;
+    }
+
+    return {
+      ...work,
+      updatedAt: state.now(),
+      tracks: work.tracks.map((track) => {
+        if (track.id !== action.trackId || track.kind !== 'instrument') {
+          return track;
+        }
+
+        const takes = track.takes.map((take) => {
+          if (take.id !== action.takeId) {
+            return take;
+          }
+
+          didAttach = true;
+          return {
+            ...take,
+            recordingUri,
+          };
+        });
+
+        return {
+          ...track,
+          takes,
+        };
+      }),
+    };
+  });
+
+  if (!didAttach) {
+    if (state.recordingCaptureStatus.status === 'stopping') {
+      if (!recordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        recordingCaptureStatus: {
+          status: 'failed',
+          instrument: state.recordingCaptureStatus.instrument,
+          message: 'Recording capture target is unavailable.',
+        },
+      };
+    }
+
+    return state;
+  }
+
+  return {
+    ...state,
+    library: {
+      ...state.library,
+      works,
+    },
+    recordingCaptureStatus: shouldPreserveRecordingCaptureStatusAfterAttach(state, action)
+      ? state.recordingCaptureStatus
+      : { status: 'idle' },
+  };
+}
+
+function shouldPreserveActiveRecordingCapture(status: RecordingCaptureStatus): boolean {
+  return status.status === 'starting' || status.status === 'capturing';
+}
+
+function activeRecordingCaptureAttemptMatches(
+  status: RecordingCaptureStatus,
+  captureAttemptId: string,
+): boolean {
+  if (
+    status.status !== 'starting' &&
+    status.status !== 'capturing' &&
+    status.status !== 'stopping' &&
+    status.status !== 'discarding'
+  ) {
+    return false;
+  }
+
+  return recordingCaptureAttemptMatches(status, captureAttemptId);
+}
+
+function shouldPreserveRecordingCaptureStatusAfterAttach(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'attachRecordingCaptureToTake' }>,
+): boolean {
+  if (shouldPreserveActiveRecordingCapture(state.recordingCaptureStatus)) {
+    return true;
+  }
+
+  if (state.recordingCaptureStatus.status !== 'stopping') {
+    return false;
+  }
+
+  return (
+    !recordingCaptureAttemptMatches(state.recordingCaptureStatus, action.captureAttemptId) ||
+    !isLatestInstrumentTakeCaptureTarget(state, action)
+  );
+}
+
+function isLatestInstrumentTakeCaptureTarget(
+  state: GarakProductState,
+  action: Extract<GarakProductAction, { type: 'attachRecordingCaptureToTake' }>,
+): boolean {
+  const work = state.library.works.find((item) => item.id === action.workId);
+  if (work === undefined) {
+    return false;
+  }
+
+  for (let trackIndex = work.tracks.length - 1; trackIndex >= 0; trackIndex -= 1) {
+    const track = work.tracks[trackIndex];
+    if (track.kind !== 'instrument' || track.takes.length === 0) {
+      continue;
+    }
+
+    const latestTake = track.takes[track.takes.length - 1];
+    return track.id === action.trackId && latestTake.id === action.takeId;
+  }
+
+  return false;
 }
 
 function freePlayDescription(state: GarakProductState): string {
@@ -1386,6 +1951,143 @@ function normalizeOptionalText(value: string | undefined): string | undefined {
 
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : undefined;
+}
+
+function mergeLibrarySnapshotWithLocalRecordingCaptures(
+  currentLibrary: ProductLibraryState,
+  incomingLibrary: ProductLibraryState,
+): ProductLibraryState {
+  const currentWorksById = new Map(currentLibrary.works.map((work) => [work.id, work]));
+  let didRestoreCapture = false;
+  const works = incomingLibrary.works.map((incomingWork) => {
+    const currentWork = currentWorksById.get(incomingWork.id);
+    if (currentWork === undefined) {
+      return incomingWork;
+    }
+
+    const currentTracksById = new Map(currentWork.tracks.map((track) => [track.id, track]));
+    let didRestoreWorkCapture = false;
+    const tracks = incomingWork.tracks.map((incomingTrack) => {
+      if (incomingTrack.kind !== 'instrument') {
+        return incomingTrack;
+      }
+
+      const currentTrack = currentTracksById.get(incomingTrack.id);
+      if (currentTrack?.kind !== 'instrument') {
+        return incomingTrack;
+      }
+
+      const currentTakesById = new Map(currentTrack.takes.map((take) => [take.id, take]));
+      let didRestoreTrackCapture = false;
+      const takes = incomingTrack.takes.map((incomingTake) => {
+        if (normalizeOptionalText(incomingTake.recordingUri) !== undefined) {
+          return incomingTake;
+        }
+
+        const currentRecordingUri = normalizeOptionalText(
+          currentTakesById.get(incomingTake.id)?.recordingUri,
+        );
+        if (currentRecordingUri === undefined) {
+          return incomingTake;
+        }
+
+        didRestoreCapture = true;
+        didRestoreWorkCapture = true;
+        didRestoreTrackCapture = true;
+        return {
+          ...incomingTake,
+          recordingUri: currentRecordingUri,
+        };
+      });
+
+      return didRestoreTrackCapture ? { ...incomingTrack, takes } : incomingTrack;
+    });
+
+    return didRestoreWorkCapture ? { ...incomingWork, tracks } : incomingWork;
+  });
+
+  return didRestoreCapture ? { ...incomingLibrary, works } : incomingLibrary;
+}
+
+function reconcileCountersWithLibrarySnapshot(
+  counters: GarakProductState['counters'],
+  library: ProductLibraryState,
+): GarakProductState['counters'] {
+  let maxTrackCounter = 0;
+  let maxTakeCounter = 0;
+
+  for (const work of library.works) {
+    for (const track of work.tracks) {
+      maxTrackCounter = Math.max(maxTrackCounter, parseIdCounter(track.id, 'track-'));
+      if (track.kind === 'instrument') {
+        for (const take of track.takes) {
+          maxTakeCounter = Math.max(maxTakeCounter, parseIdCounter(take.id, 'take-'));
+        }
+      }
+    }
+  }
+
+  return {
+    ...counters,
+    work: Math.max(counters.work, ...library.works.map((work) => parseIdCounter(work.id, 'work-'))),
+    track: Math.max(counters.track, maxTrackCounter),
+    take: Math.max(counters.take, maxTakeCounter),
+    export: Math.max(
+      counters.export,
+      ...library.exportedAudios.map((audio) => parseIdCounter(audio.id, 'export-')),
+    ),
+    practiceResult: Math.max(
+      counters.practiceResult,
+      ...library.practiceResults.map((result) => parseIdCounter(result.id, 'practice-')),
+    ),
+  };
+}
+
+function parseIdCounter(id: string, prefix: string): number {
+  if (!id.startsWith(prefix)) {
+    return 0;
+  }
+
+  const parsed = Number.parseInt(id.slice(prefix.length), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function isCaptureFileUri(value: string): boolean {
+  return /^(file|content):\/\/\S+/i.test(value.trim());
+}
+
+function normalizeRecordedPerformanceEvents(
+  events: PerformanceEvent[],
+  startedAtMs: number,
+): PerformanceEvent[] {
+  if (!Number.isFinite(startedAtMs) || startedAtMs <= 0) {
+    return events;
+  }
+
+  return events.map((event) => {
+    if (!Number.isFinite(event.tsMs)) {
+      return event;
+    }
+
+    const relativeTsMs =
+      event.tsMs > ABSOLUTE_PERFORMANCE_EVENT_TIMESTAMP_THRESHOLD_MS
+        ? Math.max(0, event.tsMs - startedAtMs)
+        : Math.max(0, event.tsMs);
+
+    return relativeTsMs === event.tsMs
+      ? event
+      : {
+          ...event,
+          tsMs: relativeTsMs,
+        };
+  });
+}
+
+function hasEmptyFailedPendingTake(state: GarakProductState): boolean {
+  return state.pendingFreePlayTake !== undefined &&
+    state.pendingFreePlayTake.events.length === 0 &&
+    normalizeOptionalText(state.pendingFreePlayTake.recordingUri) === undefined &&
+    state.recordingCaptureStatus.status === 'failed';
 }
 
 function clampBpm(preset: { minBpm: number; maxBpm: number }, bpm: number): number {
@@ -1556,6 +2258,14 @@ function applyInstrumentTrack(
   }
 
   const pendingTake = state.pendingFreePlayTake;
+  if (hasEmptyFailedPendingTake(state)) {
+    return {
+      ...state,
+      pendingFreePlayTake: undefined,
+      freePlayRecordingSetup: undefined,
+    };
+  }
+
   const hasRecordedTake = pendingTake !== undefined || events.length > 0;
   if (!hasRecordedTake) {
     return state;
@@ -1586,6 +2296,15 @@ function applyInstrumentTrack(
   return {
     ...replaceCurrentWork(state, nextWork, nextCounters, nextScreenFlow),
     pendingFreePlayTake: undefined,
+    recordingCaptureStatus: shouldStopRecordingCaptureAfterCompletion(state.recordingCaptureStatus)
+      ? {
+          status: 'stopping',
+          instrument: state.recordingCaptureStatus.instrument,
+          captureAttemptId: state.recordingCaptureStatus.captureAttemptId,
+        }
+      : state.recordingCaptureStatus.status === 'failed'
+        ? state.recordingCaptureStatus
+        : { status: 'idle' },
   };
 }
 
@@ -1694,43 +2413,175 @@ function clampTrackVolume(volume: number): number {
   return Math.min(1, Math.max(0, Math.round(volume * 100) / 100));
 }
 
+type WorkExportArtifact = {
+  audioUri: string;
+  renderKind: ExportRenderKind;
+  sourceTakeId?: string;
+  sourceEventCount?: number;
+  sourceRecordingUri?: string;
+};
+
+type WorkExportArtifactResult =
+  | { status: 'ok'; artifact: WorkExportArtifact }
+  | { status: 'failed'; message: string };
+
+function createWorkExportArtifact(work: Work): WorkExportArtifactResult {
+  const mixPlan = createWorkMixPlan(work);
+  if (mixPlan.tracks.length === 0) {
+    return {
+      status: 'failed',
+      message: 'No audible tracks are available to export.',
+    };
+  }
+
+  const audibleTrackIds = new Set(mixPlan.tracks.map((track) => track.trackId));
+  const eventTake = findFirstInstrumentTake(work, (take) => take.events.length > 0, audibleTrackIds);
+  if (eventTake !== undefined) {
+    return {
+      status: 'ok',
+      artifact: {
+        audioUri: EXPORT_FALLBACK_AUDIO_URI,
+        renderKind: 'event_replay',
+        sourceTakeId: eventTake.id,
+        sourceEventCount: countWorkMixPlanInstrumentEvents(work, mixPlan),
+      },
+    };
+  }
+
+  const capturedTake = findFirstInstrumentTake(
+    work,
+    (take) => {
+      const recordingUri = normalizeOptionalText(take.recordingUri);
+      return recordingUri !== undefined && isCaptureFileUri(recordingUri);
+    },
+    audibleTrackIds,
+  );
+  if (capturedTake !== undefined) {
+    const recordingUri = normalizeOptionalText(capturedTake.recordingUri) as string;
+    return {
+      status: 'ok',
+      artifact: {
+        audioUri: recordingUri,
+        renderKind: 'audio_capture',
+        sourceTakeId: capturedTake.id,
+        sourceRecordingUri: recordingUri,
+      },
+    };
+  }
+
+  const referenceTrack = findFirstReferenceTrack(work, audibleTrackIds);
+  if (referenceTrack !== undefined) {
+    const recording = findSharedRecordingById(referenceTrack.sourceShareId);
+    if (recording === undefined) {
+      return {
+        status: 'failed',
+        message: 'Reference audio source is unavailable.',
+      };
+    }
+
+    return {
+      status: 'ok',
+      artifact: {
+        audioUri: createSharedRecordingLibraryAudioUri(recording),
+        renderKind: 'demo_sample',
+      },
+    };
+  }
+
+  return {
+    status: 'ok',
+    artifact: {
+      audioUri: EXPORT_FALLBACK_AUDIO_URI,
+      renderKind: 'demo_sample',
+    },
+  };
+}
+
+function findFirstInstrumentTake(
+  work: Work,
+  predicate: (take: Take) => boolean,
+  trackIds?: ReadonlySet<string>,
+): Take | undefined {
+  for (const track of work.tracks) {
+    if (trackIds !== undefined && !trackIds.has(track.id)) {
+      continue;
+    }
+
+    if (track.kind !== 'instrument') {
+      continue;
+    }
+
+    const take = track.takes.find(predicate);
+    if (take !== undefined) {
+      return take;
+    }
+  }
+
+  return undefined;
+}
+
+function findInstrumentTakeById(
+  work: Work,
+  takeId: string,
+): { track: Extract<Track, { kind: 'instrument' }>; take: Take } | undefined {
+  for (const track of work.tracks) {
+    if (track.kind !== 'instrument') {
+      continue;
+    }
+
+    const take = track.takes.find((candidate) => candidate.id === takeId);
+    if (take !== undefined) {
+      return { track, take };
+    }
+  }
+
+  return undefined;
+}
+
+function findFirstReferenceTrack(
+  work: Work,
+  trackIds?: ReadonlySet<string>,
+): Extract<Track, { kind: 'reference' }> | undefined {
+  for (const track of work.tracks) {
+    if (trackIds !== undefined && !trackIds.has(track.id)) {
+      continue;
+    }
+
+    if (track.kind === 'reference') {
+      return track;
+    }
+  }
+
+  return undefined;
+}
+
 function exportCurrentWork(state: GarakProductState): GarakProductState {
+  if (hasPendingRecordingCaptureFinalization(state)) {
+    return state;
+  }
+
   const currentWork = findCurrentWork(state);
   if (currentWork === undefined) {
     return state;
   }
 
-  const nextCounters = incrementCounters(state.counters, ['export']);
-  const exported = exportWorkAudioPlaceholder({
-    id: `export-${nextCounters.export}`,
-    work: currentWork,
-    title: `${currentWork.title} 내보내기`,
-    audioUri: `placeholder://export-${nextCounters.export}.wav`,
-    durationSeconds: 24,
-    createdAt: state.now(),
-  });
-
+  const artifactResult = createWorkExportArtifact(currentWork);
+  if (artifactResult.status === 'failed') {
+    return {
+      ...state,
+      workExportStatus: {
+        status: 'failed',
+        workId: currentWork.id,
+        message: artifactResult.message,
+      },
+    };
+  }
   return {
     ...state,
-    counters: nextCounters,
-    library: {
-      ...state.library,
-      exportedAudios: [...state.library.exportedAudios, exported],
-    },
-    selectedPlayerItem: {
-      kind: 'exportedAudio',
-      exportedAudioId: exported.id,
-    },
     workExportStatus: {
-      status: 'ready',
-      exportedAudioId: exported.id,
+      status: 'exporting',
+      workId: currentWork.id,
     },
-    screenFlow: transitionScreenFlow(
-      state.screenFlow.currentScreen === 'S07'
-        ? state.screenFlow
-        : pushTarget(state.screenFlow, 'S07'),
-      { type: 'exportCurrentWork' },
-    ),
   };
 }
 
@@ -1758,6 +2609,10 @@ function saveCurrentWork(state: GarakProductState): GarakProductState {
 }
 
 function saveAndShareCurrentWork(state: GarakProductState): GarakProductState {
+  if (hasPendingRecordingCaptureFinalization(state)) {
+    return state;
+  }
+
   const currentWork = findCurrentWork(state);
   if (currentWork === undefined) {
     return state;
@@ -1768,6 +2623,7 @@ function saveAndShareCurrentWork(state: GarakProductState): GarakProductState {
     updatedAt: state.now(),
     syncState: 'local_only',
   };
+  const exportArtifact = createWorkExportArtifact(savedWork);
 
   return {
     ...state,
@@ -1777,10 +2633,17 @@ function saveAndShareCurrentWork(state: GarakProductState): GarakProductState {
     },
     workSaveStatus: 'saving',
     workSaveErrorMessage: undefined,
-    workExportStatus: {
-      status: 'exporting',
-      workId: savedWork.id,
-    },
+    workExportStatus:
+      exportArtifact.status === 'failed'
+        ? {
+            status: 'failed',
+            workId: savedWork.id,
+            message: exportArtifact.message,
+          }
+        : {
+            status: 'exporting',
+            workId: savedWork.id,
+          },
     sharePublishStatus: { status: 'idle' },
   };
 }
@@ -1794,14 +2657,123 @@ function completeWorkAudioExport(
     return state;
   }
 
+  if (
+    state.workExportStatus.status !== 'exporting' ||
+    state.workExportStatus.workId !== action.workId
+  ) {
+    return state;
+  }
+
+  const failExport = (message: string): GarakProductState => ({
+    ...state,
+    workExportStatus: {
+      status: 'failed',
+      workId: work.id,
+      message,
+    },
+  });
+  const audioUri = normalizeOptionalText(action.audioUri);
+  const sourceTakeId = normalizeOptionalText(action.sourceTakeId);
+  const sourceRecordingUri = normalizeOptionalText(action.sourceRecordingUri);
+  const actionSourceEventCount = action.sourceEventCount;
+  const sourceEventCount =
+    typeof actionSourceEventCount === 'number' &&
+    Number.isInteger(actionSourceEventCount) &&
+    actionSourceEventCount > 0
+      ? actionSourceEventCount
+      : undefined;
+
+  if (audioUri === undefined) {
+    return failExport('Audio export returned an empty audio URI.');
+  }
+
+  if (!Number.isFinite(action.durationSeconds) || action.durationSeconds <= 0) {
+    return failExport('Audio export returned a non-positive duration.');
+  }
+
+  if (action.renderKind === 'audio_capture' && sourceTakeId === undefined) {
+    return failExport('Audio capture export returned no source take ID.');
+  }
+
+  if (action.renderKind === 'audio_capture' && sourceRecordingUri === undefined) {
+    return failExport('Audio capture export returned no source recording URI.');
+  }
+
+  if (action.renderKind === 'audio_capture' && !isCaptureFileUri(audioUri)) {
+    return failExport('Audio capture export returned no capture audio URI.');
+  }
+
+  if (
+    action.renderKind === 'audio_capture' &&
+    sourceRecordingUri !== undefined &&
+    !isCaptureFileUri(sourceRecordingUri)
+  ) {
+    return failExport('Audio capture export returned a non-file source recording URI.');
+  }
+
+  if (action.renderKind === 'event_replay' && sourceTakeId === undefined) {
+    return failExport('Event replay export returned no source take ID.');
+  }
+
+  if (action.renderKind === 'event_replay' && sourceEventCount === undefined) {
+    return failExport('Event replay export returned no source event count.');
+  }
+
+  if (action.renderKind === 'event_replay') {
+    const sourceTake = findInstrumentTakeById(work, sourceTakeId as string);
+    if (sourceTake === undefined) {
+      return failExport('Event replay export source take is not available in the work.');
+    }
+
+    if (sourceTake.take.events.length === 0) {
+      return failExport('Event replay export source take has no recorded events.');
+    }
+
+    if (countWorkMixPlanInstrumentEvents(work) !== sourceEventCount) {
+      return failExport('Event replay export source events changed after export rendering.');
+    }
+
+    const audibleTrackIds = new Set(createWorkMixPlan(work).tracks.map((track) => track.trackId));
+    if (!audibleTrackIds.has(sourceTake.track.id)) {
+      return failExport('Event replay export source take is not audible in the exported work.');
+    }
+  }
+
+  if (action.renderKind === 'audio_capture') {
+    const sourceTake = findInstrumentTakeById(work, sourceTakeId as string);
+    if (sourceTake === undefined) {
+      return failExport('Audio capture export source take is not available in the work.');
+    }
+
+    const audibleTrackIds = new Set(createWorkMixPlan(work).tracks.map((track) => track.trackId));
+    if (!audibleTrackIds.has(sourceTake.track.id)) {
+      return failExport('Audio capture export source take is not audible in the exported work.');
+    }
+
+    const takeRecordingUri = normalizeOptionalText(sourceTake.take.recordingUri);
+    if (takeRecordingUri === undefined) {
+      return failExport('Audio capture export source take has no recording URI.');
+    }
+
+    if (takeRecordingUri !== sourceRecordingUri) {
+      return failExport(
+        'Audio capture export source recording URI does not match the source take.',
+      );
+    }
+  }
+
   const nextCounters = incrementCounters(state.counters, ['export']);
   const exported = exportWorkAudioPlaceholder({
     id: `export-${nextCounters.export}`,
     work,
     title: `${work.title} 내보내기`,
-    audioUri: action.audioUri,
-    durationSeconds: action.durationSeconds ?? 24,
+    audioUri,
+    durationSeconds: action.durationSeconds,
     createdAt: state.now(),
+    renderKind: action.renderKind,
+    sourceTakeId,
+    sourceEventCount,
+    sourceRecordingUri,
   });
 
   return {
@@ -1821,14 +2793,21 @@ function completeWorkAudioExport(
       exportedAudioId: exported.id,
     },
     screenFlow:
-      state.screenFlow.currentScreen === 'S17'
-        ? state.screenFlow
-        : transitionScreenFlow(
+      action.completionTarget === 'player'
+        ? transitionScreenFlow(
             state.screenFlow.currentScreen === 'S07'
               ? state.screenFlow
               : pushTarget(state.screenFlow, 'S07'),
-            { type: 'saveAndShareCurrentWork' },
-          ),
+            { type: 'exportCurrentWork' },
+          )
+        : state.screenFlow.currentScreen === 'S17'
+          ? state.screenFlow
+          : transitionScreenFlow(
+              state.screenFlow.currentScreen === 'S07'
+                ? state.screenFlow
+                : pushTarget(state.screenFlow, 'S07'),
+              { type: 'saveAndShareCurrentWork' },
+            ),
   };
 }
 
@@ -1880,7 +2859,11 @@ function createPracticeResultAndRoute(
 }
 
 function remixSharedRecording(state: GarakProductState): GarakProductState {
-  const recording = getSelectedSharedRecording(state);
+  const recording = findSelectedSharedRecording(state);
+
+  if (recording === undefined) {
+    return failSelectedSharedRecordingAction(state);
+  }
 
   if (!recording.remixable) {
     return state;
@@ -1931,8 +2914,15 @@ function remixSharedRecording(state: GarakProductState): GarakProductState {
 }
 
 function saveSharedRecording(state: GarakProductState): GarakProductState {
-  const recording = getSelectedSharedRecording(state);
+  const recording = findSelectedSharedRecording(state);
+
+  if (recording === undefined) {
+    return failSelectedSharedRecordingAction(state);
+  }
+
   const nextCounters = incrementCounters(state.counters, ['export']);
+  const playableAudioUri = createSharedRecordingLibraryAudioUri(recording);
+  const usesDemoSample = playableAudioUri !== recording.audioUri.trim();
   const exported: ExportedAudio = {
     id: `export-${nextCounters.export}`,
     kind: 'exported_audio',
@@ -1940,7 +2930,8 @@ function saveSharedRecording(state: GarakProductState): GarakProductState {
     durationSeconds: recording.durationSeconds,
     instrumentNames: [getInstrumentName(recording.instrument)],
     createdAt: state.now(),
-    audioUri: recording.audioUri,
+    audioUri: playableAudioUri,
+    renderKind: usesDemoSample ? 'demo_sample' : undefined,
     shareState: 'ready',
     sourceShareId: recording.id,
     authorDisplayName: recording.authorDisplayName,
@@ -1965,8 +2956,23 @@ function saveSharedRecording(state: GarakProductState): GarakProductState {
   };
 }
 
-function getSelectedSharedRecording(state: GarakProductState): SharedRecording {
-  return getSharedRecordingById(state.selectedSharedRecordingId);
+function findSelectedSharedRecording(state: GarakProductState): SharedRecording | undefined {
+  if (state.selectedSharedRecordingId === undefined) {
+    return FEATURED_SHARED_RECORDING;
+  }
+
+  return findSharedRecordingById(state.selectedSharedRecordingId);
+}
+
+function failSelectedSharedRecordingAction(state: GarakProductState): GarakProductState {
+  return {
+    ...state,
+    playingSharedRecordingId: undefined,
+    playerPlaybackStatus: {
+      status: 'failed',
+      message: 'Selected shared recording is unavailable.',
+    },
+  };
 }
 
 function publishShareTarget(state: GarakProductState): GarakProductState {
@@ -1993,6 +2999,14 @@ function completeSharePublish(
   state: GarakProductState,
   action: Extract<GarakProductAction, { type: 'completeSharePublish' }>,
 ): GarakProductState {
+  if (
+    state.sharePublishStatus.status !== 'publishing' ||
+    !shareTargetReferencesEqual(state.sharePublishStatus.target, action.target) ||
+    !hasShareTargetReference(state, action.target)
+  ) {
+    return state;
+  }
+
   const selection = shareTargetReferenceToSelection(action.target);
   const sharedAt = state.now();
   const sharedFields = {
@@ -2047,6 +3061,30 @@ function completeSharePublish(
         ? transitionScreenFlow(state.screenFlow, { type: 'publishShareTarget' })
         : pushTarget(state.screenFlow, 'S20'),
   };
+}
+
+function shareTargetReferencesEqual(
+  left: ShareTargetReference,
+  right: ShareTargetReference,
+): boolean {
+  return left.kind === right.kind && left.id === right.id;
+}
+
+function hasShareTargetReference(
+  state: GarakProductState,
+  target: ShareTargetReference,
+): boolean {
+  if (target.kind === 'exportedAudio') {
+    return state.library.exportedAudios.some(
+      (audio) => audio.id === target.id && hasShareableExportSource(state, audio),
+    );
+  }
+
+  return state.library.practiceResults.some((result) => result.id === target.id);
+}
+
+function hasShareableExportSource(state: GarakProductState, audio: ExportedAudio): boolean {
+  return isPlayableExportedAudioForPlayback(state.library.works, audio);
 }
 
 function shareSelectedPlayerItem(state: GarakProductState): GarakProductState {
@@ -2141,7 +3179,11 @@ function resolveShareTargetSelection(
   const selected = state.selectedPlayerItem;
 
   if (selected?.kind === 'exportedAudio') {
-    return state.library.exportedAudios.some((audio) => audio.id === selected.exportedAudioId)
+    return state.library.exportedAudios.some(
+      (audio) =>
+        audio.id === selected.exportedAudioId &&
+        hasShareableExportSource(state, audio),
+    )
       ? selected
       : undefined;
   }
@@ -2156,13 +3198,15 @@ function resolveShareTargetSelection(
     return undefined;
   }
 
-  const newestExport = state.library.exportedAudios.map((audio) => ({
-    createdAt: audio.createdAt,
-    selection: {
-      kind: 'exportedAudio',
-      exportedAudioId: audio.id,
-    } as const,
-  }));
+  const newestExport = state.library.exportedAudios
+    .filter((audio) => hasShareableExportSource(state, audio))
+    .map((audio) => ({
+      createdAt: audio.createdAt,
+      selection: {
+        kind: 'exportedAudio',
+        exportedAudioId: audio.id,
+      } as const,
+    }));
   const newestPracticeResult = state.library.practiceResults.map((result) => ({
     createdAt: result.createdAt,
     selection: {
@@ -2231,6 +3275,50 @@ function replaceCurrentWork(
 
 function findCurrentWork(state: GarakProductState): Work | undefined {
   return state.library.works.find((work) => work.id === state.currentWorkId);
+}
+
+export function hasPendingRecordingCaptureFinalization(
+  state: Pick<GarakProductState, 'currentWorkId' | 'library' | 'recordingCaptureStatus'>,
+): boolean {
+  if (
+    state.recordingCaptureStatus.status === 'starting' ||
+    state.recordingCaptureStatus.status === 'capturing' ||
+    state.recordingCaptureStatus.status === 'discarding'
+  ) {
+    return true;
+  }
+
+  if (state.recordingCaptureStatus.status !== 'stopping') {
+    return false;
+  }
+
+  return !latestCurrentInstrumentTakeHasRecordingUri(state);
+}
+
+function latestCurrentInstrumentTakeHasRecordingUri(
+  state: Pick<GarakProductState, 'currentWorkId' | 'library'>,
+): boolean {
+  const work = state.library.works.find((item) => item.id === state.currentWorkId);
+  if (work === undefined) {
+    return false;
+  }
+
+  for (let trackIndex = work.tracks.length - 1; trackIndex >= 0; trackIndex -= 1) {
+    const track = work.tracks[trackIndex];
+    if (track.kind !== 'instrument') {
+      continue;
+    }
+
+    for (let takeIndex = track.takes.length - 1; takeIndex >= 0; takeIndex -= 1) {
+      if (normalizeOptionalText(track.takes[takeIndex].recordingUri) !== undefined) {
+        return true;
+      }
+
+      return false;
+    }
+  }
+
+  return false;
 }
 
 function pushTarget(screenFlow: ScreenFlowState, target: ImplementedScreenId): ScreenFlowState {

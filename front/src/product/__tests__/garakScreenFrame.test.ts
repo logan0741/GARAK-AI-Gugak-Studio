@@ -19,7 +19,7 @@ const getProductAssetSha256 = (assetName: string) =>
     .digest('hex')
     .toUpperCase();
 
-test('uses a landscape non-scroll frame for performance-focused screens', () => {
+test('uses a landscape non-scroll frame for performance and recording screens', () => {
   expect(PERFORMANCE_LANDSCAPE_SCREEN_IDS).toEqual(['S05', 'S09', 'S15']);
 
   for (const screenId of PERFORMANCE_LANDSCAPE_SCREEN_IDS) {
@@ -30,12 +30,13 @@ test('uses a landscape non-scroll frame for performance-focused screens', () => 
   }
 });
 
-test('keeps setup, editing, guide, and library screens in the portrait scroll frame', () => {
+test('keeps setup, guide, home browsing, and library screens in the portrait scroll frame', () => {
   expect(getGarakScreenFrameConfig('S01')).toEqual({ mode: 'portrait', scrollable: true });
   expect(getGarakScreenFrameConfig('S04A')).toEqual({ mode: 'portrait', scrollable: true });
   expect(getGarakScreenFrameConfig('S07')).toEqual({ mode: 'portrait', scrollable: true });
   expect(getGarakScreenFrameConfig('S10A')).toEqual({ mode: 'portrait', scrollable: true });
   expect(getGarakScreenFrameConfig('S18')).toEqual({ mode: 'portrait', scrollable: true });
+  expect(getGarakScreenFrameConfig('S20')).toEqual({ mode: 'portrait', scrollable: true });
 });
 
 test('ships the Figma janggu stage bitmap for the landscape free-play surface', () => {

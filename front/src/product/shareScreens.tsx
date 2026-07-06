@@ -1,7 +1,7 @@
 import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { GARAK_COLORS, GARAK_LAYOUT } from './garakDesignSystem';
 import { GARAK_SCREEN_ASSETS } from './garakScreenAssets';
-import { GarakProductAction, GarakProductState, ProductPlayerSelection } from './garakProductState';
+import { GarakProductAction, GarakProductState } from './garakProductState';
 import {
   getSharedDetailViewModel,
   getShareFeedViewModel,
@@ -58,6 +58,11 @@ export function SharePrepareContent({
         {model.publishErrorMessage ? (
           <Text style={styles.shareErrorText}>{model.publishErrorMessage}</Text>
         ) : null}
+        {model.playbackNotice ? (
+          <Text accessibilityLiveRegion="polite" style={styles.shareErrorText}>
+            {model.playbackNotice}
+          </Text>
+        ) : null}
       </View>
       <View style={[styles.buttonRow, styles.prepareButtonGrid]}>
         <SecondaryPillButton
@@ -107,6 +112,7 @@ export function ShareFeedContent({
   const model = getShareFeedViewModel(state);
   const sharePrepareAction = getSharePrepareAction(state);
   const firstRecentCard = model.recentCards[0];
+  const sharePlayerAction = model.player.playAction;
 
   return (
     <View style={styles.shareFeedStack}>
@@ -197,7 +203,14 @@ export function ShareFeedContent({
         <Text style={styles.chevron}>›</Text>
       </Pressable>
 
-      <SharePlayerCard player={model.player} onPress={() => openSharePlayer(model.player, dispatch)} />
+      <SharePlayerCard
+        player={model.player}
+        onPress={
+          sharePlayerAction === undefined
+            ? undefined
+            : () => dispatch(sharePlayerAction)
+        }
+      />
 
       <Pressable
         accessibilityRole="button"
@@ -250,8 +263,10 @@ function SharePlayerCard({
   onPress,
 }: {
   player: ShareFeedPlayer;
-  onPress: () => void;
+  onPress?: () => void;
 }) {
+  const isDisabled = onPress === undefined;
+
   return (
     <View style={styles.sharePlayerDeck}>
       <View style={[styles.sharePlayerShadowCard, styles.sharePlayerShadowBack]} />
@@ -259,8 +274,10 @@ function SharePlayerCard({
       <Pressable
         accessibilityLabel={player.title}
         accessibilityRole="button"
+        accessibilityState={{ disabled: isDisabled }}
+        disabled={isDisabled}
         onPress={onPress}
-        style={styles.sharePlayerCard}
+        style={[styles.sharePlayerCard, isDisabled ? styles.sharePlayerCardDisabled : undefined]}
       >
         <Image source={GARAK_SCREEN_ASSETS.share.playerThumbnail} style={styles.sharePlayerThumbnail} />
         <View style={styles.sharePlayerInfo}>
@@ -273,8 +290,6 @@ function SharePlayerCard({
         </View>
         <View style={styles.sharePlayerControls}>
           <Text style={styles.sharePlayerIcon}>▶</Text>
-          <Text style={styles.sharePlayerIcon}>Ⅱ</Text>
-          <Text style={styles.sharePlayerIcon}>⇧</Text>
         </View>
       </Pressable>
     </View>
@@ -319,29 +334,6 @@ function ShareRecentCardView({
   );
 }
 
-function openSharePlayer(player: ShareFeedPlayer, dispatch: ProductDispatch) {
-  dispatch({
-    type: 'playLibraryItem',
-    item: toProductPlayerSelection(player),
-  });
-}
-
-function toProductPlayerSelection(player: ShareFeedPlayer): ProductPlayerSelection {
-  if (player.sourceKind === 'work' && player.workId !== undefined) {
-    return { kind: 'work', workId: player.workId };
-  }
-
-  if (player.sourceKind === 'exportedAudio' && player.exportedAudioId !== undefined) {
-    return { kind: 'exportedAudio', exportedAudioId: player.exportedAudioId };
-  }
-
-  if (player.sourceKind === 'practiceResult' && player.practiceResultId !== undefined) {
-    return { kind: 'practiceResult', practiceResultId: player.practiceResultId };
-  }
-
-  return { kind: 'demo', title: player.title };
-}
-
 const RECENT_CARD_ARTWORK = {
   floral: GARAK_SCREEN_ASSETS.share.recentFloral,
   dancheong: GARAK_SCREEN_ASSETS.share.recentDancheong,
@@ -369,9 +361,15 @@ export function SharedDetailContent({
       <Text style={styles.bodyText}>
         {model.provenanceLabel} · {model.durationLabel} · {model.remixStatusLabel}
       </Text>
+      {model.playbackNotice ? (
+        <Text accessibilityLiveRegion="polite" style={styles.shareErrorText}>
+          {model.playbackNotice}
+        </Text>
+      ) : null}
       <View style={styles.buttonRow}>
         <PrimaryPillButton
           label={playbackLabel}
+          disabled={playbackAction === undefined}
           onPress={() => {
             if (playbackAction !== undefined) {
               dispatch(playbackAction);
@@ -390,7 +388,15 @@ export function SharedDetailContent({
           }}
           style={styles.rowPrimary}
         />
-        <SecondaryPillButton label="저장" onPress={() => dispatch(model.actions.save)} />
+        <SecondaryPillButton
+          disabled={model.actions.save === undefined}
+          label="저장"
+          onPress={() => {
+            if (model.actions.save !== undefined) {
+              dispatch(model.actions.save);
+            }
+          }}
+        />
       </View>
     </View>
   );
@@ -574,6 +580,9 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     ...garakCardShadow,
+  },
+  sharePlayerCardDisabled: {
+    opacity: 0.48,
   },
   sharePlayerThumbnail: {
     borderRadius: 22,

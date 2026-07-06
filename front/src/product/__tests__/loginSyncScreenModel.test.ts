@@ -5,8 +5,53 @@ import { getLoginSyncViewModel } from '../loginSyncScreenModel';
 
 function completeRecordedFreePlay(state: ReturnType<typeof createInitialGarakProductState>) {
   state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const captureAttemptId = requireRecordingCaptureAttemptId(state);
+  state = applyProductAction(state, {
+    type: 'appendFreePlayPerformanceEvents',
+    events: [{ type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 }],
+  });
 
-  return applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  return applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    durationSeconds: 8,
+    captureAttemptId,
+  });
+}
+
+function completeCurrentWorkExport(state: ReturnType<typeof createInitialGarakProductState>) {
+  const workId = state.currentWorkId;
+  if (workId === undefined) {
+    throw new Error('Expected a current work before completing export.');
+  }
+
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+
+  return applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'garak://library-demo/export-fallback',
+    durationSeconds: 24,
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-1',
+    sourceEventCount: 1,
+    completionTarget: 'player',
+  });
+}
+
+function requireRecordingCaptureAttemptId(
+  state: ReturnType<typeof createInitialGarakProductState>,
+): string {
+  if ('captureAttemptId' in state.recordingCaptureStatus) {
+    return state.recordingCaptureStatus.captureAttemptId;
+  }
+
+  throw new Error('Expected an active recording capture attempt.');
 }
 
 test('previews S23 account sync without dropping local library items', () => {
@@ -20,7 +65,7 @@ test('previews S23 account sync without dropping local library items', () => {
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
 
   const model = getLoginSyncViewModel(state);
 
