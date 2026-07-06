@@ -35,9 +35,20 @@ test('injects runtime product services from the auth entry point', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/GarakAuthEntryApp.tsx'), 'utf8');
 
   expect(source).toContain('createRuntimeGarakProductServices');
+  expect(source).toContain("import * as ExpoFileSystem from 'expo-file-system/legacy'");
+  expect(source).toContain('createExpoFileSystemRecordingCaptureStoragePort');
   expect(source).toContain('const productServices = useMemo(');
   expect(source).toContain('sessionStore');
+  expect(source).toContain('recordingCaptureStorage');
   expect(source).toContain('services={productServices}');
+});
+
+test('does not inject native microphone capture from the presentation app entry point', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakAuthEntryApp.tsx'), 'utf8');
+
+  expect(source).not.toContain('createExpoRecordingCapturePort');
+  expect(source).not.toContain('recordingCapture:');
+  expect(source).not.toContain('startRecordingProbe');
 });
 
 test('accepts product services and runs effect follow-up actions after dispatch', () => {
@@ -47,6 +58,13 @@ test('accepts product services and runs effect follow-up actions after dispatch'
   expect(source).toContain('createLocalGarakProductServices');
   expect(source).toContain('runGarakProductEffect');
   expect(source).toContain('followUpActions.forEach(dispatch)');
+});
+
+test('does not queue product effects when a dispatched action is a reducer no-op', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
+
+  expect(source).toContain('if (next === current.productState) {');
+  expect(source).toContain('return current;');
 });
 
 test('uses the Figma completed instrument stack for S08 after adding a track', () => {
@@ -313,7 +331,34 @@ test('connects S19 player playback to selected library item state', () => {
   expect(source).toContain('playerActions.pauseAction');
   expect(source).toContain('playerActions.playAction');
   expect(source).toContain('accessibilityLabel={playbackLabel}');
+  expect(source).toContain('styles.playingPlayButtonDisabled');
   expect(source).toContain('dispatch(playbackAction)');
+  expect(source).toContain('player.playbackNotice');
+});
+
+test('keeps the S20 share feed player card to one actionable play affordance', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+  const playerCardSource = source.slice(
+    source.indexOf('function SharePlayerCard'),
+    source.indexOf('function ShareRecentCardView'),
+  );
+
+  expect(playerCardSource).toContain('onPress={onPress}');
+  expect(playerCardSource).toContain('styles.sharePlayerCardDisabled');
+  expect(playerCardSource).toContain('▶');
+  expect(playerCardSource).not.toContain('Ⅱ');
+  expect(playerCardSource).not.toContain('⇧');
+});
+
+test('disables the S21 shared detail playback button when no playback action exists', () => {
+  const source = readFileSync(resolve(process.cwd(), 'src/product/shareScreens.tsx'), 'utf8');
+  const sharedDetailSource = source.slice(
+    source.indexOf('export function SharedDetailContent'),
+    source.indexOf('const styles = StyleSheet.create'),
+  );
+
+  expect(sharedDetailSource).toContain('const playbackAction = model.isPlaying ? model.actions.pause : model.actions.play');
+  expect(sharedDetailSource).toContain('disabled={playbackAction === undefined}');
 });
 
 test('uses the Figma instrument selection design for the free-creation instrument screen', () => {
@@ -444,6 +489,8 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
 
   expect(source).toContain('LandscapeStageActionHits');
   expect(source).toContain('LandscapeStageNotice');
+  expect(source).toContain('LandscapeRecordingStatusBadge');
+  expect(source).toContain('performanceCaptureModel={performanceCaptureModel}');
   expect(source).toContain("visible={state.freePlayNotice === 'missingTake'}");
   expect(source).toContain("accessibilityLabel={isRecordingPerformance ? '연주 완료' : '녹음 시작'}");
   expect(source).toContain("type: 'openFreePlayRecordingSetup'");
@@ -453,17 +500,21 @@ test('connects S05 embedded Figma landscape stage hotspots to free-play actions'
   expect(source).toContain("type: 'completePerformance'");
 });
 
-test('keeps S05 live audio UI quiet unless loading or recoverable failure', () => {
+test('renders S05 live audio readiness from the status model without sampler internals', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
   const statusSource = source.slice(
     source.indexOf('function FreePlayLiveAudioStatusBadge'),
     source.indexOf('function FreePlayRecordingSetupSheet'),
   );
 
-  expect(statusSource).toContain("status.status === 'idle' || status.status === 'ready'");
-  expect(statusSource).toContain("if (status.status === 'failed')");
-  expect(statusSource).toContain("type: 'retryLivePerformanceAudioPreparation'");
-  expect(statusSource).not.toContain('const isFailed');
+  expect(statusSource).toContain("if (status.status === 'idle')");
+  expect(statusSource).toContain('getFreePlayLiveAudioStatusModel(status)');
+  expect(statusSource).toContain('statusModel.qaReadinessLabel ?? statusModel.label');
+  expect(statusSource).toContain('statusModel.visible === false');
+  expect(statusSource).toContain('styles.liveAudioStatusQaMarker');
+  expect(statusSource).toContain('statusModel.label');
+  expect(statusSource).toContain('statusModel.detailLabel');
+  expect(statusSource).toContain('dispatch(retryAction)');
   expect(statusSource).not.toContain('sampleSourceLabel');
   expect(statusSource).not.toContain('releaseReady');
   expect(statusSource).not.toContain('개발용 샘플');
@@ -496,6 +547,10 @@ test('keeps S05 landscape control hits on visible controls instead of the instru
 
 test('connects S05 and S09 performance surfaces to captured input events', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const extraInstrumentSource = source.slice(
+    source.indexOf('export function ExtraInstrumentRecordContent'),
+    source.indexOf('export function LiveJangdanContent'),
+  );
 
   expect(source).toContain('createFreePlayInstrumentTouchModel');
   expect(source).toContain('PanResponder');
@@ -504,8 +559,13 @@ test('connects S05 and S09 performance surfaces to captured input events', () =>
   expect(source).toContain('PerformanceCaptureSurface');
   expect(source).toContain('performanceCapture.panHandlers');
   expect(source).toContain('onPerformanceEvents={appendPerformanceEvents}');
+  expect(source).toContain('canPlayLivePerformanceEvents');
+  expect(source).toContain('liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}');
+  expect(source).toContain('if (liveAudioPlaybackEnabledRef.current)');
   expect(source).toContain('onLivePerformanceEvents');
   expect(source).toContain('onLivePerformanceEventsRef.current?.(events)');
+  expect(extraInstrumentSource).toContain('liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}');
+  expect(extraInstrumentSource).toContain('<FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} />');
 });
 
 test('adds instrument-specific non-text touch affordances to the S05 performance stage', () => {
@@ -566,6 +626,7 @@ test('connects S05 recording start separately from completion and missing-take g
   expect(source).toContain("type: 'completePerformance'");
   expect(source).toContain("type: 'openLayerEditor'");
   expect(source).toContain("state.freePlayNotice === 'missingTake'");
+  expect(source).toContain('performanceCaptureModel.recordingProgressLabel !== undefined');
   expect(source).toContain('저장할 테이크가 없어요');
   expect(source).toContain('녹음 전 설정');
   expect(source).toContain("label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}");
@@ -574,20 +635,30 @@ test('connects S05 recording start separately from completion and missing-take g
 
 test('uses the Figma free-creation mix and share flow for S07', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const appSource = readFileSync(resolve(process.cwd(), 'src/product/GarakScreenFlowApp.tsx'), 'utf8');
 
   expect(source).toContain('freeCreationMixScreen');
   expect(source).toContain('freeCreationPlayerDeck');
   expect(source).toContain('getFreeCreationMixEditorModel');
   expect(source).toContain('mixEditorModel.playerTitle');
   expect(source).toContain('mixEditorModel.playerAccessibilityLabel');
+  expect(source).toContain('mixEditorModel.playbackNotice');
+  expect(source).toContain('freeCreationPlaybackNotice');
   expect(source).toContain("onPlay={() => dispatch({ type: 'playCurrentWorkMix' })}");
   expect(source).toContain('accessibilityLabel="가락 믹스 재생"');
+  expect(appSource).toContain('<TrackLayerEditorContent state={state} dispatch={dispatch} />');
+  expect(source).not.toContain('freeCreationMixScreenLandscape');
+  expect(source).not.toContain('freeCreationMixPanelLandscape');
+  expect(source).not.toContain('freeCreationPlayerDeckLandscape');
+  expect(source).not.toContain('freeCreationMixButtonLandscape');
+  expect(source).not.toContain('freeCreationSaveButtonLandscape');
+  expect(source).not.toContain('freeCreationShareButtonLandscape');
   expect(source).toContain('mixEditorModel.saveAction');
   expect(source).toContain('mixEditorModel.saveStatusLabel');
   expect(source).toContain('mixEditorModel.playheadBeatLabel');
   expect(source).toContain('dispatch(mixEditorModel.decreasePlayheadAction)');
   expect(source).toContain('dispatch(mixEditorModel.increasePlayheadAction)');
-  expect(source).toContain('TrackControlStack trackControls={mixEditorModel.trackControls}');
+  expect(source).toContain('trackControls={mixEditorModel.trackControls}');
   expect(source).toContain('dispatch(trackControl.decreaseVolumeAction)');
   expect(source).toContain('dispatch(trackControl.increaseVolumeAction)');
   expect(source).toContain('dispatch(trackControl.toggleMuteAction)');
@@ -599,6 +670,11 @@ test('uses the Figma free-creation mix and share flow for S07', () => {
   expect(source).toContain('Mix');
   expect(source).toContain('작업 저장');
   expect(source).toContain('Save & Share project');
+  expect(source).toContain('FREE_CREATION_MIX_PANEL_HORIZONTAL_INSET');
+  expect(source).toContain('freeCreationBottomActionButton');
+  expect(source).toContain('styles.freeCreationBottomActionButton');
+  expect(source).toContain('styles.freeCreationSaveButton');
+  expect(source).toContain('styles.freeCreationShareButton');
   expect(source).toContain("type: 'addTrack'");
   expect(source).toContain("dispatch(mixEditorModel.saveAction)");
   expect(source).toContain("type: 'exportCurrentWork'");
@@ -621,6 +697,7 @@ test('connects S17 share publishing to the selected share target state', () => {
   expect(source).toContain("type: 'previewShareTarget'");
   expect(source).toContain("type: 'cancelShareTarget'");
   expect(source).toContain('label={model.publishButtonLabel}');
+  expect(source).toContain('model.playbackNotice');
   expect(source).toContain('durationLabel');
   expect(source).toContain('instrumentLabel');
   expect(source).toContain('sourceLabel');
@@ -792,11 +869,18 @@ test('uses the Figma stacked track add flow for S08', () => {
 
 test('connects S09 extra instrument recording controls before applying the new track', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/product/freeCreationScreens.tsx'), 'utf8');
+  const extraRecordSource = source.slice(
+    source.indexOf('export function ExtraInstrumentRecordContent'),
+    source.indexOf('function FreeCreationCompletedWaveform'),
+  );
 
   expect(source).toContain('기존 작업을 들으며');
   expect(source).toContain("label={state.pendingFreePlayTake ? '녹음 중' : '녹음'}");
   expect(source).toContain("type: 'startPerformanceRecording'");
   expect(source).toContain('미리듣기 준비됨');
+  expect(extraRecordSource).toContain('const performanceCaptureModel = getFreePlayPerformanceCaptureModel(state);');
+  expect(extraRecordSource).toContain('performanceCaptureModel.recordingCaptureNotice !== undefined');
+  expect(extraRecordSource).toContain('performanceCaptureModel.recordingProgressLabel !== undefined');
   expect(source).toContain('extraInstrumentNoteBubble');
   expect(source).toContain("type: 'restartInstrumentTrackRecording'");
   expect(source).toContain("type: 'applyInstrumentTrack'");
