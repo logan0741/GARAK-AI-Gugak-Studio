@@ -30,6 +30,7 @@ import { GarakScreenFrameMode } from './garakScreenFrame';
 import {
   GarakProductAction,
   GarakProductState,
+  hasPendingRecordingCaptureFinalization,
   type LivePerformanceAudioStatus,
 } from './garakProductState';
 import {
@@ -66,7 +67,12 @@ import {
   getFreeCreationMixEditorModel,
   type FreeCreationTrackControlModel,
 } from './freeCreationMixEditorModel';
-import { getFreePlayPerformanceCaptureModel } from './freePlayPerformanceModel';
+import {
+  canPlayLivePerformanceEvents,
+  getFreePlayLiveAudioStatusModel,
+  type FreePlayPerformanceCaptureModel,
+  getFreePlayPerformanceCaptureModel,
+} from './freePlayPerformanceModel';
 import { getHomeScreenViewModel } from './homeScreenModel';
 import { getInstrumentSettingsModel } from './instrumentSettingsModel';
 
@@ -117,6 +123,12 @@ const PRODUCT_TOUCH_LAYOUT = {
   width: 844,
   height: 390,
 } as const;
+const FREE_CREATION_MIX_PANEL_HORIZONTAL_INSET = { left: 27, right: 28 } as const;
+const FREE_CREATION_MIX_PANEL_BUTTON_HEIGHT = 36;
+const FREE_CREATION_BOTTOM_CTA_GAP = 8;
+const FREE_CREATION_SHARE_BOTTOM_OFFSET = 71;
+const FREE_CREATION_SAVE_BOTTOM_OFFSET =
+  FREE_CREATION_SHARE_BOTTOM_OFFSET + FREE_CREATION_MIX_PANEL_BUTTON_HEIGHT + FREE_CREATION_BOTTOM_CTA_GAP;
 type PerformanceEventsHandler = (events: PerformanceEvent[]) => void;
 
 function isInstrumentTrack(track: Track): track is Extract<Track, { kind: 'instrument' }> {
@@ -131,6 +143,7 @@ function PerformanceCaptureSurface({
   children,
   enabled,
   instrument,
+  liveAudioPlaybackEnabled = true,
   onLivePerformanceEvents,
   onPerformanceEvents,
   style,
@@ -138,6 +151,7 @@ function PerformanceCaptureSurface({
   children: ReactNode;
   enabled: boolean;
   instrument: InstrumentId;
+  liveAudioPlaybackEnabled?: boolean;
   onLivePerformanceEvents?: PerformanceEventsHandler;
   onPerformanceEvents: PerformanceEventsHandler;
   style?: StyleProp<ViewStyle>;
@@ -145,6 +159,9 @@ function PerformanceCaptureSurface({
   const [surfaceLayout, setSurfaceLayout] = useState<FreePlayTouchLayout>(PRODUCT_TOUCH_LAYOUT);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+
+  const liveAudioPlaybackEnabledRef = useRef(liveAudioPlaybackEnabled);
+  liveAudioPlaybackEnabledRef.current = liveAudioPlaybackEnabled;
 
   const onLivePerformanceEventsRef = useRef(onLivePerformanceEvents);
   onLivePerformanceEventsRef.current = onLivePerformanceEvents;
@@ -191,7 +208,9 @@ function PerformanceCaptureSurface({
       });
 
       if (events.length > 0) {
-        onLivePerformanceEventsRef.current?.(events);
+        if (liveAudioPlaybackEnabledRef.current) {
+          onLivePerformanceEventsRef.current?.(events);
+        }
         onPerformanceEventsRef.current(events);
       }
     },
@@ -444,6 +463,7 @@ export function FreePlayContent({
           <PerformanceCaptureSurface
             enabled={performanceCaptureModel.captureEnabled}
             instrument={instrument}
+            liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}
             onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.mobilePerformanceCapture}
@@ -455,6 +475,7 @@ export function FreePlayContent({
           </PerformanceCaptureSurface>
           <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
+          <LandscapeRecordingStatusBadge performanceCaptureModel={performanceCaptureModel} />
           <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : usesFigmaDaegeumLandscapeStage ? (
@@ -462,6 +483,7 @@ export function FreePlayContent({
           <PerformanceCaptureSurface
             enabled={performanceCaptureModel.captureEnabled}
             instrument={instrument}
+            liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}
             onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.landscapePerformanceCapture}
@@ -471,6 +493,7 @@ export function FreePlayContent({
           </PerformanceCaptureSurface>
           <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
+          <LandscapeRecordingStatusBadge performanceCaptureModel={performanceCaptureModel} />
           <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : usesFigmaGayageumLandscapeStage ? (
@@ -478,6 +501,7 @@ export function FreePlayContent({
           <PerformanceCaptureSurface
             enabled={performanceCaptureModel.captureEnabled}
             instrument={instrument}
+            liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}
             onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.landscapePerformanceCapture}
@@ -487,6 +511,7 @@ export function FreePlayContent({
           </PerformanceCaptureSurface>
           <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
+          <LandscapeRecordingStatusBadge performanceCaptureModel={performanceCaptureModel} />
           <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : usesFigmaJangguLandscapeStage ? (
@@ -494,6 +519,7 @@ export function FreePlayContent({
           <PerformanceCaptureSurface
             enabled={performanceCaptureModel.captureEnabled}
             instrument={instrument}
+            liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}
             onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.landscapePerformanceCapture}
@@ -503,6 +529,7 @@ export function FreePlayContent({
           </PerformanceCaptureSurface>
           <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} landscape />
           <LandscapeStageNotice visible={state.freePlayNotice === 'missingTake'} />
+          <LandscapeRecordingStatusBadge performanceCaptureModel={performanceCaptureModel} />
           <LandscapeStageActionHits dispatch={dispatch} isRecordingPerformance={isRecordingPerformance} />
         </View>
       ) : (
@@ -518,6 +545,7 @@ export function FreePlayContent({
           <PerformanceCaptureSurface
             enabled={performanceCaptureModel.captureEnabled}
             instrument={instrument}
+            liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}
             onLivePerformanceEvents={onLivePerformanceEvents}
             onPerformanceEvents={appendPerformanceEvents}
             style={styles.instrumentPerformanceCapture}
@@ -531,6 +559,15 @@ export function FreePlayContent({
         <View style={styles.freePlayActionArea}>
           {state.freePlayNotice === 'missingTake' ? (
             <Text style={styles.freePlayNotice}>저장할 테이크가 없어요. 먼저 녹음을 시작해 주세요.</Text>
+          ) : null}
+          {performanceCaptureModel.recordingCaptureNotice !== undefined ? (
+            <Text style={styles.freePlayNotice}>{performanceCaptureModel.recordingCaptureNotice}</Text>
+          ) : null}
+          {performanceCaptureModel.liveAudioPlaybackEvidenceLabel !== undefined ? (
+            <Text style={styles.freePlayNotice}>{performanceCaptureModel.liveAudioPlaybackEvidenceLabel}</Text>
+          ) : null}
+          {performanceCaptureModel.recordingProgressLabel !== undefined ? (
+            <Text style={styles.freePlayNotice}>{performanceCaptureModel.recordingProgressLabel}</Text>
           ) : null}
           <View style={[styles.buttonRow, isLandscapeFrame ? styles.landscapeButtonRow : undefined]}>
             <SecondaryPillButton
@@ -612,6 +649,38 @@ function LandscapeStageNotice({ visible }: { visible: boolean }) {
   );
 }
 
+function LandscapeRecordingStatusBadge({
+  performanceCaptureModel,
+}: {
+  performanceCaptureModel: FreePlayPerformanceCaptureModel;
+}) {
+  const labels = [
+    performanceCaptureModel.recordingCaptureNotice,
+    performanceCaptureModel.recordingProgressLabel,
+  ].filter((label): label is string => label !== undefined);
+
+  if (labels.length === 0) {
+    return null;
+  }
+
+  const accessibilityLabel = labels.join('. ');
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={accessibilityLabel}
+      pointerEvents="none"
+      style={styles.landscapeRecordingStatusBadge}
+    >
+      {labels.map((label) => (
+        <Text key={label} numberOfLines={1} style={styles.landscapeRecordingStatusText}>
+          {label}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 function FreePlayLiveAudioStatusBadge({
   dispatch,
   landscape = false,
@@ -621,59 +690,67 @@ function FreePlayLiveAudioStatusBadge({
   landscape?: boolean;
   status: LivePerformanceAudioStatus;
 }) {
-  if (status.status === 'idle' || status.status === 'ready') {
+  if (status.status === 'idle') {
     return null;
   }
 
-  if (status.status === 'failed') {
-    const label = '소리를 재생할 수 없음';
+  const statusModel = getFreePlayLiveAudioStatusModel(status);
+  if (statusModel === undefined) {
+    return null;
+  }
 
+  const retryAction = statusModel.retryAction;
+  const accessibilityBaseLabel = statusModel.qaReadinessLabel ?? statusModel.label;
+  const accessibilityLabel = statusModel.detailLabel === undefined
+    ? accessibilityBaseLabel
+    : `${accessibilityBaseLabel}. ${statusModel.detailLabel}`;
+
+  if (statusModel.visible === false) {
     return (
       <View
         accessible
-        accessibilityLabel={`${label}. ${status.message}`}
-        style={[
-          styles.liveAudioStatusBadge,
-          landscape ? styles.liveAudioStatusBadgeLandscape : undefined,
-          styles.liveAudioStatusBadgeFailed,
-        ]}
-      >
-        <Text
-          numberOfLines={1}
-          style={[styles.liveAudioStatusText, styles.liveAudioStatusTextFailed]}
-        >
-          {label}
-        </Text>
-        <Text numberOfLines={2} style={styles.liveAudioStatusDetailText}>
-          {status.message}
-        </Text>
-        <Pressable
-          accessibilityLabel="연주 소리 다시 시도"
-          accessibilityRole="button"
-          onPress={() => dispatch({ type: 'retryLivePerformanceAudioPreparation' })}
-          style={styles.liveAudioRetryButton}
-        >
-          <Text style={styles.liveAudioRetryText}>다시 시도</Text>
-        </Pressable>
-      </View>
+        accessibilityLabel={accessibilityLabel}
+        pointerEvents="none"
+        style={styles.liveAudioStatusQaMarker}
+      />
     );
   }
-
-  const label = '소리 준비 중';
 
   return (
     <View
       accessible
-      accessibilityLabel={label}
-      pointerEvents="none"
+      accessibilityLabel={accessibilityLabel}
+      pointerEvents={retryAction === undefined ? 'none' : undefined}
       style={[
         styles.liveAudioStatusBadge,
         landscape ? styles.liveAudioStatusBadgeLandscape : undefined,
+        statusModel.tone === 'failed' ? styles.liveAudioStatusBadgeFailed : undefined,
       ]}
     >
-      <Text numberOfLines={1} style={styles.liveAudioStatusText}>
-        {label}
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.liveAudioStatusText,
+          statusModel.tone === 'failed' ? styles.liveAudioStatusTextFailed : undefined,
+        ]}
+      >
+        {statusModel.label}
       </Text>
+      {statusModel.detailLabel !== undefined ? (
+        <Text numberOfLines={2} style={styles.liveAudioStatusDetailText}>
+          {statusModel.detailLabel}
+        </Text>
+      ) : null}
+      {retryAction !== undefined ? (
+        <Pressable
+          accessibilityLabel="연주 소리 다시 시도"
+          accessibilityRole="button"
+          onPress={() => dispatch(retryAction)}
+          style={styles.liveAudioRetryButton}
+        >
+          <Text style={styles.liveAudioRetryText}>다시 시도</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -810,6 +887,8 @@ export function TrackLayerEditorContent({
   const work = state.library.works.find((item) => item.id === state.currentWorkId);
   const hasAccompanimentTrack = work?.tracks.some(isAccompanimentTrack) ?? false;
   const mixEditorModel = getFreeCreationMixEditorModel(state);
+  const isExportBlocked = hasPendingRecordingCaptureFinalization(state);
+  const isShareExportDisabled = state.workExportStatus.status === 'exporting' || isExportBlocked;
 
   if (hasAccompanimentTrack) {
     return <FreeCreationCompletedPreviewContent state={state} dispatch={dispatch} />;
@@ -835,6 +914,11 @@ export function TrackLayerEditorContent({
             <View style={styles.freeCreationPlayerProgressFill} />
           </View>
           <MixPlayerControls onPlay={() => dispatch({ type: 'playCurrentWorkMix' })} />
+          {mixEditorModel.playbackNotice !== undefined ? (
+            <Text accessibilityLiveRegion="polite" numberOfLines={2} style={styles.freeCreationPlaybackNotice}>
+              {mixEditorModel.playbackNotice}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -864,14 +948,20 @@ export function TrackLayerEditorContent({
           <Text style={styles.freeCreationMixButtonText}>Mix</Text>
         </Pressable>
 
-        <TrackControlStack trackControls={mixEditorModel.trackControls} dispatch={dispatch} />
+        <TrackControlStack
+          trackControls={mixEditorModel.trackControls}
+          dispatch={dispatch}
+        />
 
         {mixEditorModel.saveAction ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="작업 저장"
             onPress={() => mixEditorModel.saveAction && dispatch(mixEditorModel.saveAction)}
-            style={styles.freeCreationSaveButton}
+            style={[
+              styles.freeCreationBottomActionButton,
+              styles.freeCreationSaveButton,
+            ]}
           >
             <Text style={styles.freeCreationSaveButtonText}>{mixEditorModel.saveStatusLabel}</Text>
           </Pressable>
@@ -880,13 +970,22 @@ export function TrackLayerEditorContent({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="프로젝트 저장 및 공유"
-          disabled={state.workExportStatus.status === 'exporting'}
+          accessibilityState={{ disabled: isShareExportDisabled }}
+          disabled={isShareExportDisabled}
           onPress={() => dispatch({ type: 'saveAndShareCurrentWork' })}
-          style={styles.freeCreationShareButton}
+          style={[
+            styles.freeCreationBottomActionButton,
+            styles.freeCreationShareButton,
+            isShareExportDisabled ? styles.freeCreationDisabledAction : undefined,
+          ]}
         >
           <ShareOutlineGlyph />
           <Text style={styles.freeCreationShareButtonText}>
-            {state.workExportStatus.status === 'exporting' ? 'Exporting...' : 'Save & Share project'}
+            {isExportBlocked
+              ? '오디오 저장 중...'
+              : state.workExportStatus.status === 'exporting'
+                ? 'Exporting...'
+                : 'Save & Share project'}
           </Text>
         </Pressable>
       </View>
@@ -903,6 +1002,7 @@ function FreeCreationCompletedPreviewContent({
 }) {
   const previewModel = getFreeCreationCompletedPreviewModel(state);
   const mixEditorModel = getFreeCreationMixEditorModel(state);
+  const isExportBlocked = hasPendingRecordingCaptureFinalization(state);
 
   return (
     <View style={styles.freeCreationCompletedPreviewScreen}>
@@ -931,6 +1031,11 @@ function FreeCreationCompletedPreviewContent({
             <View style={styles.freeCreationPlayerProgressFill} />
           </View>
           <MixPlayerControls onPlay={() => dispatch({ type: 'playCurrentWorkMix' })} />
+          {mixEditorModel.playbackNotice !== undefined ? (
+            <Text accessibilityLiveRegion="polite" numberOfLines={2} style={styles.freeCreationPlaybackNotice}>
+              {mixEditorModel.playbackNotice}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -961,8 +1066,9 @@ function FreeCreationCompletedPreviewContent({
 
         <PrimaryPillButton
           accessibilityLabel="완성한 가락 내보내기"
-          label="GO"
-          onPress={() => dispatch({ type: 'exportCurrentWork' })}
+          disabled={isExportBlocked}
+          label={isExportBlocked ? '저장 중' : 'GO'}
+          onPress={() => (isExportBlocked ? undefined : dispatch({ type: 'exportCurrentWork' }))}
           style={styles.freeCreationCompletedActionButton}
         />
       </View>
@@ -1140,6 +1246,7 @@ export function AddTrackContent({
     : `TRACK 1 : ${getInstrumentName(primaryInstrument)}`;
   const currentWorkContextLabel =
     work === undefined ? '현재 작업 없음' : `현재 작업 · ${work.title}`;
+  const isExportBlocked = hasPendingRecordingCaptureFinalization(state);
 
   return (
     <View style={styles.freeCreationTrackAddScreen}>
@@ -1277,10 +1384,12 @@ export function AddTrackContent({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="다음 단계로 이동"
+          accessibilityState={{ disabled: isExportBlocked }}
+          disabled={isExportBlocked}
           onPress={() => dispatch({ type: 'exportCurrentWork' })}
-          style={styles.freeCreationTrackAddGoButton}
+          style={[styles.freeCreationTrackAddGoButton, isExportBlocked ? styles.freeCreationDisabledAction : undefined]}
         >
-          <Text style={styles.freeCreationTrackAddGoButtonText}>GO</Text>
+          <Text style={styles.freeCreationTrackAddGoButtonText}>{isExportBlocked ? '저장 중' : 'GO'}</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -1326,7 +1435,8 @@ export function ExtraInstrumentRecordContent({
   const instrument = state.selectedInstrument ?? DEFAULT_FREE_CREATION_INSTRUMENT;
   const isLandscapeFrame = frameMode === 'landscape';
   const work = state.library.works.find((item) => item.id === state.currentWorkId);
-  const recordingStatus = state.pendingFreePlayTake ? '미리듣기 준비됨' : '녹음 대기';
+  const performanceCaptureModel = getFreePlayPerformanceCaptureModel(state);
+  const recordingStatus = performanceCaptureModel.isRecording ? '미리듣기 준비됨' : '녹음 대기';
 
   return (
     <View style={[styles.screenStack, isLandscapeFrame ? styles.landscapePerformanceStack : undefined]}>
@@ -1337,10 +1447,21 @@ export function ExtraInstrumentRecordContent({
           기존 작업을 들으며 {getInstrumentName(instrument)} 트랙을 덧녹음해요. {recordingStatus}
         </Text>
       </View>
+      <FreePlayLiveAudioStatusBadge dispatch={dispatch} status={state.livePerformanceAudioStatus} />
+      {performanceCaptureModel.recordingCaptureNotice !== undefined ? (
+        <Text style={styles.freePlayNotice}>{performanceCaptureModel.recordingCaptureNotice}</Text>
+      ) : null}
+      {performanceCaptureModel.liveAudioPlaybackEvidenceLabel !== undefined ? (
+        <Text style={styles.freePlayNotice}>{performanceCaptureModel.liveAudioPlaybackEvidenceLabel}</Text>
+      ) : null}
+      {performanceCaptureModel.recordingProgressLabel !== undefined ? (
+        <Text style={styles.freePlayNotice}>{performanceCaptureModel.recordingProgressLabel}</Text>
+      ) : null}
       <View style={[styles.freePlaySurface, isLandscapeFrame ? styles.landscapeFreePlaySurface : undefined]}>
         <PerformanceCaptureSurface
-          enabled={state.pendingFreePlayTake !== undefined}
+          enabled={performanceCaptureModel.isRecording}
           instrument={instrument}
+          liveAudioPlaybackEnabled={canPlayLivePerformanceEvents(state, instrument)}
           onLivePerformanceEvents={onLivePerformanceEvents}
           onPerformanceEvents={(events) => dispatch({ type: 'appendFreePlayPerformanceEvents', events })}
           style={styles.instrumentPerformanceCapture}
@@ -2065,6 +2186,16 @@ const styles = StyleSheet.create({
     marginTop: 15,
     width: 106,
   },
+  freeCreationPlaybackNotice: {
+    color: '#F7D7D2',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: 13,
+    marginTop: 5,
+    maxWidth: 245,
+    textAlign: 'center',
+  },
   freeCreationPlayerControlCircle: {
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.surfaceCard,
@@ -2188,11 +2319,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: GARAK_COLORS.brandAmber,
     borderRadius: 38,
-    height: 36,
+    height: FREE_CREATION_MIX_PANEL_BUTTON_HEIGHT,
     justifyContent: 'center',
-    left: 27,
+    ...FREE_CREATION_MIX_PANEL_HORIZONTAL_INSET,
     position: 'absolute',
-    right: 28,
     top: 170,
   },
   freeCreationMixButtonText: {
@@ -2289,17 +2419,18 @@ const styles = StyleSheet.create({
   freeCreationTrackControlToggleTextActive: {
     color: GARAK_COLORS.surfaceCard,
   },
-  freeCreationSaveButton: {
+  freeCreationBottomActionButton: {
     alignItems: 'center',
-    borderColor: 'rgba(31,32,46,0.24)',
-    borderRadius: GARAK_RADIUS.pill,
-    borderWidth: 1,
-    bottom: 127,
-    height: 42,
+    borderRadius: 38,
+    height: FREE_CREATION_MIX_PANEL_BUTTON_HEIGHT,
     justifyContent: 'center',
-    left: 0,
+    ...FREE_CREATION_MIX_PANEL_HORIZONTAL_INSET,
     position: 'absolute',
-    right: 0,
+  },
+  freeCreationSaveButton: {
+    borderColor: 'rgba(31,32,46,0.24)',
+    borderWidth: 1,
+    bottom: FREE_CREATION_SAVE_BOTTOM_OFFSET,
   },
   freeCreationSaveButtonText: {
     color: GARAK_COLORS.textSecondary,
@@ -2308,17 +2439,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   freeCreationShareButton: {
-    alignItems: 'center',
     backgroundColor: GARAK_COLORS.brandNavy,
-    borderRadius: GARAK_RADIUS.pill,
-    bottom: 71,
+    bottom: FREE_CREATION_SHARE_BOTTOM_OFFSET,
     flexDirection: 'row',
     gap: 4,
-    height: 48,
-    justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
   },
   freeCreationShareButtonText: {
     color: GARAK_COLORS.surfaceCard,
@@ -2326,6 +2450,9 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: 0,
     lineHeight: 32,
+  },
+  freeCreationDisabledAction: {
+    opacity: 0.45,
   },
   freeCreationShareGlyph: {
     height: 18,
@@ -2818,6 +2945,25 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
   },
+  landscapeRecordingStatusBadge: {
+    backgroundColor: 'rgba(31,32,46,0.86)',
+    borderRadius: 15,
+    bottom: 20,
+    gap: 4,
+    left: 20,
+    maxWidth: 330,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    position: 'absolute',
+    zIndex: 4,
+  },
+  landscapeRecordingStatusText: {
+    color: GARAK_COLORS.surfaceCard,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0,
+    lineHeight: 14,
+  },
   liveAudioStatusBadge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(31,32,46,0.82)',
@@ -2827,6 +2973,13 @@ const styles = StyleSheet.create({
     maxWidth: 230,
     paddingHorizontal: 11,
     paddingVertical: 6,
+  },
+  liveAudioStatusQaMarker: {
+    height: 1,
+    left: 0,
+    position: 'absolute',
+    top: 0,
+    width: 1,
   },
   liveAudioStatusBadgeLandscape: {
     left: 18,
