@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import type { Work } from '../../studio/studioTypes';
 import {
   applyProductAction,
   createInitialGarakProductState as createBaseInitialGarakProductState,
@@ -15,6 +16,10 @@ type CreateInitialGarakProductStateInput = NonNullable<
   Parameters<typeof createBaseInitialGarakProductState>[0]
 >;
 
+const recordedFreePlayEvents: PerformanceEvent[] = [
+  { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+];
+
 function createInitialGarakProductState(input: CreateInitialGarakProductStateInput = {}) {
   return createBaseInitialGarakProductState({
     ...input,
@@ -25,8 +30,150 @@ function createInitialGarakProductState(input: CreateInitialGarakProductStateInp
 
 function completeRecordedFreePlay(state: ReturnType<typeof createInitialGarakProductState>) {
   state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const captureAttemptId = requireRecordingCaptureAttemptId(state);
+  state = applyProductAction(state, {
+    type: 'appendFreePlayPerformanceEvents',
+    events: recordedFreePlayEvents,
+  });
 
-  return applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  return applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    durationSeconds: 8,
+    captureAttemptId,
+  });
+}
+
+function completeCurrentWorkExport(
+  state: ReturnType<typeof createInitialGarakProductState>,
+  input: {
+    workId?: string;
+    audioUri?: string;
+    durationSeconds?: number;
+    renderKind?: 'audio_capture' | 'event_replay' | 'demo_sample';
+    sourceTakeId?: string;
+    sourceEventCount?: number;
+    sourceRecordingUri?: string;
+  } = {},
+) {
+  const workId = input.workId ?? state.currentWorkId;
+  if (workId === undefined) {
+    throw new Error('Expected a current work before completing export.');
+  }
+
+  const renderKind = input.renderKind ?? 'event_replay';
+  const hasSourceEventCount = Object.prototype.hasOwnProperty.call(input, 'sourceEventCount');
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+
+  return applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: input.audioUri ?? 'garak://library-demo/export-fallback',
+    durationSeconds: input.durationSeconds ?? 24,
+    renderKind,
+    sourceTakeId: input.sourceTakeId ?? 'take-1',
+    sourceEventCount:
+      hasSourceEventCount || renderKind !== 'event_replay'
+        ? input.sourceEventCount
+        : recordedFreePlayEvents.length,
+    sourceRecordingUri: input.sourceRecordingUri,
+    completionTarget: 'player',
+  });
+}
+
+function requireRecordingCaptureAttemptId(
+  state: ReturnType<typeof createInitialGarakProductState>,
+): string {
+  if ('captureAttemptId' in state.recordingCaptureStatus) {
+    return state.recordingCaptureStatus.captureAttemptId;
+  }
+
+  throw new Error('Expected an active recording capture attempt.');
+}
+
+function createWorkWithMutedReplaySource(workId: string): Work {
+  return {
+    id: workId,
+    title: 'Muted source replay work',
+    createdAt: '2026-06-26T00:00:00.000Z',
+    updatedAt: '2026-06-26T00:00:00.000Z',
+    source: 'free_creation',
+    syncState: 'local_only',
+    tracks: [
+      {
+        id: 'track-muted',
+        kind: 'instrument',
+        instrument: 'janggu',
+        takes: [
+          {
+            id: 'take-muted',
+            events: [{ type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 }],
+            startedAtBeat: 1,
+            durationBeats: 4,
+          },
+        ],
+        startedAtBeat: 1,
+        volume: 1,
+        mute: true,
+        solo: false,
+        createdAt: '2026-06-26T00:00:00.000Z',
+      },
+      {
+        id: 'track-audible',
+        kind: 'instrument',
+        instrument: 'janggu',
+        takes: [
+          {
+            id: 'take-audible',
+            events: [{ type: 'string_pluck', tsMs: 160, stringIndex: 4, velocity: 0.8 }],
+            startedAtBeat: 1,
+            durationBeats: 4,
+          },
+        ],
+        startedAtBeat: 1,
+        volume: 1,
+        mute: false,
+        solo: false,
+        createdAt: '2026-06-26T00:00:00.000Z',
+      },
+    ],
+  };
+}
+
+function createWorkWithEmptyReplaySource(workId: string): Work {
+  return {
+    id: workId,
+    title: 'Empty source replay work',
+    createdAt: '2026-06-26T00:00:00.000Z',
+    updatedAt: '2026-06-26T00:00:00.000Z',
+    source: 'free_creation',
+    syncState: 'local_only',
+    tracks: [
+      {
+        id: 'track-empty',
+        kind: 'instrument',
+        instrument: 'janggu',
+        takes: [
+          {
+            id: 'take-empty',
+            events: [],
+            startedAtBeat: 1,
+            durationBeats: 4,
+          },
+        ],
+        startedAtBeat: 1,
+        volume: 1,
+        mute: false,
+        solo: false,
+        createdAt: '2026-06-26T00:00:00.000Z',
+      },
+    ],
+  };
 }
 
 test('starts on the GARAK home in guest free creation mode', () => {
@@ -147,17 +294,248 @@ test('retries S05 live performance audio preparation after a failed start', () =
   state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
+  const failedAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : '';
   state = applyProductAction(state, {
     type: 'failLivePerformanceAudioPreparation',
     instrument: 'janggu',
+    preparationAttemptId: failedAttempt,
     message: 'native sampler failed',
   });
   state = applyProductAction(state, { type: 'retryLivePerformanceAudioPreparation' });
 
   expect(state.screenFlow.currentScreen).toBe('S05');
-  expect(state.livePerformanceAudioStatus).toEqual({
+  expect(state.livePerformanceAudioStatus).toMatchObject({
     status: 'preparing',
     instrument: 'janggu',
+  });
+});
+
+test('retries S09 extra instrument live performance audio preparation after a failed start', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  const failedAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : '';
+  state = applyProductAction(state, {
+    type: 'failLivePerformanceAudioPreparation',
+    instrument: 'daegeum',
+    preparationAttemptId: failedAttempt,
+    message: 'native sampler failed',
+  });
+  state = applyProductAction(state, { type: 'retryLivePerformanceAudioPreparation' });
+
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'daegeum',
+  });
+});
+
+test('ignores stale same-instrument S05 live audio preparation results after retry', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  const firstAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : undefined;
+
+  state = applyProductAction(state, { type: 'retryLivePerformanceAudioPreparation' });
+  const secondAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : undefined;
+
+  expect(firstAttempt).toBeDefined();
+  expect(secondAttempt).toBeDefined();
+  expect(secondAttempt).not.toBe(firstAttempt);
+  const staleAttempt = firstAttempt as string;
+
+  state = applyProductAction(state, {
+    type: 'completeLivePerformanceAudioPreparation',
+    instrument: 'janggu',
+    preparationAttemptId: staleAttempt,
+    sampleSourceLabel: 'stale janggu sampler',
+    releaseReady: true,
+  });
+
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'janggu',
+    preparationAttemptId: secondAttempt,
+  });
+});
+
+test('ignores id-less same-instrument S05 live audio preparation failures after retry', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'retryLivePerformanceAudioPreparation' });
+  const activeAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : undefined;
+
+  state = applyProductAction(state, {
+    type: 'failLivePerformanceAudioPreparation',
+    instrument: 'janggu',
+    message: 'stale id-less failure',
+  } as Parameters<typeof applyProductAction>[1]);
+
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'janggu',
+    preparationAttemptId: activeAttempt,
+  });
+});
+
+test('refreshes S05 live audio preparation when switching instruments', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  const readyAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : '';
+  state = applyProductAction(state, {
+    type: 'completeLivePerformanceAudioPreparation',
+    instrument: 'janggu',
+    preparationAttemptId: readyAttempt,
+    sampleSourceLabel: 'janggu sampler',
+    releaseReady: true,
+  });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'daegeum' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.selectedInstrument).toBe('daegeum');
+  expect(state.activeInstrumentSettings).toMatchObject({
+    instrument: 'daegeum',
+    source: 'default',
+  });
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'daegeum',
+  });
+});
+
+test('ignores stale S05 live audio preparation success for a previous instrument', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  const staleSuccessAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : '';
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'daegeum' });
+  state = applyProductAction(state, {
+    type: 'completeLivePerformanceAudioPreparation',
+    instrument: 'janggu',
+    preparationAttemptId: staleSuccessAttempt,
+    sampleSourceLabel: 'stale janggu sampler',
+    releaseReady: true,
+  });
+
+  expect(state.selectedInstrument).toBe('daegeum');
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'daegeum',
+  });
+});
+
+test('ignores stale S05 live audio preparation failure for a previous instrument', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  const staleFailureAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : '';
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'daegeum' });
+  state = applyProductAction(state, {
+    type: 'failLivePerformanceAudioPreparation',
+    instrument: 'janggu',
+    preparationAttemptId: staleFailureAttempt,
+    message: 'stale janggu failure',
+  });
+
+  expect(state.selectedInstrument).toBe('daegeum');
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'daegeum',
+  });
+});
+
+test('ignores stale S05 live event playback failures for a previous instrument', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'daegeum' });
+  const activeAttempt = state.livePerformanceAudioStatus.status === 'preparing'
+    ? state.livePerformanceAudioStatus.preparationAttemptId
+    : undefined;
+
+  state = applyProductAction(state, {
+    type: 'failLivePerformanceEventPlayback',
+    instrument: 'janggu',
+    message: 'stale playback failure',
+  });
+
+  expect(state.selectedInstrument).toBe('daegeum');
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'daegeum',
+    preparationAttemptId: activeAttempt,
+  });
+});
+
+test('surfaces S05 live event playback failures for the current instrument', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+
+  state = applyProductAction(state, {
+    type: 'failLivePerformanceEventPlayback',
+    instrument: 'janggu',
+    message: 'speaker route unavailable',
+  });
+
+  expect(state.livePerformanceAudioStatus).toEqual({
+    status: 'failed',
+    instrument: 'janggu',
+    message: 'speaker route unavailable',
   });
 });
 
@@ -386,6 +764,240 @@ test('appends captured S05 performance events to the pending take before complet
   expect(firstTrack?.kind === 'instrument' ? firstTrack.takes[0].events : []).toEqual(capturedEvents);
 });
 
+test('normalizes absolute S05 performance event timestamps before saving a take', () => {
+  const startedAtMs = Date.parse('2026-07-04T10:00:00.000Z');
+  const absoluteEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: startedAtMs + 5000, stringIndex: 2, velocity: 0.7 },
+    { type: 'string_release', tsMs: startedAtMs + 5200, stringIndex: 2 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, { type: 'appendFreePlayPerformanceEvents', events: absoluteEvents });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  const firstTrack = state.library.works[0]?.tracks[0];
+  const firstTake = firstTrack?.kind === 'instrument' ? firstTrack.takes[0] : undefined;
+
+  expect(firstTake?.events.map((event) => event.tsMs)).toEqual([5000, 5200]);
+  expect(firstTake?.durationBeats).toBeLessThan(16);
+});
+
+test('attaches stopped S05 recording capture uri to the saved take', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+    { type: 'string_release', tsMs: 300, stringIndex: 3 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'janggu',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'appendFreePlayPerformanceEvents', events: capturedEvents });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: '  file://garak/takes/take-1.m4a  ',
+    durationSeconds: 8,
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+
+  const firstTrack = state.library.works[0]?.tracks[0];
+  const take = firstTrack?.kind === 'instrument' ? firstTrack.takes[0] : undefined;
+
+  expect(take?.events).toEqual(capturedEvents);
+  expect(take?.recordingUri).toBe('file://garak/takes/take-1.m4a');
+  expect(state.recordingCaptureStatus).toMatchObject({ status: 'idle' });
+});
+
+test('does not attach non-file S05 recording capture uris to a saved take', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const captureAttemptId = requireRecordingCaptureAttemptId(state);
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'https://example.com/not-a-capture.m4a',
+    durationSeconds: 8,
+    captureAttemptId,
+  });
+
+  const take = state.library.works[0].tracks[0].kind === 'instrument'
+    ? state.library.works[0].tracks[0].takes[0]
+    : undefined;
+  expect(take?.recordingUri).toBeUndefined();
+  expect(state.recordingCaptureStatus).toEqual({
+    status: 'failed',
+    message: 'Recording capture returned a non-file URI.',
+  });
+});
+
+test('preserves attached S05 recording capture when a late library snapshot lacks the uri', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+    { type: 'string_release', tsMs: 300, stringIndex: 3 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-05T09:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'janggu',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'appendFreePlayPerformanceEvents', events: capturedEvents });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  const staleSnapshot = {
+    ...state.library,
+    works: state.library.works.map((work) => ({
+      ...work,
+      tracks: work.tracks.map((track) =>
+        track.kind === 'instrument'
+          ? {
+              ...track,
+              takes: track.takes.map((take) => ({ ...take })),
+            }
+          : { ...track },
+      ),
+    })),
+  };
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    durationSeconds: 8,
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+
+  state = applyProductAction(state, { type: 'replaceLibrarySnapshot', library: staleSnapshot });
+  state = completeCurrentWorkExport(state, { sourceEventCount: capturedEvents.length });
+
+  const firstTrack = state.library.works[0]?.tracks[0];
+  const take = firstTrack?.kind === 'instrument' ? firstTrack.takes[0] : undefined;
+  expect(take?.recordingUri).toBe('file://garak/takes/take-1.m4a');
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    audioUri: 'garak://library-demo/export-fallback',
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-1',
+    sourceEventCount: capturedEvents.length,
+  });
+  expect(state.library.exportedAudios[0]?.sourceRecordingUri).toBeUndefined();
+});
+
+test('advances local work ids after loading a persisted library snapshot', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let existingState = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  existingState = applyProductAction(existingState, { type: 'selectMode', mode: 'freeCreation' });
+  existingState = applyProductAction(existingState, { type: 'next' });
+  existingState = applyProductAction(existingState, { type: 'selectInstrument', instrument: 'janggu' });
+  existingState = applyProductAction(existingState, { type: 'next' });
+  existingState = applyProductAction(existingState, { type: 'startWithDefaults' });
+  const existingSnapshot = completeRecordedFreePlay(existingState).library;
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-05T09:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'replaceLibrarySnapshot', library: existingSnapshot });
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'janggu',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'appendFreePlayPerformanceEvents', events: capturedEvents });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  expect(state.currentWorkId).toBe('work-2');
+  expect(state.library.works.map((work) => work.id)).toEqual(['work-1', 'work-2']);
+  expect(state.library.works[1]?.tracks[0]).toMatchObject({
+    id: 'track-2',
+    takes: [expect.objectContaining({ id: 'take-2' })],
+  });
+});
+
+test('does not export the S05 work while recording capture is still being saved', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-05T09:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'janggu',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'appendFreePlayPerformanceEvents', events: capturedEvents });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  expect(state.recordingCaptureStatus).toMatchObject({ status: 'stopping' });
+
+  const exportAttempt = applyProductAction(state, { type: 'exportCurrentWork' });
+  const saveAndShareAttempt = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  expect(exportAttempt.library.exportedAudios).toHaveLength(0);
+  expect(exportAttempt.workExportStatus).toEqual({ status: 'idle' });
+  expect(saveAndShareAttempt.library.exportedAudios).toHaveLength(0);
+  expect(saveAndShareAttempt.workExportStatus).toEqual({ status: 'idle' });
+});
+
 test('stores the S05 recording start timestamp on the pending take', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T09:30:00.000Z',
@@ -461,6 +1073,39 @@ test('saves only pending S05 recording events when completing a performance', ()
   const firstTrack = state.library.works[0]?.tracks[0];
 
   expect(firstTrack?.kind === 'instrument' ? firstTrack.takes[0].events : []).toEqual(pendingEvents);
+});
+
+test('does not save an empty S05 take after recording capture start fails', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const captureAttemptId = requireRecordingCaptureAttemptId(state);
+  state = applyProductAction(state, {
+    type: 'failRecordingCaptureStart',
+    instrument: 'janggu',
+    captureAttemptId,
+    message: 'microphone permission denied',
+  });
+
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  expect(state.screenFlow.currentScreen).toBe('S05');
+  expect(state.library.works).toHaveLength(0);
+  expect(state.currentWorkId).toBeUndefined();
+  expect(state.pendingFreePlayTake).toBeUndefined();
+  expect(state.freePlayNotice).toBe('missingTake');
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'failed',
+    instrument: 'janggu',
+    message: 'microphone permission denied',
+  });
 });
 
 test('derives the saved S05 take duration from event timestamps and recording BPM', () => {
@@ -544,7 +1189,9 @@ test('completes S05 by auto-saving an editable work and opening S07', () => {
     kind: 'instrument',
     instrument: 'gayageum',
   });
-  expect(state.library.works[0].tracks[0].kind === 'instrument' ? state.library.works[0].tracks[0].takes[0].events : []).toEqual([]);
+  expect(state.library.works[0].tracks[0].kind === 'instrument' ? state.library.works[0].tracks[0].takes[0].events : []).toEqual(
+    recordedFreePlayEvents,
+  );
 });
 
 test('keeps live jangdan guide separate from accompaniment track creation', () => {
@@ -840,6 +1487,54 @@ test('opens S08 additional instrument selection before entering S09', () => {
   expect(state.currentWorkId).toBe(currentWorkId);
 });
 
+test('starts S09 live audio preparation for the chosen extra instrument', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.livePerformanceAudioStatus).toMatchObject({
+    status: 'preparing',
+    instrument: 'daegeum',
+  });
+});
+
+test('surfaces S09 live event playback failures for the current extra instrument', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+
+  state = applyProductAction(state, {
+    type: 'failLivePerformanceEventPlayback',
+    instrument: 'daegeum',
+    message: 'speaker route unavailable',
+  });
+
+  expect(state.livePerformanceAudioStatus).toEqual({
+    status: 'failed',
+    instrument: 'daegeum',
+    message: 'speaker route unavailable',
+  });
+});
+
 test('adds new tracks at the provided playhead beat', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -1047,6 +1742,9 @@ test('saves and exports current work before opening share preparation', () => {
     workId,
     audioUri: 'file://garak/export-1.wav',
     durationSeconds: 31,
+    renderKind: 'audio_capture',
+    sourceTakeId: 'take-1',
+    sourceRecordingUri: 'file://garak/takes/take-1.m4a',
   });
 
   expect(state.screenFlow.currentScreen).toBe('S17');
@@ -1057,8 +1755,667 @@ test('saves and exports current work before opening share preparation', () => {
     workId,
     audioUri: 'file://garak/export-1.wav',
     durationSeconds: 31,
+    renderKind: 'audio_capture',
+    sourceTakeId: 'take-1',
+    sourceRecordingUri: 'file://garak/takes/take-1.m4a',
     shareState: 'ready',
   });
+});
+
+test('does not store an audio capture export when reducer provenance is incomplete', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+    renderKind: 'audio_capture',
+    sourceTakeId: ' ',
+    sourceRecordingUri: 'file://garak/takes/take-1.m4a',
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Audio capture export returned no source take ID.',
+  });
+});
+
+test('does not store an event replay export when reducer provenance is incomplete', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'garak://library-demo/export-fallback',
+    durationSeconds: 31,
+    renderKind: 'event_replay',
+    sourceTakeId: ' ',
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Event replay export returned no source take ID.',
+  });
+});
+
+test('does not store an audio capture export when reducer capture URIs are not file-backed', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'garak://library-demo/export-fallback',
+    durationSeconds: 31,
+    renderKind: 'audio_capture',
+    sourceTakeId: 'take-1',
+    sourceRecordingUri: 'file://garak/takes/take-1.m4a',
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Audio capture export returned no capture audio URI.',
+  });
+});
+
+test('does not store an audio capture export when reducer source take is missing from the work', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+    renderKind: 'audio_capture',
+    sourceTakeId: 'take-missing',
+    sourceRecordingUri: 'file://garak/takes/take-1.m4a',
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Audio capture export source take is not available in the work.',
+  });
+});
+
+test('does not store an audio capture export when reducer source recording URI does not match the take', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+    renderKind: 'audio_capture',
+    sourceTakeId: 'take-1',
+    sourceRecordingUri: 'file://garak/takes/wrong-take.m4a',
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Audio capture export source recording URI does not match the source take.',
+  });
+});
+
+test('does not store an audio capture export when reducer source take is muted out of the mix', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+  state = applyProductAction(state, { type: 'toggleWorkTrackMute', trackId: 'track-1' });
+  state = {
+    ...state,
+    workExportStatus: { status: 'exporting', workId },
+  };
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+    renderKind: 'audio_capture',
+    sourceTakeId: 'take-1',
+    sourceRecordingUri: 'file://garak/takes/take-1.m4a',
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Audio capture export source take is not audible in the exported work.',
+  });
+});
+
+test('does not store an event replay export when reducer source take is muted out of the mix', () => {
+  const workId = 'work-muted-event-replay';
+  let state: ReturnType<typeof createInitialGarakProductState> = {
+    ...createInitialGarakProductState({
+      now: () => '2026-06-26T00:00:00.000Z',
+    }),
+    currentWorkId: workId,
+    library: {
+      works: [createWorkWithMutedReplaySource(workId)],
+      exportedAudios: [],
+      practiceResults: [],
+    },
+    workExportStatus: { status: 'exporting' as const, workId },
+  };
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'garak://library-demo/export-fallback',
+    durationSeconds: 31,
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-muted',
+    sourceEventCount: 1,
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Event replay export source take is not audible in the exported work.',
+  });
+});
+
+test('does not store an event replay export when reducer source take has no events', () => {
+  const workId = 'work-empty-event-replay';
+  let state: ReturnType<typeof createInitialGarakProductState> = {
+    ...createInitialGarakProductState({
+      now: () => '2026-06-26T00:00:00.000Z',
+    }),
+    currentWorkId: workId,
+    library: {
+      works: [createWorkWithEmptyReplaySource(workId)],
+      exportedAudios: [],
+      practiceResults: [],
+    },
+    workExportStatus: { status: 'exporting' as const, workId },
+  };
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'garak://library-demo/export-fallback',
+    durationSeconds: 31,
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-empty',
+    sourceEventCount: 1,
+  });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId,
+    message: 'Event replay export source take has no recorded events.',
+  });
+});
+
+test('ignores stale work audio export completions after the active export request changed', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  const workId = state.currentWorkId!;
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+  state = {
+    ...state,
+    workExportStatus: { status: 'idle' },
+  };
+
+  const unchanged = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+    renderKind: 'demo_sample',
+  });
+
+  expect(unchanged.library.exportedAudios).toHaveLength(0);
+  expect(unchanged.selectedPlayerItem).toBeUndefined();
+  expect(unchanged.workExportStatus).toEqual({ status: 'idle' });
+});
+
+test('exports S05 instrument events before falling back to mic capture audio', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: capturedEvents,
+    recordingUri: 'file://garak/takes/take-1.m4a',
+  });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeCurrentWorkExport(state, { sourceEventCount: capturedEvents.length });
+
+  expect(state.screenFlow.currentScreen).toBe('S19');
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    id: 'export-1',
+    audioUri: 'garak://library-demo/export-fallback',
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-1',
+  });
+  expect(state.library.exportedAudios[0]?.sourceRecordingUri).toBeUndefined();
+});
+
+test('exports non-file recorded S05 take artifacts as event replay instead of audio capture', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: capturedEvents,
+    recordingUri: 'garak://library-demo/not-a-capture',
+  });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = completeCurrentWorkExport(state, { sourceEventCount: capturedEvents.length });
+
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    id: 'export-1',
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-1',
+    sourceEventCount: capturedEvents.length,
+  });
+  expect(state.library.exportedAudios[0].sourceRecordingUri).toBeUndefined();
+});
+
+test('does not store event replay export when the rendered source event count is stale', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: capturedEvents,
+    recordingUri: 'garak://library-demo/not-a-capture',
+  });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  state = completeCurrentWorkExport(state, { sourceEventCount: 2 });
+
+  expect(state.library.exportedAudios).toEqual([]);
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId: 'work-1',
+    message: 'Event replay export source events changed after export rendering.',
+  });
+});
+
+test('does not store event replay export without source event count provenance', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: capturedEvents,
+    recordingUri: 'garak://library-demo/not-a-capture',
+  });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId: 'work-1',
+    audioUri: 'garak://library-demo/export-fallback',
+    durationSeconds: 24,
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-1',
+    completionTarget: 'player',
+  });
+
+  expect(state.library.exportedAudios).toEqual([]);
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId: 'work-1',
+    message: 'Event replay export returned no source event count.',
+  });
+});
+
+test('exports the audible event replay instead of muted captured take audio', () => {
+  const capturedEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  const audibleEvents: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 240, stringIndex: 5, velocity: 0.7 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, {
+    type: 'startPerformanceRecording',
+    events: capturedEvents,
+    recordingUri: 'file://garak/takes/muted-capture.m4a',
+  });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'openInstrumentTrackSelection' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack', events: audibleEvents });
+  state = applyProductAction(state, { type: 'toggleWorkTrackMute', trackId: 'track-1' });
+  state = completeCurrentWorkExport(state, { sourceTakeId: 'take-2' });
+
+  expect(state.library.exportedAudios[0]).toMatchObject({
+    id: 'export-1',
+    audioUri: 'garak://library-demo/export-fallback',
+    renderKind: 'event_replay',
+    sourceTakeId: 'take-2',
+  });
+  expect(state.library.exportedAudios[0]?.sourceRecordingUri).toBeUndefined();
+});
+
+test('does not export a work when every track is muted', () => {
+  const events: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording', events });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'toggleWorkTrackMute', trackId: 'track-1' });
+
+  state = applyProductAction(state, { type: 'exportCurrentWork' });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId: 'work-1',
+    message: 'No audible tracks are available to export.',
+  });
+});
+
+test('does not queue Save & Share export when every track is muted', () => {
+  const events: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording', events });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'toggleWorkTrackMute', trackId: 'track-1' });
+
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workSaveStatus).toBe('saving');
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId: 'work-1',
+    message: 'No audible tracks are available to export.',
+  });
+});
+
+test('does not export or queue Save & Share when every selected track volume is zero', () => {
+  const events: PerformanceEvent[] = [
+    { type: 'string_pluck', tsMs: 120, stringIndex: 3, velocity: 0.8 },
+  ];
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording', events });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, {
+    type: 'adjustWorkTrackVolume',
+    trackId: 'track-1',
+    delta: -1,
+  });
+
+  const exportState = applyProductAction(state, { type: 'exportCurrentWork' });
+  const saveShareState = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+
+  expect(exportState.library.exportedAudios).toHaveLength(0);
+  expect(exportState.workExportStatus).toEqual({
+    status: 'failed',
+    workId: 'work-1',
+    message: 'No audible tracks are available to export.',
+  });
+  expect(saveShareState.library.exportedAudios).toHaveLength(0);
+  expect(saveShareState.workSaveStatus).toBe('saving');
+  expect(saveShareState.workExportStatus).toEqual({
+    status: 'failed',
+    workId: 'work-1',
+    message: 'No audible tracks are available to export.',
+  });
+});
+
+test('does not export a reference-only work when the source shared recording is unavailable', () => {
+  const missingReferenceWork: Work = {
+    id: 'work-missing-reference',
+    title: 'Missing Reference Remix',
+    createdAt: '2026-07-04T10:00:00.000Z',
+    updatedAt: '2026-07-04T10:00:00.000Z',
+    source: 'remix',
+    syncState: 'local_only',
+    tracks: [
+      {
+        id: 'track-reference',
+        kind: 'reference',
+        sourceShareId: 'missing-shared-recording',
+        title: 'Missing Shared Recording',
+        authorDisplayName: 'Missing',
+        sourceLabel: 'shared feed demo',
+        volume: 0.75,
+        mute: false,
+        solo: false,
+        startedAtBeat: 1,
+        createdAt: '2026-07-04T10:00:00.000Z',
+      },
+    ],
+  };
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+  state = {
+    ...state,
+    currentWorkId: missingReferenceWork.id,
+    library: {
+      ...state.library,
+      works: [missingReferenceWork],
+    },
+  };
+
+  state = completeCurrentWorkExport(state);
+
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.workExportStatus).toEqual({
+    status: 'failed',
+    workId: 'work-missing-reference',
+    message: 'Reference audio source is unavailable.',
+  });
+});
+
+test('clears previous playback failure when previewing the current S07 work again', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, {
+    type: 'failPlayerPlayback',
+    message: 'previous preview failed',
+  });
+
+  state = applyProductAction(state, { type: 'playCurrentWorkMix' });
+
+  expect(state.playerPlaybackStatus).toEqual({ status: 'playing' });
 });
 
 test('publishes exported audio only after the share service succeeds', () => {
@@ -1078,6 +2435,7 @@ test('publishes exported audio only after the share service succeeds', () => {
     workId: state.currentWorkId!,
     audioUri: 'file://garak/export-1.wav',
     durationSeconds: 31,
+    renderKind: 'demo_sample',
   });
 
   state = applyProductAction(state, { type: 'publishShareTarget' });
@@ -1088,6 +2446,7 @@ test('publishes exported audio only after the share service succeeds', () => {
     target: { kind: 'exportedAudio', id: 'export-1' },
   });
   expect(state.library.exportedAudios[0].shareState).toBe('ready');
+  expect(state.library.exportedAudios[0].renderKind).toBe('demo_sample');
 
   state = applyProductAction(state, {
     type: 'completeSharePublish',
@@ -1112,6 +2471,160 @@ test('publishes exported audio only after the share service succeeds', () => {
     shareMethod: 'link',
     sharedAt: '2026-06-26T00:00:00.000Z',
   });
+});
+
+test('ignores stale share publish completions after the target is no longer publishing', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-26T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'saveAndShareCurrentWork' });
+  state = applyProductAction(state, {
+    type: 'completeWorkAudioExport',
+    workId: state.currentWorkId!,
+    audioUri: 'file://garak/export-1.wav',
+    durationSeconds: 31,
+    renderKind: 'demo_sample',
+  });
+  state = applyProductAction(state, { type: 'publishShareTarget' });
+  state = {
+    ...state,
+    sharePublishStatus: { status: 'idle' },
+    library: {
+      ...state.library,
+      exportedAudios: [],
+    },
+  };
+
+  const unchanged = applyProductAction(state, {
+    type: 'completeSharePublish',
+    target: { kind: 'exportedAudio', id: 'export-1' },
+    remoteId: 'remote-share-1',
+    shareUrl: 'https://garak.test/share/remote-share-1',
+    expiresAtMs: 1783036800000,
+    shareMethod: 'link',
+  });
+
+  expect(unchanged.sharePublishStatus).toEqual({ status: 'idle' });
+  expect(unchanged.library.exportedAudios).toHaveLength(0);
+  expect(unchanged.screenFlow.currentScreen).toBe('S17');
+});
+
+test('ignores event replay share publish completions when the source work is missing', () => {
+  const state = {
+    ...createInitialGarakProductState({
+      now: () => '2026-06-26T00:00:00.000Z',
+    }),
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-event-replay' },
+    sharePublishStatus: {
+      status: 'publishing' as const,
+      target: { kind: 'exportedAudio' as const, id: 'export-event-replay' },
+    },
+    library: {
+      works: [],
+      exportedAudios: [
+        {
+          id: 'export-event-replay',
+          kind: 'exported_audio' as const,
+          workId: 'missing-work',
+          title: 'Event Replay Export',
+          durationSeconds: 12,
+          instrumentNames: ['Gayageum'],
+          createdAt: '2026-06-26T00:00:00.000Z',
+          audioUri: 'garak://library-demo/export-fallback',
+          renderKind: 'event_replay' as const,
+          sourceTakeId: 'take-1',
+          shareState: 'ready' as const,
+        },
+      ],
+      practiceResults: [],
+    },
+  };
+
+  const unchanged = applyProductAction(state, {
+    type: 'completeSharePublish',
+    target: { kind: 'exportedAudio', id: 'export-event-replay' },
+    remoteId: 'remote-share-1',
+    shareUrl: 'https://garak.test/share/remote-share-1',
+    expiresAtMs: 1783036800000,
+    shareMethod: 'link',
+  });
+
+  expect(unchanged.sharePublishStatus).toEqual({
+    status: 'publishing',
+    target: { kind: 'exportedAudio', id: 'export-event-replay' },
+  });
+  expect(unchanged.library.exportedAudios[0].shareState).toBe('ready');
+  expect(unchanged.screenFlow.currentScreen).toBe('S01');
+});
+
+test('does not publish placeholder event replay exports even when their source take exists', () => {
+  const sourceWork = createWorkWithMutedReplaySource('work-1');
+  const state = {
+    ...createInitialGarakProductState({
+      now: () => '2026-06-26T00:00:00.000Z',
+    }),
+    screenFlow: {
+      ...createInitialGarakProductState().screenFlow,
+      currentScreen: 'S17' as const,
+    },
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-placeholder-replay' },
+    sharePublishStatus: {
+      status: 'idle' as const,
+    },
+    library: {
+      works: [sourceWork],
+      exportedAudios: [
+        {
+          id: 'export-placeholder-replay',
+          kind: 'exported_audio' as const,
+          workId: sourceWork.id,
+          title: 'Placeholder Event Replay Export',
+          durationSeconds: 12,
+          instrumentNames: ['Janggu'],
+          createdAt: '2026-06-26T00:00:00.000Z',
+          audioUri: 'placeholder://event-replay.wav',
+          renderKind: 'event_replay' as const,
+          sourceTakeId: 'take-audible',
+          shareState: 'ready' as const,
+        },
+      ],
+      practiceResults: [],
+    },
+  };
+
+  const publishAttempt = applyProductAction(state, { type: 'publishShareTarget' });
+
+  expect(publishAttempt.sharePublishStatus).toEqual({ status: 'idle' });
+  expect(publishAttempt.screenFlow.currentScreen).toBe('S17');
+
+  const injectedPublishingState = {
+    ...state,
+    sharePublishStatus: {
+      status: 'publishing' as const,
+      target: { kind: 'exportedAudio' as const, id: 'export-placeholder-replay' },
+    },
+  };
+  const completeAttempt = applyProductAction(injectedPublishingState, {
+    type: 'completeSharePublish',
+    target: { kind: 'exportedAudio', id: 'export-placeholder-replay' },
+    remoteId: 'remote-share-1',
+    shareUrl: 'https://garak.test/share/remote-share-1',
+    expiresAtMs: 1783036800000,
+    shareMethod: 'link',
+  });
+
+  expect(completeAttempt.sharePublishStatus).toEqual({
+    status: 'publishing',
+    target: { kind: 'exportedAudio', id: 'export-placeholder-replay' },
+  });
+  expect(completeAttempt.library.exportedAudios[0].shareState).toBe('ready');
 });
 
 test('does not add an S09 instrument track until recording starts, then applies the recorded take', () => {
@@ -1152,6 +2665,41 @@ test('does not add an S09 instrument track until recording starts, then applies 
   ).toEqual([]);
 });
 
+test('does not add an empty S09 instrument track after recording capture start fails', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  const trackCountBeforeRecording = state.library.works[0].tracks.length;
+
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const captureAttemptId = requireRecordingCaptureAttemptId(state);
+  state = applyProductAction(state, {
+    type: 'failRecordingCaptureStart',
+    instrument: 'daegeum',
+    captureAttemptId,
+    message: 'microphone permission denied',
+  });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack' });
+
+  expect(state.screenFlow.currentScreen).toBe('S09');
+  expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeRecording);
+  expect(state.pendingFreePlayTake).toBeUndefined();
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'failed',
+    instrument: 'daegeum',
+    message: 'microphone permission denied',
+  });
+});
+
 test('stores S09 extra instrument take recording metadata like the first free-play take', () => {
   const recordedEvents: PerformanceEvent[] = [
     { type: 'string_pluck', tsMs: 500, stringIndex: 2, velocity: 0.7 },
@@ -1189,6 +2737,321 @@ test('stores S09 extra instrument take recording metadata like the first free-pl
   });
 });
 
+test('marks S09 recording capture as stopping after applying the extra instrument take', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'daegeum',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack' });
+
+  expect(state.screenFlow.currentScreen).toBe('S07');
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'stopping',
+    instrument: 'daegeum',
+  });
+});
+
+test('marks recording capture as failed when the stopped capture target take is gone', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'gayageum',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'completePerformance' });
+
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'missing-take',
+    recordingUri: 'file://garak/takes/take-1.m4a',
+    durationSeconds: 6,
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'failed',
+    instrument: 'gayageum',
+    message: 'Recording capture target is unavailable.',
+  });
+});
+
+test('does not let stale S05 recording capture attach clear a newer S09 stopping state', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, { type: 'completePerformance' });
+  const firstTrack = state.library.works[0].tracks[0];
+  const firstTakeId = firstTrack.kind === 'instrument' ? firstTrack.takes[0].id : '';
+
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, { type: 'applyInstrumentTrack' });
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'stopping',
+    instrument: 'daegeum',
+  });
+
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: firstTakeId,
+    recordingUri: 'file://garak/takes/stale-s05.m4a',
+  } as Parameters<typeof applyProductAction>[1]);
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'stopping',
+    instrument: 'daegeum',
+  });
+});
+
+test('does not let stale S05 recording capture attach clear a newer S09 recording state', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+
+  state = applyProductAction(state, {
+    type: 'attachRecordingCaptureToTake',
+    workId: 'work-1',
+    trackId: 'track-1',
+    takeId: 'take-1',
+    recordingUri: 'file://garak/takes/stale-s05.m4a',
+    durationSeconds: 6,
+  } as Parameters<typeof applyProductAction>[1]);
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+  });
+  const firstTrack = state.library.works[0]?.tracks[0];
+  expect(firstTrack?.kind === 'instrument' ? firstTrack.takes[0].recordingUri : undefined).toBe(
+    'file://garak/takes/stale-s05.m4a',
+  );
+});
+
+test('does not let stale S05 recording capture failures overwrite a newer S09 recording state', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+
+  state = applyProductAction(state, {
+    type: 'failRecordingCaptureStop',
+    instrument: 'gayageum',
+    message: 'late S05 stop failure',
+  } as Parameters<typeof applyProductAction>[1]);
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+  });
+
+  state = applyProductAction(state, {
+    type: 'failRecordingCaptureStart',
+    instrument: 'gayageum',
+    message: 'late S05 start failure',
+  } as Parameters<typeof applyProductAction>[1]);
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+  });
+});
+
+test('ignores stale same-instrument recording capture start results after restart', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const firstAttempt = state.recordingCaptureStatus.status === 'starting'
+    ? state.recordingCaptureStatus.captureAttemptId
+    : '';
+
+  state = applyProductAction(state, {
+    type: 'restartInstrumentTrackRecording',
+    events: [{ type: 'string_pluck', tsMs: 10, stringIndex: 1, velocity: 0.5 }],
+  });
+  const secondAttempt = state.recordingCaptureStatus.status === 'starting'
+    ? state.recordingCaptureStatus.captureAttemptId
+    : '';
+
+  expect(secondAttempt).not.toBe(firstAttempt);
+
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'daegeum',
+    captureAttemptId: firstAttempt,
+  });
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+    captureAttemptId: secondAttempt,
+  });
+
+  state = applyProductAction(state, {
+    type: 'failRecordingCaptureStart',
+    instrument: 'daegeum',
+    captureAttemptId: firstAttempt,
+    message: 'late start failure',
+  });
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+    captureAttemptId: secondAttempt,
+  });
+});
+
+test('ignores id-less same-instrument recording capture results after restart', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'gayageum' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  const firstAttempt = state.recordingCaptureStatus.status === 'starting'
+    ? state.recordingCaptureStatus.captureAttemptId
+    : '';
+
+  state = applyProductAction(state, {
+    type: 'restartInstrumentTrackRecording',
+    events: [{ type: 'string_pluck', tsMs: 10, stringIndex: 1, velocity: 0.5 }],
+  });
+  const secondAttempt = state.recordingCaptureStatus.status === 'starting'
+    ? state.recordingCaptureStatus.captureAttemptId
+    : '';
+
+  expect(secondAttempt).not.toBe(firstAttempt);
+
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'daegeum',
+  } as Parameters<typeof applyProductAction>[1]);
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+    captureAttemptId: secondAttempt,
+  });
+
+  state = applyProductAction(state, {
+    type: 'failRecordingCaptureStart',
+    instrument: 'daegeum',
+    message: 'legacy id-less start failure',
+  } as Parameters<typeof applyProductAction>[1]);
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+    captureAttemptId: secondAttempt,
+  });
+});
+
+test('surfaces S09 recording capture discard failures after canceling the take', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = applyProductAction(state, { type: 'addTrack' });
+  state = applyProductAction(state, { type: 'chooseInstrumentTrack', instrument: 'daegeum' });
+  state = applyProductAction(state, { type: 'startPerformanceRecording' });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'daegeum',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  state = applyProductAction(state, { type: 'cancelInstrumentTrack' });
+
+  state = applyProductAction(state, {
+    type: 'failRecordingCaptureStop',
+    instrument: 'daegeum',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+    message: 'recorder cleanup failed',
+  });
+
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'failed',
+    instrument: 'daegeum',
+    message: 'recorder cleanup failed',
+  });
+});
+
 test('records, restarts, and cancels an S09 extra instrument take before adding a track', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -1213,8 +3076,17 @@ test('records, restarts, and cancels an S09 extra instrument take before adding 
   ];
 
   state = applyProductAction(state, { type: 'startPerformanceRecording', events: firstTakeEvents });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureStart',
+    instrument: 'daegeum',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
   expect(state.screenFlow.currentScreen).toBe('S09');
   expect(state.pendingFreePlayTake?.events).toEqual(firstTakeEvents);
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'capturing',
+    instrument: 'daegeum',
+  });
 
   state = applyProductAction(state, {
     type: 'restartInstrumentTrackRecording',
@@ -1222,11 +3094,24 @@ test('records, restarts, and cancels an S09 extra instrument take before adding 
   });
   expect(state.screenFlow.currentScreen).toBe('S09');
   expect(state.pendingFreePlayTake?.events).toEqual(secondTakeEvents);
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'starting',
+    instrument: 'daegeum',
+  });
   expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeRecording);
 
   state = applyProductAction(state, { type: 'cancelInstrumentTrack' });
   expect(state.screenFlow.currentScreen).toBe('S07');
   expect(state.pendingFreePlayTake).toBeUndefined();
+  expect(state.recordingCaptureStatus).toMatchObject({
+    status: 'discarding',
+    instrument: 'daegeum',
+  });
+  state = applyProductAction(state, {
+    type: 'completeRecordingCaptureDiscard',
+    captureAttemptId: requireRecordingCaptureAttemptId(state),
+  });
+  expect(state.recordingCaptureStatus).toMatchObject({ status: 'idle' });
   expect(state.currentWorkId).toBe(currentWorkId);
   expect(state.library.works[0].tracks).toHaveLength(trackCountBeforeRecording);
 
@@ -1684,6 +3569,9 @@ test('remixes a shared demo recording into a new editable reference work', () =>
 
   state = applyProductAction(state, { type: 'navigate', target: 'S20' });
   state = applyProductAction(state, { type: 'navigate', target: 'S21' });
+
+  expect(state.selectedSharedRecordingId).toBe('shared-morning-arirang');
+
   state = applyProductAction(state, { type: 'setWorkPlayheadBeat', beat: 7 });
   state = applyProductAction(state, { type: 'remixSharedRecording' });
 
@@ -1749,6 +3637,23 @@ test('opens the S20 share feed player through the connected library player actio
   expect(state.selectedPlayerItem).toEqual({ kind: 'demo', title: 'My Arirang' });
 });
 
+test('opens and starts the S20 share feed player from a visible play affordance', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-07-04T10:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, {
+    type: 'playLibraryItemNow',
+    item: { kind: 'demo', title: 'My Arirang' },
+  });
+
+  expect(state.screenFlow.currentScreen).toBe('S19');
+  expect(state.selectedPlayerItem).toEqual({ kind: 'demo', title: 'My Arirang' });
+  expect(state.playingPlayerItem).toEqual({ kind: 'demo', title: 'My Arirang' });
+  expect(state.playerPlaybackStatus).toEqual({ status: 'playing' });
+});
+
 test('saves a shared demo recording as a playable library audio item', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -1756,6 +3661,9 @@ test('saves a shared demo recording as a playable library audio item', () => {
 
   state = applyProductAction(state, { type: 'navigate', target: 'S20' });
   state = applyProductAction(state, { type: 'navigate', target: 'S21' });
+
+  expect(state.selectedSharedRecordingId).toBe('shared-morning-arirang');
+
   state = applyProductAction(state, { type: 'saveSharedRecording' });
 
   expect(state.screenFlow.currentScreen).toBe('S18');
@@ -1770,9 +3678,10 @@ test('saves a shared demo recording as a playable library audio item', () => {
     sourceShareId: 'shared-morning-arirang',
     authorDisplayName: 'Minsu_Kim',
     sourceLabel: '공유 피드 데모',
-    audioUri: 'placeholder://shared-morning-arirang.wav',
+    renderKind: 'demo_sample',
     shareState: 'ready',
   });
+  expect(state.library.exportedAudios[0].audioUri).not.toMatch(/^placeholder:\/\//);
   expect(state.library.exportedAudios[0].workId).toBeUndefined();
   expect(state.selectedPlayerItem).toEqual({
     kind: 'exportedAudio',
@@ -1822,8 +3731,9 @@ test('uses the selected S20 shared recording when remixing and saving from S21',
     instrumentNames: ['대금'],
     sourceShareId: 'recent-kdrama-ost',
     authorDisplayName: 'Drama_Garak',
-    audioUri: 'placeholder://recent-kdrama-ost.wav',
+    renderKind: 'demo_sample',
   });
+  expect(saveState.library.exportedAudios[0].audioUri).not.toMatch(/^placeholder:\/\//);
 });
 
 test('does not remix an S21 shared recording when remixing is unavailable', () => {
@@ -1842,6 +3752,52 @@ test('does not remix an S21 shared recording when remixing is unavailable', () =
   expect(state.selectedSharedRecordingId).toBe('recent-korea-minyo');
   expect(state.currentWorkId).toBeUndefined();
   expect(state.library.works).toHaveLength(0);
+});
+
+test('does not remix a missing S21 shared recording through the featured fallback', () => {
+  let state = createInitialGarakProductState();
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, {
+    type: 'openSharedRecordingDetail',
+    recordingId: 'recent-kdrama-ost',
+  });
+  state = {
+    ...state,
+    selectedSharedRecordingId: 'missing-shared-recording',
+  };
+
+  state = applyProductAction(state, { type: 'remixSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S21');
+  expect(state.currentWorkId).toBeUndefined();
+  expect(state.library.works).toHaveLength(0);
+  expect(state.playerPlaybackStatus).toEqual({
+    status: 'failed',
+    message: 'Selected shared recording is unavailable.',
+  });
+});
+
+test('does not save a missing S21 shared recording through the featured fallback', () => {
+  let state = createInitialGarakProductState();
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, {
+    type: 'openSharedRecordingDetail',
+    recordingId: 'recent-kdrama-ost',
+  });
+  state = {
+    ...state,
+    selectedSharedRecordingId: 'missing-shared-recording',
+  };
+
+  state = applyProductAction(state, { type: 'saveSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S21');
+  expect(state.library.exportedAudios).toHaveLength(0);
+  expect(state.selectedPlayerItem).toBeUndefined();
+  expect(state.playerPlaybackStatus).toEqual({
+    status: 'failed',
+    message: 'Selected shared recording is unavailable.',
+  });
 });
 
 test('plays and pauses the selected S21 shared recording without changing the detail screen', () => {
@@ -1865,6 +3821,57 @@ test('plays and pauses the selected S21 shared recording without changing the de
   expect(state.playingSharedRecordingId).toBeUndefined();
 });
 
+test('plays the default featured S21 shared recording after generic detail navigation', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, { type: 'navigate', target: 'S21' });
+  state = applyProductAction(state, { type: 'playSelectedSharedRecording' });
+
+  expect(state.screenFlow.currentScreen).toBe('S21');
+  expect(state.selectedSharedRecordingId).toBe('shared-morning-arirang');
+  expect(state.playingSharedRecordingId).toBe('shared-morning-arirang');
+  expect(state.playerPlaybackStatus).toEqual({ status: 'playing' });
+});
+
+test('does not play a missing S21 shared recording through the featured fallback', () => {
+  let state = createInitialGarakProductState();
+  state = {
+    ...state,
+    selectedSharedRecordingId: 'missing-shared-recording',
+  };
+
+  state = applyProductAction(state, { type: 'playSelectedSharedRecording' });
+
+  expect(state.playingSharedRecordingId).toBeUndefined();
+  expect(state.playerPlaybackStatus).toEqual({
+    status: 'failed',
+    message: 'Selected shared recording is unavailable.',
+  });
+});
+
+test('clears S21 shared recording playback when audio playback fails', () => {
+  let state = createInitialGarakProductState();
+
+  state = applyProductAction(state, { type: 'navigate', target: 'S20' });
+  state = applyProductAction(state, {
+    type: 'openSharedRecordingDetail',
+    recordingId: 'recent-kpop-demon-hunters',
+  });
+  state = applyProductAction(state, { type: 'playSelectedSharedRecording' });
+  state = applyProductAction(state, {
+    type: 'failPlayerPlayback',
+    message: 'speaker route unavailable',
+  });
+
+  expect(state.screenFlow.currentScreen).toBe('S21');
+  expect(state.playingSharedRecordingId).toBeUndefined();
+  expect(state.playerPlaybackStatus).toEqual({
+    status: 'failed',
+    message: 'speaker route unavailable',
+  });
+});
+
 test('publishes the selected exported audio from S17 and marks it shared', () => {
   let state = createInitialGarakProductState({
     now: () => '2026-06-18T00:00:00.000Z',
@@ -1876,7 +3883,7 @@ test('publishes the selected exported audio from S17 and marks it shared', () =>
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'navigate', target: 'S17' });
   state = {
     ...state,
@@ -1928,7 +3935,7 @@ test('routes S17 save-only and cancel actions through connected share preparatio
   saveState = applyProductAction(saveState, { type: 'next' });
   saveState = applyProductAction(saveState, { type: 'startWithDefaults' });
   saveState = completeRecordedFreePlay(saveState);
-  saveState = applyProductAction(saveState, { type: 'exportCurrentWork' });
+  saveState = completeCurrentWorkExport(saveState);
   saveState = applyProductAction(saveState, { type: 'saveShareTargetOnly' });
 
   expect(saveState.screenFlow.currentScreen).toBe('S18');
@@ -1970,12 +3977,13 @@ test('previews the selected S17 share target without publishing it', () => {
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'navigate', target: 'S17' });
   state = applyProductAction(state, { type: 'previewShareTarget' });
 
   expect(state.screenFlow.currentScreen).toBe('S17');
   expect(state.sharePreviewStatus).toBe('playing');
+  expect(state.playerPlaybackStatus).toEqual({ status: 'playing' });
   expect(state.library.exportedAudios[0].shareState).toBe('ready');
 
   state = applyProductAction(state, { type: 'publishShareTarget' });
@@ -1986,6 +3994,30 @@ test('previews the selected S17 share target without publishing it', () => {
     target: { kind: 'exportedAudio', id: 'export-1' },
   });
   expect(state.sharePreviewStatus).toBeUndefined();
+});
+
+test('clears previous playback failure when previewing the S17 share target again', () => {
+  let state = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+
+  state = applyProductAction(state, { type: 'selectMode', mode: 'freeCreation' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'selectInstrument', instrument: 'janggu' });
+  state = applyProductAction(state, { type: 'next' });
+  state = applyProductAction(state, { type: 'startWithDefaults' });
+  state = completeRecordedFreePlay(state);
+  state = completeCurrentWorkExport(state);
+  state = applyProductAction(state, { type: 'navigate', target: 'S17' });
+  state = applyProductAction(state, {
+    type: 'failPlayerPlayback',
+    message: 'previous preview failed',
+  });
+
+  state = applyProductAction(state, { type: 'previewShareTarget' });
+
+  expect(state.sharePreviewStatus).toBe('playing');
+  expect(state.playerPlaybackStatus).toEqual({ status: 'playing' });
 });
 
 test('summarizes S17 share preparation with preview, publish, save-only, and cancel CTAs', () => {
@@ -1999,7 +4031,7 @@ test('summarizes S17 share preparation with preview, publish, save-only, and can
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'navigate', target: 'S17' });
 
   expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
@@ -2018,11 +4050,103 @@ test('opens S17 from the S19 player for the selected exported audio', () => {
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'shareSelectedPlayerItem' });
 
   expect(state.screenFlow.currentScreen).toBe('S17');
   expect(state.selectedPlayerItem).toEqual({
+    kind: 'exportedAudio',
+    exportedAudioId: 'export-1',
+  });
+});
+
+test('does not open S17 from the S19 player for event replay exports with a missing source take', () => {
+  const initialState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+  const state = {
+    ...initialState,
+    screenFlow: {
+      ...initialState.screenFlow,
+      currentScreen: 'S19' as const,
+    },
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-1' },
+    library: {
+      works: [
+        {
+          id: 'work-1',
+          title: 'Source work',
+          createdAt: '2026-06-18T00:00:00.000Z',
+          updatedAt: '2026-06-18T00:00:00.000Z',
+          source: 'free_creation' as const,
+          syncState: 'local_only' as const,
+          tracks: [],
+        },
+      ],
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio' as const,
+          workId: 'work-1',
+          title: 'Missing Source Take Export',
+          durationSeconds: 24,
+          instrumentNames: ['Janggu'],
+          createdAt: '2026-06-18T00:00:00.000Z',
+          audioUri: 'garak://library-demo/export-fallback',
+          renderKind: 'event_replay' as const,
+          sourceTakeId: 'missing-take',
+          shareState: 'ready' as const,
+        },
+      ],
+      practiceResults: [],
+    },
+  };
+
+  const unchanged = applyProductAction(state, { type: 'shareSelectedPlayerItem' });
+
+  expect(unchanged.screenFlow.currentScreen).toBe('S19');
+  expect(unchanged.selectedPlayerItem).toEqual({
+    kind: 'exportedAudio',
+    exportedAudioId: 'export-1',
+  });
+});
+
+test('does not open S17 from the S19 player for event replay exports whose source take is muted', () => {
+  const initialState = createInitialGarakProductState({
+    now: () => '2026-06-18T00:00:00.000Z',
+  });
+  const state = {
+    ...initialState,
+    screenFlow: {
+      ...initialState.screenFlow,
+      currentScreen: 'S19' as const,
+    },
+    selectedPlayerItem: { kind: 'exportedAudio' as const, exportedAudioId: 'export-1' },
+    library: {
+      works: [createWorkWithMutedReplaySource('work-1')],
+      exportedAudios: [
+        {
+          id: 'export-1',
+          kind: 'exported_audio' as const,
+          workId: 'work-1',
+          title: 'Muted Source Take Export',
+          durationSeconds: 24,
+          instrumentNames: ['Janggu'],
+          createdAt: '2026-06-18T00:00:00.000Z',
+          audioUri: 'garak://library-demo/export-fallback',
+          renderKind: 'event_replay' as const,
+          sourceTakeId: 'take-muted',
+          shareState: 'ready' as const,
+        },
+      ],
+      practiceResults: [],
+    },
+  };
+
+  const unchanged = applyProductAction(state, { type: 'shareSelectedPlayerItem' });
+
+  expect(unchanged.screenFlow.currentScreen).toBe('S19');
+  expect(unchanged.selectedPlayerItem).toEqual({
     kind: 'exportedAudio',
     exportedAudioId: 'export-1',
   });
@@ -2039,7 +4163,7 @@ test('summarizes S19 player management CTAs from the detailed document', () => {
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
 
   expect(state.screenFlow.currentScreen).toBe('S19');
   expect(getCurrentScreenSummary(state).primaryCtas).toEqual(
@@ -2059,7 +4183,7 @@ test('opens the original work editor from the S19 player when the export has a w
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
   state = applyProductAction(state, { type: 'setWorkPlayheadBeat', beat: 7 });
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'openSelectedPlayerEditor' });
 
   expect(state.screenFlow.currentScreen).toBe('S07');
@@ -2078,7 +4202,7 @@ test('plays and pauses the selected S19 library player item without leaving the 
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'playSelectedPlayerItem' });
 
   expect(state.screenFlow.currentScreen).toBe('S19');
@@ -2166,7 +4290,7 @@ test('deletes the selected exported audio from the S19 player and returns to the
   state = applyProductAction(state, { type: 'next' });
   state = applyProductAction(state, { type: 'startWithDefaults' });
   state = completeRecordedFreePlay(state);
-  state = applyProductAction(state, { type: 'exportCurrentWork' });
+  state = completeCurrentWorkExport(state);
   state = applyProductAction(state, { type: 'playSelectedPlayerItem' });
   state = applyProductAction(state, { type: 'deleteSelectedPlayerItem' });
 

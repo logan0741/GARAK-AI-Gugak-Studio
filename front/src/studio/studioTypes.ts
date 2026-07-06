@@ -12,6 +12,8 @@ export type ShareState = 'ready' | 'shared';
 
 export type ShareMethod = 'file' | 'link';
 
+export type ExportRenderKind = 'audio_capture' | 'event_replay' | 'demo_sample';
+
 export type LiveJangdanGuide = {
   presetId: JangdanPresetId;
   bpm: number;
@@ -97,6 +99,10 @@ export type ExportedAudio = {
   instrumentNames: string[];
   createdAt: string;
   audioUri: string;
+  renderKind?: ExportRenderKind;
+  sourceTakeId?: string;
+  sourceEventCount?: number;
+  sourceRecordingUri?: string;
   shareState: ShareState;
   remoteShareId?: string;
   shareUrl?: string;
