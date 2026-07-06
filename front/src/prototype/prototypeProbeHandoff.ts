@@ -38,7 +38,7 @@ export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
 
   const draft = input.inspectorDraft.probeTemplate;
 
-  return promoteAudioEngineProbeDraftToPhysicalDevice({
+  const promotedProbe = promoteAudioEngineProbeDraftToPhysicalDevice({
     draft: {
       candidate: draft.candidate,
       evidenceSource: draft.evidenceSource,
@@ -57,6 +57,11 @@ export function buildPhysicalDeviceProbeFromPrototypeInspectorDraft(
     measuredAt: input.measuredAt,
     measurements: input.measurements,
   });
+
+  return {
+    ...promotedProbe,
+    measurementNotes: buildPrototypeProbeMeasurementNotes(input, promotedProbe),
+  };
 }
 
 export function isPrototypeObservedRuntimeReady(
@@ -207,6 +212,18 @@ function assertObservedRuntimeReady(inspectorDraft: PrototypeProbeDraftInspector
 
 function isPositiveRecordingCaptureSeconds(input: unknown): input is number {
   return typeof input === 'number' && Number.isFinite(input) && input > 0;
+}
+
+function buildPrototypeProbeMeasurementNotes(
+  input: PhysicalDevicePrototypeProbeHandoffInput,
+  probe: AudioEngineProbe,
+): string {
+  return [
+    `${probe.candidate} physical-device probe measured on ${probe.deviceLabel}`,
+    `measuredAt ${probe.measuredAt}`,
+    `touch latency ${input.measurements.touchToSoundLatencyMs} ms`,
+    'prototype handoff runtime was native-candidate ready before qa:day5-audio probe record generation',
+  ].join('; ');
 }
 
 function isNonNegativeFiniteNumber(input: unknown): input is number {

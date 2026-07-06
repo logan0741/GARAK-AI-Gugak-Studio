@@ -18,19 +18,24 @@ const measurements = {
 };
 
 test('builds a physical-device probe only when the requested native runtime is ready', () => {
-  expect(
-    buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
-      inspectorDraft: createInspectorDraft(),
-      measuredAt: '2026-06-08T03:00:00.000Z',
-      measurements,
-    }),
-  ).toEqual({
+  const probe = buildPhysicalDeviceProbeFromPrototypeInspectorDraft({
+    inspectorDraft: createInspectorDraft(),
+    measuredAt: '2026-06-08T03:00:00.000Z',
+    measurements,
+  });
+
+  expect(probe).toEqual({
     candidate: 'react-native-audio-api',
     evidenceSource: 'physical-device',
     deviceLabel: 'Pixel 8 / Android 15',
     measuredAt: '2026-06-08T03:00:00.000Z',
+    measurementNotes: expect.stringContaining(
+      'react-native-audio-api physical-device probe measured on Pixel 8 / Android 15',
+    ),
     ...measurements,
   });
+  expect(probe.measurementNotes).toContain('measuredAt 2026-06-08T03:00:00.000Z');
+  expect(probe.measurementNotes).toContain('touch latency 38 ms');
 });
 
 test('wraps promoted prototype inspector drafts in a parseable Day 5 probe record', () => {

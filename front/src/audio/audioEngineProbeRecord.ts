@@ -143,6 +143,9 @@ function parseProbe(
   } else if (!isUtcIsoTimestamp(probe.measuredAt)) {
     errors.push(`${path}.measuredAt must be a UTC ISO timestamp`);
   }
+  if (probe.measurementNotes !== undefined && !isNonEmptyString(probe.measurementNotes)) {
+    errors.push(`${path}.measurementNotes must be a non-empty string when present`);
+  }
 
   for (const field of DURATION_PROBE_FIELDS) {
     if (!isNonNegativeFiniteNumber(probe[field])) {
@@ -186,6 +189,7 @@ function parseProbe(
       evidenceSource: probe.evidenceSource as AudioEngineEvidenceSource,
       deviceLabel: probe.deviceLabel as string,
       measuredAt: probe.measuredAt as string,
+      ...optionalStringField(probe, 'measurementNotes'),
       touchToSoundLatencyMs: probe.touchToSoundLatencyMs as number,
       ...optionalNumberField(probe, 'firstTouchLatencyMs'),
       ...optionalNumberField(probe, 'steadyTouchLatencyMs'),
@@ -198,6 +202,15 @@ function parseProbe(
       recordingCaptureSeconds: probe.recordingCaptureSeconds as number,
     },
   };
+}
+
+function optionalStringField<Field extends 'measurementNotes'>(
+  probe: Record<string, unknown>,
+  field: Field,
+): Pick<AudioEngineProbe, Field> | Record<string, never> {
+  return probe[field] === undefined
+    ? {}
+    : { [field]: probe[field] as string } as Pick<AudioEngineProbe, Field>;
 }
 
 function optionalNumberField<Field extends 'firstTouchLatencyMs' | 'steadyTouchLatencyMs'>(

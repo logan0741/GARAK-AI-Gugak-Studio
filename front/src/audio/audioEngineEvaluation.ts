@@ -21,6 +21,7 @@ export type AudioEngineProbe = {
   evidenceSource: AudioEngineEvidenceSource;
   deviceLabel: string;
   measuredAt: string;
+  measurementNotes?: string;
   touchToSoundLatencyMs: number;
   firstTouchLatencyMs?: number;
   steadyTouchLatencyMs?: number;

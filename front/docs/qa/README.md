@@ -6,6 +6,8 @@ The most important MVP QA area is audio and touch validation. Unit tests can pro
 
 Physical-device QA has been moved to Week 2. Week 1 implementation may continue on domain, prototype, sample, and QA harness code, but final audio-engine selection stays blocked until Week 2 physical-device evidence exists.
 
+For the D-2 Android presentation rehearsal, use `d2-demo-runbook.md`. It defines the short ASCII Android build path, ADB install/launch smoke command, required audible checks, Day-5 evidence check, and the fallback boundary when the device smoke gate remains `NOT_READY_FOR_D2_DEMO`. The D-2 runbook may use an `expo-audio`-only physical-device probe for presentation handoff, but this is D-2 scoped evidence only; it does not replace Week 2 Day-5 readiness, final engine selection, or the normal probe/readiness gates.
+
 Before the Week 2 Day 5-style engine review, create a smoke report template, record the Day 2, Day 3, and Day 4 physical-device smoke runs in it, then validate it:
 
 ```bash
@@ -24,6 +26,8 @@ npm run qa:day5-audio -- <probe-record.json>
 
 The readiness command is the bridge between smoke evidence and the Day 5 decision command. It requires a completed smoke report, exactly one physical-device probe for each required candidate, and matching physical-device labels across both files after trimming surrounding whitespace and normalizing slash spacing. When the smoke report is incomplete, its `Smoke report issues` line includes the concrete missing, duplicate, blocked, or device-label causes. When the probe record itself has missing candidates, duplicate physical-device probes, or mixed physical-device labels, those appear under `Probe record issues`. It does not write a new record and does not select the final engine.
 
+The `qa:day5-audio` command prints a summary for valid records, but it exits non-zero unless the summary reaches `FINAL_ENGINE_SELECTED`. Treat `INCOMPLETE_DEVICE_EVIDENCE`, `NO_FINAL_ENGINE`, and invalid probe records as failed gates even when the summary is readable.
+
 `src/audio/audioEngineProbeDraft.ts` may be used to create rehearsal drafts, but draft probes stay `estimate` and cannot select the final engine. When a tester has measured every required Day 5 field on a device, `promoteAudioEngineProbeDraftToPhysicalDevice()` can convert an estimate draft into a `physical-device` probe only if all manual measurement fields are supplied explicitly as non-null, correctly typed, in-range values and the resolved device label names the tested physical device. S05 warmup QA may also include optional `firstTouchLatencyMs` and `steadyTouchLatencyMs` values; when present, they are validated and evaluated separately.
 
 When promoting a draft to `physical-device`, replace `deviceLabel: "replace-with-physical-device-model"` with the actual tested device and OS. The prototype screen has a `Device / OS` input that updates the copyable probe draft before handoff. Clearing that input, entering a placeholder-like value such as `Device / OS`, or switching the requested candidate while that placeholder-like value is still present resets the copyable draft to `replace-with-physical-device-model` so a stale or fake physical device label is not copied by accident. The Day 5 parser rejects that placeholder and placeholder-like labels for final-selection evidence.
@@ -40,6 +44,15 @@ npm run qa:prototype-probe-record -- <prototype-handoff.json> <probe-record.json
 ```
 
 The check reports missing candidates, duplicate candidates, device label issues, timestamp issues, manifest issues, inspector draft issues, missing or invalid manual measurement fields, runtime readiness issues, and generated probe-record validation issues without writing a probe record or selecting an engine. Manual `measurements` must contain only the Day 5 required fields `touchToSoundLatencyMs`, `maxStableVoices`, `pitchBendSmooth`, `glissandoTriggeredStrings`, `muteReleaseClean`, `preloadStable`, `sessionFallbackPreserved`, and `recordingCaptureSeconds`, plus optional split-latency fields `firstTouchLatencyMs` and `steadyTouchLatencyMs`; extra keys are invalid measurement fields. The probe-record command rejects malformed handoff JSON shape, then enforces runtime readiness and the expected sample manifest before writing the probe record JSON file, then validates that the generated record passes the Day 5 parser. Combine one filled entry per required candidate in the same handoff file, then validate the output again with `npm run qa:day5-audio -- <probe-record.json>` before treating it as a Day 5 handoff.
+
+For D-2 presentation handoff only, the runbook can generate an `expo-audio`-only physical-device probe after the `expo-audio` handoff has real manual measurements:
+
+```bash
+npm run qa:prototype-handoff-check -- --d2-expo-only <expo-handoff.json>
+npm run qa:prototype-probe-record -- --d2-expo-only <expo-handoff.json> docs/qa/day-5-audio-engine-probes.real-device.json
+```
+
+This path is D-2 scoped evidence only. It can satisfy the D-2 smoke sidecar requirement for the `expo-audio` demo spine, but it is not final Day-5 readiness, not final engine selection, and must not be presented as `FINAL_ENGINE_SELECTED`; the normal Day-5 path still requires the required candidate probes and readiness gates.
 
 If each candidate was tested in a separate run, merge the copied handoff files before building the probe record. The merged handoff must still represent one physical device label across all candidate entries:
 

@@ -35,10 +35,17 @@ export type PrototypeHandoffReadinessReport = {
   probeRecordIssues: string[];
 };
 
-const REQUIRED_CANDIDATES: AudioEngineCandidateId[] = [
+export type PrototypeHandoffReadinessOptions = {
+  requiredCandidates?: readonly AudioEngineCandidateId[];
+};
+
+const FINAL_DAY5_REQUIRED_CANDIDATES: readonly AudioEngineCandidateId[] = [
   'expo-audio',
   'react-native-audio-api',
 ];
+const D2_EXPO_ONLY_REQUIRED_CANDIDATES: readonly AudioEngineCandidateId[] = ['expo-audio'];
+const PROTOTYPE_HANDOFF_CHECK_USAGE =
+  'Usage: npm run qa:prototype-handoff-check -- [--d2-expo-only] <prototype-handoff.json>';
 const UTC_ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 const MEASUREMENT_FIELDS = [
@@ -89,19 +96,19 @@ export type PrototypeHandoffCheckCommandInput = {
 export function runPrototypeHandoffCheckCommand(
   input: PrototypeHandoffCheckCommandInput,
 ): number {
-  const [prototypeHandoffPath] = input.argv;
+  const args = parsePrototypeHandoffCheckArgs(input.argv);
 
-  if (!prototypeHandoffPath) {
-    input.writeStderr('Usage: npm run qa:prototype-handoff-check -- <prototype-handoff.json>');
+  if (!args.prototypeHandoffPath) {
+    input.writeStderr(PROTOTYPE_HANDOFF_CHECK_USAGE);
     return 1;
   }
 
   let handoffText: string;
 
   try {
-    handoffText = input.readTextFile(prototypeHandoffPath);
+    handoffText = input.readTextFile(args.prototypeHandoffPath);
   } catch {
-    input.writeStderr(`Could not read prototype handoff: ${prototypeHandoffPath}`);
+    input.writeStderr(`Could not read prototype handoff: ${args.prototypeHandoffPath}`);
     return 1;
   }
 
@@ -110,7 +117,7 @@ export function runPrototypeHandoffCheckCommand(
   try {
     handoffInput = JSON.parse(handoffText);
   } catch {
-    input.writeStderr(`Invalid JSON in prototype handoff: ${prototypeHandoffPath}`);
+    input.writeStderr(`Invalid JSON in prototype handoff: ${args.prototypeHandoffPath}`);
     return 1;
   }
 
@@ -120,19 +127,24 @@ export function runPrototypeHandoffCheckCommand(
     return 1;
   }
 
-  const report = buildPrototypeHandoffReadinessReport(parseResult.handoff);
+  const report = buildPrototypeHandoffReadinessReport(parseResult.handoff, {
+    requiredCandidates: args.requiredCandidates,
+  });
   input.writeStdout(formatPrototypeHandoffReadinessReport(report));
   return report.status === 'READY_FOR_PROBE_RECORD' ? 0 : 1;
 }
 
 export function buildPrototypeHandoffReadinessReport(
   handoff: PrototypeHandoffFile,
+  options: PrototypeHandoffReadinessOptions = {},
 ): PrototypeHandoffReadinessReport {
+  const requiredCandidates =
+    options.requiredCandidates ?? FINAL_DAY5_REQUIRED_CANDIDATES;
   const candidateCounts = countCandidates(handoff.entries);
-  const missingCandidates = REQUIRED_CANDIDATES.filter(
+  const missingCandidates = requiredCandidates.filter(
     (candidate) => (candidateCounts.get(candidate) ?? 0) === 0,
   );
-  const duplicateCandidates = REQUIRED_CANDIDATES.filter(
+  const duplicateCandidates = requiredCandidates.filter(
     (candidate) => (candidateCounts.get(candidate) ?? 0) > 1,
   );
   const deviceLabelIssues = collectDeviceLabelIssues(handoff.entries);
@@ -180,6 +192,29 @@ export function buildPrototypeHandoffReadinessReport(
     invalidMeasurementFields,
     runtimeIssues,
     probeRecordIssues,
+  };
+}
+
+export function getD2ExpoOnlyPrototypeHandoffReadinessOptions(): PrototypeHandoffReadinessOptions {
+  return {
+    requiredCandidates: D2_EXPO_ONLY_REQUIRED_CANDIDATES,
+  };
+}
+
+function parsePrototypeHandoffCheckArgs(argv: string[]): {
+  prototypeHandoffPath?: string;
+  requiredCandidates: readonly AudioEngineCandidateId[];
+} {
+  if (argv[0] === '--d2-expo-only') {
+    return {
+      prototypeHandoffPath: argv[1],
+      requiredCandidates: D2_EXPO_ONLY_REQUIRED_CANDIDATES,
+    };
+  }
+
+  return {
+    prototypeHandoffPath: argv[0],
+    requiredCandidates: FINAL_DAY5_REQUIRED_CANDIDATES,
   };
 }
 
