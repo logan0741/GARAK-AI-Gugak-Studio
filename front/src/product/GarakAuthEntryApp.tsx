@@ -1,3 +1,4 @@
+import * as ExpoFileSystem from 'expo-file-system/legacy';
 import { useFonts } from 'expo-font';
 import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, Share, StyleSheet, View } from 'react-native';
@@ -15,6 +16,7 @@ import {
   PRODUCT_SAMPLE_MANIFESTS,
 } from './productSampleReadinessConfig';
 import { createRuntimeGarakProductServices } from './garakRuntimeProductServices';
+import { createExpoFileSystemRecordingCaptureStoragePort } from './localGarakProductServices';
 import { createRuntimeGoogleIdentityProvider } from './runtimeGoogleIdentity';
 
 const ONBOARDING_STEPS = ['canvasRed', 'navyAmber', 'redLight', 'intro'] as const;
@@ -48,6 +50,7 @@ export function GarakAuthEntryApp() {
       createRuntimeGarakProductServices({
         sessionStore,
         libraryStorage: authStorage,
+        recordingCaptureStorage: createExpoFileSystemRecordingCaptureStoragePort(ExpoFileSystem),
         share: (content) => Share.share(content),
       }),
     [authStorage, sessionStore],
