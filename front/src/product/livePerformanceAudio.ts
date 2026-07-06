@@ -165,7 +165,7 @@ async function createDefaultLivePerformanceSampler(input: {
   instrument: InstrumentId;
   manifest?: SampleAssetManifest;
 }): Promise<LivePerformanceSamplerBundle> {
-  const candidates: AudioEngineCandidateId[] = ['react-native-audio-api', 'expo-audio'];
+  const candidates: AudioEngineCandidateId[] = ['expo-audio', 'react-native-audio-api'];
   const requiredStringIndexes = getLivePerformanceRequiredStringIndexes(input.instrument);
   const bundledManifest = input.manifest ?? getLivePerformanceBundledSampleManifest(input.instrument);
   let lastError: unknown;
